@@ -377,7 +377,7 @@ def evaluate(args):
         pairs = [p for p in fixture['pairs'] if p['task'] == task_name and p['qid'] == qid]
         baseline = {qid: {p['did']: p['embedding_score'] for p in pairs}}
         qwen = {qid: {p['did']: p['qwen_score'] for p in pairs}}
-        clef = {qid: {p['did']: scores[(name, qid, p['did'])] for p in pairs}}
+        clef = {qid: {p['did']: scores[(task_name, qid, p['did'])] for p in pairs}}
         qrels = {qid: group['qrels']}
         clef_metrics, _ = metric_summary(clef, baseline, qrels, group['ignore_identical_ids'])
         qwen_metrics, _ = metric_summary(qwen, baseline, qrels, group['ignore_identical_ids'])

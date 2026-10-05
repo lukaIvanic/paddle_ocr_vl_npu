@@ -1,0 +1,25 @@
+Source commit: 44ca1ad4df5aad3f2bc44572444f4c7550ae7536
+Container: research_vllm_ascend_021_external_workspace
+Checkout: /workspace/repos/clef-reranking-smoke
+Execution: CPU-only dataset loading and tokenization; no model inference.
+Source deployment: git fetch /workspace/deploy/clef-lengths.bundle codex/clef-transformers-free
+Source checkout: git checkout --detach 44ca1ad4df5aad3f2bc44572444f4c7550ae7536
+
+cd /workspace/repos/clef-reranking-smoke
+source npu-setup
+export HF_HOME=/workspace/.cache/huggingface HF_ENDPOINT=https://hf-mirror.com
+export HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 RAYON_NUM_THREADS=8
+mkdir -p tmp/25_clef_inference/reranking_lengths_44ca1ad4
+/workspace/venvs/qwen3_embedding_eval_py312/bin/python \
+  25_clef_inference/run_reranking_smoke.py prepare-lengths \
+  --english /workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation \
+  --chinese /workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/reranker_cmteb_6npu_fc41475e/evaluation \
+  --ecom /workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/reranker_ecom_e70e8473/evaluation \
+  --t2 /workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/reranker_cmteb_5npu_resume/evaluation \
+  --source-repo /workspace/repos/paddle_ocr_vl_npu \
+  --model /workspace/models/clef-flash \
+  --profile-dir /workspace/results/clef_length_profiles_44ca1ad4 \
+  --output tmp/25_clef_inference/reranking_lengths_44ca1ad4/fixture.json
+
+Dataset revisions, tokenizer SHA-256, candidate SHA-256, source manifest SHA-256
+and source-code SHA-256 are checked and saved in fixture.json.

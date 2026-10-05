@@ -1,0 +1,60 @@
+{
+  "status": "passed",
+  "preparation_exit_code": 0,
+  "fixture_sha256": "c45e3da7cf069c6407a948494d3b1e18a20f9445c751023845eba83240c2e9cf",
+  "preparation_code_sha256": "429f39d6d659ebeca9c2fd870f52dcf84bf0f277592d6f0dfc21edd13964ce50",
+  "queries": 10,
+  "pairs": 40,
+  "distinct_document_texts": 40,
+  "profiled_tasks": 18,
+  "profiled_queries": 1123,
+  "profiled_pairs": 112246,
+  "prefix_boundary_offsets_mod64": [
+    3,
+    5,
+    11,
+    12,
+    13,
+    14,
+    15,
+    18,
+    23,
+    24,
+    26,
+    28,
+    30,
+    31,
+    37,
+    38,
+    44,
+    45,
+    46,
+    52,
+    54,
+    56,
+    57,
+    59,
+    61,
+    62
+  ],
+  "inputs_above_serving_limit": [
+    {
+      "task": "CovidRetrieval",
+      "qid": "8df6de16294220931f8552ba4f0bdce7",
+      "did": "968b6ca9e8b33dffa7ad82b4296f5199",
+      "input_tokens": 3203
+    }
+  ],
+  "checks": [
+    "source hash matches committed preparation code",
+    "five queries and twenty pairs per language",
+    "four distinct sorted length-selected documents per query",
+    "prefix and full-input token count consistency",
+    "finite saved Qwen and embedding scores",
+    "unique IDs and document text",
+    "selection excludes scores and relevance labels"
+  ],
+  "model_inference_run": false,
+  "complete_document_cache_comparison_run": false,
+  "local_evaluator_group_indexing": "legacy task keys and new task/qid keys passed using a metric stub; not metric validation"
+}

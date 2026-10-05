@@ -351,3 +351,65 @@ and commands are saved under
 `tmp/25_clef_inference/reranking_smoke_92f4bdf2/`. Keep `fixture.json` byte-for-byte
 unchanged for the cached comparison. The original vLLM-Ascend Clef service on
 NPU 6 remained healthy and idle after this separate run.
+
+## Fixed 40-pair length sample for document-cache checks
+
+Prepared at `44ca1ad4` using Clef's actual tokenizer and the original pinned
+MTEB-R/CMTEB-R datasets, saved embedding candidates and task instructions.
+CPU-only preparation profiled 112,246 candidate pairs from 1,123 deterministic
+queries across all 18 tasks. Each task contributes up to 64 hash-sampled queries
+(TRECCOVID has 50, Touche has 49); protocol self-matches are excluded.
+Reference length percentiles give each task equal weight.
+
+The frozen sample contains **10 queries total, five English and five Chinese,
+with four documents each**. Queries come from five distinct tasks per language,
+chosen near joint query/median-document length percentiles 10/30/50/70/90.
+For each query, documents are selected near its candidate-set document-length
+percentiles 10/50/90/99. Selection uses neither relevance labels nor model scores.
+The fixture retains exact text, original IDs, judgments, saved Qwen scores,
+input lengths/hashes, dataset revisions and candidate/tokenizer/source hashes.
+
+| Task / query | Query tokens | Four document lengths | Four complete input lengths |
+| --- | ---: | --- | --- |
+| CQADupstackGamingRetrieval / `77471` | 7 | 42, 84, 149, 217 | 222, 264, 329, 397 |
+| CQADupstackUnixRetrieval / `10158` | 10 | 65, 130, 424, 1953 | 248, 313, 607, 2136 |
+| SCIDOCS / `fa3894d83f83d7d05f54b2c87158dc7a2288dc1c` | 14 | 84, 167, 281, 506 | 270, 353, 467, 692 |
+| FiQA2018 / `3179` | 17 | 74, 201, 500, 714 | 258, 385, 684, 898 |
+| ClimateFEVERHardNegatives / `2983` | 40 | 118, 308, 535, 730 | 328, 518, 745, 940 |
+| EcomRetrieval / `200293` | 3 | 16, 18, 23, 26 | 191, 193, 198, 201 |
+| MedicalRetrieval / `90` | 5 | 20, 43, 115, 169 | 194, 217, 289, 343 |
+| MMarcoRetrieval / `646623` | 6 | 31, 58, 97, 171 | 204, 231, 270, 344 |
+| DuRetrieval / `78b5ea5f4b35ec5bdbde24b1609a36bd` | 10 | 46, 148, 208, 725 | 225, 327, 387, 904 |
+| CovidRetrieval / `8df6de16294220931f8552ba4f0bdce7` | 15 | 123, 426, 1400, 3016 | 310, 613, 1587, 3203 |
+
+Document-only length summaries:
+
+| Language / population | Min | P50 | P90 | P99 | Max |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| English reference, 61,046 pairs | 2 | 159 | 475 | 1532 | 9034 |
+| English selected, 20 pairs | 42 | 217 | 714 | 1953 | 1953 |
+| Chinese reference, 51,200 pairs | 1 | 64 | 491 | 2641 | 6985 |
+| Chinese selected, 20 pairs | 16 | 115 | 725 | 3016 | 3016 |
+
+This deliberately gives extra coverage to long documents. It is a small
+correctness sample, not a frequency-representative accuracy estimate or coverage
+of every extreme input. In particular, the selected English query range is
+7–40 tokens while the reference query P90 is 91 tokens. Every selected document
+boundary is unaligned to the 64-token arithmetic block; together they cover
+26 different nonzero offsets. Separate aligned controls remain useful.
+
+No truncation was applied. One complete input is 3,203 tokens, above the current
+3,072-token HTTP limit; a standalone comparison needs `--max-length 3203` or
+higher. This preparation did not change the running service or its limits.
+It also did not implement or validate complete document-cache reuse. Keep this
+fixture unchanged for the later cached/uncached comparison, checking logits,
+unrounded relevance probabilities and the four-document ordering per query.
+The 40 documents are distinct; a separate query A/B/A check against the same
+document is still required to prove reusable caches remain unchanged.
+
+Frozen evidence is in `tmp/25_clef_inference/reranking_lengths_44ca1ad4/`:
+`fixture.json`, `command.txt`, `exit_code.txt`, `run.log` and `validation.json`.
+The fixture SHA-256 is
+`c45e3da7cf069c6407a948494d3b1e18a20f9445c751023845eba83240c2e9cf`.
+`prepare-lengths` on `run_reranking_smoke.py` exposes the preparation command;
+its full saved command names all four original benchmark run directories.

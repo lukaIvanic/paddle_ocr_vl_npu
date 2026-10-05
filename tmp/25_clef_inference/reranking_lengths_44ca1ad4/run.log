@@ -1,0 +1,154 @@
+From /workspace/deploy/clef-lengths.bundle
+ * branch              codex/clef-transformers-free -> FETCH_HEAD
+Previous HEAD position was 92f4bdf2 fix(clef): resolve offline default qrels and verify cache revision
+HEAD is now at 44ca1ad4 Prepare length-stratified Clef reranking fixtures
+Selected physical NPU 4 as logical npu:0
+Python: /usr/local/python3.12.13/bin/python3
+{"profiling": "ArguAna", "language": "en"}
+Using the latest cached version of the dataset since mteb/arguana couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___arguana/corpus/0.0.0/c22ab2a51041ffd869aaddef7af8d8215647e41a (last modified on Sat Oct  3 15:56:00 2026).
+Using the latest cached version of the dataset since mteb/arguana couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___arguana/queries/0.0.0/c22ab2a51041ffd869aaddef7af8d8215647e41a (last modified on Sat Oct  3 15:57:58 2026).
+Using the latest cached version of the dataset since mteb/arguana couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___arguana/default/0.0.0/c22ab2a51041ffd869aaddef7af8d8215647e41a (last modified on Sat Oct  3 15:56:07 2026).
+Map:   0%|          | 0/1406 [00:00<?, ? examples/s]Map:  75%|███████▌  | 1061/1406 [00:00<00:00, 10511.44 examples/s]Map: 100%|██████████| 1406/1406 [00:00<00:00, 10556.32 examples/s]
+Filter:   0%|          | 0/1406 [00:00<?, ? examples/s]Filter: 100%|██████████| 1406/1406 [00:00<00:00, 73287.99 examples/s]
+{"profiled": "ArguAna", "queries": 64, "pairs": 6346}
+{"profiling": "CQADupstackGamingRetrieval", "language": "en"}
+Using the latest cached version of the dataset since mteb/cqadupstack-gaming couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___cqadupstack-gaming/corpus/0.0.0/4885aa143210c98657558c04aaf3dc47cfb54340 (last modified on Sat Oct  3 15:59:57 2026).
+Using the latest cached version of the dataset since mteb/cqadupstack-gaming couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___cqadupstack-gaming/queries/0.0.0/4885aa143210c98657558c04aaf3dc47cfb54340 (last modified on Sat Oct  3 16:00:09 2026).
+Using the latest cached version of the dataset since mteb/cqadupstack-gaming couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___cqadupstack-gaming/default/0.0.0/4885aa143210c98657558c04aaf3dc47cfb54340 (last modified on Sat Oct  3 16:00:08 2026).
+Map:   0%|          | 0/2263 [00:00<?, ? examples/s]Map:  48%|████▊     | 1092/2263 [00:00<00:00, 10823.22 examples/s]Map:  96%|█████████▋| 2180/2263 [00:00<00:00, 10845.39 examples/s]Map: 100%|██████████| 2263/2263 [00:00<00:00, 10822.04 examples/s]
+Filter:   0%|          | 0/1595 [00:00<?, ? examples/s]Filter: 100%|██████████| 1595/1595 [00:00<00:00, 109455.41 examples/s]
+{"profiled": "CQADupstackGamingRetrieval", "queries": 64, "pairs": 6400}
+{"profiling": "CQADupstackUnixRetrieval", "language": "en"}
+Using the latest cached version of the dataset since mteb/cqadupstack-unix couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___cqadupstack-unix/corpus/0.0.0/6c6430d3a6d36f8d2a829195bc5dc94d7e063e53 (last modified on Sat Oct  3 16:00:37 2026).
+Using the latest cached version of the dataset since mteb/cqadupstack-unix couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___cqadupstack-unix/queries/0.0.0/6c6430d3a6d36f8d2a829195bc5dc94d7e063e53 (last modified on Sat Oct  3 16:00:46 2026).
+Using the latest cached version of the dataset since mteb/cqadupstack-unix couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___cqadupstack-unix/default/0.0.0/6c6430d3a6d36f8d2a829195bc5dc94d7e063e53 (last modified on Sat Oct  3 16:00:45 2026).
+Map:   0%|          | 0/1693 [00:00<?, ? examples/s]Map:  65%|██████▍   | 1099/1693 [00:00<00:00, 10895.76 examples/s]Map: 100%|██████████| 1693/1693 [00:00<00:00, 10894.83 examples/s]
+Filter:   0%|          | 0/1072 [00:00<?, ? examples/s]Filter: 100%|██████████| 1072/1072 [00:00<00:00, 96896.62 examples/s]
+{"profiled": "CQADupstackUnixRetrieval", "queries": 64, "pairs": 6400}
+{"profiling": "ClimateFEVERHardNegatives", "language": "en"}
+Using the latest cached version of the dataset since mteb/ClimateFEVER_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___climate_fever_test_top_250_only_w_correct-v2/corpus/0.0.0/3a309e201f3c2c4b13bd4a367a8f37eee2ec1d21 (last modified on Sat Oct  3 16:01:06 2026).
+Using the latest cached version of the dataset since mteb/ClimateFEVER_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___climate_fever_test_top_250_only_w_correct-v2/queries/0.0.0/3a309e201f3c2c4b13bd4a367a8f37eee2ec1d21 (last modified on Sat Oct  3 16:01:15 2026).
+Using the latest cached version of the dataset since mteb/ClimateFEVER_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___climate_fever_test_top_250_only_w_correct-v2/default/0.0.0/3a309e201f3c2c4b13bd4a367a8f37eee2ec1d21 (last modified on Sat Oct  3 16:01:15 2026).
+Map:   0%|          | 0/3048 [00:00<?, ? examples/s]Map:  36%|███▌      | 1100/3048 [00:00<00:00, 10906.45 examples/s]Map:  90%|████████▉ | 2739/3048 [00:00<00:00, 10914.45 examples/s]Map: 100%|██████████| 3048/3048 [00:00<00:00, 10905.78 examples/s]
+Filter:   0%|          | 0/1000 [00:00<?, ? examples/s]Filter: 100%|██████████| 1000/1000 [00:00<00:00, 97392.47 examples/s]
+{"profiled": "ClimateFEVERHardNegatives", "queries": 64, "pairs": 6400}
+{"profiling": "FEVERHardNegatives", "language": "en"}
+Using the latest cached version of the dataset since mteb/FEVER_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___fever_test_top_250_only_w_correct-v2/corpus/0.0.0/080c9ed6267b65029207906e815d44a9240bafca (last modified on Sat Oct  3 16:01:47 2026).
+Using the latest cached version of the dataset since mteb/FEVER_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___fever_test_top_250_only_w_correct-v2/queries/0.0.0/080c9ed6267b65029207906e815d44a9240bafca (last modified on Sat Oct  3 16:01:58 2026).
+Using the latest cached version of the dataset since mteb/FEVER_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___fever_test_top_250_only_w_correct-v2/default/0.0.0/080c9ed6267b65029207906e815d44a9240bafca (last modified on Sat Oct  3 16:01:58 2026).
+Map:   0%|          | 0/1171 [00:00<?, ? examples/s]Map:  93%|█████████▎| 1092/1171 [00:00<00:00, 10830.08 examples/s]Map: 100%|██████████| 1171/1171 [00:00<00:00, 10798.89 examples/s]
+Filter:   0%|          | 0/1000 [00:00<?, ? examples/s]Filter: 100%|██████████| 1000/1000 [00:00<00:00, 98657.01 examples/s]
+{"profiled": "FEVERHardNegatives", "queries": 64, "pairs": 6400}
+{"profiling": "FiQA2018", "language": "en"}
+Using the latest cached version of the dataset since mteb/fiqa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___fiqa/corpus/0.0.0/27a168819829fe9bcd655c2df245fb19452e8e06 (last modified on Sat Oct  3 16:02:37 2026).
+Using the latest cached version of the dataset since mteb/fiqa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___fiqa/queries/0.0.0/27a168819829fe9bcd655c2df245fb19452e8e06 (last modified on Mon Oct  5 12:56:51 2026).
+Using the latest cached version of the dataset since mteb/fiqa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___fiqa/default/0.0.0/27a168819829fe9bcd655c2df245fb19452e8e06 (last modified on Sat Oct  3 16:03:04 2026).
+Map:   0%|          | 0/1706 [00:00<?, ? examples/s]Map:  65%|██████▌   | 1112/1706 [00:00<00:00, 11012.23 examples/s]Map: 100%|██████████| 1706/1706 [00:00<00:00, 11005.20 examples/s]
+{"profiled": "FiQA2018", "queries": 64, "pairs": 6400}
+{"profiling": "HotpotQAHardNegatives", "language": "en"}
+Using the latest cached version of the dataset since mteb/HotpotQA_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___hotpot_qa_test_top_250_only_w_correct-v2/corpus/0.0.0/617612fa63afcb60e3b134bed8b7216a99707c37 (last modified on Sat Oct  3 16:03:34 2026).
+Using the latest cached version of the dataset since mteb/HotpotQA_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___hotpot_qa_test_top_250_only_w_correct-v2/queries/0.0.0/617612fa63afcb60e3b134bed8b7216a99707c37 (last modified on Sat Oct  3 16:03:44 2026).
+Using the latest cached version of the dataset since mteb/HotpotQA_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___hotpot_qa_test_top_250_only_w_correct-v2/default/0.0.0/617612fa63afcb60e3b134bed8b7216a99707c37 (last modified on Sat Oct  3 16:03:43 2026).
+Map:   0%|          | 0/2000 [00:00<?, ? examples/s]Map:  55%|█████▌    | 1100/2000 [00:00<00:00, 10898.67 examples/s]Map: 100%|██████████| 2000/2000 [00:00<00:00, 10930.32 examples/s]
+Filter:   0%|          | 0/1000 [00:00<?, ? examples/s]Filter: 100%|██████████| 1000/1000 [00:00<00:00, 97139.84 examples/s]
+{"profiled": "HotpotQAHardNegatives", "queries": 64, "pairs": 6400}
+{"profiling": "SCIDOCS", "language": "en"}
+Using the latest cached version of the dataset since mteb/scidocs couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___scidocs/corpus/0.0.0/f8c2fcf00f625baaa80f62ec5bd9e1fff3b8ae88 (last modified on Sat Oct  3 16:04:15 2026).
+Using the latest cached version of the dataset since mteb/scidocs couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___scidocs/queries/0.0.0/f8c2fcf00f625baaa80f62ec5bd9e1fff3b8ae88 (last modified on Sat Oct  3 16:05:51 2026).
+Using the latest cached version of the dataset since mteb/scidocs couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___scidocs/default/0.0.0/f8c2fcf00f625baaa80f62ec5bd9e1fff3b8ae88 (last modified on Sat Oct  3 16:05:48 2026).
+Map:   0%|          | 0/29928 [00:00<?, ? examples/s]Map:   4%|▎         | 1113/29928 [00:00<00:02, 11039.50 examples/s]Map:   7%|▋         | 2228/29928 [00:00<00:02, 11096.83 examples/s]Map:  11%|█         | 3347/29928 [00:00<00:02, 11136.06 examples/s]Map:  15%|█▍        | 4462/29928 [00:00<00:02, 11138.60 examples/s]Map:  19%|█▊        | 5577/29928 [00:00<00:02, 11140.52 examples/s]Map:  22%|██▏       | 6698/29928 [00:00<00:02, 11163.64 examples/s]Map:  26%|██▌       | 7817/29928 [00:00<00:01, 11168.85 examples/s]Map:  32%|███▏      | 9491/29928 [00:00<00:01, 11161.26 examples/s]Map:  37%|███▋      | 11160/29928 [00:01<00:01, 11145.94 examples/s]Map:  43%|████▎     | 12833/29928 [00:01<00:01, 11145.93 examples/s]Map:  47%|████▋     | 13949/29928 [00:01<00:01, 11146.92 examples/s]Map:  50%|█████     | 15068/29928 [00:01<00:01, 11154.10 examples/s]Map:  54%|█████▍    | 16187/29928 [00:01<00:01, 11163.15 examples/s]Map:  58%|█████▊    | 17304/29928 [00:01<00:01, 11163.14 examples/s]Map:  62%|██████▏   | 18421/29928 [00:01<00:01, 11161.16 examples/s]Map:  67%|██████▋   | 20066/29928 [00:01<00:00, 11082.88 examples/s]Map:  71%|███████   | 21181/29928 [00:01<00:00, 11097.85 examples/s]Map:  75%|███████▍  | 22298/29928 [00:02<00:00, 11115.05 examples/s]Map:  78%|███████▊  | 23415/29928 [00:02<00:00, 11127.94 examples/s]Map:  82%|████████▏ | 24532/29928 [00:02<00:00, 11136.50 examples/s]Map:  86%|████████▌ | 25650/29928 [00:02<00:00, 11146.57 examples/s]Map:  89%|████████▉ | 26766/29928 [00:02<00:00, 11147.13 examples/s]Map:  93%|█████████▎| 27884/29928 [00:02<00:00, 11152.61 examples/s]Map:  97%|█████████▋| 29001/29928 [00:02<00:00, 11155.77 examples/s]Map: 100%|██████████| 29928/29928 [00:02<00:00, 11141.54 examples/s]
+Filter:   0%|          | 0/1000 [00:00<?, ? examples/s]Filter: 100%|██████████| 1000/1000 [00:00<00:00, 96893.00 examples/s]
+{"profiled": "SCIDOCS", "queries": 64, "pairs": 6400}
+{"profiling": "TRECCOVID", "language": "en"}
+Using the latest cached version of the dataset since mteb/trec-covid couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___trec-covid/corpus/0.0.0/bb9466bac8153a0349341eb1b22e06409e78ef4e (last modified on Sat Oct  3 16:06:59 2026).
+Using the latest cached version of the dataset since mteb/trec-covid couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___trec-covid/queries/0.0.0/bb9466bac8153a0349341eb1b22e06409e78ef4e (last modified on Sat Oct  3 16:07:51 2026).
+Using the latest cached version of the dataset since mteb/trec-covid couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___trec-covid/default/0.0.0/bb9466bac8153a0349341eb1b22e06409e78ef4e (last modified on Sat Oct  3 16:07:44 2026).
+Map:   0%|          | 0/66336 [00:00<?, ? examples/s]Map:   2%|▏         | 1108/66336 [00:00<00:05, 10983.20 examples/s]Map:   3%|▎         | 2216/66336 [00:00<00:05, 11034.44 examples/s]Map:   5%|▌         | 3326/66336 [00:00<00:05, 11056.91 examples/s]Map:   7%|▋         | 4435/66336 [00:00<00:05, 11066.01 examples/s]Map:   9%|▉         | 6095/66336 [00:00<00:05, 11061.26 examples/s]Map:  12%|█▏        | 7756/66336 [00:00<00:05, 11064.17 examples/s]Map:  14%|█▍        | 9418/66336 [00:00<00:05, 11068.35 examples/s]Map:  16%|█▌        | 10526/66336 [00:00<00:05, 11067.54 examples/s]Map:  18%|█▊        | 11639/66336 [00:01<00:04, 11081.24 examples/s]Map:  19%|█▉        | 12750/66336 [00:01<00:04, 11085.61 examples/s]Map:  22%|██▏       | 14414/66336 [00:01<00:04, 11085.47 examples/s]Map:  24%|██▍       | 16080/66336 [00:01<00:04, 11088.23 examples/s]Map:  26%|██▌       | 17190/66336 [00:01<00:04, 11087.04 examples/s]Map:  28%|██▊       | 18299/66336 [00:01<00:04, 11085.36 examples/s]Map:  30%|███       | 19965/66336 [00:01<00:04, 11090.24 examples/s]Map:  32%|███▏      | 21075/66336 [00:01<00:04, 11088.33 examples/s]Map:  33%|███▎      | 22185/66336 [00:02<00:03, 11090.60 examples/s]Map:  36%|███▌      | 23849/66336 [00:02<00:03, 11089.46 examples/s]Map:  38%|███▊      | 24960/66336 [00:02<00:03, 11093.24 examples/s]Map:  39%|███▉      | 26072/66336 [00:02<00:03, 11098.85 examples/s]Map:  41%|████      | 27187/66336 [00:02<00:03, 11111.48 examples/s]Map:  43%|████▎     | 28855/66336 [00:02<00:03, 11111.34 examples/s]Map:  46%|████▌     | 30522/66336 [00:02<00:03, 11108.64 examples/s]Map:  48%|████▊     | 31637/66336 [00:02<00:03, 11116.44 examples/s]Map:  50%|█████     | 33306/66336 [00:03<00:02, 11116.99 examples/s]Map:  53%|█████▎    | 34966/66336 [00:03<00:02, 11095.94 examples/s]Map:  55%|█████▌    | 36628/66336 [00:03<00:02, 11087.25 examples/s]Map:  57%|█████▋    | 37741/66336 [00:03<00:02, 11094.20 examples/s]Map:  59%|█████▉    | 39401/66336 [00:03<00:02, 11080.44 examples/s]Map:  62%|██████▏   | 41060/66336 [00:03<00:02, 11069.51 examples/s]Map:  64%|██████▍   | 42720/66336 [00:03<00:02, 11064.55 examples/s]Map:  67%|██████▋   | 44379/66336 [00:04<00:01, 11061.12 examples/s]Map:  69%|██████▉   | 46040/66336 [00:04<00:01, 11060.63 examples/s]Map:  71%|███████   | 47147/66336 [00:04<00:01, 11059.80 examples/s]Map:  73%|███████▎  | 48259/66336 [00:04<00:01, 11071.89 examples/s]Map:  75%|███████▌  | 49881/66336 [00:04<00:01, 10978.45 examples/s]Map:  77%|███████▋  | 50982/66336 [00:04<00:01, 10982.97 examples/s]Map:  79%|███████▊  | 52089/66336 [00:04<00:01, 11003.62 examples/s]Map:  80%|████████  | 53193/66336 [00:04<00:01, 11011.07 examples/s]Map:  82%|████████▏ | 54298/66336 [00:04<00:01, 11019.20 examples/s]Map:  84%|████████▎ | 55401/66336 [00:05<00:00, 11019.39 examples/s]Map:  85%|████████▌ | 56508/66336 [00:05<00:00, 11030.43 examples/s]Map:  88%|████████▊ | 58161/66336 [00:05<00:00, 11023.75 examples/s]Map:  89%|████████▉ | 59268/66336 [00:05<00:00, 11031.30 examples/s]Map:  91%|█████████ | 60372/66336 [00:05<00:00, 11030.38 examples/s]Map:  93%|█████████▎| 61478/66336 [00:05<00:00, 11034.89 examples/s]Map:  94%|█████████▍| 62585/66336 [00:05<00:00, 11042.19 examples/s]Map:  96%|█████████▌| 63690/66336 [00:05<00:00, 11040.50 examples/s]Map:  98%|█████████▊| 64796/66336 [00:05<00:00, 11044.41 examples/s]Map: 100%|██████████| 66336/66336 [00:05<00:00, 11037.73 examples/s]Map: 100%|██████████| 66336/66336 [00:05<00:00, 11062.86 examples/s]
+Filter:   0%|          | 0/50 [00:00<?, ? examples/s]Filter: 100%|██████████| 50/50 [00:00<00:00, 11846.98 examples/s]
+{"profiled": "TRECCOVID", "queries": 50, "pairs": 5000}
+{"profiling": "Touche2020Retrieval.v3", "language": "en"}
+Using the latest cached version of the dataset since mteb/webis-touche2020-v3 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___webis-touche2020-v3/corpus/0.0.0/431886eaecc48f067a3975b70d0949ea2862463c (last modified on Sat Oct  3 16:10:56 2026).
+Using the latest cached version of the dataset since mteb/webis-touche2020-v3 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___webis-touche2020-v3/queries/0.0.0/431886eaecc48f067a3975b70d0949ea2862463c (last modified on Sat Oct  3 16:11:05 2026).
+Using the latest cached version of the dataset since mteb/webis-touche2020-v3 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___webis-touche2020-v3/default/0.0.0/431886eaecc48f067a3975b70d0949ea2862463c (last modified on Sat Oct  3 16:11:05 2026).
+Map:   0%|          | 0/2849 [00:00<?, ? examples/s]Map:  39%|███▉      | 1108/2849 [00:00<00:00, 10979.75 examples/s]Map:  78%|███████▊  | 2216/2849 [00:00<00:00, 11034.05 examples/s]Map: 100%|██████████| 2849/2849 [00:00<00:00, 11040.10 examples/s]
+Filter:   0%|          | 0/49 [00:00<?, ? examples/s]Filter: 100%|██████████| 49/49 [00:00<00:00, 12450.53 examples/s]
+{"profiled": "Touche2020Retrieval.v3", "queries": 49, "pairs": 4900}
+{"profiling": "EcomRetrieval", "language": "zh"}
+Using the latest cached version of the dataset since C-MTEB/EcomRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___ecom_retrieval/default/0.0.0/687de13dc7294d6fd9be10c6945f9e8fec8166b9 (last modified on Sat Oct  3 07:16:21 2026).
+Using the latest cached version of the dataset since C-MTEB/EcomRetrieval-qrels couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___ecom_retrieval-qrels/default/0.0.0/39c90699b034ec22ac45b3abf5b0bbb5ffd421f9 (last modified on Sat Oct  3 07:16:27 2026).
+{"profiled": "EcomRetrieval", "queries": 64, "pairs": 6400}
+{"profiling": "VideoRetrieval", "language": "zh"}
+Using the latest cached version of the dataset since C-MTEB/VideoRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___video_retrieval/default/0.0.0/58c2597a5943a2ba48f4668c3b90d796283c5639 (last modified on Sat Oct  3 07:16:44 2026).
+Using the latest cached version of the dataset since C-MTEB/VideoRetrieval-qrels couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___video_retrieval-qrels/default/0.0.0/faa71382b6a29cf1778d1f436b963e75cb5b927c (last modified on Sat Oct  3 07:16:49 2026).
+{"profiled": "VideoRetrieval", "queries": 64, "pairs": 6400}
+{"profiling": "MedicalRetrieval", "language": "zh"}
+Using the latest cached version of the dataset since C-MTEB/MedicalRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___medical_retrieval/default/0.0.0/2039188fb5800a9803ba5048df7b76e6fb151fc6 (last modified on Sat Oct  3 07:17:08 2026).
+Using the latest cached version of the dataset since C-MTEB/MedicalRetrieval-qrels couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___medical_retrieval-qrels/default/0.0.0/37b8efec53c54c3d9c6af212f6710b62ccdf895c (last modified on Sat Oct  3 07:17:15 2026).
+{"profiled": "MedicalRetrieval", "queries": 64, "pairs": 6400}
+{"profiling": "MMarcoRetrieval", "language": "zh"}
+Using the latest cached version of the dataset since C-MTEB/MMarcoRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___m_marco_retrieval/default/0.0.0/539bbde593d947e2a124ba72651aafc09eb33fc2 (last modified on Sat Oct  3 07:17:35 2026).
+Using the latest cached version of the dataset since C-MTEB/MMarcoRetrieval-qrels couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___m_marco_retrieval-qrels/default/0.0.0/bae08bb7bddbedb96c7e7db52018a55167b67f89 (last modified on Sat Oct  3 07:17:42 2026).
+{"profiled": "MMarcoRetrieval", "queries": 64, "pairs": 6400}
+{"profiling": "CmedqaRetrieval", "language": "zh"}
+Using the latest cached version of the dataset since C-MTEB/CmedqaRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___cmedqa_retrieval/default/0.0.0/cd540c506dae1cf9e9a59c3e06f42030d54e7301 (last modified on Sat Oct  3 07:18:09 2026).
+Using the latest cached version of the dataset since C-MTEB/CmedqaRetrieval-qrels couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___cmedqa_retrieval-qrels/default/0.0.0/279d737f36c731c8ff6e2b055f31fe02216fa23d (last modified on Sat Oct  3 07:18:15 2026).
+{"profiled": "CmedqaRetrieval", "queries": 64, "pairs": 6400}
+{"profiling": "DuRetrieval", "language": "zh"}
+Using the latest cached version of the dataset since C-MTEB/DuRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___du_retrieval/default/0.0.0/a1a333e290fe30b10f3f56498e3a0d911a693ced (last modified on Sat Oct  3 07:18:53 2026).
+Using the latest cached version of the dataset since C-MTEB/DuRetrieval-qrels couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___du_retrieval-qrels/default/0.0.0/497b7bd1bbb25cb3757ff34d95a8be50a3de2279 (last modified on Sat Oct  3 07:19:01 2026).
+{"profiled": "DuRetrieval", "queries": 64, "pairs": 6400}
+{"profiling": "CovidRetrieval", "language": "zh"}
+Using the latest cached version of the dataset since C-MTEB/CovidRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___covid_retrieval/default/0.0.0/1271c7809071a13532e05f25fb53511ffce77117 (last modified on Sat Oct  3 07:19:32 2026).
+Using the latest cached version of the dataset since C-MTEB/CovidRetrieval-qrels couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___covid_retrieval-qrels/default/0.0.0/a9f41b7cdf24785531d12417ce0d1157ed4b39ca (last modified on Sat Oct  3 07:19:38 2026).
+{"profiled": "CovidRetrieval", "queries": 64, "pairs": 6400}
+{"profiling": "T2Retrieval", "language": "zh"}
+Using the latest cached version of the dataset since C-MTEB/T2Retrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___t2_retrieval/default/0.0.0/8731a845f1bf500a4f111cf1070785c793d10e64 (last modified on Sat Oct  3 07:20:35 2026).
+Using the latest cached version of the dataset since C-MTEB/T2Retrieval-qrels couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___t2_retrieval-qrels/default/0.0.0/1c83b8d1544e529875e3f6930f3a1fcf749a8e97 (last modified on Sat Oct  3 07:20:53 2026).
+{"profiled": "T2Retrieval", "queries": 64, "pairs": 6400}
+{"prepared": "tmp/25_clef_inference/reranking_lengths_44ca1ad4/fixture.json", "pairs": 40, "queries": 10, "sample_lengths": {"en": {"document_tokens": {"count": 20, "min": 42, "max": 1953, "p10": 65, "p25": 84, "p50": 217, "p75": 500, "p90": 714, "p95": 730, "p99": 1953, "above_3072": 0}, "prefix_tokens": {"count": 20, "min": 78, "max": 1989, "p10": 101, "p25": 120, "p50": 253, "p75": 536, "p90": 750, "p95": 766, "p99": 1989, "above_3072": 0}, "query_tokens": {"count": 20, "min": 7, "max": 40, "p10": 7, "p25": 10, "p50": 14, "p75": 17, "p90": 40, "p95": 40, "p99": 40, "above_3072": 0}, "question_side_tokens": {"count": 20, "min": 144, "max": 174, "p10": 144, "p25": 147, "p50": 148, "p75": 150, "p90": 174, "p95": 174, "p99": 174, "above_3072": 0}, "input_tokens": {"count": 20, "min": 222, "max": 2136, "p10": 248, "p25": 270, "p50": 397, "p75": 684, "p90": 898, "p95": 940, "p99": 2136, "above_3072": 0}}, "zh": {"document_tokens": {"count": 20, "min": 16, "max": 3016, "p10": 18, "p25": 26, "p50": 115, "p75": 171, "p90": 725, "p95": 1400, "p99": 3016, "above_3072": 0}, "prefix_tokens": {"count": 20, "min": 52, "max": 3052, "p10": 54, "p25": 62, "p50": 151, "p75": 207, "p90": 761, "p95": 1436, "p99": 3052, "above_3072": 0}, "query_tokens": {"count": 20, "min": 3, "max": 15, "p10": 3, "p25": 5, "p50": 6, "p75": 10, "p90": 15, "p95": 15, "p99": 15, "above_3072": 0}, "question_side_tokens": {"count": 20, "min": 137, "max": 151, "p10": 137, "p25": 138, "p50": 139, "p75": 143, "p90": 151, "p95": 151, "p99": 151, "above_3072": 0}, "input_tokens": {"count": 20, "min": 191, "max": 3203, "p10": 193, "p25": 201, "p50": 289, "p75": 344, "p90": 904, "p95": 1587, "p99": 3203, "above_3072": 1}}}}
