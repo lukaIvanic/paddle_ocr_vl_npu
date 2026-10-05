@@ -1,0 +1,2 @@
+Local CPU bookkeeping only, no model execution.
+validate_predictions accepted full query coverage and rejected missing queries, partial queries, nonfinite scores and extra candidates.

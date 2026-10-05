@@ -912,3 +912,14 @@ recall@10/@100, with original self-match semantics. It compares Clef against
 the frozen Qwen3-Reranker-4B and embedding scores, and retains per-query metrics.
 No Qwen scores or relevance labels enter Clef inference. This measures the
 complete Touché task, not the entire MTEB-R suite.
+
+The full run was launched at `f268a541` on physical NPU 3 after the cache job
+completed. Scoring uses the 0.23 container; a host-side coordinator automatically
+runs evaluation in the existing 0.21 container's MTEB 1.38.9 environment, then
+copies the evaluated result back. Live logs/status/results are under
+`/workspace/results/clef_touche_full/benchmark_f268a541/` in the 0.23 container.
+
+Preflight metric self-comparison using frozen Qwen predictions reproduces
+Qwen3-Reranker-4B NDCG@10 **72.9999** and embedding NDCG@10 **69.4927** (0–100
+scale). This is an evaluator check, not a Clef result. Small launch/check evidence
+and the coordinator source are in `tmp/25_clef_inference/touche_full_f268a541/`.

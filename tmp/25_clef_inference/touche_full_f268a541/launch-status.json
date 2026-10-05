@@ -1,0 +1,14 @@
+{
+  "status": "scoring",
+  "commit": "f268a541970072f845e284c4dcb3a99ea2618ae7",
+  "started_unix": 1791222022.551317,
+  "score_command": [
+    "docker",
+    "exec",
+    "research_vllm_ascend_023_external_workspace",
+    "bash",
+    "-c",
+    "source npu-setup || exit $?; cd /workspace/repos/clef-touche-f268a541 && exec /usr/local/python3.12.13/bin/python3 -u 25_clef_inference/run_reranking_task.py score --fixture /workspace/results/clef_touche_full/fixture.json --model /workspace/models/clef-flash --cache-dir /workspace/results/clef_touche_full/bf16_storage --cache-manifest /workspace/results/clef_touche_full/bf16_storage-manifest.json --output /workspace/results/clef_touche_full/benchmark_f268a541/result.json"
+  ],
+  "score_pid": 3167796
+}
