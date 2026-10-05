@@ -1,0 +1,162 @@
+{
+  "scope": "six_pair_protocol_smoke",
+  "mteb_version": "1.38.9",
+  "selection": "first sorted query with a positive and two negatives in saved top100; first positive, first and last negative in embedding order",
+  "truncation": "none",
+  "score": "unrounded P(true) from noul logits",
+  "groups": {
+    "FiQA2018": {
+      "qid": "10034",
+      "split": "test",
+      "dataset_revision": "27a168819829fe9bcd655c2df245fb19452e8e06",
+      "qrels_revision": "27a168819829fe9bcd655c2df245fb19452e8e06",
+      "qrels": {
+        "480749": 1,
+        "181942": 1
+      },
+      "ignore_identical_ids": true,
+      "candidate_file": "/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation/embedding/FiQA2018/mteb/FiQA2018_default_predictions.json",
+      "candidate_sha256": "f424227a6c98618c20d8b701028a19e3a907e2bb309c6e0cfc1f84238c880314",
+      "qwen_predictions_sha256": "91a84bcce6e9ae36953434b476d7d48e1cd2cfce82abc0208e1a0b6fba92a0e8",
+      "qwen_manifest": {
+        "task": "FiQA2018",
+        "documents": 57638,
+        "queries": 648,
+        "rerank_pairs": 64800,
+        "dataset_reads": [
+          {
+            "path": "mteb/fiqa",
+            "revision": "27a168819829fe9bcd655c2df245fb19452e8e06",
+            "args": [
+              "corpus"
+            ]
+          },
+          {
+            "path": "mteb/fiqa",
+            "revision": "27a168819829fe9bcd655c2df245fb19452e8e06",
+            "args": [
+              "queries"
+            ]
+          },
+          {
+            "path": "mteb/fiqa",
+            "revision": "27a168819829fe9bcd655c2df245fb19452e8e06",
+            "args": []
+          }
+        ],
+        "judgments_missing_from_corpus": 0,
+        "missing_judgment_examples": [],
+        "split": "test",
+        "subset": "default",
+        "query_instruction": "Given a financial question, retrieve user replies that best answer the question",
+        "document_instruction": "",
+        "candidates_sha256": "f424227a6c98618c20d8b701028a19e3a907e2bb309c6e0cfc1f84238c880314",
+        "max_length": 8192,
+        "prompt": "HF Transformers single-newline prefix/body/suffix; query instruction string"
+      },
+      "qwen_manifest_sha256": "c5608eb03ddda8b013486e52e7da0edccccb66a18c9186a0b38f82426b8aede7",
+      "selected_document_ids": [
+        "181942",
+        "528880",
+        "84238"
+      ]
+    },
+    "EcomRetrieval": {
+      "qid": "200000",
+      "split": "dev",
+      "dataset_revision": "687de13dc7294d6fd9be10c6945f9e8fec8166b9",
+      "qrels_revision": "39c90699b034ec22ac45b3abf5b0bbb5ffd421f9",
+      "qrels": {
+        "260": 1
+      },
+      "ignore_identical_ids": true,
+      "candidate_file": "/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/EcomRetrieval_default_predictions.json",
+      "candidate_sha256": "ece78f3c9437e47a4450c9eb9d06c37cddf1be7f27a1de8fac9a5071257d1399",
+      "qwen_predictions_sha256": "d7f895d679ef5dc7e1b148a3e1b5b56602a5b62e597547f114138bc798d77c08",
+      "qwen_manifest": {
+        "candidate_file": "tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/EcomRetrieval_default_predictions.json",
+        "sha256": "ece78f3c9437e47a4450c9eb9d06c37cddf1be7f27a1de8fac9a5071257d1399",
+        "dataset_revision": "687de13dc7294d6fd9be10c6945f9e8fec8166b9",
+        "qrels_revision": "39c90699b034ec22ac45b3abf5b0bbb5ffd421f9",
+        "instruction": "Given a user query from an e-commerce website, retrieve description sentences of relevant products",
+        "queries": 1000,
+        "pairs": 100000,
+        "ignore_identical_ids": true
+      },
+      "qwen_manifest_sha256": "3583fbb819c28ab834c8cce111307a4cd7e2abc0aa623c659474bea3581e7ce0",
+      "selected_document_ids": [
+        "260",
+        "98713",
+        "38006"
+      ]
+    }
+  },
+  "pairs": [
+    {
+      "task": "FiQA2018",
+      "qid": "10034",
+      "did": "181942",
+      "query": "Tax implications of holding EWU (or other such UK ETFs) as a US citizen?",
+      "document": " My understanding is that EWU (and EWUS) are both traded on US stock markets (NYSE & BATS), and as such these are not classified as PFIC. However, they do contain PFICs, so iShares takes the responsibility of handling the PFICs they contain and make adjustments in December. This contains the information about the adjustments made in 2016. https://www.ishares.com/us/literature/tax-information/pfic-2016.pdf On page 106 of the statement of the summary information they describe how they handle paying the necessary tax as an expense of the fund. https://www.ishares.com/us/library/stream-document?stream=reg&product=WEBXGBP&shareClass=NA&documentId=925898~926077~926112~1180071~1242912&iframeUrlOverride=%2Fus%2Fliterature%2Fsai%2Fsai-ishares-trust-8-31.pdf (I'm not a tax professional)",
+      "instruction": "Given a financial question, retrieve user replies that best answer the question",
+      "relevance": 1,
+      "embedding_score": 0.6403768062591553,
+      "qwen_score": 0.9997833371162415
+    },
+    {
+      "task": "FiQA2018",
+      "qid": "10034",
+      "did": "528880",
+      "query": "Tax implications of holding EWU (or other such UK ETFs) as a US citizen?",
+      "document": " Here're some findings upon researches: Two main things to watch out for: Estate tax and the 30% tax withholding. These 2 could be get around by investing in Luxembourg or Ireland  domiciled ETF. For instance there's no tax withholding on Ireland domiciled ETF dividend, and the estate tax is not as high. (source: BogleHead forums)  Some Vanguard ETF offered in UK stock market: https://www.vanguard.co.uk/uk/mvc/investments/etf#docstab. Do note that the returns of S&P 500 ETF (VUSA) are adjusted after the 30% tax withholding! Due to VUSA's higher TER (0.09%), VOO should remain a superior choice. The FTSE Emerging Markets and All-World ETFs though, are better than their US-counterparts, for non-US residents. Non-US residents are able to claim back partials of the withhold tax, by filing the US tax form 1040NR. In 2013, non-US resident can claim back at least $3,900. Kindly correct me if anything is inaccurate.",
+      "instruction": "Given a financial question, retrieve user replies that best answer the question",
+      "relevance": 0,
+      "embedding_score": 0.6502553820610046,
+      "qwen_score": 0.99922776222229
+    },
+    {
+      "task": "FiQA2018",
+      "qid": "10034",
+      "did": "84238",
+      "query": "Tax implications of holding EWU (or other such UK ETFs) as a US citizen?",
+      "document": " Gold ETFs are treated different than stock ETFs, as a collectable. This makes long-term investing in gold ETFs (for one year or longer) subject to a relatively large capital gains tax (maximum rate of 28%, rather than the 15% rate that is applicable to most other long-term capital gains). Read The Gold Showdown: ETFs Vs. Futures for more details.",
+      "instruction": "Given a financial question, retrieve user replies that best answer the question",
+      "relevance": 0,
+      "embedding_score": 0.49141430854797363,
+      "qwen_score": 0.11219535768032074
+    },
+    {
+      "task": "EcomRetrieval",
+      "qid": "200000",
+      "did": "260",
+      "query": "大落地窗",
+      "document": "新豪轩门窗 斯图加特78系统 铝合金窗内开内倒落地窗断桥铝平开窗",
+      "instruction": "Given a user query from an e-commerce website, retrieve description sentences of relevant products",
+      "relevance": 1,
+      "embedding_score": 0.5019626021385193,
+      "qwen_score": 0.991965651512146
+    },
+    {
+      "task": "EcomRetrieval",
+      "qid": "200000",
+      "did": "98713",
+      "query": "大落地窗",
+      "document": "断桥铝电动升降全景阳台窗自动上下平移智能窗铝合金落地提升窗",
+      "instruction": "Given a user query from an e-commerce website, retrieve description sentences of relevant products",
+      "relevance": 0,
+      "embedding_score": 0.5851241946220398,
+      "qwen_score": 0.9798937439918518
+    },
+    {
+      "task": "EcomRetrieval",
+      "qid": "200000",
+      "did": "38006",
+      "query": "大落地窗",
+      "document": "东阳 仿古花格木门窗 中式屏风 实木网格隔断 玄关 镂空窗户 定做",
+      "instruction": "Given a user query from an e-commerce website, retrieve description sentences of relevant products",
+      "relevance": 0,
+      "embedding_score": 0.42150020599365234,
+      "qwen_score": 0.2128450870513916
+    }
+  ]
+}

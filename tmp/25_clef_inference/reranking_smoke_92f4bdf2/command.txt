@@ -1,0 +1,2 @@
+92f4bdf2
+source npu-setup && cd /workspace/repos/clef-reranking-smoke && /usr/local/python3.12.13/bin/python3 -u 25_clef_inference/run_reranking_smoke.py run --fixture /workspace/repos/clef-reranking-smoke/tmp/25_clef_inference/reranking_smoke_92f4bdf2/fixture.json --model /workspace/models/clef-flash --output /workspace/repos/clef-reranking-smoke/tmp/25_clef_inference/reranking_smoke_92f4bdf2/result.json

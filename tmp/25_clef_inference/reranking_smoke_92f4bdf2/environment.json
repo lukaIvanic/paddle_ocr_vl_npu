@@ -1,0 +1,54 @@
+{
+  "packages": {
+    "torch": "2.10.0+cpu",
+    "torch-npu": "2.10.0.post2",
+    "tokenizers": "0.22.2",
+    "safetensors": "0.8.0"
+  },
+  "integration_source_unchanged": "4cd6a1f0cbf4125a9736adb34ad5ba7856c4824b",
+  "live_server_health": {
+    "ready": true,
+    "closing": false,
+    "failure": null,
+    "execution_thread": 281468750256256,
+    "warmup": [
+      {
+        "input_tokens": 272,
+        "questions": 3,
+        "model_s": 24.61099226004444,
+        "peak_allocated_bytes": 18232442880
+      },
+      {
+        "input_tokens": 548,
+        "questions": 3,
+        "model_s": 1.5809365599416196,
+        "peak_allocated_bytes": 18299912704
+      }
+    ],
+    "pending": 0,
+    "completed": 199,
+    "last_timing_s": {
+      "encoding": 0.0012547099031507969,
+      "model": 0.8982240098994225,
+      "formatting": 0.0003872700035572052,
+      "execution": 0.9002360899467021,
+      "dispatch": 6.443005986511707e-05
+    },
+    "max_input_tokens": 3072,
+    "max_inflight_requests": 1,
+    "stage": "inference",
+    "model_class": "ClefForSystemOne",
+    "load_count": 1,
+    "loaded_tensors": 549,
+    "skipped_visual_tensors": 333,
+    "parameter_count": 9075566084,
+    "parameter_bytes": 18151132168,
+    "cache_groups": 0,
+    "cache_tensors": 0,
+    "cache_initialized": true,
+    "load_s": 7.708143479889259,
+    "rpc_thread": 281473503485984,
+    "same_model_instance": true
+  },
+  "live_server_http_status": 200
+}

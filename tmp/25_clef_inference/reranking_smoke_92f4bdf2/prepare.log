@@ -1,0 +1,15 @@
+Selected physical NPU 4 as logical npu:0
+Python: /usr/local/python3.12.13/bin/python3
+Using the latest cached version of the dataset since mteb/fiqa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___fiqa/corpus/0.0.0/27a168819829fe9bcd655c2df245fb19452e8e06 (last modified on Sat Oct  3 16:02:37 2026).
+Using the latest cached version of the dataset since mteb/fiqa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___fiqa/queries/0.0.0/27a168819829fe9bcd655c2df245fb19452e8e06 (last modified on Sat Oct  3 16:03:05 2026).
+Using the latest cached version of the dataset since mteb/fiqa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___fiqa/default/0.0.0/27a168819829fe9bcd655c2df245fb19452e8e06 (last modified on Sat Oct  3 16:03:04 2026).
+Map:   0%|          | 0/1706 [00:00<?, ? examples/s]Map:  66%|██████▌   | 1120/1706 [00:00<00:00, 11088.92 examples/s]Map: 100%|██████████| 1706/1706 [00:00<00:00, 10934.15 examples/s]
+Filter:   0%|          | 0/6648 [00:00<?, ? examples/s]Filter: 100%|██████████| 6648/6648 [00:00<00:00, 131313.35 examples/s]
+Using the latest cached version of the dataset since C-MTEB/EcomRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___ecom_retrieval/default/0.0.0/687de13dc7294d6fd9be10c6945f9e8fec8166b9 (last modified on Sat Oct  3 07:16:21 2026).
+Using the latest cached version of the dataset since C-MTEB/EcomRetrieval-qrels couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___ecom_retrieval-qrels/default/0.0.0/39c90699b034ec22ac45b3abf5b0bbb5ffd421f9 (last modified on Sat Oct  3 07:16:27 2026).
+{"prepared": "/workspace/repos/clef-reranking-smoke/tmp/25_clef_inference/reranking_smoke_92f4bdf2/fixture.json", "pairs": 6, "tasks": ["FiQA2018", "EcomRetrieval"]}

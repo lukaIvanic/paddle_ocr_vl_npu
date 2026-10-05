@@ -317,3 +317,37 @@ ranks only the three selected candidates, using the existing NDCG@10 and
 self-match rules. An independent two-document example checks the evaluator's
 NDCG discount. Keep the fixture unchanged for the future cached/uncached check;
 these commands do not implement document caching.
+
+### Verified six-pair baseline (910B2)
+
+Validated on 2026-10-05 at code commit `92f4bdf2`. Preparation used the existing
+MTEB 1.38.9 environment and offline caches; FiQA's implicit default qrels
+configuration was made explicit, and its loaded Arrow-cache revisions verified.
+Actual inference ran uncached on physical 910B2 NPU 3 in the isolated CANN 9.0.1
+runtime (torch 2.10.0, torch-npu 2.10.0.post2), with Transformers imports blocked.
+The model and encoding code were unchanged. All six inputs (191–428 tokens)
+completed without truncation and produced finite BF16 noul logits.
+
+| Selected query / three candidates | Clef NDCG@10 | Saved Qwen3-Reranker-4B NDCG@10 |
+| --- | ---: | ---: |
+| FiQA2018 `10034` | 0.613147 | 0.613147 |
+| EcomRetrieval `200000` | 0.630930 | 1.000000 |
+
+The English ordering matched Qwen exactly. On the Chinese query, Clef put
+candidate `98713` ahead of the judged positive `260`; Qwen ordered those two the
+other way around. Candidate `38006` was last for both. Zero relevance here means
+zero or absent relevance in the benchmark judgments, not a proof that a document
+is semantically unrelated. Preserve this difference as part of the uncached
+baseline; the prompt was not adjusted based on these scores.
+
+NDCG uses the full selected query's judgments with only the three selected
+candidates ranked. Consequently, the English perfect ordering among these
+three documents scores below 1 because another judged positive is omitted.
+These two query numbers are **protocol smoke results, not task-wide accuracy**.
+The existing evaluator also passed the independent two-document discount check.
+
+Exact fixture, raw logits/probabilities, ranking/metric results, runtime versions
+and commands are saved under
+`tmp/25_clef_inference/reranking_smoke_92f4bdf2/`. Keep `fixture.json` byte-for-byte
+unchanged for the cached comparison. The original vLLM-Ascend Clef service on
+NPU 6 remained healthy and idle after this separate run.
