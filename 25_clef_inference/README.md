@@ -766,3 +766,27 @@ Preparation evidence: `tmp/25_clef_inference/touche_prepare_72613d97/`.
 Storage accuracy evidence: `tmp/25_clef_inference/bf16_cache_storage_07d2de04/`.
 The full-task job's live manifest and bulk caches are on the server at the
 paths above; starting precomputation does not establish a completed benchmark.
+
+### Parallel continuation of Touché precomputation
+
+At `e8c66ee5`, the single worker was intentionally interrupted after 114
+persisted documents. Its manifest is frozen as the seed of a four-worker run
+on physical NPUs 0, 1, 2 and 3. NPUs 4/5 reported health alarms; occupied NPUs
+6/7 were not used. The interrupted single-worker status is not the status of
+the replacement parallel run.
+
+`tmp/25_clef_inference/parallel_precache/run.py` partitions only unfinished
+documents, balancing prefix tokens plus a fixed per-document allowance.
+Identical token prefixes stay on one worker, preventing concurrent writes to
+the same cache filename. Each worker uses `precache-task --document-ids` with
+an independent durable manifest. The coordinator validates complete, disjoint
+coverage and existing cache file sizes, then merges every shard with the seed
+into the original full-task manifest only after every worker succeeds.
+
+Live plan, seed, per-worker commands/logs/manifests/exit codes and coordinator
+status are in `/workspace/results/clef_touche_full/parallel_e8c66ee5/`.
+While running, progress is `plan.json`'s `already_completed` plus document
+counts in `manifest-0.json` through `manifest-3.json`; inspect `status.json`
+for coordinator status and worker logs for failures. The original manifest
+retains the seed snapshot until the final validated merge. All workers retain
+FP32 computation, BF16 storage and per-document disk flushing.
