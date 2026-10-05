@@ -1,0 +1,72 @@
+{
+  "status": "passed",
+  "checks": [
+    "bfloat16: dtype/control checks passed",
+    "float32: dtype/control checks passed"
+  ],
+  "bf16_reproduces_all_previous_logits": true,
+  "all_observed_fp32_floating_outputs": "torch.float32@npu:0",
+  "precision_options": {
+    "ACL_PRECISION_MODE": "must_keep_origin_dtype",
+    "ALLOW_MATMUL_HF32": "disable",
+    "ALLOW_CONV_HF32": "disable",
+    "CUBE_MATH_TYPE": "0"
+  },
+  "parameter_bytes_fp32": 36302264336,
+  "maximum_difference_reduction_factor": 56119.80952380953,
+  "comparisons": [
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "26402",
+      "bf16_abs_score_change": 0.003137528896331787,
+      "fp32_abs_score_change": 3.129243850708008e-07,
+      "reduction_factor": 10026.47619047619,
+      "fp32_whole_score": 0.15871895849704742,
+      "fp32_split_score": 0.15871864557266235
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "80953",
+      "bf16_abs_score_change": 0.03512251377105713,
+      "fp32_abs_score_change": 1.1920928955078125e-07,
+      "reduction_factor": 294629.0,
+      "fp32_whole_score": 0.488623708486557,
+      "fp32_split_score": 0.48862382769584656
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "9814",
+      "bf16_abs_score_change": 0.005842417478561401,
+      "fp32_abs_score_change": 6.258487701416016e-07,
+      "reduction_factor": 9335.190476190477,
+      "fp32_whole_score": 0.46761763095855713,
+      "fp32_split_score": 0.467617005109787
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "48284",
+      "bf16_abs_score_change": 0.01069033145904541,
+      "fp32_abs_score_change": 3.5762786865234375e-07,
+      "reduction_factor": 29892.333333333332,
+      "fp32_whole_score": 0.5223291516304016,
+      "fp32_split_score": 0.522328794002533
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "qid": "646623",
+      "did": "7904559",
+      "bf16_abs_score_change": 0.01565614342689514,
+      "fp32_abs_score_change": 2.384185791015625e-07,
+      "reduction_factor": 65666.625,
+      "fp32_whole_score": 0.36663761734962463,
+      "fp32_split_score": 0.36663785576820374
+    }
+  ],
+  "bf16_result_sha256": "08648f1b65b9d9f28511db51e68cd01051cc55336ae844aae86d3408abd4ba61",
+  "fp32_result_sha256": "0077044f44d7bdc0c79d7a97aa3b18f384a5eb6024a42a6ea108b79b7d3b09f8",
+  "complete_document_cache_reuse_tested": false
+}

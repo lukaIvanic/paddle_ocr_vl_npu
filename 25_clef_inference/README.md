@@ -461,3 +461,53 @@ exit code, all 160 measured passes, raw logits/probabilities, ranking comparison
 and evidence checks are in `tmp/25_clef_inference/gdn_boundary_40_ccf188d6/`.
 Model source was unchanged. No numerical tolerance was selected after the run
 to turn these observations into an accuracy pass/fail result.
+
+### FP32 diagnosis of the worst boundary differences (910B2)
+
+At `ff98eeb8`, reran the four pairs with the largest BF16 probability changes,
+plus the remaining document from the changed MedicalRetrieval ranking: five
+pairs total. Both BF16 and FP32 ran normal, document-boundary, aligned-boundary
+and repeated-normal modes, on physical NPU 3. The model implementation and
+checkpoint values were unchanged. FP32 promoted the same BF16-loaded weights
+and used FP32 activations throughout; it did not recover higher-precision
+checkpoint values. FP32 parameter storage was 36,302,264,336 bytes.
+
+Both runs explicitly used `ACL_PRECISION_MODE=must_keep_origin_dtype`, disabled
+matmul/conv HF32, and set `CUBE_MATH_TYPE=KEEP_DTYPE`. The option values were read
+back and asserted. A dispatch audit checked floating tensor outputs throughout
+every measured forward, including functional operations: every observed output
+in the FP32 runs was `torch.float32` on `npu:0`. No autocast was used. The BF16
+control reproduced every previous logit exactly under these settings and the
+same audit, including the original ranking swap.
+
+Absolute normal-versus-document-boundary probability changes (0–1 scale):
+
+| Task / document | BF16 | FP32 |
+| --- | ---: | ---: |
+| MedicalRetrieval / `80953` | 0.03512251 | 1.19209e-7 |
+| MMarcoRetrieval / `7904559` | 0.01565614 | 2.38419e-7 |
+| MedicalRetrieval / `48284` | 0.01069033 | 3.57628e-7 |
+| MedicalRetrieval / `9814` | 0.00584242 | 6.25849e-7 |
+| MedicalRetrieval / `26402` | 0.00313753 | 3.12924e-7 |
+
+For the original worst offender (`80953`), FP32 normal and split scores were
+**0.48862370849** and **0.48862382770**: its discrepancy shrank by 294,629 times.
+Across all five pairs, the largest probability discrepancy dropped from
+0.03512251 to 6.25849e-7 (56,120 times smaller); maximum FP32 logit difference
+was 3.63588e-6. Aligned splits and repeated normal execution remained exactly
+equal in both dtypes.
+
+The complete medical-query ranking agreed between FP32 normal and split:
+`48284`, `80953`, `9814`, `26402`. This is also the BF16 split ordering; the
+BF16 normal ordering is not a higher-precision reference. Only one MMarco
+document was selected, so no MMarco ranking claim follows from this diagnostic.
+
+These controlled results strongly support amplification of finite-precision
+rounding as the cause of the large BF16 differences. FP32 retains tiny rounding
+differences, consistent with regrouping equivalent equations. This diagnostic
+still isolates the GDN boundary; complete document-cache reuse remains a
+separate implementation and validation task.
+
+The existing probe accepts `--dtype float32`, `--strict-precision`, and
+`--worst-from <40_PAIR_RESULT_JSON>`. Commands, logs, both result files and
+validation hashes are saved in `tmp/25_clef_inference/gdn_fp32_ff98eeb8/`.

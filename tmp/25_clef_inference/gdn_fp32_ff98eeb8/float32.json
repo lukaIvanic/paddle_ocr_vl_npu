@@ -1,0 +1,683 @@
+{
+  "status": "completed",
+  "scope": "real_checkpoint_recurrence_boundary_only",
+  "complete_document_cache_reuse": false,
+  "fixture_sha256": "c45e3da7cf069c6407a948494d3b1e18a20f9445c751023845eba83240c2e9cf",
+  "git_commit": "ff98eeb86a14db70d85529e1731848a400fa08dd",
+  "model_source_sha256": "c5f8332935b036add34e763817f153291f2a2d0ae184534194532b0a0fbbfc5c",
+  "probe_sha256": "cdd4b835be7ee1311edf1fd8d41f27cf18a19195fe99ea59b806e96997891611",
+  "derived_scan_sha256": "2c7f0efab9a2c70f36b9a27aec06464abc1e0fc699b88abc258ab11d10faad4e",
+  "physical_npu": "3",
+  "hostname": "liteserver-c001-4",
+  "device_name": "Ascend910B2",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "dtype": "float32",
+  "recurrent_state_dtype": "float32",
+  "precision_options": {
+    "ACL_PRECISION_MODE": "must_keep_origin_dtype",
+    "ALLOW_MATMUL_HF32": "disable",
+    "ALLOW_CONV_HF32": "disable",
+    "CUBE_MATH_TYPE": "0"
+  },
+  "selection": {
+    "scope": "four largest BF16 score changes plus complete changed-ranking queries",
+    "reference_sha256": "dede634ad7923a4f469c4975a45941ae42be5d2afe937b165cbdec4189234306",
+    "pairs": 5
+  },
+  "weight_values": "same BF16-loaded checkpoint; cast to target dtype after loading",
+  "max_length": 3203,
+  "rows": [
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "26402",
+      "document_tokens": 20,
+      "query_tokens": 5,
+      "prefix_tokens": 56,
+      "input_tokens": 194,
+      "input_sha256": "2babd335f60669c56f7dec48ee7e51e3358331a546a3c510083e463ea8835df5",
+      "modes": {
+        "whole": {
+          "logits": [
+            -1.5063424110412598,
+            0.16144824028015137
+          ],
+          "score": 0.15871895849704742,
+          "model_s": 0.7811136799864471,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 6226
+          },
+          "split_layer_calls": 0,
+          "cut": null
+        },
+        "document_boundary": {
+          "logits": [
+            -1.506341576576233,
+            0.16145145893096924
+          ],
+          "score": 0.15871864557266235,
+          "model_s": 0.7957788100466132,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 8146
+          },
+          "split_layer_calls": 24,
+          "cut": 56
+        },
+        "aligned_boundary": {
+          "logits": [
+            -1.5063424110412598,
+            0.16144824028015137
+          ],
+          "score": 0.15871895849704742,
+          "model_s": 0.7753707801457494,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 6226
+          },
+          "split_layer_calls": 24,
+          "cut": 0
+        },
+        "whole_repeat": {
+          "logits": [
+            -1.5063424110412598,
+            0.16144824028015137
+          ],
+          "score": 0.15871895849704742,
+          "model_s": 0.7755301899742335,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 6226
+          },
+          "split_layer_calls": 0,
+          "cut": null
+        }
+      },
+      "saved_bf16_modes": {
+        "whole": {
+          "logits": [
+            -1.5078125,
+            0.14453125
+          ],
+          "score": 0.16079244017601013,
+          "model_s": 0.7337425900623202,
+          "split_layer_calls": 0,
+          "cut": null
+        },
+        "document_boundary": {
+          "logits": [
+            -1.5234375,
+            0.15234375
+          ],
+          "score": 0.15765491127967834,
+          "model_s": 0.7484513300005347,
+          "split_layer_calls": 24,
+          "cut": 56
+        },
+        "aligned_boundary": {
+          "logits": [
+            -1.5078125,
+            0.14453125
+          ],
+          "score": 0.16079244017601013,
+          "model_s": 0.7297926000319421,
+          "split_layer_calls": 24,
+          "cut": 0
+        },
+        "whole_repeat": {
+          "logits": [
+            -1.5078125,
+            0.14453125
+          ],
+          "score": 0.16079244017601013,
+          "model_s": 0.7293918400537223,
+          "split_layer_calls": 0,
+          "cut": null
+        }
+      },
+      "same_as_saved_bf16": {
+        "whole": false,
+        "document_boundary": false,
+        "aligned_boundary": false,
+        "whole_repeat": false
+      }
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "80953",
+      "document_tokens": 43,
+      "query_tokens": 5,
+      "prefix_tokens": 79,
+      "input_tokens": 217,
+      "input_sha256": "b01149cee2caed8dad9ad5af08c9f377195f01824f4f3afd2a46e4b9f0407348",
+      "modes": {
+        "whole": {
+          "logits": [
+            -0.6812765598297119,
+            -0.6357635259628296
+          ],
+          "score": 0.488623708486557,
+          "model_s": 0.7852277001366019,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 6226
+          },
+          "split_layer_calls": 0,
+          "cut": null
+        },
+        "document_boundary": {
+          "logits": [
+            -0.6812760829925537,
+            -0.6357636451721191
+          ],
+          "score": 0.48862382769584656,
+          "model_s": 0.9677905500866473,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 8554
+          },
+          "split_layer_calls": 24,
+          "cut": 79
+        },
+        "aligned_boundary": {
+          "logits": [
+            -0.6812765598297119,
+            -0.6357635259628296
+          ],
+          "score": 0.488623708486557,
+          "model_s": 0.7905638199299574,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 8146
+          },
+          "split_layer_calls": 24,
+          "cut": 64
+        },
+        "whole_repeat": {
+          "logits": [
+            -0.6812765598297119,
+            -0.6357635259628296
+          ],
+          "score": 0.488623708486557,
+          "model_s": 0.7773618099745363,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 6226
+          },
+          "split_layer_calls": 0,
+          "cut": null
+        }
+      },
+      "saved_bf16_modes": {
+        "whole": {
+          "logits": [
+            -0.7265625,
+            -0.609375
+          ],
+          "score": 0.47073662281036377,
+          "model_s": 0.7361542298458517,
+          "split_layer_calls": 0,
+          "cut": null
+        },
+        "document_boundary": {
+          "logits": [
+            -0.640625,
+            -0.6640625
+          ],
+          "score": 0.5058591365814209,
+          "model_s": 0.9262726199813187,
+          "split_layer_calls": 24,
+          "cut": 79
+        },
+        "aligned_boundary": {
+          "logits": [
+            -0.7265625,
+            -0.609375
+          ],
+          "score": 0.47073662281036377,
+          "model_s": 0.7475921399891376,
+          "split_layer_calls": 24,
+          "cut": 64
+        },
+        "whole_repeat": {
+          "logits": [
+            -0.7265625,
+            -0.609375
+          ],
+          "score": 0.47073662281036377,
+          "model_s": 0.7305543499533087,
+          "split_layer_calls": 0,
+          "cut": null
+        }
+      },
+      "same_as_saved_bf16": {
+        "whole": false,
+        "document_boundary": false,
+        "aligned_boundary": false,
+        "whole_repeat": false
+      }
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "9814",
+      "document_tokens": 115,
+      "query_tokens": 5,
+      "prefix_tokens": 151,
+      "input_tokens": 289,
+      "input_sha256": "794be7273c1da40fe4f5d7f0bbba6b2aa2d937530e1d0e094e0e42ace011ae5f",
+      "modes": {
+        "whole": {
+          "logits": [
+            -0.4791760742664337,
+            -0.349465012550354
+          ],
+          "score": 0.46761763095855713,
+          "model_s": 0.962237810017541,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 6634
+          },
+          "split_layer_calls": 0,
+          "cut": null
+        },
+        "document_boundary": {
+          "logits": [
+            -0.47917482256889343,
+            -0.3494613766670227
+          ],
+          "score": 0.467617005109787,
+          "model_s": 1.1277820700779557,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 8962
+          },
+          "split_layer_calls": 24,
+          "cut": 151
+        },
+        "aligned_boundary": {
+          "logits": [
+            -0.4791760742664337,
+            -0.349465012550354
+          ],
+          "score": 0.46761763095855713,
+          "model_s": 0.9743651498574764,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 8554
+          },
+          "split_layer_calls": 24,
+          "cut": 128
+        },
+        "whole_repeat": {
+          "logits": [
+            -0.4791760742664337,
+            -0.349465012550354
+          ],
+          "score": 0.46761763095855713,
+          "model_s": 0.9562443399336189,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 6634
+          },
+          "split_layer_calls": 0,
+          "cut": null
+        }
+      },
+      "saved_bf16_modes": {
+        "whole": {
+          "logits": [
+            -0.466796875,
+            -0.37109375
+          ],
+          "score": 0.47609245777130127,
+          "model_s": 0.9177095999475569,
+          "split_layer_calls": 0,
+          "cut": null
+        },
+        "document_boundary": {
+          "logits": [
+            -0.482421875,
+            -0.36328125
+          ],
+          "score": 0.47025004029273987,
+          "model_s": 1.078401210019365,
+          "split_layer_calls": 24,
+          "cut": 151
+        },
+        "aligned_boundary": {
+          "logits": [
+            -0.466796875,
+            -0.37109375
+          ],
+          "score": 0.47609245777130127,
+          "model_s": 0.9262968699913472,
+          "split_layer_calls": 24,
+          "cut": 128
+        },
+        "whole_repeat": {
+          "logits": [
+            -0.466796875,
+            -0.37109375
+          ],
+          "score": 0.47609245777130127,
+          "model_s": 0.9116533498745412,
+          "split_layer_calls": 0,
+          "cut": null
+        }
+      },
+      "same_as_saved_bf16": {
+        "whole": false,
+        "document_boundary": false,
+        "aligned_boundary": false,
+        "whole_repeat": false
+      }
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "48284",
+      "document_tokens": 169,
+      "query_tokens": 5,
+      "prefix_tokens": 205,
+      "input_tokens": 343,
+      "input_sha256": "24ab1ba1e2b65ab5a5eddeb23525753cbd60d4e87ae0639b9b64d735f3bffdda",
+      "modes": {
+        "whole": {
+          "logits": [
+            -0.4559047520160675,
+            -0.5452808737754822
+          ],
+          "score": 0.5223291516304016,
+          "model_s": 1.1436020999681205,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 7042
+          },
+          "split_layer_calls": 0,
+          "cut": null
+        },
+        "document_boundary": {
+          "logits": [
+            -0.45590531826019287,
+            -0.5452799797058105
+          ],
+          "score": 0.522328794002533,
+          "model_s": 1.311271209968254,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 9370
+          },
+          "split_layer_calls": 24,
+          "cut": 205
+        },
+        "aligned_boundary": {
+          "logits": [
+            -0.4559047520160675,
+            -0.5452808737754822
+          ],
+          "score": 0.5223291516304016,
+          "model_s": 1.1432351600378752,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 8962
+          },
+          "split_layer_calls": 24,
+          "cut": 192
+        },
+        "whole_repeat": {
+          "logits": [
+            -0.4559047520160675,
+            -0.5452808737754822
+          ],
+          "score": 0.5223291516304016,
+          "model_s": 1.1332792898174375,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 7042
+          },
+          "split_layer_calls": 0,
+          "cut": null
+        }
+      },
+      "saved_bf16_modes": {
+        "whole": {
+          "logits": [
+            -0.4609375,
+            -0.578125
+          ],
+          "score": 0.5292633771896362,
+          "model_s": 1.0684254800435156,
+          "split_layer_calls": 0,
+          "cut": null
+        },
+        "document_boundary": {
+          "logits": [
+            -0.44140625,
+            -0.6015625
+          ],
+          "score": 0.5399537086486816,
+          "model_s": 1.262410270050168,
+          "split_layer_calls": 24,
+          "cut": 205
+        },
+        "aligned_boundary": {
+          "logits": [
+            -0.4609375,
+            -0.578125
+          ],
+          "score": 0.5292633771896362,
+          "model_s": 1.0925985400099307,
+          "split_layer_calls": 24,
+          "cut": 192
+        },
+        "whole_repeat": {
+          "logits": [
+            -0.4609375,
+            -0.578125
+          ],
+          "score": 0.5292633771896362,
+          "model_s": 1.0644783999305218,
+          "split_layer_calls": 0,
+          "cut": null
+        }
+      },
+      "same_as_saved_bf16": {
+        "whole": false,
+        "document_boundary": false,
+        "aligned_boundary": false,
+        "whole_repeat": false
+      }
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "qid": "646623",
+      "did": "7904559",
+      "document_tokens": 58,
+      "query_tokens": 6,
+      "prefix_tokens": 94,
+      "input_tokens": 231,
+      "input_sha256": "8a0a14f45ec9d45ad13149447a50047b7203f0e36250c2ee287044711f45fd57",
+      "modes": {
+        "whole": {
+          "logits": [
+            -0.34974902868270874,
+            0.19691991806030273
+          ],
+          "score": 0.36663761734962463,
+          "model_s": 0.7810521700885147,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 6226
+          },
+          "split_layer_calls": 0,
+          "cut": null
+        },
+        "document_boundary": {
+          "logits": [
+            -0.3497470021247864,
+            0.1969207525253296
+          ],
+          "score": 0.36663785576820374,
+          "model_s": 0.9676014999859035,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 8554
+          },
+          "split_layer_calls": 24,
+          "cut": 94
+        },
+        "aligned_boundary": {
+          "logits": [
+            -0.34974902868270874,
+            0.19691991806030273
+          ],
+          "score": 0.36663761734962463,
+          "model_s": 0.7926866300404072,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 8146
+          },
+          "split_layer_calls": 24,
+          "cut": 64
+        },
+        "whole_repeat": {
+          "logits": [
+            -0.34974902868270874,
+            0.19691991806030273
+          ],
+          "score": 0.36663761734962463,
+          "model_s": 0.774392609950155,
+          "activation_dtypes": {
+            "torch.float32@npu:0": 6226
+          },
+          "split_layer_calls": 0,
+          "cut": null
+        }
+      },
+      "saved_bf16_modes": {
+        "whole": {
+          "logits": [
+            -0.2890625,
+            0.1640625
+          ],
+          "score": 0.38861799240112305,
+          "model_s": 0.7366110398434103,
+          "split_layer_calls": 0,
+          "cut": null
+        },
+        "document_boundary": {
+          "logits": [
+            -0.33984375,
+            0.1796875
+          ],
+          "score": 0.3729618489742279,
+          "model_s": 0.9265901800245047,
+          "split_layer_calls": 24,
+          "cut": 94
+        },
+        "aligned_boundary": {
+          "logits": [
+            -0.2890625,
+            0.1640625
+          ],
+          "score": 0.38861799240112305,
+          "model_s": 0.7554845798294991,
+          "split_layer_calls": 24,
+          "cut": 64
+        },
+        "whole_repeat": {
+          "logits": [
+            -0.2890625,
+            0.1640625
+          ],
+          "score": 0.38861799240112305,
+          "model_s": 0.7311374400742352,
+          "split_layer_calls": 0,
+          "cut": null
+        }
+      },
+      "same_as_saved_bf16": {
+        "whole": false,
+        "document_boundary": false,
+        "aligned_boundary": false,
+        "whole_repeat": false
+      }
+    }
+  ],
+  "parameter_bytes": 36302264336,
+  "summary": {
+    "comparisons": {
+      "document_boundary": {
+        "score_abs_diff_mean": 3.3080577850341796e-07,
+        "score_abs_diff_p50": 3.129243850708008e-07,
+        "score_abs_diff_p90": 6.258487701416016e-07,
+        "score_abs_diff_p95": 6.258487701416016e-07,
+        "score_abs_diff_max": 6.258487701416016e-07,
+        "logit_abs_diff_max": 3.635883331298828e-06,
+        "identical_logit_pairs": 0
+      },
+      "aligned_boundary": {
+        "score_abs_diff_mean": 0.0,
+        "score_abs_diff_p50": 0.0,
+        "score_abs_diff_p90": 0.0,
+        "score_abs_diff_p95": 0.0,
+        "score_abs_diff_max": 0.0,
+        "logit_abs_diff_max": 0.0,
+        "identical_logit_pairs": 5
+      },
+      "whole_repeat": {
+        "score_abs_diff_mean": 0.0,
+        "score_abs_diff_p50": 0.0,
+        "score_abs_diff_p90": 0.0,
+        "score_abs_diff_p95": 0.0,
+        "score_abs_diff_max": 0.0,
+        "logit_abs_diff_max": 0.0,
+        "identical_logit_pairs": 5
+      }
+    },
+    "rankings": {
+      "MedicalRetrieval/90": {
+        "orders": {
+          "whole": [
+            "48284",
+            "80953",
+            "9814",
+            "26402"
+          ],
+          "document_boundary": [
+            "48284",
+            "80953",
+            "9814",
+            "26402"
+          ],
+          "aligned_boundary": [
+            "48284",
+            "80953",
+            "9814",
+            "26402"
+          ],
+          "whole_repeat": [
+            "48284",
+            "80953",
+            "9814",
+            "26402"
+          ]
+        },
+        "document_boundary_order_unchanged": true,
+        "strict_reversals": [],
+        "ties_changed": [],
+        "selected_documents": 4,
+        "complete_four_document_group": true
+      },
+      "MMarcoRetrieval/646623": {
+        "orders": {
+          "whole": [
+            "7904559"
+          ],
+          "document_boundary": [
+            "7904559"
+          ],
+          "aligned_boundary": [
+            "7904559"
+          ],
+          "whole_repeat": [
+            "7904559"
+          ]
+        },
+        "document_boundary_order_unchanged": true,
+        "strict_reversals": [],
+        "ties_changed": [],
+        "selected_documents": 1,
+        "complete_four_document_group": false
+      }
+    },
+    "unchanged_document_boundary_rankings": 2,
+    "queries": 2
+  },
+  "transformers_imported": false
+}

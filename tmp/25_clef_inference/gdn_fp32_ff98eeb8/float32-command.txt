@@ -1,0 +1,5 @@
+ff98eeb86a14db70d85529e1731848a400fa08dd
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=3
+source npu-setup
+/usr/local/python3.12.13/bin/python3 -u tmp/25_clef_inference/gdn_boundary_40/probe.py --fixture tmp/25_clef_inference/reranking_lengths_44ca1ad4/fixture.json --model /workspace/models/clef-flash --max-length 3203 --worst-from tmp/25_clef_inference/gdn_boundary_40_ccf188d6/result.json --strict-precision --dtype float32 --output tmp/25_clef_inference/gdn_fp32_ff98eeb8/float32.json
