@@ -879,3 +879,36 @@ server checkout `/workspace/repos/clef-profiling-7fe36427`, outside Git.
 To run immediately, cache shard 3 was paused after 439 saved documents while
 shards 0–2 continued; `parallel_precache/resume_after_profile.py` resumes it
 from the durable manifest and performs the final validated merge.
+
+## Complete cached Touché reranking evaluation
+
+`run_reranking_task.py` scores all 49 frozen Touché queries and their original
+100 candidates each. It uses the unchanged `request_for` relevance question,
+unrounded `P(true)`, FP32 model computation and the completed all-BF16 cache
+manifest. Every distinct document cache is eagerly preloaded into RAM once;
+only one restored cache is on NPU at a time. Inputs are untruncated, using the
+existing encoder's 16,384-token ceiling. The 3,072-token HTTP service setting
+is not used by this local benchmark.
+
+The result is atomically saved and fsynced after each complete query. Restart
+with the same arguments to skip completed queries; partial queries are retried.
+Fixture, cache-manifest and modeling-file hashes must remain unchanged.
+
+```bash
+source npu-setup
+/usr/local/python3.12.13/bin/python3 -u 25_clef_inference/run_reranking_task.py score \
+  --fixture /workspace/results/clef_touche_full/fixture.json \
+  --model /workspace/models/clef-flash \
+  --cache-dir /workspace/results/clef_touche_full/bf16_storage \
+  --cache-manifest /workspace/results/clef_touche_full/bf16_storage-manifest.json \
+  --output <RESULT_JSON>
+# Then in the existing MTEB 1.38.9 evaluator environment:
+python 25_clef_inference/run_reranking_task.py evaluate \
+  --fixture /workspace/results/clef_touche_full/fixture.json --output <RESULT_JSON>
+```
+
+Evaluation reuses experiment 22's `metric_summary`: full qrels, NDCG@10 and
+recall@10/@100, with original self-match semantics. It compares Clef against
+the frozen Qwen3-Reranker-4B and embedding scores, and retains per-query metrics.
+No Qwen scores or relevance labels enter Clef inference. This measures the
+complete Touché task, not the entire MTEB-R suite.
