@@ -536,6 +536,115 @@ def run(args):
         save(args.output, result)
 
 
+def precache_task(args):
+    """Persist one cache per candidate document, with a resumable manifest."""
+    import shutil
+    from run_local_smoke import encode_document_prefix
+    fixture = json.loads(args.fixture.read_text())
+    if fixture['scope'] != 'complete_task_candidate_documents' or fixture['truncation'] != 'none':
+        raise ValueError('Expected an untruncated full-task fixture')
+    sys.meta_path.insert(0, NoTransformers())
+    import torch
+    import torch_npu
+    from torch_npu.npu.npu_config import _CubeMathType
+    from tokenizers import Tokenizer
+    from local_modeling_clef import DocumentCache, load_model
+    torch.npu.set_option({'ACL_PRECISION_MODE': 'must_keep_origin_dtype'})
+    torch.npu.matmul.allow_hf32 = False
+    torch.npu.conv.allow_hf32 = False
+    torch.npu.matmul.cube_math_type = _CubeMathType.KEEP_DTYPE
+    torch.set_float32_matmul_precision('highest')
+    if not torch.npu.is_available() or '910B' not in torch.npu.get_device_name(0):
+        raise RuntimeError('910B NPU required; no CPU fallback')
+    torch.npu.set_device(0)
+    torch.set_num_threads(8)
+    if torch.npu.mem_get_info()[0] < (50 if args.dtype == 'float32' else 28) * 1024**3:
+        raise RuntimeError('Insufficient free NPU memory')
+    if digest(args.model / 'tokenizer.json') != fixture['tokenizer_sha256']:
+        raise ValueError('Tokenizer changed')
+    tokenizer = Tokenizer.from_file(str(args.model / 'tokenizer.json'))
+    tokenizer.no_padding()
+    tokenizer.no_truncation()
+    prefixes = {did: encode_document_prefix(tokenizer, doc['text']) for did, doc in fixture['documents'].items()}
+    if any(len(p) != fixture['documents'][d]['prefix_tokens'] for d, p in prefixes.items()):
+        raise ValueError('Document token count changed')
+    if max(map(len, prefixes.values())) > args.max_prefix_length:
+        raise ValueError('Document exceeds explicit prefix limit; no truncation')
+    contract = {'fixture_sha256': digest(args.fixture), 'dtype': args.dtype,
+                'cache_dir': str(args.cache_dir.resolve()), 'max_prefix_length': args.max_prefix_length}
+    result = json.loads(args.output.read_text()) if args.output.exists() else {
+        'status': 'running', 'task': fixture['task'], 'contract': contract, 'documents': {}}
+    if result['contract'] != contract:
+        raise ValueError('Resume contract changed')
+    args.cache_dir.mkdir(parents=True, exist_ok=True)
+    bytes_per_token = 81920 if args.dtype == 'float32' else 40960
+    fixed_bytes = int((50.25 if args.dtype == 'float32' else 49.125) * 1024**2)
+    remaining_bytes = sum(fixed_bytes + len(p) * bytes_per_token + 65536
+                          for d, p in prefixes.items() if d not in result['documents'])
+    if shutil.disk_usage(args.cache_dir).free < remaining_bytes:
+        raise RuntimeError('Not enough disk space for remaining document caches')
+    try:
+        model = load_model(args.model, 'npu:0', progress=lambda step: print(step, flush=True))
+        if args.dtype == 'float32':
+            model.float()
+            torch.npu.empty_cache()
+        if result.get('model_identity', model.cache_identity) != model.cache_identity:
+            raise ValueError('Resume model identity changed')
+        result.update(status='running', model_identity=model.cache_identity,
+            git_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+            physical_device=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'),
+            torch=torch.__version__, torch_npu=torch_npu.__version__, total_documents=len(prefixes))
+        result.pop('error', None)
+        save(args.output, result)
+        # Longest first: prove peak memory fits before committing hours of work.
+        ordered = sorted(prefixes, key=lambda d: (-len(prefixes[d]), d))
+        start = time.perf_counter()
+        with torch.inference_mode():
+            for did in ordered:
+                prefix = prefixes[did]
+                key = hashlib.sha256(json.dumps([model.cache_identity, str(getattr(torch, args.dtype)), tuple(prefix)]).encode()).hexdigest()
+                path = args.cache_dir / (key + '.safetensors')
+                if did in result['documents']:
+                    row = result['documents'][did]
+                    if row['key'] != key or not path.exists() or path.stat().st_size != row['file_bytes']:
+                        raise ValueError('Saved cache missing or incompatible: ' + did)
+                    continue
+                torch.npu.synchronize()
+                began = time.perf_counter()
+                cache = model.prepare_document(prefix)
+                torch.npu.synchronize()
+                prepare_s = time.perf_counter() - began
+                if cache.key != key:
+                    raise AssertionError('Unexpected document identity')
+                began = time.perf_counter()
+                cpu = cache.to('cpu')
+                del cache
+                cpu.save(path)
+                roundtrip = False
+                if not result['documents']:
+                    reloaded = DocumentCache.load(path)
+                    if reloaded.key != key or any(not torch.equal(t, reloaded.tensors()[n]) for n, t in cpu.tensors().items()):
+                        raise AssertionError('Saved cache roundtrip changed tensors')
+                    del reloaded
+                    roundtrip = True
+                result['documents'][did] = {'key': key, 'prefix_tokens': len(prefix),
+                    'cache_bytes': cpu.nbytes, 'file_bytes': path.stat().st_size,
+                    'prepare_s': prepare_s, 'offload_save_s': time.perf_counter() - began,
+                    'roundtrip_checked': roundtrip}
+                del cpu
+                result.update(completed_documents=len(result['documents']), elapsed_this_run_s=time.perf_counter() - start)
+                save(args.output, result)
+                print(json.dumps({'completed': len(result['documents']), 'of': len(prefixes), 'did': did,
+                                  **result['documents'][did]}), flush=True)
+        result.update(status='completed', cache_bytes=sum(r['cache_bytes'] for r in result['documents'].values()),
+                      file_bytes=sum(r['file_bytes'] for r in result['documents'].values()))
+    except BaseException as exc:
+        result.update(status='failed', error=str(exc))
+        raise
+    finally:
+        save(args.output, result)
+
+
 def run_cache(args):
     """Prepare once, persist, eagerly preload RAM, then measure real reuse."""
     import statistics
@@ -766,8 +875,13 @@ if __name__ == '__main__':
     cached.add_argument('--dtype', choices=('bfloat16', 'float32'), default='bfloat16')
     cached.add_argument('--max-length', type=int, default=3072)
     cached.add_argument('--repeats', type=int, default=3)
+    precache = commands.add_parser('precache-task')
+    for flag in ('fixture', 'model', 'cache-dir', 'output'):
+        precache.add_argument('--' + flag, type=Path, required=True)
+    precache.add_argument('--dtype', choices=('bfloat16', 'float32'), default='float32')
+    precache.add_argument('--max-prefix-length', type=int, required=True)
     metrics = commands.add_parser('evaluate')
     metrics.add_argument('--fixture', type=Path, required=True)
     metrics.add_argument('--result', type=Path, required=True)
     args = parser.parse_args()
-    {'prepare': prepare, 'prepare-lengths': prepare_lengths, 'prepare-task': prepare_task, 'run': run, 'cache': run_cache, 'evaluate': evaluate}[args.command](args)
+    {'prepare': prepare, 'prepare-lengths': prepare_lengths, 'prepare-task': prepare_task, 'run': run, 'cache': run_cache, 'precache-task': precache_task, 'evaluate': evaluate}[args.command](args)
