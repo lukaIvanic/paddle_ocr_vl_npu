@@ -536,6 +536,24 @@ def run(args):
         save(args.output, result)
 
 
+def cache_cast(cache, dtype):
+    """Cast every cache tensor on its current device, including recurrent states."""
+    from dataclasses import replace
+    return replace(cache, hidden=cache.hidden.to(dtype=dtype),
+                   layers=tuple({k: v.to(dtype=dtype) for k, v in layer.items()} for layer in cache.layers))
+
+
+def sync_saved(path):
+    """Persist the atomically replaced file and its directory entry."""
+    with Path(path).open('rb') as file:
+        os.fsync(file.fileno())
+    fd = os.open(Path(path).parent, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
 def precache_task(args):
     """Persist one cache per candidate document, with a resumable manifest."""
     import shutil
@@ -570,7 +588,9 @@ def precache_task(args):
         raise ValueError('Document token count changed')
     if max(map(len, prefixes.values())) > args.max_prefix_length:
         raise ValueError('Document exceeds explicit prefix limit; no truncation')
-    contract = {'fixture_sha256': digest(args.fixture), 'dtype': args.dtype,
+    if args.storage_dtype and args.dtype != 'float32':
+        raise ValueError('Reduced storage currently requires FP32 computation')
+    contract = {'fixture_sha256': digest(args.fixture), 'dtype': args.dtype, 'storage_dtype': args.storage_dtype,
                 'cache_dir': str(args.cache_dir.resolve()), 'max_prefix_length': args.max_prefix_length}
     result = json.loads(args.output.read_text()) if args.output.exists() else {
         'status': 'running', 'task': fixture['task'], 'contract': contract, 'documents': {}}
@@ -579,6 +599,9 @@ def precache_task(args):
     args.cache_dir.mkdir(parents=True, exist_ok=True)
     bytes_per_token = 81920 if args.dtype == 'float32' else 40960
     fixed_bytes = int((50.25 if args.dtype == 'float32' else 49.125) * 1024**2)
+    if args.storage_dtype == 'bfloat16':
+        fixed_bytes //= 2
+        bytes_per_token //= 2
     remaining_bytes = sum(fixed_bytes + len(p) * bytes_per_token + 65536
                           for d, p in prefixes.items() if d not in result['documents'])
     if shutil.disk_usage(args.cache_dir).free < remaining_bytes:
@@ -602,7 +625,7 @@ def precache_task(args):
         with torch.inference_mode():
             for did in ordered:
                 prefix = prefixes[did]
-                key = hashlib.sha256(json.dumps([model.cache_identity, str(getattr(torch, args.dtype)), tuple(prefix)]).encode()).hexdigest()
+                key = hashlib.sha256(json.dumps([model.cache_identity, str(getattr(torch, args.storage_dtype or args.dtype)), tuple(prefix)]).encode()).hexdigest()
                 path = args.cache_dir / (key + '.safetensors')
                 if did in result['documents']:
                     row = result['documents'][did]
@@ -614,12 +637,15 @@ def precache_task(args):
                 cache = model.prepare_document(prefix)
                 torch.npu.synchronize()
                 prepare_s = time.perf_counter() - began
+                if args.storage_dtype:
+                    cache = cache_cast(cache, getattr(torch, args.storage_dtype))
                 if cache.key != key:
                     raise AssertionError('Unexpected document identity')
                 began = time.perf_counter()
                 cpu = cache.to('cpu')
                 del cache
                 cpu.save(path)
+                sync_saved(path)
                 roundtrip = False
                 if not result['documents']:
                     reloaded = DocumentCache.load(path)
@@ -634,6 +660,7 @@ def precache_task(args):
                 del cpu
                 result.update(completed_documents=len(result['documents']), elapsed_this_run_s=time.perf_counter() - start)
                 save(args.output, result)
+                sync_saved(args.output)
                 print(json.dumps({'completed': len(result['documents']), 'of': len(prefixes), 'did': did,
                                   **result['documents'][did]}), flush=True)
         result.update(status='completed', cache_bytes=sum(r['cache_bytes'] for r in result['documents'].values()),
@@ -879,6 +906,7 @@ if __name__ == '__main__':
     for flag in ('fixture', 'model', 'cache-dir', 'output'):
         precache.add_argument('--' + flag, type=Path, required=True)
     precache.add_argument('--dtype', choices=('bfloat16', 'float32'), default='float32')
+    precache.add_argument('--storage-dtype', choices=('bfloat16',))
     precache.add_argument('--max-prefix-length', type=int, required=True)
     metrics = commands.add_parser('evaluate')
     metrics.add_argument('--fixture', type=Path, required=True)
