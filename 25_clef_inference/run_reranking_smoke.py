@@ -583,7 +583,13 @@ def precache_task(args):
     tokenizer = Tokenizer.from_file(str(args.model / 'tokenizer.json'))
     tokenizer.no_padding()
     tokenizer.no_truncation()
-    prefixes = {did: encode_document_prefix(tokenizer, doc['text']) for did, doc in fixture['documents'].items()}
+    selected = fixture['documents']
+    if args.document_ids:
+        ids = json.loads(args.document_ids.read_text())
+        if not ids or len(ids) != len(set(ids)) or not set(ids).issubset(selected):
+            raise ValueError('Invalid document shard')
+        selected = {did: selected[did] for did in ids}
+    prefixes = {did: encode_document_prefix(tokenizer, doc['text']) for did, doc in selected.items()}
     if any(len(p) != fixture['documents'][d]['prefix_tokens'] for d, p in prefixes.items()):
         raise ValueError('Document token count changed')
     if max(map(len, prefixes.values())) > args.max_prefix_length:
@@ -592,6 +598,8 @@ def precache_task(args):
         raise ValueError('Reduced storage currently requires FP32 computation')
     contract = {'fixture_sha256': digest(args.fixture), 'dtype': args.dtype, 'storage_dtype': args.storage_dtype,
                 'cache_dir': str(args.cache_dir.resolve()), 'max_prefix_length': args.max_prefix_length}
+    if args.document_ids:
+        contract['document_ids_sha256'] = digest(args.document_ids)
     result = json.loads(args.output.read_text()) if args.output.exists() else {
         'status': 'running', 'task': fixture['task'], 'contract': contract, 'documents': {}}
     if result['contract'] != contract:
@@ -906,6 +914,7 @@ if __name__ == '__main__':
     for flag in ('fixture', 'model', 'cache-dir', 'output'):
         precache.add_argument('--' + flag, type=Path, required=True)
     precache.add_argument('--dtype', choices=('bfloat16', 'float32'), default='float32')
+    precache.add_argument('--document-ids', type=Path)
     precache.add_argument('--storage-dtype', choices=('bfloat16',))
     precache.add_argument('--max-prefix-length', type=int, required=True)
     metrics = commands.add_parser('evaluate')
