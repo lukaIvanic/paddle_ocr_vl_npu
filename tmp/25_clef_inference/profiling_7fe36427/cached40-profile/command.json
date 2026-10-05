@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "25_clef_inference/benchmark_local.py",
+    "--model",
+    "/workspace/models/clef-flash",
+    "--mode",
+    "cached",
+    "--cache-dir",
+    "/workspace/results/clef_bf16_storage_sample",
+    "--output-dir",
+    "tmp/25_clef_inference/profiling_7fe36427/cached40-profile",
+    "--profile",
+    "--profile-index",
+    "39"
+  ]
+}

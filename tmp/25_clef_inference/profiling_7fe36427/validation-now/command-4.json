@@ -1,0 +1,14 @@
+[
+  "/usr/local/python3.12.13/bin/python3",
+  "-u",
+  "/workspace/repos/clef-profiling-7fe36427/25_clef_inference/benchmark_local.py",
+  "--model",
+  "/workspace/models/clef-flash",
+  "--fixture",
+  "tmp/25_clef_inference/profiling_7fe36427/validation-now/fixture.json",
+  "--output-dir",
+  "tmp/25_clef_inference/profiling_7fe36427/validation-now/4_profile",
+  "--mode",
+  "all",
+  "--profile"
+]

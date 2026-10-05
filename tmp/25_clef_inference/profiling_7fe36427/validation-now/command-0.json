@@ -1,0 +1,14 @@
+[
+  "/usr/local/python3.12.13/bin/python3",
+  "-u",
+  "-c",
+  "import sys; sys.path.insert(0,'/workspace/repos/clef-profiling-7fe36427/tmp/25_clef_inference/profiling_skeleton'); from validate import Control; from benchmark_local import main; main(observer_factory=Control)",
+  "--model",
+  "/workspace/models/clef-flash",
+  "--fixture",
+  "tmp/25_clef_inference/profiling_7fe36427/validation-now/fixture.json",
+  "--output-dir",
+  "tmp/25_clef_inference/profiling_7fe36427/validation-now/0_control",
+  "--mode",
+  "all"
+]

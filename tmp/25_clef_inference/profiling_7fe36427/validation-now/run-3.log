@@ -1,0 +1,2 @@
+/workspace/repos/clef-profiling-7fe36427/25_clef_inference/local_modeling_clef.py:79: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  values = torch.linalg.solve_triangular(system, v_beta, upper=False, unitriangular=True)

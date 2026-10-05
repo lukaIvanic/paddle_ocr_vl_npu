@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "/workspace/repos/clef-profiling-7fe36427/25_clef_inference/benchmark_local.py",
+    "--model",
+    "/workspace/models/clef-flash",
+    "--fixture",
+    "tmp/25_clef_inference/profiling_7fe36427/validation-now/fixture.json",
+    "--output-dir",
+    "tmp/25_clef_inference/profiling_7fe36427/validation-now/2_observed",
+    "--mode",
+    "all"
+  ]
+}

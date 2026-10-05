@@ -1,0 +1,5 @@
+7fe3642774c77bf85e7234bce166cdf27029c6a8
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=3
+source npu-setup
+/usr/local/python3.12.13/bin/python3 -u 25_clef_inference/benchmark_local.py --model /workspace/models/clef-flash --mode cached --cache-dir /workspace/results/clef_bf16_storage_sample --output-dir tmp/25_clef_inference/profiling_7fe36427/cached40-clean

@@ -840,17 +840,42 @@ particular, `local_modeling_clef.py` is byte-for-byte unchanged, preserving
 existing document-cache identities. There is no model implementation copied
 into the benchmark.
 
-Validation at `7fe36427`: four CPU bookkeeping tests pass (pending-event reuse,
-nested accounting, wrapper restoration, real-item profiler scheduling). These
-use fake events and do not run the model on CPU. NPU validation is queued in
-the separate server checkout `/workspace/repos/clef-profiling-7fe36427`, after
-Touché precomputation completes. Its three-case complete-workflow ABBA check
-(control/observed/observed/control) requires exact score equality, then runs
-one profiled complete workload and checks three traces and Clef source ranges.
-This is a small instrumentation validation, not a full 40-pair timing result.
-Until that finishes, no NPU validation or observer-overhead claim is made.
+Validation at `7fe36427` passed on physical NPU 3 (910B2, CANN 9.0.1,
+PyTorch 2.10.0 / torch-npu 2.10.0.post2). Four CPU bookkeeping tests pass
+(pending-event reuse, nested accounting, wrapper restoration, real-item
+profiler scheduling); those tests use fake events, not CPU model execution.
+The three-case complete-workflow ABBA check (control/observed/observed/control)
+and matched profiled run produced exactly identical scores for each execution
+path. Three traces contain the expected Clef source ranges. All device events
+resolved, Transformers remained unloaded, and the modeling-file hash was
+unchanged. Observed phase overhead was +0.5% preparation, +1.0% uncached and
++2.9% cached; this small three-case measurement is noisy, not a general overhead
+guarantee.
+
+The full 40-pair cached baseline, with existing BF16 caches preloaded into RAM,
+completed with the following per-request timing (including first use):
+
+| Measurement | Time |
+|---|---:|
+| Complete request, mean | 632 ms |
+| Complete request, median | 609 ms |
+| Complete request, p90 | 639 ms |
+| Model forward, mean NPU stream interval | 605 ms |
+| Cache RAM-to-NPU transfer, mean NPU stream interval | 21.7 ms |
+| Cache FP32 expansion, mean NPU stream interval | 1.4 ms |
+
+Complete-request timing includes encoding, input/cache transfer, FP32 expansion,
+model execution and output validation. It excludes model loading and initial
+disk-to-RAM preload. This is local inference, without HTTP. A matched 40-pair
+profiled run produced exactly the same scores and captured the longest pair
+(index 39). These runs validate instrumentation; cached and uncached scores
+are not claimed to be identical to each other.
 
 Validation script: `tmp/25_clef_inference/profiling_skeleton/validate.py`.
-Queued NPU results: `tmp/25_clef_inference/profiling_7fe36427/validation/` in
-that isolated checkout; launcher log:
-`/workspace/results/clef_touche_full/validate-profiling-when-free.log`.
+Small results/logs: `tmp/25_clef_inference/profiling_7fe36427/`, including
+`validation-now/validation.json`, `cached40-clean/result.json` and
+`cached40-profile/result.json`. The four bulk traces remain in the matching
+server checkout `/workspace/repos/clef-profiling-7fe36427`, outside Git.
+To run immediately, cache shard 3 was paused after 439 saved documents while
+shards 0–2 continued; `parallel_precache/resume_after_profile.py` resumes it
+from the durable manifest and performs the final validated merge.

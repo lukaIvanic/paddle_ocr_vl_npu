@@ -1,0 +1,285 @@
+{
+  "fixture_sha256": "c45e3da7cf069c6407a948494d3b1e18a20f9445c751023845eba83240c2e9cf",
+  "pairs": [
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "qid": "77471",
+      "did": "25786",
+      "input_tokens": 222,
+      "prefix_tokens": 78
+    },
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "qid": "77471",
+      "did": "155409",
+      "input_tokens": 264,
+      "prefix_tokens": 120
+    },
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "qid": "77471",
+      "did": "147736",
+      "input_tokens": 329,
+      "prefix_tokens": 185
+    },
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "qid": "77471",
+      "did": "61174",
+      "input_tokens": 397,
+      "prefix_tokens": 253
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "qid": "10158",
+      "did": "126194",
+      "input_tokens": 248,
+      "prefix_tokens": 101
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "qid": "10158",
+      "did": "32626",
+      "input_tokens": 313,
+      "prefix_tokens": 166
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "qid": "10158",
+      "did": "36634",
+      "input_tokens": 607,
+      "prefix_tokens": 460
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "qid": "10158",
+      "did": "46325",
+      "input_tokens": 2136,
+      "prefix_tokens": 1989
+    },
+    {
+      "task": "SCIDOCS",
+      "qid": "fa3894d83f83d7d05f54b2c87158dc7a2288dc1c",
+      "did": "05f0c711c4788e14d1be3ca0e6d3c5ae8ad05cc1",
+      "input_tokens": 270,
+      "prefix_tokens": 120
+    },
+    {
+      "task": "SCIDOCS",
+      "qid": "fa3894d83f83d7d05f54b2c87158dc7a2288dc1c",
+      "did": "e4a6673ef658221fef360e6051631d65e9547b62",
+      "input_tokens": 353,
+      "prefix_tokens": 203
+    },
+    {
+      "task": "SCIDOCS",
+      "qid": "fa3894d83f83d7d05f54b2c87158dc7a2288dc1c",
+      "did": "2ab93b912b5dd28467e59e11fce7d409859dae47",
+      "input_tokens": 467,
+      "prefix_tokens": 317
+    },
+    {
+      "task": "SCIDOCS",
+      "qid": "fa3894d83f83d7d05f54b2c87158dc7a2288dc1c",
+      "did": "24b3785a3ffae660a60e9ac4eb104b8adfc5871b",
+      "input_tokens": 692,
+      "prefix_tokens": 542
+    },
+    {
+      "task": "FiQA2018",
+      "qid": "3179",
+      "did": "64598",
+      "input_tokens": 258,
+      "prefix_tokens": 110
+    },
+    {
+      "task": "FiQA2018",
+      "qid": "3179",
+      "did": "328341",
+      "input_tokens": 385,
+      "prefix_tokens": 237
+    },
+    {
+      "task": "FiQA2018",
+      "qid": "3179",
+      "did": "65040",
+      "input_tokens": 684,
+      "prefix_tokens": 536
+    },
+    {
+      "task": "FiQA2018",
+      "qid": "3179",
+      "did": "520584",
+      "input_tokens": 898,
+      "prefix_tokens": 750
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "qid": "2983",
+      "did": "Keeling_(disambiguation)",
+      "input_tokens": 328,
+      "prefix_tokens": 154
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "qid": "2983",
+      "did": "Sea_level_rise",
+      "input_tokens": 518,
+      "prefix_tokens": 344
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "qid": "2983",
+      "did": "Paleocene–Eocene_Thermal_Maximum",
+      "input_tokens": 745,
+      "prefix_tokens": 571
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "qid": "2983",
+      "did": "Global_warming_hiatus",
+      "input_tokens": 940,
+      "prefix_tokens": 766
+    },
+    {
+      "task": "EcomRetrieval",
+      "qid": "200293",
+      "did": "49463",
+      "input_tokens": 191,
+      "prefix_tokens": 52
+    },
+    {
+      "task": "EcomRetrieval",
+      "qid": "200293",
+      "did": "93148",
+      "input_tokens": 193,
+      "prefix_tokens": 54
+    },
+    {
+      "task": "EcomRetrieval",
+      "qid": "200293",
+      "did": "44958",
+      "input_tokens": 198,
+      "prefix_tokens": 59
+    },
+    {
+      "task": "EcomRetrieval",
+      "qid": "200293",
+      "did": "93605",
+      "input_tokens": 201,
+      "prefix_tokens": 62
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "26402",
+      "input_tokens": 194,
+      "prefix_tokens": 56
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "80953",
+      "input_tokens": 217,
+      "prefix_tokens": 79
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "9814",
+      "input_tokens": 289,
+      "prefix_tokens": 151
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "48284",
+      "input_tokens": 343,
+      "prefix_tokens": 205
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "qid": "646623",
+      "did": "7938248",
+      "input_tokens": 204,
+      "prefix_tokens": 67
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "qid": "646623",
+      "did": "7904559",
+      "input_tokens": 231,
+      "prefix_tokens": 94
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "qid": "646623",
+      "did": "7939291",
+      "input_tokens": 270,
+      "prefix_tokens": 133
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "qid": "646623",
+      "did": "7955906",
+      "input_tokens": 344,
+      "prefix_tokens": 207
+    },
+    {
+      "task": "DuRetrieval",
+      "qid": "78b5ea5f4b35ec5bdbde24b1609a36bd",
+      "did": "dfa7635a7780421059d901f6df6eecd2",
+      "input_tokens": 225,
+      "prefix_tokens": 82
+    },
+    {
+      "task": "DuRetrieval",
+      "qid": "78b5ea5f4b35ec5bdbde24b1609a36bd",
+      "did": "c4728536c4924e6286877783f546b6ac",
+      "input_tokens": 327,
+      "prefix_tokens": 184
+    },
+    {
+      "task": "DuRetrieval",
+      "qid": "78b5ea5f4b35ec5bdbde24b1609a36bd",
+      "did": "2888f6dc8d27ba6fe033ca513be58634",
+      "input_tokens": 387,
+      "prefix_tokens": 244
+    },
+    {
+      "task": "DuRetrieval",
+      "qid": "78b5ea5f4b35ec5bdbde24b1609a36bd",
+      "did": "9b484d6ceb28689c96f4c42bba73bc3f",
+      "input_tokens": 904,
+      "prefix_tokens": 761
+    },
+    {
+      "task": "CovidRetrieval",
+      "qid": "8df6de16294220931f8552ba4f0bdce7",
+      "did": "7c92ae55d2b335079dfc3e62a339fe8a",
+      "input_tokens": 310,
+      "prefix_tokens": 159
+    },
+    {
+      "task": "CovidRetrieval",
+      "qid": "8df6de16294220931f8552ba4f0bdce7",
+      "did": "98199931f0127df39ba9d8abfbb759cd",
+      "input_tokens": 613,
+      "prefix_tokens": 462
+    },
+    {
+      "task": "CovidRetrieval",
+      "qid": "8df6de16294220931f8552ba4f0bdce7",
+      "did": "93523d1fff5c21fcd33cd5fe9cccc4c1",
+      "input_tokens": 1587,
+      "prefix_tokens": 1436
+    },
+    {
+      "task": "CovidRetrieval",
+      "qid": "8df6de16294220931f8552ba4f0bdce7",
+      "did": "968b6ca9e8b33dffa7ad82b4296f5199",
+      "input_tokens": 3203,
+      "prefix_tokens": 3052
+    }
+  ]
+}

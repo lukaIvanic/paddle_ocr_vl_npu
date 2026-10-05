@@ -1,0 +1,213 @@
+{
+  "status": "completed",
+  "profile": false,
+  "mode": "all",
+  "fixture_sha256": "39f92f037c46dce07a47bfd6ab60c56eaefe94d254cf9438db22cb142b9b7f88",
+  "model_source_sha256": "09140ac9f4194efde2d5a97431dd252a38844aef56d5d805717939959b1376d0",
+  "git_commit": "7fe3642774c77bf85e7234bce166cdf27029c6a8",
+  "hostname": "liteserver-c001-4",
+  "physical_device": "3",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "compute_dtype": "float32",
+  "cache_storage_dtype": "bfloat16",
+  "timing_contract": "Whole-item wall time; host submission spans and deferred stream intervals are separate. Nested sections overlap. Profiler runs include instrumentation/export overhead.",
+  "workload_scope": "Three-case plumbing validation: first pair, prior Medical boundary case, longest pair; not benchmark accuracy or aggregate latency",
+  "scores": {
+    "uncached": [
+      {
+        "task": "CQADupstackGamingRetrieval",
+        "qid": "77471",
+        "did": "25786",
+        "logits": [
+          -4.280323505401611,
+          -0.7596954107284546
+        ],
+        "score": 0.0287309680134058
+      },
+      {
+        "task": "MedicalRetrieval",
+        "qid": "90",
+        "did": "80953",
+        "logits": [
+          -0.6812765598297119,
+          -0.6357635259628296
+        ],
+        "score": 0.488623708486557
+      },
+      {
+        "task": "CovidRetrieval",
+        "qid": "8df6de16294220931f8552ba4f0bdce7",
+        "did": "968b6ca9e8b33dffa7ad82b4296f5199",
+        "logits": [
+          -2.432717800140381,
+          0.45707371830940247
+        ],
+        "score": 0.05266052111983299
+      }
+    ],
+    "cached": [
+      {
+        "task": "CQADupstackGamingRetrieval",
+        "qid": "77471",
+        "did": "25786",
+        "logits": [
+          -4.282129287719727,
+          -0.7616266012191772
+        ],
+        "score": 0.028734466060996056
+      },
+      {
+        "task": "MedicalRetrieval",
+        "qid": "90",
+        "did": "80953",
+        "logits": [
+          -0.6801131963729858,
+          -0.6370072364807129
+        ],
+        "score": 0.4892251789569855
+      },
+      {
+        "task": "CovidRetrieval",
+        "qid": "8df6de16294220931f8552ba4f0bdce7",
+        "did": "968b6ca9e8b33dffa7ad82b4296f5199",
+        "logits": [
+          -2.432943820953369,
+          0.4565383195877075
+        ],
+        "score": 0.05267595499753952
+      }
+    ]
+  },
+  "phase_memory": {
+    "prepare": {
+      "allocated_bytes": 36302544384,
+      "reserved_bytes": 39860568064,
+      "peak_allocated_bytes": 38141422592,
+      "peak_reserved_bytes": 39860568064,
+      "phase_wall_s_including_observation": 9.305827820207924
+    },
+    "uncached": {
+      "allocated_bytes": 36302544384,
+      "reserved_bytes": 41177579520,
+      "peak_allocated_bytes": 38027893760,
+      "peak_reserved_bytes": 41177579520,
+      "phase_wall_s_including_observation": 10.731705020181835
+    },
+    "cached": {
+      "allocated_bytes": 36302544384,
+      "reserved_bytes": 41181773824,
+      "peak_allocated_bytes": 36835743232,
+      "peak_reserved_bytes": 41181773824,
+      "phase_wall_s_including_observation": 1.82462618034333
+    }
+  },
+  "model_cache_identity": "1cfbb67f50ff43661355a9f56c5f5b98b7c107e25f9912735b1cec9f9a73fc08",
+  "summary": {
+    "phases": {
+      "setup": {
+        "wall_s": {
+          "count": 1,
+          "sum": 6.101223669946194,
+          "mean": 6.101223669946194,
+          "p50": 6.101223669946194,
+          "p90": 6.101223669946194,
+          "max": 6.101223669946194
+        },
+        "subsequent_items_wall_s": {
+          "count": 0
+        },
+        "unattributed_host_s": {
+          "count": 1,
+          "sum": 6.101223669946194,
+          "mean": 6.101223669946194,
+          "p50": 6.101223669946194,
+          "p90": 6.101223669946194,
+          "max": 6.101223669946194
+        }
+      },
+      "prepare": {
+        "wall_s": {
+          "count": 3,
+          "sum": 9.30444940039888,
+          "mean": 3.1014831334662936,
+          "p50": 0.6328006400726736,
+          "p90": 6.662031144183129,
+          "max": 8.169338770210743
+        },
+        "subsequent_items_wall_s": {
+          "count": 2,
+          "sum": 8.671648760326207,
+          "mean": 4.335824380163103,
+          "p50": 4.335824380163103,
+          "p90": 7.402635892201215,
+          "max": 8.169338770210743
+        },
+        "unattributed_host_s": {
+          "count": 3,
+          "sum": 9.30444940039888,
+          "mean": 3.1014831334662936,
+          "p50": 0.6328006400726736,
+          "p90": 6.662031144183129,
+          "max": 8.169338770210743
+        }
+      },
+      "uncached": {
+        "wall_s": {
+          "count": 3,
+          "sum": 10.729825550224632,
+          "mean": 3.576608516741544,
+          "p50": 1.3282655798830092,
+          "p90": 7.171518715936691,
+          "max": 8.632331999950111
+        },
+        "subsequent_items_wall_s": {
+          "count": 2,
+          "sum": 9.401559970341623,
+          "mean": 4.700779985170811,
+          "p50": 4.700779985170811,
+          "p90": 7.846021596994251,
+          "max": 8.632331999950111
+        },
+        "unattributed_host_s": {
+          "count": 3,
+          "sum": 10.729825550224632,
+          "mean": 3.576608516741544,
+          "p50": 1.3282655798830092,
+          "p90": 7.171518715936691,
+          "max": 8.632331999950111
+        }
+      },
+      "cached": {
+        "wall_s": {
+          "count": 3,
+          "sum": 1.823608920443803,
+          "mean": 0.6078696401479343,
+          "p50": 0.5973127400502563,
+          "p90": 0.6252895003184676,
+          "max": 0.6322836903855205
+        },
+        "subsequent_items_wall_s": {
+          "count": 2,
+          "sum": 1.2262961803935468,
+          "mean": 0.6131480901967734,
+          "p50": 0.6131480901967734,
+          "p90": 0.628456570347771,
+          "max": 0.6322836903855205
+        },
+        "unattributed_host_s": {
+          "count": 3,
+          "sum": 1.823608920443803,
+          "mean": 0.6078696401479343,
+          "p50": 0.5973127400502563,
+          "p90": 0.6252895003184676,
+          "max": 0.6322836903855205
+        }
+      }
+    },
+    "sections": []
+  },
+  "pending_device_events": 0,
+  "total_s": 27.9728146600537,
+  "transformers_imported": false
+}

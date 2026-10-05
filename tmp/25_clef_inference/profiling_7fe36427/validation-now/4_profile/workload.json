@@ -1,0 +1,26 @@
+{
+  "fixture_sha256": "39f92f037c46dce07a47bfd6ab60c56eaefe94d254cf9438db22cb142b9b7f88",
+  "pairs": [
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "qid": "77471",
+      "did": "25786",
+      "input_tokens": 222,
+      "prefix_tokens": 78
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "80953",
+      "input_tokens": 217,
+      "prefix_tokens": 79
+    },
+    {
+      "task": "CovidRetrieval",
+      "qid": "8df6de16294220931f8552ba4f0bdce7",
+      "did": "968b6ca9e8b33dffa7ad82b4296f5199",
+      "input_tokens": 3203,
+      "prefix_tokens": 3052
+    }
+  ]
+}
