@@ -152,6 +152,10 @@ def main():
                 warmup = index == 0
                 phase["name"] = ("warmup:" if warmup else "request:") + case["id"]
                 emit("request_start", id=case["id"], warmup=warmup)
+                validation_start = time.perf_counter()
+                full_state_ids = processor.tokenizer(upstream.render(case["state"]), add_special_tokens=False).input_ids
+                unbounded = upstream.encode_record(processor.tokenizer, case, max_length=1_000_000, processor=processor)
+                fixture_validation_s = time.perf_counter() - validation_start
                 torch.npu.synchronize()
                 e2e_start = time.perf_counter()
                 encoded = upstream.encode_record(processor.tokenizer, case, processor=processor)
@@ -159,8 +163,6 @@ def main():
                 if encoded.media:
                     raise ValueError("Unexpected media in text-only smoke")
                 # Detect any implicit truncation, rather than silently changing the input.
-                full_state_ids = processor.tokenizer(upstream.render(case["state"]), add_special_tokens=False).input_ids
-                unbounded = upstream.encode_record(processor.tokenizer, case, max_length=1_000_000, processor=processor)
                 if encoded.input_ids != unbounded.input_ids:
                     raise ValueError("Smoke input was truncated")
                 transfer_start = time.perf_counter()
@@ -190,19 +192,21 @@ def main():
                         logit_dtype=str(values.dtype), probabilities=dict(zip(question.option_ids, probabilities)))
                     answers[question.question_id] = upstream.systemone_answer(
                         case["questions"][question.question_id], raw[question.question_id]["probabilities"])
-                e2e_s = time.perf_counter() - e2e_start
+                finished = time.perf_counter()
+                e2e_s = finished - e2e_start
                 row = dict(id=case["id"], warmup=warmup, input_tokens=len(encoded.input_ids),
                            state_tokens=len(full_state_ids), question_count=len(encoded.questions),
                            option_counts=[len(q.option_ids) for q in encoded.questions],
                            token_ids=list(encoded.input_ids), question_spans=[q.question_span for q in encoded.questions],
+                           option_spans=[q.option_spans for q in encoded.questions],
                            answers=answers, raw=raw, device_event_spans_ms=device_spans,
                            timing_s=dict(preprocessing=preprocessing_s, preparation=preparation_s,
-                               synchronized_model=model_wall_s, output_postprocess=time.perf_counter()-output_start,
-                               e2e=e2e_s),
+                               synchronized_model=model_wall_s, output_postprocess=finished-output_start,
+                               e2e=e2e_s, fixture_validation_excluded=fixture_validation_s),
                            model_input_tok_s=len(encoded.input_ids)/model_wall_s,
                            e2e_input_tok_s=len(encoded.input_ids)/e2e_s)
                 result["rows"].append(row)
-                emit("item_finished", **{k: v for k, v in row.items() if k not in ["token_ids", "question_spans"]})
+                emit("item_finished", **{k: v for k, v in row.items() if k not in ["token_ids", "question_spans", "option_spans"]})
                 save()
         measured = {r["id"]: r for r in result["rows"] if not r["warmup"]}
         observations = {}

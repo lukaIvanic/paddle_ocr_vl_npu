@@ -103,6 +103,7 @@ def main():
                             emit("range_retry", name=name, start=start, attempt=attempt+1, error=repr(error))
                             if attempt == 3:
                                 raise
+                            time.sleep(2 ** (attempt + 1))
 
                 with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
                     list(pool.map(get_range, range(0, entry["size"], chunk_size)))
