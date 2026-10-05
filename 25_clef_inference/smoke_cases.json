@@ -1,0 +1,46 @@
+[
+  {
+    "id": "english_invoice_joint",
+    "state": {"invoice": {"vendor": "Acme", "total": 1250, "currency": "USD", "status": "overdue"}},
+    "questions": {
+      "status": {"type": "choice", "instructions": "What is the invoice status?", "criteria": {"paid": "Invoice is paid.", "overdue": "Invoice is past due.", "draft": "Invoice has not been sent."}},
+      "large": {"type": "noul", "instructions": "Is the total above 1000 USD?"},
+      "amount": {"type": "score", "instructions": "Which amount range contains the invoice total?", "criteria": ["Below 100 USD", "100 through 1000 USD", "Above 1000 USD"]}
+    },
+    "expected_top_options": {"status": "overdue", "large": "true", "amount": "2"}
+  },
+  {
+    "id": "chinese_invoice_joint",
+    "state": "发票金额为1250美元，付款截止日期已过，目前尚未付款。",
+    "questions": {
+      "status": {"type": "choice", "instructions": "这张发票目前是什么状态？", "criteria": {"paid": "已付款", "overdue": "已逾期且未付款", "draft": "尚未发送的草稿"}},
+      "large": {"type": "noul", "instructions": "发票金额是否超过1000美元？"},
+      "amount": {"type": "score", "instructions": "发票金额属于哪个范围？", "criteria": ["低于100美元", "100至1000美元", "超过1000美元"]}
+    },
+    "expected_top_options": {"status": "overdue", "large": "true", "amount": "2"}
+  },
+  {
+    "id": "english_relevant",
+    "state": "Beijing is the capital of China. It is located in northern China.",
+    "questions": {"relevance": {"type": "score", "instructions": "Given the query 'What is the capital of China?', rate how well the document in STATE answers the query.", "criteria": ["Not relevant", "Related but does not answer", "Partially answers", "Directly answers"]}},
+    "ranking_group": "english", "relevant": true
+  },
+  {
+    "id": "english_irrelevant",
+    "state": "Photosynthesis uses sunlight to convert water and carbon dioxide into sugars.",
+    "questions": {"relevance": {"type": "score", "instructions": "Given the query 'What is the capital of China?', rate how well the document in STATE answers the query.", "criteria": ["Not relevant", "Related but does not answer", "Partially answers", "Directly answers"]}},
+    "ranking_group": "english", "relevant": false
+  },
+  {
+    "id": "chinese_relevant",
+    "state": "植物通过光合作用利用阳光，将水和二氧化碳转化为糖，并释放氧气。",
+    "questions": {"relevance": {"type": "score", "instructions": "查询为“植物通过什么过程利用阳光制造糖？”。评估STATE中的文档对该查询的相关程度。", "criteria": ["不相关", "主题相关但没有回答", "部分回答", "直接回答"]}},
+    "ranking_group": "chinese", "relevant": true
+  },
+  {
+    "id": "chinese_irrelevant",
+    "state": "北京是中国的首都，位于中国北部。",
+    "questions": {"relevance": {"type": "score", "instructions": "查询为“植物通过什么过程利用阳光制造糖？”。评估STATE中的文档对该查询的相关程度。", "criteria": ["不相关", "主题相关但没有回答", "部分回答", "直接回答"]}},
+    "ranking_group": "chinese", "relevant": false
+  }
+]
