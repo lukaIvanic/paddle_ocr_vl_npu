@@ -164,7 +164,7 @@ def main():
         if time.monotonic() - started > args.wall_time_limit:
             raise RuntimeError("Smoke wall-time limit reached")
         model.train()
-        optimizer.zero_grad(set_to_none=True)
+        optimizer.zero_grad(set_to_none=False)
         torch.npu.synchronize()
         begin = time.monotonic()
         total_loss = torch.zeros((), device=device)

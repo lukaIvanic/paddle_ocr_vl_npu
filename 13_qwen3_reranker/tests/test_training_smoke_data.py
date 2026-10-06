@@ -50,6 +50,14 @@ class TrainingSmokeDataTest(unittest.TestCase):
         shifted = [[no + 50, yes + 50] for no, yes in logits]
         self.assertEqual(metrics, ranking_metrics(groups, shifted))
 
+    def test_ties_do_not_favour_positive_first_index(self):
+        metrics = ranking_metrics([{"documents": ["positive", "negative"]}],
+                                  [[0, 1], [2, 3]])
+        self.assertEqual(metrics["ties"], 1)
+        self.assertEqual(metrics["ordering_accuracy"], 0)
+        self.assertEqual(metrics["top1_accuracy"], 0)
+        self.assertEqual(metrics["mrr"], .5)
+
 
 if __name__ == "__main__":
     unittest.main()
