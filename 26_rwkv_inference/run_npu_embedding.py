@@ -74,13 +74,26 @@ class Block(Weights):
         def layout(y):
             return y.reshape(B, T, 12, 64).permute(0, 2, 1, 3).contiguous()
         state = torch.zeros((B, 12, 64, 64), device=x.device, dtype=torch.float32)
-        y, _ = torch.ops.rwkv_reference.wkv7.default(
-            layout(k), layout(v), layout(w), layout(r), layout(-kk), layout(kk * a), state)
+        inputs = [layout(t) for t in (k, v, w, r, -kk, kk * a)]
+        if T <= 2048:
+            y, _ = torch.ops.rwkv_reference.wkv7.default(*inputs, state)
+        else:
+            # Preserve the complete prepared sequence; only split the recurrence
+            # at the bridge's validated call limit, carrying its FP32 state.
+            chunks = []
+            for offset in range(0, T, 2048):
+                part, state = torch.ops.rwkv_reference.wkv7.default(
+                    *(t[:, :, offset:offset+2048].contiguous() for t in inputs), state)
+                chunks.append(part)
+            y = torch.cat(chunks, dim=2)
+            del chunks, part
+        del inputs, state
         y = y.permute(0, 2, 1, 3).contiguous().reshape(B*T, C)
         y = F.group_norm(y, 12, self.get('att.ln_x.weight'), self.get('att.ln_x.bias'), .00064).reshape(B, T, C)
         extra = ((r * k * self.get('att.r_k').reshape(C)).reshape(B, T, 12, 64)
                  .sum(-1, keepdim=True) * v.reshape(B, T, 12, 64)).reshape(B, T, C)
         x = x + self.linear((y + extra) * g, 'att.output.weight')
+        del z, delta, r, w, k, xv, v, a, g, kk, y, extra
         z = self.norm(x, 'ln2')
         delta = torch.cat((torch.zeros_like(z[:, :1]), z[:, :-1]), dim=1) - z
         mixed = z + delta * self.get('ffn.x_k')
