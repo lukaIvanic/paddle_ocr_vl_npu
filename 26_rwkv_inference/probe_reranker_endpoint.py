@@ -54,6 +54,17 @@ def measure(call, repeats, batch_size=1):
             'pairs_per_second':batch_size/statistics.median(host)}
 
 
+def check_head(actual, expected, dtype):
+    check=metrics(actual,expected)
+    check.update(bitwise_equal=torch.equal(actual,expected),
+                 atol=2e-5 if dtype=='fp32' else 0.,rtol=2e-6 if dtype=='fp32' else 0.,
+                 actual_logits=actual.detach().cpu().tolist(),expected_logits=expected.detach().cpu().tolist())
+    print('HEAD_COMPARISON',json.dumps(check),flush=True)
+    if dtype=='fp32':require(actual,expected,check['atol'],check['rtol'])
+    else:assert check['bitwise_equal'], 'Compiled head differs from eager'
+    return check
+
+
 def batched_model(args, report, cases, model, ranker, backbone):
     """Keep each row's original IDs; batch only adds endpoint-excluded right padding."""
     old=json.loads((args.cases_root/f'reranker_b1_t{args.bucket}_cold_ea9aa394/probe/result.json').read_text())
@@ -94,7 +105,7 @@ def batched_model(args, report, cases, model, ranker, backbone):
         before=time.perf_counter();actual=encode(ids,lengths);logits=head(actual[1]);torch.npu.synchronize()
         first_call=time.perf_counter()-before
         assert all(torch.equal(a,b) for a,b in zip(actual,eager)), 'Compiled backbone differs from eager'
-        assert torch.equal(logits,eager_logit), 'Compiled head differs from eager'
+        head_check=check_head(logits,eager_logit,args.dtype)
         assert torch.equal(head(encode(ids,lengths)[1]),logits), 'Repeat-call isolation'
         if i==0:first_score=logits.clone();first_states=tuple(x.clone() for x in actual)
         if i==len(groups):
@@ -109,7 +120,8 @@ def batched_model(args, report, cases, model, ranker, backbone):
              'max_logit_delta_vs_single':float((logits-single_logits).abs().max().item()),
              'max_logit_delta_vs_raw':float((logits-raw_logits).abs().max().item()),
              'state_parity':state_checks,'logit_parity':score_check,'call_seconds':first_call,
-             'compiled_vs_eager_bitwise_equal':True if args.backend=='torchair' else None,
+             'compiled_head_vs_eager':head_check,
+             'compiled_vs_eager_bitwise_equal':head_check['bitwise_equal'] if args.backend=='torchair' else None,
              'row_permutation_check':i==len(groups),'repeat_first_case':i==len(groups)+1}
         if args.benchmark and i<len(groups):
             fixed=actual[1].clone().contiguous()
@@ -247,14 +259,15 @@ def main():
                     print('MODEL_GRAPH_START',json.dumps({'T':args.bucket,'valid_length':L,'backend':args.backend}),flush=True)
                     actual=encode(ids,lengths);logit=head(actual[1]);torch.npu.synchronize()
                     assert all(torch.equal(a,b) for a,b in zip(actual,eager)), 'Compiled backbone differs from eager'
-                    assert torch.equal(logit,eager_logit), 'Compiled head differs from eager'
+                    head_check=check_head(logit,eager_logit,args.dtype)
                     assert torch.equal(head(encode(ids,lengths)[1]),logit), 'Repeat-call isolation'
                     if i==0:first_score=logit.clone()
                     if i==len(cases):assert torch.equal(logit,first_score), 'A/B/A device input replay'
                     row={'query_id':case['query_id'],'document_id':case['document_id'],'T':args.bucket,'valid_tokens':L,
                         'right_padding_tokens':args.bucket-L,'raw_logit':float(expected_logit.item()),'endpoint_logit':float(logit.item()),
                         'logit_delta':float((logit-expected_logit).item()),'state_parity':state_checks,'logit_parity':score_check,
-                        'compiled_vs_eager_bitwise_equal':True if args.backend=='torchair' else None,
+                        'compiled_head_vs_eager':head_check,
+                        'compiled_vs_eager_bitwise_equal':head_check['bitwise_equal'] if args.backend=='torchair' else None,
                         'call_seconds':time.perf_counter()-before,'repeat_first_case':i==len(cases)}
                     if args.benchmark and i<len(cases):
                         # All parity checks and device preparation above are outside these windows.

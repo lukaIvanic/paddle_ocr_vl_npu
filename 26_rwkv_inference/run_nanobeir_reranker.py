@@ -109,18 +109,20 @@ def worker(args):
     import torch_npu
     torch.set_num_threads(4)
     i=args.worker_index;out=args.output/f'worker_{i}';out.mkdir()
-    report={'all_checks_passed':False,'physical_npu':os.environ['ASCEND_RT_VISIBLE_DEVICES'],'cases':[]}
+    report={'all_checks_passed':False,'physical_npu':os.environ['ASCEND_RT_VISIBLE_DEVICES'],'dense_dtype':args.dtype,'state_dtype':'fp32','cases':[]}
     start=time.perf_counter()
     try:
         status=subprocess.check_output(['/usr/local/bin/npu-status'],text=True)
         selected=next(s for s in status.splitlines() if s.startswith('NPU '+report['physical_npu']+': '))
         assert ': free ' in selected and 'Health=OK' in selected,selected
         torch.npu.set_device(0);torch.npu.set_compile_mode(jit_compile=False);torch.npu.config.allow_internal_format=False
+        torch.npu.matmul.allow_hf32=False
         free,total=torch.npu.mem_get_info();assert free>3*1024**3
         report.update(device=torch.npu.get_device_name(0),hbm_before=dict(free_bytes=free,total_bytes=total),device_status=status,
-                      torch=torch.__version__,torch_npu=torch_npu.__version__)
+                      torch=torch.__version__,torch_npu=torch_npu.__version__,matmul_allow_hf32=torch.npu.matmul.allow_hf32)
         root=Path(__file__).parent;load_bridge(root/'wkv7_npu',args.reference_build);load_endpoint(args.build_root);register_converter()
-        model=Embedding(args.checkpoint,'npu:0',torch.float16);ranker=Reranker(args.reranker,'npu:0',torch.float16)
+        dtype={'fp16':torch.float16,'fp32':torch.float32}[args.dtype]
+        model=Embedding(args.checkpoint,'npu:0',dtype);ranker=Reranker(args.reranker,'npu:0',dtype)
         backbone=Backbone(model).eval()
         jobs=json.loads((args.output/f'jobs_{i}.json').read_text())
         # Each process owns fresh copies; no shared TorchAir cache writers.
@@ -198,7 +200,7 @@ def coordinate(args):
     report=dict(source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         source_sha256={n:sha256(root/n) for n in ['run_nanobeir_reranker.py','probe_reranker_endpoint.py','local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py','run_nanoscidocs.py']},
         checkpoint_sha256=sha256(args.checkpoint),reranker_sha256=sha256(args.reranker),devices=args.devices,
-        dense_dtype='fp16',state_dtype='fp32',logical_batch_size=32,outer_batch_size=128,device_batch_size=4,
+        dense_dtype=args.dtype,state_dtype='fp32',logical_batch_size=32,outer_batch_size=128,device_batch_size=4,
         preparation='Task-wide query order and saved candidate rank order; pinned wrapper B32 left padding/last2048/EOS; additional right padding only for compiled T512.',
         backend_policy='TorchAir T512 for prepared length<=512; exact-length raw eager for longer inputs',
         candidate_source=str(args.candidates_root),document_caching=False,task_results=[],all_checks_passed=False)
@@ -210,9 +212,17 @@ def coordinate(args):
         for run in gates['runs']:
             p=root.parent/run['result_path'];assert sha256(p)==run['result_sha256']
             previous=json.loads(p.read_text());assert previous['all_checks_passed']
-            for n in ['probe_reranker_endpoint.py','local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py']:
+            for n in ['local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py']:
                 assert report['source_sha256'][n]==previous['source_sha256'][n]
         report['batch_gate_sha256']=sha256(args.batch_evidence)
+        cache=json.loads((args.warm_cache_from/'result.json').read_text())
+        assert cache['all_checks_passed'] and cache['dtype']==args.dtype and cache['bucket']==512 and cache['batch_size']==4
+        assert cache['backend']=='torchair'
+        for n in ['local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py']:
+            assert report['source_sha256'][n]==cache['source_sha256'][n]
+        assert cache['checkpoint_sha256']=={'checkpoint':report['checkpoint_sha256'],'reranker':report['reranker_sha256']}
+        report['warm_cache_reference_sha256']=sha256(args.warm_cache_from/'result.json')
+        report['historical_batch_probe_sha256']=sorted({json.loads((root.parent/r['result_path']).read_text())['source_sha256']['probe_reranker_endpoint.py'] for r in gates['runs']})
         prepare(args,report);report['preparation_seconds']=time.perf_counter()-start;save(args.output/'result.json',report)
         launch=time.perf_counter();logs=[]
         for i,device in enumerate(args.devices):
@@ -275,6 +285,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     for n in ['checkpoint','reranker','runtime','upstream','build-root','reference-build','data-root','candidates-root','batch-evidence','warm-cache-from','output']:
         p.add_argument('--'+n,type=Path,required=True)
+    p.add_argument('--dtype',choices=['fp16','fp32'],default='fp16')
     p.add_argument('--devices',type=int,nargs=2,required=True)
     p.add_argument('--worker-index',type=int,choices=[0,1])
     args=p.parse_args()
