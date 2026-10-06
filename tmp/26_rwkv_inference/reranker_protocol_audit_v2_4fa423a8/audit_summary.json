@@ -1,0 +1,71 @@
+{
+  "upstream_commit": "3c306736c58550f4be6d384be068512ba9bfbd72",
+  "paper": "https://arxiv.org/pdf/2601.07861v1",
+  "paper_target_state_based_90M_ndcg_at_10": 63.41,
+  "current_full_fp32_ndcg_at_10": 60.65979403329791,
+  "audit": {
+    "task_count": 4,
+    "queries": 4,
+    "pairs": 400,
+    "independent_cpu_pairs": 16,
+    "max_cpu_fp32_npu_fp32_logit_delta": 0.00010633468627929688,
+    "max_upstream_precision_logit_delta": 0.39704322814941406,
+    "queries_with_changed_top10_order": 1,
+    "query_ndcg_identical": true,
+    "not_full_macro_reproduction": true,
+    "cuda_execution_performed": false,
+    "control_limit": "Pinned upstream PyTorch math on Ascend910B2 NPU7; replaces CUDA recurrence with already validated NPU bridge, checkpoint loading with identical raw tensors, removes JIT decorators, aliases token.weight to emb.weight as packaged runtime does. CPU FP32 reference checks first B4 in each query independently."
+  },
+  "protocol_checks": {
+    "top_k": 100,
+    "retriever": "0.1B EmbeddingRWKV",
+    "prompt_matches_released_evaluate_mteb": true,
+    "padding": "unmasked left zero pad to logical B32 maximum, retain last 2048, terminal EOS65535",
+    "mteb_outer_batch": 128,
+    "query_order": "dataset order",
+    "candidate_order": "descending saved embedding score",
+    "corpus_titles_nonempty": 0,
+    "tasks_checked_for_titles": 13,
+    "metric": "binary dataset judgments, macro 13 tasks, pytrec_eval NDCG@10, ignore_identical_ids=False"
+  },
+  "source_checks": {
+    "training_and_package_scoring_math_AST_identical": [
+      "RWKV7_OP",
+      "RWKV_Tmix_x070",
+      "RWKV_CMix_x070",
+      "Block"
+    ],
+    "training_and_package_backbone_batch_math_AST_identical": [
+      "RWKV_x070_TMix_seq_batch",
+      "RWKV_x070_CMix_seq_batch"
+    ],
+    "checkpoint_roots": {
+      "reranker": 401,
+      "vit": 208,
+      "proj": 4
+    },
+    "checkpoint_has_backbone": false,
+    "checkpoint_has_layer_selection_metadata": false,
+    "training_evaluator_load_incompatibility": "Released reranker has reranker.token.weight; training model expects reranker.emb.weight and load_state_dict(strict=False) does not rename it. The packaged runtime and our loader explicitly alias this key. Original strict probe failure retained beside corrected comparison.",
+    "upstream_evaluator_arithmetic": "FP16 backbone weights/activations/pointwise, FP32 recurrent matrix; BF16 head weights/activations/pointwise. Our FP16 mode reduces dense projections only and retains FP32 pointwise and head activations."
+  },
+  "remaining_unverified": [
+    "Complete NanoBEIR score under upstream FP16/BF16 arithmetic; four queries cannot rule this out.",
+    "Exact author candidate lists, evaluation batching/version and checkpoint/run identity behind paper Table4; these were not identified in the public artifacts audited."
+  ],
+  "sources": {
+    "embedding/reranker/evaluate_mteb.py": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/embedding/reranker/evaluate_mteb.py",
+    "embedding/reranker/src/wrapper.py": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/embedding/reranker/src/wrapper.py",
+    "embedding/reranker/src/model.py": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/embedding/reranker/src/model.py",
+    "embedding/reranker/reference/rwkv7.py": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/embedding/reranker/reference/rwkv7.py",
+    "package/src/rwkv_emb/model.py": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/package/src/rwkv_emb/model.py",
+    "rwkv-emb.c/REPRODUCTION.md": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/rwkv-emb.c/REPRODUCTION.md"
+  },
+  "release_embedding_reproduction": {
+    "paper": 59.1,
+    "released_gpu_bf16": 58.973692,
+    "released_cpu_fp32": 58.907231,
+    "our_npu_fp16": 58.89746153846,
+    "not_evidence_of_reranker_gap_cause": true
+  }
+}

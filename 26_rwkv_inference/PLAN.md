@@ -293,8 +293,19 @@ identical. All 64,900 pairs complete in **571.39 s (9m31s)**, peak reserved
 HBM **2.53 GiB/worker**. Prepared tokens, candidates, shards, checkpoints and
 model math match FP16; short inputs use TorchAir, longer inputs exact-length
 eager, with matmul HF32 disabled. Coverage and independent metric checks pass.
-FP16 precision does not explain this reproduction gap.
+Changing dense-projection precision does not explain this reproduction gap;
+this comparison did not reproduce upstream's full FP16/BF16 arithmetic policy.
 [`Full evidence and precision comparison`](../tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/fp16_fp32_comparison.json).
+
+**Protocol audit**, pinned upstream `3c306736`, 910B2 NPU 7: prompt, top-100,
+logical B32 padding/truncation/EOS, pair ordering and metrics match the released
+evaluator. On 16 real pairs, independent CPU FP32 logits match NPU within
+**1.07e−4**. Upstream FP16 backbone/BF16 head math changes logits by up to
+**0.397** across four top-100 queries, but all four NDCGs stay identical; the
+full-suite effect remains untested. Training evaluator/checkpoint disagree on
+`emb.weight` versus `token.weight`; our loader already applies the package's
+correct alias. Published run/candidate identity remains unverified.
+[`Audit, source links, independent comparisons and loader failure`](../tmp/26_rwkv_inference/reranker_protocol_audit_v2_4fa423a8/audit_summary.json).
 
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,
