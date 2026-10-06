@@ -1,0 +1,6 @@
+Source commit: e8a15dad4c29a2240b98cdc6ad6434f98f1cfd7b
+Host: liteserver-c001-4
+Container: research_vllm_ascend_023_external_workspace
+Physical NPU: 7; logical npu:0
+Authorization: shared NPU 7; accuracy and speed comparison requested by Luka
+Exact command argv: ['bash', '--noprofile', '--norc', '-c', "if source /usr/local/bin/npu-setup; then :; else echo 'Selector found no free device; using user-authorized shared NPU 7'; fi; export ASCEND_RT_VISIBLE_DEVICES=7 TORCH_DEVICE_BACKEND_AUTOLOAD=0 OMP_NUM_THREADS=1; source /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/bin/set_env.bash && export PATH=/usr/local/python3.12.13/bin:$PATH && cd /workspace/repos/rwkv-cpu-reference && /workspace/venvs/rwkv_cpu_py312/bin/python -u 26_rwkv_inference/run_nanoscidocs.py --checkpoint /workspace/rwkv_reference/models/rwkv0b1-emb-curriculum.pth --runtime /workspace/rwkv_reference/runtime --data /workspace/rwkv_reference/nanoscidocs/benchmark_data.json --build-root /workspace/rwkv_reference/wkv7_build_178d16e6 --output /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanoscidocs_eager_b4_fp16_e8a15dad/probe --allow-shared-device --batch-size 4 --dtype fp16 --max-preflight-from /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanoscidocs_eager_b1_fp16_e8a15dad/probe/result.json"]

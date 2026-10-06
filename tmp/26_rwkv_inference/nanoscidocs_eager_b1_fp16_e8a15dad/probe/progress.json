@@ -1,0 +1,9 @@
+{
+  "group": "corpus",
+  "done": 2210,
+  "total": 2210,
+  "elapsed_seconds": 100.95612737024203,
+  "forward_seconds": 98.86808181228116,
+  "texts_per_second": 21.890697053930605,
+  "estimated_remaining_seconds": 0.0
+}

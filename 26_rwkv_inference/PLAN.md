@@ -5,9 +5,9 @@ then decide whether larger evaluations need faster inference. This document is
 the experiment's single working document, including research findings, source
 provenance and reference scores. The server CPU environment and C runtime have
 been prepared, and the eight-case CPU FP32 smoke passed on 2026-10-06. The owned
-full embedding forward now passes real-case NPU parity in eager and TorchAir;
-dataset accuracy benchmarks remain pending. Reference benchmark scores below
-remain upstream reports.
+full embedding forward passes real-case NPU parity in eager and TorchAir, and
+complete NanoSCIDOCS evaluation now matches the reported CPU score at batch 4.
+Full NanoBEIR remains next. Reference scores below remain upstream reports.
 
 ## 0. Establish a server CPU reference
 
@@ -95,12 +95,20 @@ the long T976 case and **46.3/7.54 ms** for B2/T96. Corresponding four-thread C
 CPU measurements were **1.53/10.54/2.53 s**. These shared-device timings exclude
 tokenization, transfers, traces and cold compilation (34–52 s per fresh shape).
 
-Next: NanoSCIDOCS. A full length audit at dataset revision
-`484eb90549fc3f0b9c42b3551e80ceb999515537` found **all 2,210 documents and 50 queries
-fit T≤2048**. Prepared document lengths: median **688**, p95 **1360**, max **2032**;
-queries: **128/160/176**, including instruction. Raw document maximum was **2005**.
-The current bridge cap therefore covers this task; verify its upper-end NPU
-inputs before evaluation. See [`length audit`](../tmp/26_rwkv_inference/nanoscidocs_length_audit_12deec8f/result.json).
+**NanoSCIDOCS passed**, source `e8a15dad`, shared Ascend 910B2 NPU 7, eager
+FP16 projections/FP32 state. All **2,210 documents, 50 queries and 244 judgments**
+were covered at revision `484eb90549fc3f0b9c42b3551e80ceb999515537`.
+The largest prepared input **T2032** passed CPU layer/embedding comparison
+(embedding max error **7.63e-5**); B4 parity passed separately. The owned runner
+preserves MTEB **1.38.60** data, ordering, instruction and metric contracts;
+`pytrec_eval` scores passed an independent per-query NDCG crosscheck.
+B1 scored **40.946**, evaluating in **103.74 s**; published-setting B4 scored
+**41.058** in **37.57 s**, matching CPU FP32 and **+0.070 points** above GPU BF16.
+Corpus throughput was stable at **21.9/60.8 documents/s** (B1/B4); total times
+including setup and CPU preflight were **143.76/59.14 s**. Logs, timings, per-query
+scores, top-100 candidates and provenance: [`B1`](../tmp/26_rwkv_inference/nanoscidocs_eager_b1_fp16_e8a15dad/)
+and [`B4`](../tmp/26_rwkv_inference/nanoscidocs_eager_b4_fp16_e8a15dad/).
+Next: full NanoBEIR, first auditing prepared lengths against the bridge's T2048 cap.
 
 Start NanoBEIR evaluation on one NPU. If it is not fast enough, use **data
 parallelism**, with a complete model replica on each participating NPU and

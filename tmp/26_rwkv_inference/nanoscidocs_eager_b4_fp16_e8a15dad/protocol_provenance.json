@@ -1,0 +1,54 @@
+{
+  "mteb_version": "1.38.60",
+  "mteb_framework_executed": false,
+  "mteb_wheel_sha256": "d8d4ed1f9c72a62e43474fa3477c004cbd43630b23f89c5d7659ea05e9509425",
+  "inspected_sources": {
+    "mteb/tasks/Retrieval/eng/NanoSCIDOCSRetrieval.py": "90bc7171ccab2a687ed1bcea37afc403be7914df19b20334ea719592e7f37653",
+    "mteb/evaluation/evaluators/RetrievalEvaluator.py": "4c263097549b369e7842a846d59c65ced8327bc460386c29aa07de05fcf67c75",
+    "mteb/abstasks/AbsTaskRetrieval.py": "201810e5f5da2488427eb449a19f4f10020034a8bba670bf624dc72817ebedde"
+  },
+  "metric_package": {
+    "comment_text": null,
+    "core-metadata": false,
+    "digests": {
+      "blake2b_256": "04964925a95e4865a647bc74d3bb052243d12a3c8e8a34909d7d097b5a4d08c5",
+      "md5": "d3fc216202a732db691284fa72d5d01f",
+      "sha256": "eaaf20580d17b5575a233e04dab8a4cbcc01a7e45be8cf547c07f0a2bb3e7eb9"
+    },
+    "downloads": -1,
+    "filename": "pytrec_eval_terrier-0.5.10.tar.gz",
+    "has_sig": false,
+    "md5_digest": "d3fc216202a732db691284fa72d5d01f",
+    "packagetype": "sdist",
+    "python_version": "source",
+    "requires_python": ">=3",
+    "size": 18634,
+    "upload_time": "2025-10-20T16:50:18",
+    "upload_time_iso_8601": "2025-10-20T16:50:18.098681Z",
+    "url": "https://files.pythonhosted.org/packages/04/96/4925a95e4865a647bc74d3bb052243d12a3c8e8a34909d7d097b5a4d08c5/pytrec_eval_terrier-0.5.10.tar.gz",
+    "yanked": false,
+    "yanked_reason": null
+  },
+  "server_metric_wheel_sha256": "8a3f7804f9278e74acea3e849f9c8a940351c4e586f26f53b26b7788e68cc83a",
+  "metric_implementation": "pytrec_eval-terrier 0.5.10; trec_eval 9.0.8",
+  "dataset_repo": "zeta-alpha-ai/NanoSCIDOCS",
+  "dataset_revision": "484eb90549fc3f0b9c42b3551e80ceb999515537",
+  "dataset_snapshot_sha256": "c1be79f83593929a7dd1c9d900ec91534de0f532e19a38293c1352c27112f557",
+  "dataset_server_path": "/workspace/rwkv_reference/nanoscidocs/benchmark_data.json",
+  "dataset_acquisition": "Public Hugging Face datasets-server rows endpoint, verified row counts; downloaded locally and transferred because server endpoint had no network route.",
+  "protocol": {
+    "split": "train",
+    "corpus_text": "(title + \" \" + text).strip(); dataset has no title field",
+    "corpus_order": "descending document ID",
+    "query_order": "dataset order",
+    "query_instruction": "Instruct: Given a query, retrieve documents that answer the query\nQuery: {query}",
+    "qrels": "244 binary positive judgments, no extra exclusions",
+    "ignore_identical_ids": false,
+    "score": "dot product of normalized embeddings (cosine); full corpus scored, top 1000 retained",
+    "metric": "mean pytrec_eval ndcg_cut_10, rounded to 5 decimals then multiplied by 100",
+    "metric_crosscheck": "Every query checked against independent DCG/IDCG formula; equal scores ordered by descending document ID",
+    "published_batch_size": 4,
+    "b1_comparison": "B1 is a speed/control run; padding causes its input token sequences to differ from B4"
+  },
+  "server_artifacts": "Full embedding arrays remain in each run probe/embeddings.npz; hashes and byte counts in result.json; other benchmark outputs preserved in Git."
+}
