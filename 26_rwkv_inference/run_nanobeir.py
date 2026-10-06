@@ -38,6 +38,8 @@ def main():
     p.add_argument('--preflight-only', action='store_true')
     p.add_argument('--preflight-from', type=Path)
     p.add_argument('--task', choices=sorted(REFERENCE))
+    p.add_argument('--dtype', choices=('fp16','fp32'), default='fp16',
+                   help='Dense precision; FP32 is a numerical diagnostic control.')
     p.add_argument('--max-token-slots', type=int, default=8192)
     args = p.parse_args()
     if args.max_token_slots < 2048: p.error('max-token-slots must be >=2048')
@@ -48,8 +50,9 @@ def main():
         script_sha256=sha256(__file__), model_script_sha256=sha256(root/'run_npu_embedding.py'),
         checkpoint_sha256=CHECKPOINT_SHA256, manifest_sha256=sha256(args.data_root/'manifest.json'),
         physical_npu=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), hostname=platform.node(),
-        backend='raw_eager',dense_dtype='fp16',state_pointwise_dtype='float32',
+        backend='raw_eager',dense_dtype=args.dtype,state_pointwise_dtype='float32',
         reference_batch_size=4,max_device_batch_size=4,max_token_slots=args.max_token_slots,
+        task_scope=args.task or 'NanoBEIR',
         mteb_contract_version='1.38.60',mteb_framework_used=False,ignore_identical_ids=False,
         context=2048,eos_chunk=512,instruction=INSTRUCTION,task_results=[],all_checks_passed=False,
         quality_review_limits=dict(per_task_cpu_delta_points=.25,macro_cpu_delta_points=.10))
@@ -80,28 +83,31 @@ def main():
         torch.npu.set_compile_mode(jit_compile=False)
         torch.npu.config.allow_internal_format=False
         cpu=CReference(args.runtime,4)
-        model=Embedding(args.checkpoint,'npu:0',torch.float16)
+        model=Embedding(args.checkpoint,'npu:0',torch.float16 if args.dtype=='fp16' else torch.float32)
+        embedding_limit=.002 if args.dtype=='fp16' else 1e-5
+        report['embedding_max_abs_limit']=embedding_limit
         torch.npu.reset_peak_memory_stats()
         report['setup_seconds']=time.perf_counter()-start
         with torch.inference_mode():
             if args.preflight_from:
                 previous=json.loads(args.preflight_from.read_text())
-                for key in ['model_script_sha256','checkpoint_sha256','manifest_sha256']:
+                for key in ['model_script_sha256','checkpoint_sha256','manifest_sha256','dense_dtype']:
                     assert previous[key]==report[key],key
                 assert previous['preflight_passed']
                 report.update(preflight_passed=True,preflight=previous['preflight'],preflight_reused_from=str(args.preflight_from))
             else:
                 candidates=[]
                 for task in manifest['tasks']:
+                    if args.task and args.task!=task['task']: continue
                     data=json.loads((args.data_root/task['data_file']).read_text())
                     for role in ['corpus','queries']:
                         rows=json.loads((args.data_root/task['task']/'lengths.json').read_text())[role]
                         lookup={r['_id']:r['text'] for r in data[role]}
                         for row in rows:
-                            if row['prepared']>2048:
+                            if row['prepared']>2048 or args.task:
                                 text=lookup[row['id']].strip() if role=='corpus' else INSTRUCTION.format(query=lookup[row['id']])
                                 candidates.append((row['prepared'],task['task'],role,row['id'],text))
-                assert candidates, 'Expected long inputs in the full suite'
+                assert candidates, 'Expected preflight inputs in selected scope'
                 samples=[min(candidates),max(candidates)]
                 report['preflight']=[]
                 tiny=next(t for t in manifest['tasks'] if t['task']=='NanoSCIDOCSRetrieval')
@@ -112,8 +118,8 @@ def main():
                 batched=model(ni,nm).cpu().numpy()
                 split=np.concatenate([model(ni[i:i+1],nm[i:i+1]).cpu().numpy() for i in range(4)])
                 metrics=comparison(batched,expected);row_metrics=comparison(split,batched)
-                assert metrics['max_abs']<=.002 and np.min((batched*expected).sum(-1))>=.9995
-                assert row_metrics['max_abs']<=.002 and np.min((split*batched).sum(-1))>=.9995
+                assert metrics['max_abs']<=embedding_limit and np.min((batched*expected).sum(-1))>=.9995
+                assert row_metrics['max_abs']<=embedding_limit and np.min((split*batched).sum(-1))>=.9995
                 report['row_split_preflight']=dict(shape=list(ids.shape),cpu_comparison=metrics,split_vs_batched=row_metrics)
                 print('ROW_SPLIT_PREFLIGHT',json.dumps(report['row_split_preflight']),flush=True)
                 del ni,nm,expected,batched,split
@@ -126,7 +132,7 @@ def main():
                     nm=torch.from_numpy(mask.astype(np.float32)).to('npu')
                     got=model(ni,nm).cpu().numpy()
                     metrics=comparison(got,expected);cosine=float((got*expected).sum())
-                    assert metrics['max_abs']<=.002 and cosine>=.9995 and np.isfinite(got).all(),metrics
+                    assert metrics['max_abs']<=embedding_limit and cosine>=.9995 and np.isfinite(got).all(),metrics
                     assert np.array_equal(got,model(ni,nm).cpu().numpy())
                     row=dict(task=task,role=role,id=key,shape=list(ids.shape),embedding=metrics,cosine=cosine,
                              seconds=time.perf_counter()-before)
