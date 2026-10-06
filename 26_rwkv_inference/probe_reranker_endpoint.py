@@ -116,6 +116,9 @@ def batched_model(args, report, cases, model, ranker, backbone):
             calls={'compiled_total':lambda:head(encode(ids,lengths)[1]),
                    'eager_total':lambda:ranker(backbone(ids,lengths)[1]),
                    'compiled_backbone':lambda:encode(ids,lengths),'compiled_head':lambda:head(fixed)}
+            if args.backend=='raw_eager':
+                calls={'eager_total':calls['eager_total'],'eager_backbone':lambda:backbone(ids,lengths),
+                       'eager_head':lambda:ranker(fixed)}
             row['timing']={n:measure(call,args.repeats,B) for n,call in calls.items()}
             assert torch.equal(head(encode(ids,lengths)[1]),logits), 'Timing altered output'
         report['cases'].append(row);inputs.append({'case_indices':group,'input_ids':rows,'valid_lengths':valid})
@@ -139,9 +142,9 @@ def main():
     p.add_argument('--repeats',type=int,default=20)
     p.add_argument('--warm-cache-from',type=Path)
     args=p.parse_args();args.output.mkdir(parents=True,exist_ok=False)
-    if not 3<=args.repeats<=100 or ((args.benchmark or args.warm_cache_from) and
-            (args.phase!='model' or args.backend!='torchair')):
-        p.error('Benchmark/cache-copy requires model/TorchAir; use repeats 3..100')
+    if not 3<=args.repeats<=100 or (args.benchmark and args.phase!='model') or (
+            args.warm_cache_from and (args.phase!='model' or args.backend!='torchair')):
+        p.error('Benchmark requires model phase; cache-copy requires model/TorchAir; use repeats 3..100')
     if args.batch_size!=1 and (args.phase!='model' or args.warm_cache_from):
         p.error('Batched tests require model phase and fresh shape-specific caches')
     start=time.perf_counter();root=Path(__file__).parent
@@ -260,8 +263,12 @@ def main():
                                'eager_total':lambda:ranker(backbone(ids,lengths)[1]),
                                'compiled_backbone':lambda:encode(ids,lengths),
                                'compiled_head':lambda:head(fixed)}
+                        if args.backend=='raw_eager':
+                            calls={'eager_total':calls['eager_total'],'eager_backbone':lambda:backbone(ids,lengths),
+                                   'eager_head':lambda:ranker(fixed)}
                         row['timing']={n:measure(call,args.repeats) for n,call in calls.items()}
-                        row['speedup']=row['timing']['eager_total']['host_median_seconds']/row['timing']['compiled_total']['host_median_seconds']
+                        if args.backend=='torchair':
+                            row['speedup']=row['timing']['eager_total']['host_median_seconds']/row['timing']['compiled_total']['host_median_seconds']
                         assert torch.equal(head(encode(ids,lengths)[1]),logit), 'Timing altered output'
                     report['cases'].append(row);print('MODEL_CASE',json.dumps(row),flush=True)
                 # Raw default path must still agree with the earlier saved unpadded scores.
