@@ -4,8 +4,9 @@ Agreed sequence, 2026-10-06. Start with correctness and accuracy on Ascend 910B2
 then decide whether larger evaluations need faster inference. This document is
 the experiment's single working document, including research findings, source
 provenance and reference scores. The server CPU environment and C runtime have
-been prepared; weights were loaded for export only. No inference or benchmarks
-have run yet; all reference measurements below are upstream reports.
+been prepared, and the eight-case CPU FP32 smoke passed on 2026-10-06. No NPU
+inference or accuracy benchmarks have run yet; benchmark reference scores below
+remain upstream reports.
 
 ## 0. Establish a server CPU reference
 
@@ -18,7 +19,8 @@ expose raw recurrent matrices; add that tracing later if needed for the NPU port
 Inspect the upstream CPU execution path before selecting the reference runner;
 the C implementation provides an additional embedding reference but does not
 replace the need for intermediate-state comparisons. Keep RWKV dependencies in
-a separate environment. No CPU inference has been run yet.
+a separate environment. The initial eight-case CPU reference is now saved and
+passed its smoke checks; see the CPU smoke evidence below.
 
 ## 1. Adapt the 0.1B embedding model to NPU
 
@@ -126,7 +128,8 @@ reporting full-suite macro NDCG@10 and its difference from the saved Qwen result
 
 Proceed one verified step at a time. Luka subsequently authorized the single
 CPU-reference script, cases, commits/pushes, model download and server setup.
-The first inference run waits for his code review. There is no training or
+He reviewed the script and authorized the CPU smoke, which has now passed.
+There is no training or
 distillation in this plan. Luka considers training a last resort and requires
 explicit approval from his higher-ups before it can be considered. Qwen
 prompt-order testing remains Luka's separate work.
@@ -235,7 +238,8 @@ TORCH_DEVICE_BACKEND_AUTOLOAD=0 \
   --runtime /workspace/rwkv_reference/runtime
 ```
 
-The first model smoke waits for Luka's code review. Its command will be:
+The first model smoke completed after Luka's code review at source commit
+`27c34182b4c39f1195637fdd9cd674618ea86f4a`. Equivalent command:
 
 ```bash
 cd /workspace/repos/rwkv-cpu-reference
@@ -243,8 +247,37 @@ TORCH_DEVICE_BACKEND_AUTOLOAD=0 \
 /workspace/venvs/rwkv_cpu_py312/bin/python -u \
   26_rwkv_inference/run_cpu_reference.py smoke \
   --runtime /workspace/rwkv_reference/runtime \
-  --output tmp/26_rwkv_inference/cpu_smoke_$(git rev-parse --short HEAD)
+  --output tmp/26_rwkv_inference/cpu_smoke_27c34182
 ```
+
+### CPU smoke evidence, 2026-10-06
+
+**Exit 0; all eight cases passed.** Runtime: upstream C, CPU FP32, B1, four
+OpenMP threads, on the selected aarch64 server/container. Outputs and all 14
+layer-hidden trace slices were finite; embedding norms passed the predeclared
+`atol=1e-4, rtol=0` check. Repeating the first batch after the seven other cases
+produced a bitwise-identical embedding. The long document contained 961 raw
+tokens and 976 prepared positions, exercising the multi-chunk path.
+
+The runner took **32.25 seconds** including setup, trace writing and the repeat
+check. The eight initial traced forward calls totaled **24.41 seconds**; the
+long-document call took **14.20 seconds**. These are traced smoke timings, not
+untraced throughput measurements or NanoBEIR accuracy evidence.
+
+The eight NPZ anchors total **59,660,901 bytes** and remain on the server at
+`/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182/`.
+They contain exact raw/prepared IDs, EOS masks, FP32 embeddings and layer-hidden
+outputs, ready for the NPU comparison. A subsequent readback verified every
+NPZ hash, shape and finite embedding/trace output. The compact committed
+[`result.json`](../tmp/26_rwkv_inference/cpu_smoke_27c34182/result.json),
+[`artifact_index.json`](../tmp/26_rwkv_inference/cpu_smoke_27c34182/artifact_index.json),
+command, log and exit code preserve source/runtime provenance and each server
+artifact's path, hash and shape. Large trace arrays remain outside Git.
+
+Next: implement the correctness-first 0.1B NPU path and compare these exact
+inputs and layer-hidden outputs before NanoSCIDOCS. Raw recurrent-matrix tracing
+is still unavailable in the unchanged C API. No NPU implementation or benchmark
+score is claimed by this smoke.
 
 ## Released model pairs and accuracy references
 
@@ -299,8 +332,8 @@ Selected container: **`research_vllm_ascend_023_external_workspace`** on
 - The separate `/workspace/venvs/rwkv_cpu_py312` environment was created with
   `--system-site-packages`, inheriting torch `2.10.0+cpu` and NumPy `1.26.4`.
   Both imports were checked with backend autoload disabled. No base packages
-  were changed. Checkpoint export and the C build succeeded; no CPU or NPU
-  inference has been validated.
+  were changed. Checkpoint export, the C build and the eight-case CPU smoke
+  succeeded. NPU inference and benchmark accuracy remain unvalidated.
 
 The current local session reaches the server through the existing task-specific
 SSH configuration, not the default `~/.ssh/config`:

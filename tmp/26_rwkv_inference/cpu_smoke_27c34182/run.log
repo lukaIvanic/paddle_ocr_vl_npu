@@ -1,0 +1,13 @@
+Saved batch_000.npz: ['english_query'], 1.755s
+Saved batch_001.npz: ['english_document'], 1.224s
+Saved batch_002.npz: ['english_other_document'], 1.061s
+Saved batch_003.npz: ['chinese_query'], 2.082s
+Saved batch_004.npz: ['chinese_document'], 1.576s
+Saved batch_005.npz: ['unicode_document'], 2.226s
+Saved batch_006.npz: ['empty_document'], 0.287s
+Saved batch_007.npz: ['multi_chunk_document'], 14.200s
+{
+  "output": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182",
+  "all_checks_passed": true,
+  "batches": 8
+}

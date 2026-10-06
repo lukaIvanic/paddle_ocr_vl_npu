@@ -1,0 +1,241 @@
+{
+  "server_host": "liteserver-c001-4",
+  "container": "research_vllm_ascend_023_external_workspace",
+  "server_directory": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182",
+  "source_commit": "27c34182b4c39f1195637fdd9cd674618ea86f4a",
+  "all_artifact_checks_passed": true,
+  "artifacts": [
+    {
+      "file": "batch_000.npz",
+      "server_path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182/batch_000.npz",
+      "bytes": 3701918,
+      "sha256": "84f0a0ef3a862615594e332bb99aff5992b264d9b0af00b3b12b23116a214f29",
+      "shapes": {
+        "input_ids": [
+          1,
+          96
+        ],
+        "eos_mask": [
+          1,
+          96
+        ],
+        "embeddings": [
+          1,
+          768
+        ],
+        "layer_outputs": [
+          14,
+          1,
+          96,
+          768
+        ],
+        "raw_tokens_0": [
+          23
+        ]
+      }
+    },
+    {
+      "file": "batch_001.npz",
+      "server_path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182/batch_001.npz",
+      "bytes": 2463682,
+      "sha256": "0f2d1a6d55c30a6817ab5e2f6e776782e56e06e45d7e67033ae129d70c82a3c7",
+      "shapes": {
+        "input_ids": [
+          1,
+          64
+        ],
+        "eos_mask": [
+          1,
+          64
+        ],
+        "embeddings": [
+          1,
+          768
+        ],
+        "layer_outputs": [
+          14,
+          1,
+          64,
+          768
+        ],
+        "raw_tokens_0": [
+          13
+        ]
+      }
+    },
+    {
+      "file": "batch_002.npz",
+      "server_path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182/batch_002.npz",
+      "bytes": 2459123,
+      "sha256": "9cb9b738be8091da4fd05b55da6f02ebe83691501a2951f23bea9f1d84313b09",
+      "shapes": {
+        "input_ids": [
+          1,
+          64
+        ],
+        "eos_mask": [
+          1,
+          64
+        ],
+        "embeddings": [
+          1,
+          768
+        ],
+        "layer_outputs": [
+          14,
+          1,
+          64,
+          768
+        ],
+        "raw_tokens_0": [
+          12
+        ]
+      }
+    },
+    {
+      "file": "batch_003.npz",
+      "server_path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182/batch_003.npz",
+      "bytes": 4920151,
+      "sha256": "a23da331e883ca1414bc7c2f6485eefec906d3033ce1c25b4fe539f7be823f0f",
+      "shapes": {
+        "input_ids": [
+          1,
+          128
+        ],
+        "eos_mask": [
+          1,
+          128
+        ],
+        "embeddings": [
+          1,
+          768
+        ],
+        "layer_outputs": [
+          14,
+          1,
+          128,
+          768
+        ],
+        "raw_tokens_0": [
+          30
+        ]
+      }
+    },
+    {
+      "file": "batch_004.npz",
+      "server_path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182/batch_004.npz",
+      "bytes": 3663192,
+      "sha256": "082ac72c63b96db17f653157597a83196a56cb0fd9305d314f7df7b96530a392",
+      "shapes": {
+        "input_ids": [
+          1,
+          96
+        ],
+        "eos_mask": [
+          1,
+          96
+        ],
+        "embeddings": [
+          1,
+          768
+        ],
+        "layer_outputs": [
+          14,
+          1,
+          96,
+          768
+        ],
+        "raw_tokens_0": [
+          22
+        ]
+      }
+    },
+    {
+      "file": "batch_005.npz",
+      "server_path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182/batch_005.npz",
+      "bytes": 5548097,
+      "sha256": "d19fe7df180ae3aea214e65353b30447fd6d757e1c9bd8b82ad831c716f2f9b9",
+      "shapes": {
+        "input_ids": [
+          1,
+          144
+        ],
+        "eos_mask": [
+          1,
+          144
+        ],
+        "embeddings": [
+          1,
+          768
+        ],
+        "layer_outputs": [
+          14,
+          1,
+          144,
+          768
+        ],
+        "raw_tokens_0": [
+          34
+        ]
+      }
+    },
+    {
+      "file": "batch_006.npz",
+      "server_path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182/batch_006.npz",
+      "bytes": 601465,
+      "sha256": "335562b869668741214c75c03e82ed68a3f24e4616d7e936db37cfde4b3220ad",
+      "shapes": {
+        "input_ids": [
+          1,
+          16
+        ],
+        "eos_mask": [
+          1,
+          16
+        ],
+        "embeddings": [
+          1,
+          768
+        ],
+        "layer_outputs": [
+          14,
+          1,
+          16,
+          768
+        ],
+        "raw_tokens_0": [
+          0
+        ]
+      }
+    },
+    {
+      "file": "batch_007.npz",
+      "server_path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182/batch_007.npz",
+      "bytes": 36303273,
+      "sha256": "b20a91bafd488c72a96ad75ed0f17aaec84f53baede20ba066133ccb583477e0",
+      "shapes": {
+        "input_ids": [
+          1,
+          976
+        ],
+        "eos_mask": [
+          1,
+          976
+        ],
+        "embeddings": [
+          1,
+          768
+        ],
+        "layer_outputs": [
+          14,
+          1,
+          976,
+          768
+        ],
+        "raw_tokens_0": [
+          961
+        ]
+      }
+    }
+  ]
+}

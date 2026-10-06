@@ -1,0 +1,9 @@
+Source commit: 27c34182b4c39f1195637fdd9cd674618ea86f4a
+Hostname: liteserver-c001-4
+Container: research_vllm_ascend_023_external_workspace
+Device: CPU FP32; no accelerator used
+ASCEND_RT_VISIBLE_DEVICES: empty
+TORCH_DEVICE_BACKEND_AUTOLOAD=0
+CUDA_VISIBLE_DEVICES=-1
+Working directory: /workspace/repos/rwkv-cpu-reference
+Exact command: /workspace/venvs/rwkv_cpu_py312/bin/python -u /workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_cpu_reference.py smoke --runtime /workspace/rwkv_reference/runtime --output /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cpu_smoke_27c34182
