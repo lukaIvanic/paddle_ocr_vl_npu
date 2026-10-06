@@ -1,0 +1,256 @@
+{
+  "case": {
+    "operator": "increfa",
+    "batch": 1,
+    "context": 768,
+    "pattern": "ragged",
+    "capacity": 4096,
+    "layout": "dense",
+    "format": 2,
+    "fill": "packed"
+  },
+  "status": "passed",
+  "source_commit": "80610e4438dba05011b05f89fc45d91e96992671",
+  "requested_chip": "910B",
+  "device_name": "Ascend910B2",
+  "torch_version": "2.10.0+cpu",
+  "torch_npu_version": "2.10.0",
+  "visible_devices": "7",
+  "cann_home": "/usr/local/Ascend/cann-9.0.0",
+  "hostname": "liteserver-c001-4",
+  "lengths": [
+    768
+  ],
+  "block_table": [
+    [
+      0,
+      7,
+      14,
+      28,
+      23,
+      12,
+      24,
+      1,
+      19,
+      25,
+      20,
+      17,
+      29,
+      2,
+      3,
+      22,
+      31,
+      26,
+      27,
+      30,
+      13,
+      15,
+      10,
+      11,
+      16,
+      18,
+      9,
+      5,
+      8,
+      21,
+      6,
+      4
+    ]
+  ],
+  "heads": {
+    "query": 14,
+    "kv": 2,
+    "dim": 64
+  },
+  "internal_format_requested": true,
+  "fixture_sha256": {
+    "q": "894b2519e5550b9bb35a7de1e8a624402caa1570395fe4057e0ba090edc90a4a",
+    "k": "a0cbd40b66b2ca8252451ba784303db21729c8f21d0611c268f6ceeda8c1be25",
+    "v": "f732539cc4f9602d49ae24305b9c216975795f03646a2eb28b02f68aa53fb439"
+  },
+  "cache_allocation_and_fill_s": 0.11231908993795514,
+  "cache_before_attention": {
+    "key": {
+      "shape": [
+        1,
+        2,
+        4096,
+        64
+      ],
+      "stride": [
+        524288,
+        262144,
+        64,
+        1
+      ],
+      "dtype": "torch.float16",
+      "format": 0,
+      "logical_bytes": 1048576
+    },
+    "value": {
+      "shape": [
+        1,
+        2,
+        4096,
+        64
+      ],
+      "stride": [
+        524288,
+        262144,
+        64,
+        1
+      ],
+      "dtype": "torch.float16",
+      "format": 0,
+      "logical_bytes": 1048576
+    }
+  },
+  "packed_roundtrip_exact": true,
+  "operation_binding": {
+    "module": "torch._ops.npu",
+    "file": "native binding",
+    "signature": "(*args: _P.args, **kwargs: _P.kwargs) -> ~_T"
+  },
+  "contract": "BNSD, bool future mask, actual_seq_lengths=None, production PSE sentinel",
+  "stage": "complete",
+  "correctness": {
+    "allclose": true,
+    "finite": true,
+    "max_abs": 6.823241710662842e-05,
+    "relative_l2": 0.0002684154314920306,
+    "atol": 0.003,
+    "rtol": 0.003
+  },
+  "timing_ms_per_call": {
+    "wall_median": 0.07800550665706396,
+    "device_median": 0.06495600044727326,
+    "wall_samples": [
+      0.1456450205296278,
+      0.08130501955747604,
+      0.07846797816455364,
+      0.08075796067714691,
+      0.0786609947681427,
+      0.07733297534286976,
+      0.0775699969381094,
+      0.0777010340243578,
+      0.07590199820697308,
+      0.07623396813869476,
+      0.07806001231074333,
+      0.07894802838563919,
+      0.07870402187108994,
+      0.07422198541462421,
+      0.0768519937992096,
+      0.0752289779484272,
+      0.07495502941310406,
+      0.08153500966727734,
+      0.07879300974309444,
+      0.07514399476349354,
+      0.07884097285568714,
+      0.07687299512326717,
+      0.07848599925637245,
+      0.07795100100338459,
+      0.07543000392615795,
+      0.07515898905694485,
+      0.07806899957358837,
+      0.07889801636338234,
+      0.07839100435376167,
+      0.07427399978041649
+    ],
+    "device_samples": [
+      0.06147400140762329,
+      0.06702200174331666,
+      0.06484000086784363,
+      0.06834999918937683,
+      0.06546199917793274,
+      0.06565999984741211,
+      0.06445599794387817,
+      0.06534000039100647,
+      0.06513800024986267,
+      0.06474400162696839,
+      0.06488199830055237,
+      0.06636199951171876,
+      0.06640800237655639,
+      0.06379799842834473,
+      0.06435800194740296,
+      0.0637340009212494,
+      0.06347399950027466,
+      0.06902400255203248,
+      0.06503000259399414,
+      0.0646120011806488,
+      0.06646599769592285,
+      0.0643239974975586,
+      0.06574000120162964,
+      0.06517199873924255,
+      0.06533600091934204,
+      0.06360599994659424,
+      0.06367599964141846,
+      0.06317200064659119,
+      0.06509600281715393,
+      0.06409400105476379
+    ],
+    "warmup": 5,
+    "calls_per_sample": 10,
+    "scope": "attention only; eager dispatch included; fixture/packing/writer/validation excluded"
+  },
+  "cache_after_attention": {
+    "key": {
+      "shape": [
+        1,
+        2,
+        4096,
+        64
+      ],
+      "stride": [
+        524288,
+        262144,
+        64,
+        1
+      ],
+      "dtype": "torch.float16",
+      "format": 2,
+      "logical_bytes": 1048576
+    },
+    "value": {
+      "shape": [
+        1,
+        2,
+        4096,
+        64
+      ],
+      "stride": [
+        524288,
+        262144,
+        64,
+        1
+      ],
+      "dtype": "torch.float16",
+      "format": 2,
+      "logical_bytes": 1048576
+    }
+  },
+  "command": [
+    "/usr/local/python3.12.13/bin/python3",
+    "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py",
+    "--worker",
+    "{\"operator\": \"increfa\", \"batch\": 1, \"context\": 768, \"pattern\": \"ragged\", \"capacity\": 4096, \"layout\": \"dense\", \"format\": 2, \"fill\": \"packed\"}",
+    "--chip",
+    "910B",
+    "--output",
+    "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_increfa_native_control_20261006T093249Z_5f982e04/summary_cases/0000.json",
+    "--block-size",
+    "128",
+    "--warmup",
+    "5",
+    "--samples",
+    "30",
+    "--calls-per-sample",
+    "10",
+    "--seed",
+    "310",
+    "--atol",
+    "0.003",
+    "--rtol",
+    "0.003"
+  ],
+  "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_increfa_native_control_20261006T093249Z_5f982e04/summary_cases/0000.log"
+}

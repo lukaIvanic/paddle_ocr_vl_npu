@@ -88,6 +88,8 @@ def parser():
     p.add_argument("--contexts", default="768")
     p.add_argument("--patterns", default="ragged")
     p.add_argument("--formats", default="2,29", help="requested ACL descriptors; select 2 for native-only timing controls")
+    p.add_argument("--paged-length-device", choices=("npu", "cpu"), default="npu",
+                   help="npu reproduces pinned 310P dispatch; cpu is a labeled 910B ATB compatibility control")
     p.add_argument("--block-size", type=int, choices=(64, 128), default=128)
     p.add_argument("--cache-length", type=int, default=4096)
     p.add_argument("--warmup", type=int, default=5)
@@ -124,8 +126,11 @@ def case_matrix(args):
         for layout, fmt in itertools.product(LAYOUTS[op], formats):
             fills = ("packed", "writer") if op == "paged" else ("packed",)
             for fill in fills:
-                yield dict(operator=op, batch=b, context=s, pattern=pattern,
-                           capacity=capacity, layout=layout, format=fmt, fill=fill)
+                case = dict(operator=op, batch=b, context=s, pattern=pattern,
+                            capacity=capacity, layout=layout, format=fmt, fill=fill)
+                if op == "paged":
+                    case["length_device"] = args.paged_length_device
+                yield case
 
 
 def tensor_info(t, torch_npu):
@@ -289,11 +294,16 @@ def run_worker(args, case):
         result["operation_binding"] = callable_info(torch_npu._npu_paged_attention)
         q3 = q.squeeze(2).contiguous()
         output = torch.empty_like(q3)
-        result["contract"] = "exact 310P forward_paged_attention torch_npu call; no vLLM import"
+        length_device = case.get("length_device", "npu")
+        attention_lens = lens if length_device == "npu" else torch.tensor(lengths, dtype=torch.int32)
+        result["context_lens_device"] = str(attention_lens.device)
+        result["contract"] = ("exact pinned 310P forward_paged_attention call with NPU lengths"
+                              if length_device == "npu" else
+                              "910B ATB compatibility control: same private op, CPU int32 lengths")
         def call():
             torch_npu._npu_paged_attention(query=q3, key_cache=kc, value_cache=vc,
                 num_kv_heads=hk, num_heads=hq, scale_value=1 / math.sqrt(d),
-                block_table=table, context_lens=lens, out=output)
+                block_table=table, context_lens=attention_lens, out=output)
             return output
 
     result["stage"] = "attention_validation"

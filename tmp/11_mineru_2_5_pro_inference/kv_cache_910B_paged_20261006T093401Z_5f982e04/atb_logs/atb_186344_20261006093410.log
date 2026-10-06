@@ -1,0 +1,4 @@
+[2026-10-06 09:34:10.908374] [error] [186367] [param.cpp:29] tensor.hostData is null
+[2026-10-06 09:34:10.909148] [error] [186367] [paged_attention_ops_runner.cpp:227] PagedAttentionOpsRunner_0:0  build param from host tensor fail
+[2026-10-06 09:34:10.909162] [error] [186367] [operation_base.cpp:530] PagedAttentionOperation_0 runner setup fail
+[2026-10-06 09:34:10.909168] [error] [186367] [operation_base.cpp:630] PagedAttentionOperation_0 setup fail, error code: 1

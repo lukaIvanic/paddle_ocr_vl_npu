@@ -1,11 +1,13 @@
 # MinerU KV-cache layout and storage-format probe
 
-Status, 2026-10-06: implemented; CPU packing checks passed on the Mac. **No NPU
-timing or correctness result yet.** The current host-master plus `docker exec`
-route is verified working; the earlier connection-blocker report used a retired
-container SSH alias. The subsequent 910B inventory check found all healthy cards
-occupied and the two unoccupied cards reporting `Alarm`; benchmark execution
-awaits a healthy free card. Recheck the current inventory before running.
+Status, 2026-10-06: CPU packing checks and **910B2 FP16 portable-operation
+correctness checks passed**. Genuine format-29 storage was retained and checked,
+but IncreFA and FIA rejected it on this installed runtime. The private operation
+has only partial setup-error evidence; its 910B CPU-length compatibility control
+is implemented but unrun. **No 310P result or validated ND/NZ speed ratio exists.**
+Use the verified host-master plus `docker exec` route. Cards 4 and 5 are excluded;
+Luka requested an idle Clef server on 7 and further MinerU work on 6 when free.
+Recheck inventory before every run. See [910B evidence](#910b-evidence).
 
 This probes one-token **text decode attention** with synthetic, identical FP16
 Q/K/V and MinerU dimensions: 14 query heads, 2 KV heads, D64, KV4096. Vision
@@ -59,6 +61,15 @@ starting or modifying vLLM. It does not reproduce the engine scheduler or graphs
 | IncreFA | Dense BNSD, current production mask/PSE semantics |
 | FIA v1 and v2 | ND pages `[NB, block, Hkv*D]`; blocked pages `[NB, Hkv, D/16, block, 16]`. One-token BSH query avoids assuming NZ BNSD support. |
 | `_npu_paged_attention` | 910B-style pages `[NB, block, Hkv, D]`; 310P blocked pages `[NB, Hkv*D/16, block, 16]`. Each also tests synthetic packing and actual `_npu_reshape_and_cache` filling separately. |
+
+The default private-op call keeps `context_lens` on NPU, exactly as the pinned
+310P source does. The installed 910B ATB path rejected that metadata with
+`tensor.hostData is null`, before attention. `PAGED_LENGTH_DEVICE=cpu` selects a
+separately labeled control using CPU int32 lengths with the same NPU query,
+K/V, block table and private operation. This is not CPU attention or an
+automatic fallback. [Huawei's official 910B test uses CPU lengths](https://github.com/Ascend/op-plugin/blob/d83570a35dfe0d8e9869c3ecfca6647cfccdd9c8/test/test_custom_ops/test_atb_paged_attention.py#L120).
+Until this variant runs, those ATB setup errors establish no cache-format
+support or performance conclusion.
 
 There are two distinct questions: **logical element order** and **storage
 descriptor**. A blocked tensor with descriptor 2 is not evidence that format 29
@@ -134,6 +145,20 @@ CHIP=910B OPERATORS=paged RUN_NAME=paged \
   bash 11_mineru_2_5_pro_inference/kv_cache_probe/run_probe.sh
 ```
 
+On this installed 910B ATB runtime, run the explicit CPU-length control after
+reviewing the default metadata failure:
+
+```bash
+CHIP=910B OPERATORS=paged PAGED_LENGTH_DEVICE=cpu RUN_NAME=paged_cpu_lengths \
+  bash 11_mineru_2_5_pro_inference/kv_cache_probe/run_probe.sh
+```
+
+`FORMATS=2` runs native-storage controls alone when repeating timing after an
+occupancy change; the default remains `2,29`. On this shared machine, store
+before/after occupancy snapshots and exclude timings that overlap another
+workload. The event span includes eager host dispatch and is not pure kernel
+time.
+
 If the controls pass, expand the relevant operator's contexts and batches:
 
 ```bash
@@ -198,3 +223,39 @@ status, requested/observed formats, correctness errors, wall/device medians,
 and `FORMAT_COMPARISONS`. Explain any writer-logical-roundtrip mismatch
 separately from attention correctness. No page/s or end-to-end performance
 claim can be derived from this probe.
+
+## 910B evidence
+
+Environment: physical NPU 7, observed `Ascend910B2`, torch 2.10.0+cpu,
+torch-npu 2.10.0, CANN 9.0; Hq14/Hkv2/D64, FP16, block128, capacity4096,
+S768, B1/B16 with ragged lengths. Results are one-layer synthetic checks.
+
+- [Portable matrix, source 09e2e2c2](../../tmp/11_mineru_2_5_pro_inference/kv_cache_910B_portable_20261006T092209Z_09e2e2c2/summary.json):
+  all 20 cases completed. Eight FIA v1/v2 native-storage cases passed, including
+  both ordinary and logical blocked pages; maximum absolute output error was
+  0.000131. All ten actual format-29 cases rejected the descriptor: IncreFA
+  reports `ERR00007`, FIA v1/v2 CANN reports unsupported dtype/format (161002).
+  Two native IncreFA controls were incorrectly skipped because descriptor 2
+  normalized to native descriptor 0; this guard was fixed in faa06be5.
+  A new Qwen TP4 service was observed on cards 4–7 during this period, so these
+  timing samples are **not an isolated benchmark** and need repetition.
+- [IncreFA controls, source 5f982e04](../../tmp/11_mineru_2_5_pro_inference/kv_cache_910B_increfa_native_control_20261006T093249Z_5f982e04/summary.json):
+  B1/B16 native controls passed, maximum errors 0.0000683 / 0.000131;
+  format 29 again rejected. Recorded event medians 0.065 / 0.075 ms include eager
+  dispatch; occupancy changed repeatedly on the shared host, so do not use these
+  as clean cross-operator speed comparisons.
+- [Interrupted private matrix, source 5f982e04](../../tmp/11_mineru_2_5_pro_inference/kv_cache_910B_paged_20261006T093401Z_5f982e04/summary.json):
+  exit 143, stopped our controller/worker to release card 7 for Clef.
+  The controller recorded two B1 ordinary-page native-storage setup failures;
+  a third format-29 packed case also has a worker JSON. ATB logs report missing
+  host metadata, not a cache-format rejection. The native writer control had a
+  bit-exact logical roundtrip. The complete private matrix remains unrun.
+- [Initial aborted metadata run, source 264ce6e0](../../tmp/11_mineru_2_5_pro_inference/kv_cache_910B_portable_20261006T092003Z_264ce6e0/summary.json):
+  exit 143; five cases failed an unsupported configuration getter before any
+  attention call. Fixed in 09e2e2c2. This is not inference validation.
+
+Every linked directory preserves the exact command, exit code, run log and
+per-case JSON/logs. No validated same-shape ND/NZ pair was timed, and no NZ
+speedup has been demonstrated. Next: reserve card 7 with the requested idle
+Clef service, use card 6 only when free, run the labeled private-op CPU-length
+control, and repeat native portable timings under documented occupancy.

@@ -1,0 +1,5 @@
+{"case": {"operator": "increfa", "batch": 1, "context": 768, "pattern": "ragged", "capacity": 4096, "layout": "dense", "format": 2, "fill": "packed"}, "status": "passed", "timing": 0.06495600044727326, "error": null}
+{"case": {"operator": "increfa", "batch": 1, "context": 768, "pattern": "ragged", "capacity": 4096, "layout": "dense", "format": 29, "fill": "packed"}, "status": "operation_error", "timing": null, "error": "RuntimeError: Current operator npu_incre_flash_attention_symint do not support internal format. "}
+{"case": {"operator": "increfa", "batch": 16, "context": 768, "pattern": "ragged", "capacity": 4096, "layout": "dense", "format": 2, "fill": "packed"}, "status": "passed", "timing": 0.07513299882411956, "error": null}
+{"case": {"operator": "increfa", "batch": 16, "context": 768, "pattern": "ragged", "capacity": 4096, "layout": "dense", "format": 29, "fill": "packed"}, "status": "operation_error", "timing": null, "error": "RuntimeError: Current operator npu_incre_flash_attention_symint do not support internal format. "}
+FORMAT_COMPARISONS []

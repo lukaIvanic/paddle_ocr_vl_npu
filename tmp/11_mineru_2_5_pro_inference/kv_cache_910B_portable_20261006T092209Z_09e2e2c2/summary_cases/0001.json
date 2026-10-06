@@ -1,0 +1,143 @@
+{
+  "case": {
+    "operator": "increfa",
+    "batch": 1,
+    "context": 768,
+    "pattern": "ragged",
+    "capacity": 4096,
+    "layout": "dense",
+    "format": 29,
+    "fill": "packed"
+  },
+  "status": "operation_error",
+  "source_commit": "80610e4438dba05011b05f89fc45d91e96992671",
+  "requested_chip": "910B",
+  "device_name": "Ascend910B2",
+  "torch_version": "2.10.0+cpu",
+  "torch_npu_version": "2.10.0",
+  "visible_devices": "7",
+  "cann_home": "/usr/local/Ascend/cann-9.0.0",
+  "hostname": "liteserver-c001-4",
+  "lengths": [
+    768
+  ],
+  "block_table": [
+    [
+      0,
+      7,
+      14,
+      28,
+      23,
+      12,
+      24,
+      1,
+      19,
+      25,
+      20,
+      17,
+      29,
+      2,
+      3,
+      22,
+      31,
+      26,
+      27,
+      30,
+      13,
+      15,
+      10,
+      11,
+      16,
+      18,
+      9,
+      5,
+      8,
+      21,
+      6,
+      4
+    ]
+  ],
+  "heads": {
+    "query": 14,
+    "kv": 2,
+    "dim": 64
+  },
+  "internal_format_requested": true,
+  "fixture_sha256": {
+    "q": "894b2519e5550b9bb35a7de1e8a624402caa1570395fe4057e0ba090edc90a4a",
+    "k": "a0cbd40b66b2ca8252451ba784303db21729c8f21d0611c268f6ceeda8c1be25",
+    "v": "f732539cc4f9602d49ae24305b9c216975795f03646a2eb28b02f68aa53fb439"
+  },
+  "cache_allocation_and_fill_s": 6.611672280356288,
+  "cache_before_attention": {
+    "key": {
+      "shape": [
+        1,
+        2,
+        4096,
+        64
+      ],
+      "stride": [
+        524288,
+        262144,
+        64,
+        1
+      ],
+      "dtype": "torch.float16",
+      "format": 29,
+      "logical_bytes": 1048576
+    },
+    "value": {
+      "shape": [
+        1,
+        2,
+        4096,
+        64
+      ],
+      "stride": [
+        524288,
+        262144,
+        64,
+        1
+      ],
+      "dtype": "torch.float16",
+      "format": 29,
+      "logical_bytes": 1048576
+    }
+  },
+  "packed_roundtrip_exact": true,
+  "operation_binding": {
+    "module": "torch._ops.npu",
+    "file": "native binding",
+    "signature": "(*args: _P.args, **kwargs: _P.kwargs) -> ~_T"
+  },
+  "contract": "BNSD, bool future mask, actual_seq_lengths=None, production PSE sentinel",
+  "stage": "attention_validation",
+  "error": "RuntimeError: Current operator npu_incre_flash_attention_symint do not support internal format. \n[ERROR] 2026-10-06-09:22:38 (PID:180535, Device:0, RankID:-1) ERR00007 PTA feature not supported",
+  "traceback": "Traceback (most recent call last):\n  File \"/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py\", line 369, in main\n    result = run_worker(args, case)\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py\", line 292, in run_worker\n    observed = call()\n               ^^^^^^\n  File \"/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py\", line 257, in call\n    return torch_npu.npu_incre_flash_attention(q, kc, vc, atten_mask=mask,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py\", line 1209, in __call__\n    return self._op(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: Current operator npu_incre_flash_attention_symint do not support internal format. \n[ERROR] 2026-10-06-09:22:38 (PID:180535, Device:0, RankID:-1) ERR00007 PTA feature not supported\n",
+  "command": [
+    "/usr/local/python3.12.13/bin/python3",
+    "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py",
+    "--worker",
+    "{\"operator\": \"increfa\", \"batch\": 1, \"context\": 768, \"pattern\": \"ragged\", \"capacity\": 4096, \"layout\": \"dense\", \"format\": 29, \"fill\": \"packed\"}",
+    "--chip",
+    "910B",
+    "--output",
+    "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_portable_20261006T092209Z_09e2e2c2/summary_cases/0001.json",
+    "--block-size",
+    "128",
+    "--warmup",
+    "5",
+    "--samples",
+    "30",
+    "--calls-per-sample",
+    "10",
+    "--seed",
+    "310",
+    "--atol",
+    "0.003",
+    "--rtol",
+    "0.003"
+  ],
+  "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_portable_20261006T092209Z_09e2e2c2/summary_cases/0001.log"
+}

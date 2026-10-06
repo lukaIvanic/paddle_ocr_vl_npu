@@ -1,0 +1,40 @@
+{
+  "case": {
+    "operator": "increfa",
+    "batch": 1,
+    "context": 768,
+    "pattern": "ragged",
+    "capacity": 4096,
+    "layout": "dense",
+    "format": 29,
+    "fill": "packed"
+  },
+  "status": "operation_error",
+  "error": "AttributeError: '_npuConfig' object has no attribute 'allow_internal_format'",
+  "traceback": "Traceback (most recent call last):\n  File \"/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py\", line 369, in main\n    result = run_worker(args, case)\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py\", line 164, in run_worker\n    allow_internal_format=bool(torch.npu.config.allow_internal_format))\n                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: '_npuConfig' object has no attribute 'allow_internal_format'\n",
+  "command": [
+    "/usr/local/python3.12.13/bin/python3",
+    "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py",
+    "--worker",
+    "{\"operator\": \"increfa\", \"batch\": 1, \"context\": 768, \"pattern\": \"ragged\", \"capacity\": 4096, \"layout\": \"dense\", \"format\": 29, \"fill\": \"packed\"}",
+    "--chip",
+    "910B",
+    "--output",
+    "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_portable_20261006T092003Z_264ce6e0/summary_cases/0001.json",
+    "--block-size",
+    "128",
+    "--warmup",
+    "5",
+    "--samples",
+    "30",
+    "--calls-per-sample",
+    "10",
+    "--seed",
+    "310",
+    "--atol",
+    "0.003",
+    "--rtol",
+    "0.003"
+  ],
+  "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_portable_20261006T092003Z_264ce6e0/summary_cases/0001.log"
+}
