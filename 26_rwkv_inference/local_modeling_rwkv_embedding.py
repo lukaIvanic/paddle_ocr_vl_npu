@@ -97,7 +97,9 @@ class Block(Weights):
         extra = ((r * k * self.get('att.r_k').reshape(C)).reshape(B, T, H, 64)
                  .sum(-1, keepdim=True) * v.reshape(B, T, H, 64)).reshape(B, T, C)
         x = x + self.linear((y + extra) * g, 'att.output.weight')
-        del z, delta, r, w, k, xv, v, a, g, kk, y, extra
+        # Dynamo cannot trace DELETE_DEREF for the mix closure variables.
+        if not torch.compiler.is_compiling():
+            del z, delta, r, w, k, xv, v, a, g, kk, y, extra
         z = self.norm(x, 'ln2')
         delta = torch.cat((previous[1][:, None], z[:, :-1]), dim=1) - z
         ffn_previous = z[:, -1]

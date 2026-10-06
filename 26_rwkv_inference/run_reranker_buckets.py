@@ -98,7 +98,11 @@ def main():
         baseline = json.loads(args.baseline_result.read_text()); smoke = json.loads(args.smoke_result.read_text())
         assert baseline['all_checks_passed'] and smoke['all_checks_passed']
         for name in ['local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py']:
-            assert report['source_sha256'][name] == smoke['source_sha256'][name] == baseline['source_sha256'][name]
+            assert report['source_sha256'][name] == smoke['source_sha256'][name]
+            # The benchmark predates the compile-only DELETE_DEREF cleanup guard.
+            expected = ('14af5fb43576f0b0b505d8fcd20ba1adc255ded9b485c0a845ff8d48c6924f24'
+                        if name == 'local_modeling_rwkv_embedding.py' else report['source_sha256'][name])
+            assert baseline['source_sha256'][name] == expected
         report['input_sha256'] = {n:sha256(getattr(args,n)) for n in ['checkpoint','reranker','data','candidates','baseline_result','smoke_result']}
         data = json.loads(args.data.read_text()); candidates = json.loads(args.candidates.read_text())
         old_scores = json.loads((args.baseline_result.parent/'pair_scores.json').read_text())
