@@ -304,7 +304,14 @@ evaluator. On 16 real pairs, independent CPU FP32 logits match NPU within
 **0.397** across four top-100 queries, but all four NDCGs stay identical; the
 full-suite effect remains untested. Training evaluator/checkpoint disagree on
 `emb.weight` versus `token.weight`; our loader already applies the package's
-correct alias. Published run/candidate identity remains unverified.
+correct alias. Published run/candidate identity remains unverified. The alternate
+`evaluate.py` calls `CrossEncoderNanoBEIREvaluator()` with defaults verified in
+Sentence Transformers 5.1.2/5.2.0: **11 tasks**, **BM25 top-100**, and **forced
+inclusion of positives**. This differs from our 13-task embedding-candidate run
+and from paper Appendix A. Merely excluding ArguAna/Touché from our saved scores
+gives **62.012191**; it does not reproduce that alternate protocol. Resolve the
+published evaluation contract before another full arithmetic-control run.
+[`Two-entrypoint audit and pinned source links`](../tmp/26_rwkv_inference/reranker_protocol_audit_v2_4fa423a8/evaluation_contract_followup.json).
 [`Audit, source links, independent comparisons and loader failure`](../tmp/26_rwkv_inference/reranker_protocol_audit_v2_4fa423a8/audit_summary.json).
 
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
