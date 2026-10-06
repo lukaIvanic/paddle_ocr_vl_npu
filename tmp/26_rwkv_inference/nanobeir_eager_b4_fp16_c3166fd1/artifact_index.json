@@ -1,0 +1,299 @@
+{
+  "all_checks_passed": true,
+  "corpus_documents": 56723,
+  "queries": 649,
+  "candidate_pairs": 64900,
+  "compressed_text_artifacts": "Lossless gzip; hashes in task result.json refer to decompressed source bytes.",
+  "large_arrays": "embeddings.npz remains on server; path, size and SHA256 in each task result.json.",
+  "server_run_root": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_eager_b4_fp16_c3166fd1",
+  "files": {
+    "command.txt": {
+      "bytes": 1146,
+      "sha256": "3e25ad504c719807a4fbc8c3227bf55de240cb7d2d6499b190475f56d092e226"
+    },
+    "exit_code.txt": {
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "metric_package.json": {
+      "bytes": 824,
+      "sha256": "fd1be2ce1144af203a0b1d5ec9e7841784b12f8b04d4fe1dfb4c3b22c532ddf3"
+    },
+    "probe/NanoArguAnaRetrieval/batch_timings.jsonl.gz": {
+      "bytes": 32946,
+      "sha256": "30ecb936bd4a99a3df22bb3de5e833d33586251dd00074a54f285100fbbdd37f"
+    },
+    "probe/NanoArguAnaRetrieval/ids.json.gz": {
+      "bytes": 14241,
+      "sha256": "9ac788562ed5d6acaf9049d711227c0a472f63abd0e4ce7207160e8233447622"
+    },
+    "probe/NanoArguAnaRetrieval/per_query_scores.json": {
+      "bytes": 3718,
+      "sha256": "b8944c384af96eb5f54fb633304dedf8ced85abc837883c164095710590e7f22"
+    },
+    "probe/NanoArguAnaRetrieval/result.json": {
+      "bytes": 1252,
+      "sha256": "1e300e8fa526f572b5bdb2f53e644198374f747f5c7da9a40d85e589c8ff6e16"
+    },
+    "probe/NanoArguAnaRetrieval/top100.json.gz": {
+      "bytes": 82868,
+      "sha256": "20cfb86541a96235d4a918c26f3df4f44aa63980df3f1d1bf9d47ddb5b3e41e8"
+    },
+    "probe/NanoClimateFeverRetrieval/batch_timings.jsonl.gz": {
+      "bytes": 46122,
+      "sha256": "05eabaa516a812c6d538a6731e669a17e86f87148320681d43c9f71488779382"
+    },
+    "probe/NanoClimateFeverRetrieval/ids.json.gz": {
+      "bytes": 27495,
+      "sha256": "802d6e64abe7ed18a7eaba52efd116e7a3661b1c8c81c942dc39bb6ceac46d40"
+    },
+    "probe/NanoClimateFeverRetrieval/per_query_scores.json": {
+      "bytes": 2494,
+      "sha256": "8c4b10adcfc0262d000b4b76c869b4d810058591c2c59172a8d5889d12dbfdbe"
+    },
+    "probe/NanoClimateFeverRetrieval/result.json": {
+      "bytes": 1254,
+      "sha256": "4f46068895686f62b41a13c396c48d690a557a28d0abaae857010b63cdb79c40"
+    },
+    "probe/NanoClimateFeverRetrieval/top100.json.gz": {
+      "bytes": 92065,
+      "sha256": "b2b4c5511e865823ef1e4162aee02b21123c8130f8763e9ea7961374034633b5"
+    },
+    "probe/NanoDBPediaRetrieval/batch_timings.jsonl.gz": {
+      "bytes": 90700,
+      "sha256": "f52c81c3d277972eabe62c52d9a7cf7fb46f1dba6b32155184368251c712d0d4"
+    },
+    "probe/NanoDBPediaRetrieval/ids.json.gz": {
+      "bytes": 59279,
+      "sha256": "4587882d34c31f8806923da641258186f618cc6857fc844d563a73a902316b6d"
+    },
+    "probe/NanoDBPediaRetrieval/per_query_scores.json": {
+      "bytes": 3119,
+      "sha256": "1b69d50c116b60b8b1ed55fc90021a2cfa937581fa43f17d1669f9fe70fce784"
+    },
+    "probe/NanoDBPediaRetrieval/result.json": {
+      "bytes": 1268,
+      "sha256": "b671e846306a93b37817c56a2b4e52edad5a40f2ea642ed2c284949b197732d0"
+    },
+    "probe/NanoDBPediaRetrieval/top100.json.gz": {
+      "bytes": 110840,
+      "sha256": "6006bce4df0b10d5c253fb1d942a95a2ac20a55fb564aee5807e380660c5079c"
+    },
+    "probe/NanoFEVERRetrieval/batch_timings.jsonl.gz": {
+      "bytes": 73717,
+      "sha256": "a008be9f0c72d1a1c7e879bc4cd3771ea1b55da05d392648f061e9d91f551c4c"
+    },
+    "probe/NanoFEVERRetrieval/ids.json.gz": {
+      "bytes": 46038,
+      "sha256": "3b63f3e053dd1d79a96b3bbbf047c8ecaeae89385c0498a7c9cd6191ceae0fe2"
+    },
+    "probe/NanoFEVERRetrieval/per_query_scores.json": {
+      "bytes": 2277,
+      "sha256": "b61a52890fef1ba3dde3351d881855ceac3e978c3c8e8397adfc1f651d17335f"
+    },
+    "probe/NanoFEVERRetrieval/result.json": {
+      "bytes": 1283,
+      "sha256": "54fc76f7a5721f8975c062659be61e1ba63038834a0b11dddaed8992a6a53640"
+    },
+    "probe/NanoFEVERRetrieval/top100.json.gz": {
+      "bytes": 108437,
+      "sha256": "ddbbb370596e8d6e625bde9a3f73e070299cfcc3bf30d0b8b6bc44ac24738e6a"
+    },
+    "probe/NanoFiQA2018Retrieval/batch_timings.jsonl.gz": {
+      "bytes": 35735,
+      "sha256": "2ef31abb5bac96c651f9316debc942a410aed5fc9a30a3209b34b71780bd7461"
+    },
+    "probe/NanoFiQA2018Retrieval/ids.json.gz": {
+      "bytes": 14302,
+      "sha256": "887b6ddc8cbb601b84f5680ea086639e0d0d1640e9390b22fb5c7d6f56612f1a"
+    },
+    "probe/NanoFiQA2018Retrieval/per_query_scores.json": {
+      "bytes": 2352,
+      "sha256": "387049ba1ff9028855a4c421b1c8b8244ef9c279751858c3b2e3c3ac0f2b5103"
+    },
+    "probe/NanoFiQA2018Retrieval/result.json": {
+      "bytes": 1249,
+      "sha256": "7671fdf1df447527cd360e99918c57ac7200d8e6a744d549e0c59e48dfc4e901"
+    },
+    "probe/NanoFiQA2018Retrieval/top100.json.gz": {
+      "bytes": 71007,
+      "sha256": "47c25877d843b6512988c16e840ba3720f6dbdab98add704f70392d2c3a8cbdf"
+    },
+    "probe/NanoHotpotQARetrieval/batch_timings.jsonl.gz": {
+      "bytes": 44306,
+      "sha256": "57eb8b085d7bf1af474c9a75e84cbcc18aff791bbeb8034f91594dda42e99b3f"
+    },
+    "probe/NanoHotpotQARetrieval/ids.json.gz": {
+      "bytes": 21524,
+      "sha256": "22b7f657536b21f379ce348bfb16c58771c8a3c94db0547278e695747cce70df"
+    },
+    "probe/NanoHotpotQARetrieval/per_query_scores.json": {
+      "bytes": 3477,
+      "sha256": "94f850419165e06e949a0fe7d52eb85d4a2f64bf7b066f4ade4ae1c93d0e347a"
+    },
+    "probe/NanoHotpotQARetrieval/result.json": {
+      "bytes": 1281,
+      "sha256": "a195a393ad1e494d4e9ec8304f501a53ad04a3a35ee83a525606625e3dd45c19"
+    },
+    "probe/NanoHotpotQARetrieval/top100.json.gz": {
+      "bytes": 76403,
+      "sha256": "9bf1c5f5c0722d948f92f68616d51258b9113db9d133cdb7dab8d34a3a615d8a"
+    },
+    "probe/NanoMSMARCORetrieval/batch_timings.jsonl.gz": {
+      "bytes": 40226,
+      "sha256": "4f185dbfab639e7b639117e56b937358b688fb5115349271881fbd8eaee762db"
+    },
+    "probe/NanoMSMARCORetrieval/ids.json.gz": {
+      "bytes": 18267,
+      "sha256": "0047340fef1d6a3d4bed4453821dbd7dfc11db654012bf86247459d4391b36ae"
+    },
+    "probe/NanoMSMARCORetrieval/per_query_scores.json": {
+      "bytes": 2442,
+      "sha256": "b018a0057b7c6706c6b7feb33b496353768d8ab0399e50b00629d96ec8e184ef"
+    },
+    "probe/NanoMSMARCORetrieval/result.json": {
+      "bytes": 1249,
+      "sha256": "9d941b68b7b902dc8b13aa252a903190dd59664db96302ea1639ece2dfc3d7a7"
+    },
+    "probe/NanoMSMARCORetrieval/top100.json.gz": {
+      "bytes": 74145,
+      "sha256": "f47a1a4f46de361c3942300b8ab0f7430f8e96c4d3257f40361da3a45eaa32a0"
+    },
+    "probe/NanoNFCorpusRetrieval/batch_timings.jsonl.gz": {
+      "bytes": 21047,
+      "sha256": "d4199e8fb7eafe48cd965c764e77b57cc8a4a70e8c7d8fa263ad673b695e10a8"
+    },
+    "probe/NanoNFCorpusRetrieval/ids.json.gz": {
+      "bytes": 7474,
+      "sha256": "677e41184d95fdf3f370e772f7975e17a0dfc3502cae255ac8dd9130e7851c08"
+    },
+    "probe/NanoNFCorpusRetrieval/per_query_scores.json": {
+      "bytes": 2751,
+      "sha256": "a5232412c05f68ad2cd9a36659c12dc2753e00b79477c56459a332ff8d22f6ea"
+    },
+    "probe/NanoNFCorpusRetrieval/result.json": {
+      "bytes": 1252,
+      "sha256": "93e34c6df748a0e4435422b9a280e1fdcaf4994f9798a74de73bdcf72ec53217"
+    },
+    "probe/NanoNFCorpusRetrieval/top100.json.gz": {
+      "bytes": 66754,
+      "sha256": "89f81e75f3f72b57103ce1945ac1a886dbf97ca8794516949a0bc5646c10dcec"
+    },
+    "probe/NanoNQRetrieval/batch_timings.jsonl.gz": {
+      "bytes": 39934,
+      "sha256": "fb6ea7a76babdc48570f3db88858659fa7034286f087d1f0859a7cdec645cda8"
+    },
+    "probe/NanoNQRetrieval/ids.json.gz": {
+      "bytes": 16922,
+      "sha256": "ddec1103a682ddc46114903bd221cd9c2ec90880e720323d453f17e595c9a5a0"
+    },
+    "probe/NanoNQRetrieval/per_query_scores.json": {
+      "bytes": 2412,
+      "sha256": "8c65459e6b5790d9bace8b6c7372d982545978254298138ac4810169e2f48d7d"
+    },
+    "probe/NanoNQRetrieval/result.json": {
+      "bytes": 1242,
+      "sha256": "67bb660d9fd943ded42a5819ba1a48441d9c63365725325ec03f9a440966c64b"
+    },
+    "probe/NanoNQRetrieval/top100.json.gz": {
+      "bytes": 72855,
+      "sha256": "36eb85d4cbdac1084e5121e608b09e6c378b0bb19c2084d01eff96e62f2dfd2b"
+    },
+    "probe/NanoQuoraRetrieval/batch_timings.jsonl.gz": {
+      "bytes": 36311,
+      "sha256": "ee45221c8f4cea000409e8407a2aa097e19a3c0722ccdc5134c781ce5ab2a964"
+    },
+    "probe/NanoQuoraRetrieval/ids.json.gz": {
+      "bytes": 15294,
+      "sha256": "1bf2d8b53f231e2c4e77d89e9d5d7441b44394b1b52d7e717f0eb8f011ea5ea1"
+    },
+    "probe/NanoQuoraRetrieval/per_query_scores.json": {
+      "bytes": 2243,
+      "sha256": "ec4dd32a31abf87a6022584bcc934237f3eba3e5fb2630d40cc2b5ff8ffea9ec"
+    },
+    "probe/NanoQuoraRetrieval/result.json": {
+      "bytes": 1281,
+      "sha256": "7c380631bc80fc2d54192fbde44369bfb92a54e4e561a6086c552e2a85ccb8a9"
+    },
+    "probe/NanoQuoraRetrieval/top100.json.gz": {
+      "bytes": 71583,
+      "sha256": "fef5433ccf0d3a00738448867e86005f673a401fcdfbff434146d19425044048"
+    },
+    "probe/NanoSCIDOCSRetrieval/batch_timings.jsonl.gz": {
+      "bytes": 66273,
+      "sha256": "e5f6e1368d5d6b8399557e4f374730a7b3297041946e6bcf190b6b79480b56a3"
+    },
+    "probe/NanoSCIDOCSRetrieval/ids.json.gz": {
+      "bytes": 55313,
+      "sha256": "c3b1ab1e892d6bb87c64a13e3ac6162edec9372afe22c1f091a167ba0236ec59"
+    },
+    "probe/NanoSCIDOCSRetrieval/per_query_scores.json": {
+      "bytes": 4443,
+      "sha256": "033d05e2f88dd8a438e51d0e5af6ccff095e5be5fd2df719ef8b6333dd6a15f7"
+    },
+    "probe/NanoSCIDOCSRetrieval/result.json": {
+      "bytes": 1250,
+      "sha256": "ce51800ef0849087bbda487ad9394ca7279665d06c2c86999e29461f7a6e98c3"
+    },
+    "probe/NanoSCIDOCSRetrieval/top100.json.gz": {
+      "bytes": 166983,
+      "sha256": "bd6e4219a170564886df4d15cc279443e7e37e4576e058d673ad33d037bc7253"
+    },
+    "probe/NanoSciFactRetrieval/batch_timings.jsonl.gz": {
+      "bytes": 26047,
+      "sha256": "271a24734caf7b89178a0b1a48bf504f8e368bf5be9ed9d42b30e323c5f6b515"
+    },
+    "probe/NanoSciFactRetrieval/ids.json.gz": {
+      "bytes": 12630,
+      "sha256": "d1b022ddcafff979d2518a6050eb532920b268926ac255536d031acb20571414"
+    },
+    "probe/NanoSciFactRetrieval/per_query_scores.json": {
+      "bytes": 2102,
+      "sha256": "9742f7aab0c396169e25ae00d90b03bf8a96ae4fa2ae7c521a6c0f9b90c6a76d"
+    },
+    "probe/NanoSciFactRetrieval/result.json": {
+      "bytes": 1249,
+      "sha256": "b3cf73e1d3d44cb3507b79c824b2be2851d5f1d58818813ef2c39ab2e22a81b7"
+    },
+    "probe/NanoSciFactRetrieval/top100.json.gz": {
+      "bytes": 74882,
+      "sha256": "41fb1b1ecc9dcf9ec8b13a120dcd6c4da43884edfe85a16afa1021737e013d65"
+    },
+    "probe/NanoTouche2020Retrieval/batch_timings.jsonl.gz": {
+      "bytes": 74151,
+      "sha256": "c8a73141a97783439e16fe3c2e865ed3ba6163e64388cff44772446a714cec3e"
+    },
+    "probe/NanoTouche2020Retrieval/ids.json.gz": {
+      "bytes": 45152,
+      "sha256": "dea559d04d12bcbd655f2b5cd0fdac30c4bfce8abd80f5714cd032004c2bc26a"
+    },
+    "probe/NanoTouche2020Retrieval/per_query_scores.json": {
+      "bytes": 2583,
+      "sha256": "1271746a002bfeeabbd67ac0225f4e5c04ed1d6adfba4a9125c81e4636938960"
+    },
+    "probe/NanoTouche2020Retrieval/result.json": {
+      "bytes": 1255,
+      "sha256": "a122547aa12e51ed8d9f805eadeab3d878f1243e6c942a81a2371daf5a5d26cd"
+    },
+    "probe/NanoTouche2020Retrieval/top100.json.gz": {
+      "bytes": 98174,
+      "sha256": "163522f96f646f0fefd011548c243c33b4b724c98be1e1563e3a264e69c9726c"
+    },
+    "probe/progress.json": {
+      "bytes": 212,
+      "sha256": "77681f4e34035ec50862f70af6953eac004c23abf213dc8e01f8513082f5e487"
+    },
+    "probe/result.json": {
+      "bytes": 33377,
+      "sha256": "af57bfe574cdb20ee6215aa4f8c1f9797b2a7e21042ec192b4a87e64baa891fa"
+    },
+    "protocol_provenance.json": {
+      "bytes": 35878,
+      "sha256": "891a8eaa942387ae502c225714515e3994ebb73deb24abe7a3d3f8dc7c06a573"
+    },
+    "run.log": {
+      "bytes": 75682,
+      "sha256": "72ad48182111407aefebcbf8121a5c7a0eac479c58e67fc4001382f6e51a3d4b"
+    }
+  }
+}

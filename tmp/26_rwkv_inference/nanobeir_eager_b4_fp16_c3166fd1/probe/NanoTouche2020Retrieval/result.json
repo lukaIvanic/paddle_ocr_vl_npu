@@ -1,0 +1,44 @@
+{
+  "task": "NanoTouche2020Retrieval",
+  "ndcg_at_10": 54.845,
+  "upstream_cpu_fp32": 54.845,
+  "upstream_gpu_bf16": 55.172,
+  "delta_cpu_points": 0.0,
+  "delta_gpu_points": -0.3269999999999982,
+  "wall_seconds": 122.78345119021833,
+  "stages": {
+    "queries": {
+      "texts": 49,
+      "wall_seconds": 0.6527455500327051,
+      "forward_seconds": 0.6362681887112558
+    },
+    "corpus": {
+      "texts": 5745,
+      "wall_seconds": 120.9013395998627,
+      "forward_seconds": 116.98473726864904
+    }
+  },
+  "metric_crosscheck_passed": true,
+  "artifacts": {
+    "batch_timings.jsonl": {
+      "sha256": "66923c20dcca7d10837ad76f2a2c675a1e8bfc3b443d9fffcb0ca1706f33b9c4",
+      "bytes": 427495
+    },
+    "embeddings.npz": {
+      "sha256": "4c99d418dc601fad96b346b587ab1ce5df12e4523aa602c4462084bf19039a50",
+      "bytes": 16525895
+    },
+    "ids.json": {
+      "sha256": "73e9db92c4c66b41b69fc6c7c268054f44561d47659887a4e66013030795731f",
+      "bytes": 270190
+    },
+    "per_query_scores.json": {
+      "sha256": "1271746a002bfeeabbd67ac0225f4e5c04ed1d6adfba4a9125c81e4636938960",
+      "bytes": 2583
+    },
+    "top100.json": {
+      "sha256": "c5c401a34d24a6681d54516415da4584f0074e7acd714f2e0e62ddc0fb917c06",
+      "bytes": 544628
+    }
+  }
+}

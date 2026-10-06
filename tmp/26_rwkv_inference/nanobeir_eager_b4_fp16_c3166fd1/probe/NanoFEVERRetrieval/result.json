@@ -1,0 +1,44 @@
+{
+  "task": "NanoFEVERRetrieval",
+  "ndcg_at_10": 86.41799999999999,
+  "upstream_cpu_fp32": 86.418,
+  "upstream_gpu_bf16": 86.418,
+  "delta_cpu_points": -1.4210854715202004e-14,
+  "delta_gpu_points": -1.4210854715202004e-14,
+  "wall_seconds": 100.5976885301061,
+  "stages": {
+    "queries": {
+      "texts": 50,
+      "wall_seconds": 0.6320955799892545,
+      "forward_seconds": 0.6161221205256879
+    },
+    "corpus": {
+      "texts": 4996,
+      "wall_seconds": 98.93600253015757,
+      "forward_seconds": 96.24077493930236
+    }
+  },
+  "metric_crosscheck_passed": true,
+  "artifacts": {
+    "batch_timings.jsonl": {
+      "sha256": "a512a07abd425595a088ef8f9cb90bf71e53480d8f66effc5b48d1996ec4212a",
+      "bytes": 276843
+    },
+    "embeddings.npz": {
+      "sha256": "ef4ec2fbe7c269fcc432247946568bc22d8745e9bf4ede666b64daf21ceedaac",
+      "bytes": 14409189
+    },
+    "ids.json": {
+      "sha256": "2bed06dc5f425459126eb579e245575cd8838d86c3544582608dbe79232d836c",
+      "bytes": 139866
+    },
+    "per_query_scores.json": {
+      "sha256": "b61a52890fef1ba3dde3351d881855ceac3e978c3c8e8397adfc1f651d17335f",
+      "bytes": 2277
+    },
+    "top100.json": {
+      "sha256": "128e321ac6b5b4252c285c9dd055c6ad61629468b49b835a2e112e3ee5657cbe",
+      "bytes": 461311
+    }
+  }
+}

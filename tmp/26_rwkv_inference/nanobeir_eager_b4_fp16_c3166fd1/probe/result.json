@@ -1,0 +1,1012 @@
+{
+  "source_commit": "c3166fd1e86f7ab1beee5fdf4e2a92d3aa563f8a",
+  "script_sha256": "dba72ac6a2122c2967c02cb8d4c0da53c74918dd0b56107935f81c9501670244",
+  "model_script_sha256": "037fbbb27b1d37f25fc104ac38e860ee1b4559ac26df3b23eb176b622bf33ec6",
+  "checkpoint_sha256": "9033eec92f163d1a710474977fa3fb68b7ee04697e0e961d83434743bd256a15",
+  "manifest_sha256": "ab3272c51e1b1e52f1cd68d7dcd6ff9c29d2fe85da42e0c07163f3a7e65f2e16",
+  "physical_npu": "7",
+  "hostname": "liteserver-c001-4",
+  "backend": "raw_eager",
+  "dense_dtype": "fp16",
+  "state_pointwise_dtype": "float32",
+  "reference_batch_size": 4,
+  "max_device_batch_size": 4,
+  "max_token_slots": 8192,
+  "mteb_contract_version": "1.38.60",
+  "mteb_framework_used": false,
+  "ignore_identical_ids": false,
+  "context": 2048,
+  "eos_chunk": 512,
+  "instruction": "Instruct: Given a query, retrieve documents that answer the query\nQuery: {query}",
+  "task_results": [
+    {
+      "task": "NanoArguAnaRetrieval",
+      "ndcg_at_10": 55.982,
+      "upstream_cpu_fp32": 55.982,
+      "upstream_gpu_bf16": 55.989,
+      "delta_cpu_points": 0.0,
+      "delta_gpu_points": -0.006999999999997897,
+      "wall_seconds": 64.00301195960492,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 1.0806079097092152,
+          "forward_seconds": 1.0424908911809325
+        },
+        "corpus": {
+          "texts": 3635,
+          "wall_seconds": 62.00684879021719,
+          "forward_seconds": 60.18454181216657
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "fe23ff8e10649cba5a3266455c82c566991bc84414ee8360eee8a6524d69bc68",
+          "bytes": 256740
+        },
+        "embeddings.npz": {
+          "sha256": "00ae928e5dc16c3601f469e85d7fcfee46ea1b0c7a76e1271a14410cbadeb26d",
+          "bytes": 10517341
+        },
+        "ids.json": {
+          "sha256": "7ca8d281dae52b4734336a7013d160f63369ef297edc0b5d00c01769e3972133",
+          "bytes": 156836
+        },
+        "per_query_scores.json": {
+          "sha256": "b8944c384af96eb5f54fb633304dedf8ced85abc837883c164095710590e7f22",
+          "bytes": 3718
+        },
+        "top100.json": {
+          "sha256": "92fc30560486d6433b3bbbd02e671a128dbc3b1af98b719226b4701537ad7f01",
+          "bytes": 535474
+        }
+      }
+    },
+    {
+      "task": "NanoClimateFeverRetrieval",
+      "ndcg_at_10": 38.144,
+      "upstream_cpu_fp32": 38.144,
+      "upstream_gpu_bf16": 38.122,
+      "delta_cpu_points": 0.0,
+      "delta_gpu_points": 0.021999999999998465,
+      "wall_seconds": 73.26893595978618,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 0.7714094403199852,
+          "forward_seconds": 0.7498549097217619
+        },
+        "corpus": {
+          "texts": 3408,
+          "wall_seconds": 71.75259501999244,
+          "forward_seconds": 69.67295846669003
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "19e9048859aa5da5eebec833d6c5bd38a2d9a9473cabc0a7c379b36a967e1a1c",
+          "bytes": 186806
+        },
+        "embeddings.npz": {
+          "sha256": "408aa5a63e09bddf741f5fda5ce7dde107e2ce79235ee0ffbf5b2bca148437d9",
+          "bytes": 9872993
+        },
+        "ids.json": {
+          "sha256": "35c92dbf9dd597077dfb5594ec5f2d825391d3f15e6eb1f414dbf4c90b0b61e9",
+          "bytes": 92999
+        },
+        "per_query_scores.json": {
+          "sha256": "8c4b10adcfc0262d000b4b76c869b4d810058591c2c59172a8d5889d12dbfdbe",
+          "bytes": 2494
+        },
+        "top100.json": {
+          "sha256": "9f224e0db49e17b388bf66d5e1d8fe4370ba3b3ef0bcba4f7ae1aec069e28184",
+          "bytes": 480349
+        }
+      }
+    },
+    {
+      "task": "NanoDBPediaRetrieval",
+      "ndcg_at_10": 54.551,
+      "upstream_cpu_fp32": 54.678,
+      "upstream_gpu_bf16": 54.789,
+      "delta_cpu_points": -0.12699999999999534,
+      "delta_gpu_points": -0.23799999999999955,
+      "wall_seconds": 85.65383093990386,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 0.6365621797740459,
+          "forward_seconds": 0.6203774204477668
+        },
+        "corpus": {
+          "texts": 6045,
+          "wall_seconds": 83.65877649001777,
+          "forward_seconds": 81.47998216096312
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "eceafc6b42d8ba4abf2781efe8d91980a272aeb2a41db0c43cfafa7ff179f1be",
+          "bytes": 403709
+        },
+        "embeddings.npz": {
+          "sha256": "5b83ea7e26194392a3293af74b0a676d12606ae52d406fdbbf77718234cd666f",
+          "bytes": 17385121
+        },
+        "ids.json": {
+          "sha256": "9df3f5ebd0de9f95a264aaf295fbb0f914082fd6e8fef1524adcd8a9ddc4a6f5",
+          "bytes": 238952
+        },
+        "per_query_scores.json": {
+          "sha256": "1b69d50c116b60b8b1ed55fc90021a2cfa937581fa43f17d1669f9fe70fce784",
+          "bytes": 3119
+        },
+        "top100.json": {
+          "sha256": "28e2681f5950c5e2500aadac7336ba6a17ff0d0fda3cbbd15162fe4c6dfb8032",
+          "bytes": 525360
+        }
+      }
+    },
+    {
+      "task": "NanoFEVERRetrieval",
+      "ndcg_at_10": 86.41799999999999,
+      "upstream_cpu_fp32": 86.418,
+      "upstream_gpu_bf16": 86.418,
+      "delta_cpu_points": -1.4210854715202004e-14,
+      "delta_gpu_points": -1.4210854715202004e-14,
+      "wall_seconds": 100.5976885301061,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 0.6320955799892545,
+          "forward_seconds": 0.6161221205256879
+        },
+        "corpus": {
+          "texts": 4996,
+          "wall_seconds": 98.93600253015757,
+          "forward_seconds": 96.24077493930236
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "a512a07abd425595a088ef8f9cb90bf71e53480d8f66effc5b48d1996ec4212a",
+          "bytes": 276843
+        },
+        "embeddings.npz": {
+          "sha256": "ef4ec2fbe7c269fcc432247946568bc22d8745e9bf4ede666b64daf21ceedaac",
+          "bytes": 14409189
+        },
+        "ids.json": {
+          "sha256": "2bed06dc5f425459126eb579e245575cd8838d86c3544582608dbe79232d836c",
+          "bytes": 139866
+        },
+        "per_query_scores.json": {
+          "sha256": "b61a52890fef1ba3dde3351d881855ceac3e978c3c8e8397adfc1f651d17335f",
+          "bytes": 2277
+        },
+        "top100.json": {
+          "sha256": "128e321ac6b5b4252c285c9dd055c6ad61629468b49b835a2e112e3ee5657cbe",
+          "bytes": 461311
+        }
+      }
+    },
+    {
+      "task": "NanoFiQA2018Retrieval",
+      "ndcg_at_10": 50.029,
+      "upstream_cpu_fp32": 50.029,
+      "upstream_gpu_bf16": 49.767,
+      "delta_cpu_points": 0.0,
+      "delta_gpu_points": 0.26200000000000045,
+      "wall_seconds": 83.56655971007422,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 0.6302540302276611,
+          "forward_seconds": 0.614092699252069
+        },
+        "corpus": {
+          "texts": 4598,
+          "wall_seconds": 81.93703670008108,
+          "forward_seconds": 79.81015384476632
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "7fc117a8b3e18cfc530419511710f1a7ccd51b4f4cd5cbbfe8dcb8074d95ab3e",
+          "bytes": 190146
+        },
+        "embeddings.npz": {
+          "sha256": "c1e484df16369e6e668313442930832a7795024f23156c4654f61d56c053e5ad",
+          "bytes": 13265305
+        },
+        "ids.json": {
+          "sha256": "a05f07ed700a0c87e3adb6d05890f1321e8d69fa0687410366ea1a844dbde287",
+          "bytes": 64109
+        },
+        "per_query_scores.json": {
+          "sha256": "387049ba1ff9028855a4c421b1c8b8244ef9c279751858c3b2e3c3ac0f2b5103",
+          "bytes": 2352
+        },
+        "top100.json": {
+          "sha256": "8f8e59b0c3d45f1f313437f6285cd4e7011010fd56af14bc86bd825c16836abd",
+          "bytes": 391451
+        }
+      }
+    },
+    {
+      "task": "NanoHotpotQARetrieval",
+      "ndcg_at_10": 71.78999999999999,
+      "upstream_cpu_fp32": 71.79,
+      "upstream_gpu_bf16": 71.827,
+      "delta_cpu_points": -1.4210854715202004e-14,
+      "delta_gpu_points": -0.03700000000000614,
+      "wall_seconds": 71.87533046025783,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 0.6880741403438151,
+          "forward_seconds": 0.6675009205937386
+        },
+        "corpus": {
+          "texts": 5090,
+          "wall_seconds": 70.13495757011697,
+          "forward_seconds": 68.31130355084315
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "c8fe1fdb8666d92cad4f7c5802c2934e3894bdf0b3b419a07ff338b34540fa88",
+          "bytes": 219660
+        },
+        "embeddings.npz": {
+          "sha256": "30d55c63424cd9009fc62c8934a3a582c23425947aff09fc24d8ce9705ae401f",
+          "bytes": 14680634
+        },
+        "ids.json": {
+          "sha256": "7f9ce3e2377f0cf10b0474bf57fc61eb6da74f8687e486603d62fbfb8e0ac93c",
+          "bytes": 80720
+        },
+        "per_query_scores.json": {
+          "sha256": "94f850419165e06e949a0fe7d52eb85d4a2f64bf7b066f4ade4ae1c93d0e347a",
+          "bytes": 3477
+        },
+        "top100.json": {
+          "sha256": "c7337499ba33a15041f329f5afe3be493735620dbcf7e1855fca96f22aaffa93",
+          "bytes": 401278
+        }
+      }
+    },
+    {
+      "task": "NanoMSMARCORetrieval",
+      "ndcg_at_10": 49.752,
+      "upstream_cpu_fp32": 49.752,
+      "upstream_gpu_bf16": 49.779,
+      "delta_cpu_points": 0.0,
+      "delta_gpu_points": -0.027000000000001023,
+      "wall_seconds": 72.57302461005747,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 0.6286037699319422,
+          "forward_seconds": 0.613930799998343
+        },
+        "corpus": {
+          "texts": 5043,
+          "wall_seconds": 70.77556210989133,
+          "forward_seconds": 68.9546593632549
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "ac727d076dce3cc6f343665809106ca3b30de406271ba943c2fe9c2bdd5e1039",
+          "bytes": 213382
+        },
+        "embeddings.npz": {
+          "sha256": "a31177e53d05ceeac0bfe74ebe954380b24c8f187f5d026b91fd3216eb45cb03",
+          "bytes": 14539621
+        },
+        "ids.json": {
+          "sha256": "9a8da3d57bbbb6939cb49a713a6926e77977534f0c6e2b15561c3c8ab83b9fa8",
+          "bytes": 75815
+        },
+        "per_query_scores.json": {
+          "sha256": "b018a0057b7c6706c6b7feb33b496353768d8ab0399e50b00629d96ec8e184ef",
+          "bytes": 2442
+        },
+        "top100.json": {
+          "sha256": "d8e89fa062af6a00c239af8b24b2276c52b83e0915e60530d6af67b1ed9db06b",
+          "bytes": 396457
+        }
+      }
+    },
+    {
+      "task": "NanoNFCorpusRetrieval",
+      "ndcg_at_10": 32.538,
+      "upstream_cpu_fp32": 32.538,
+      "upstream_gpu_bf16": 32.539,
+      "delta_cpu_points": 0.0,
+      "delta_gpu_points": -0.0010000000000047748,
+      "wall_seconds": 68.71075806999579,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 0.7210151199251413,
+          "forward_seconds": 0.7028662599623203
+        },
+        "corpus": {
+          "texts": 2953,
+          "wall_seconds": 67.31797737022862,
+          "forward_seconds": 65.60078579047695
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "62ca9dc4906a008a23382ddcdad78ac3e1159c9d5c2d8aa9a8da60b0a8f623fc",
+          "bytes": 129574
+        },
+        "embeddings.npz": {
+          "sha256": "4a17d76a95022fc1dbd63f963c5966433bbdeaca008ecdab7ba7602500643ed8",
+          "bytes": 8569762
+        },
+        "ids.json": {
+          "sha256": "684b7af1fa9b034b012cb0d0a0a9a7d3e3ad9027f81d3d763a53ed31c4eb7135",
+          "bytes": 48033
+        },
+        "per_query_scores.json": {
+          "sha256": "a5232412c05f68ad2cd9a36659c12dc2753e00b79477c56459a332ff8d22f6ea",
+          "bytes": 2751
+        },
+        "top100.json": {
+          "sha256": "c14e5ec9f8f86f96a6ea4273ff60e9b212c015d060644af4d6b75896c34df871",
+          "bytes": 403192
+        }
+      }
+    },
+    {
+      "task": "NanoNQRetrieval",
+      "ndcg_at_10": 58.963,
+      "upstream_cpu_fp32": 58.963,
+      "upstream_gpu_bf16": 59.686,
+      "delta_cpu_points": 0.0,
+      "delta_gpu_points": -0.722999999999999,
+      "wall_seconds": 77.8184330300428,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 0.6242892001755536,
+          "forward_seconds": 0.6088515883311629
+        },
+        "corpus": {
+          "texts": 5035,
+          "wall_seconds": 76.16035509994254,
+          "forward_seconds": 74.24729942437261
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "67ad39a03c6db2c78c2ec4517efc913f78c1ce0cc4ab7361bae3904af3273ecc",
+          "bytes": 226304
+        },
+        "embeddings.npz": {
+          "sha256": "567b49ea9f80886c3a284f1a5d14d143c426a844160f9eeb7d2dd9f88c2323bf",
+          "bytes": 14511296
+        },
+        "ids.json": {
+          "sha256": "00abbd5b18692aa440b2f19b0d06fd530df3bf3cbaccb017b2aa45419eafc601",
+          "bytes": 88697
+        },
+        "per_query_scores.json": {
+          "sha256": "8c65459e6b5790d9bace8b6c7372d982545978254298138ac4810169e2f48d7d",
+          "bytes": 2412
+        },
+        "top100.json": {
+          "sha256": "aaf8ae287b09a87112e1db6dda4998881168bcc15bbc5a63b644c7fc752d6a7f",
+          "bytes": 409941
+        }
+      }
+    },
+    {
+      "task": "NanoQuoraRetrieval",
+      "ndcg_at_10": 92.62599999999999,
+      "upstream_cpu_fp32": 92.626,
+      "upstream_gpu_bf16": 92.626,
+      "delta_cpu_points": -1.4210854715202004e-14,
+      "delta_gpu_points": -1.4210854715202004e-14,
+      "wall_seconds": 68.51676065009087,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 0.6283135800622404,
+          "forward_seconds": 0.6130149299278855
+        },
+        "corpus": {
+          "texts": 5046,
+          "wall_seconds": 66.78149098996073,
+          "forward_seconds": 65.3952871686779
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "4d56088934f37ad5789903c16782c33ed8ef493e6a01bca4f824212a223866e6",
+          "bytes": 206862
+        },
+        "embeddings.npz": {
+          "sha256": "086aa1d0d038f202a27c21a8797857c63feb39d5a3ad1b74f139227a30e7af87",
+          "bytes": 14546505
+        },
+        "ids.json": {
+          "sha256": "4aeaa5b9831d441dc006d0a770ee4c08251b96bbb527d0aec154e3719fb8229b",
+          "bytes": 70160
+        },
+        "per_query_scores.json": {
+          "sha256": "ec4dd32a31abf87a6022584bcc934237f3eba3e5fb2630d40cc2b5ff8ffea9ec",
+          "bytes": 2243
+        },
+        "top100.json": {
+          "sha256": "be76e617d2a69d7f3590a3df3164db9f6d2c72628b4c9efdd212bb6247fba06b",
+          "bytes": 390816
+        }
+      }
+    },
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "ndcg_at_10": 41.058,
+      "upstream_cpu_fp32": 41.058,
+      "upstream_gpu_bf16": 40.988,
+      "delta_cpu_points": 0.0,
+      "delta_gpu_points": 0.07000000000000028,
+      "wall_seconds": 38.48117658030242,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 0.7179335299879313,
+          "forward_seconds": 0.6997004607692361
+        },
+        "corpus": {
+          "texts": 2210,
+          "wall_seconds": 37.24734961008653,
+          "forward_seconds": 36.251001780852675
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "1f3c70493d05753cc788f513d67f48bb369516b1b8af02c0bb2990bd710aa239",
+          "bytes": 169671
+        },
+        "embeddings.npz": {
+          "sha256": "7c1a9e124717785c574aa79f8e60761bd4ccdc1a45c3e56c3e81d089aea53ad6",
+          "bytes": 6295212
+        },
+        "ids.json": {
+          "sha256": "0804bdb7c0bd7b856289eddbb4cb19fba7b24ce1de88bcb023dfbae80dcb59b6",
+          "bytes": 108520
+        },
+        "per_query_scores.json": {
+          "sha256": "033d05e2f88dd8a438e51d0e5af6ccff095e5be5fd2df719ef8b6333dd6a15f7",
+          "bytes": 4443
+        },
+        "top100.json": {
+          "sha256": "dcd8a6d3de984c5d0ca47d36e211838cfe496cb13681021e6c960ae0c38c74b6",
+          "bytes": 564622
+        }
+      }
+    },
+    {
+      "task": "NanoSciFactRetrieval",
+      "ndcg_at_10": 78.971,
+      "upstream_cpu_fp32": 78.971,
+      "upstream_gpu_bf16": 78.956,
+      "delta_cpu_points": 0.0,
+      "delta_gpu_points": 0.015000000000000568,
+      "wall_seconds": 64.5894402898848,
+      "stages": {
+        "queries": {
+          "texts": 50,
+          "wall_seconds": 0.6311189699918032,
+          "forward_seconds": 0.6148418500088155
+        },
+        "corpus": {
+          "texts": 2919,
+          "wall_seconds": 63.31075116014108,
+          "forward_seconds": 61.651263723149896
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "9bc10d8e4a0b9181134599c25dc6f180a54f4c599e156f758d94d72bb14a76f2",
+          "bytes": 126754
+        },
+        "embeddings.npz": {
+          "sha256": "493582257f85887725f560f7508b1125df93ca839bb217a73a974c90518f5eba",
+          "bytes": 8475722
+        },
+        "ids.json": {
+          "sha256": "2fbab5d4bbbdd5998ce0e9ce57d4e914a12506b59bf8d6b944eca18665b93910",
+          "bytes": 46203
+        },
+        "per_query_scores.json": {
+          "sha256": "9742f7aab0c396169e25ae00d90b03bf8a96ae4fa2ae7c521a6c0f9b90c6a76d",
+          "bytes": 2102
+        },
+        "top100.json": {
+          "sha256": "298d9f10f0ef35768966ad3188af40c043d260745372b3b1af50cec088bcffc8",
+          "bytes": 400928
+        }
+      }
+    },
+    {
+      "task": "NanoTouche2020Retrieval",
+      "ndcg_at_10": 54.845,
+      "upstream_cpu_fp32": 54.845,
+      "upstream_gpu_bf16": 55.172,
+      "delta_cpu_points": 0.0,
+      "delta_gpu_points": -0.3269999999999982,
+      "wall_seconds": 122.78345119021833,
+      "stages": {
+        "queries": {
+          "texts": 49,
+          "wall_seconds": 0.6527455500327051,
+          "forward_seconds": 0.6362681887112558
+        },
+        "corpus": {
+          "texts": 5745,
+          "wall_seconds": 120.9013395998627,
+          "forward_seconds": 116.98473726864904
+        }
+      },
+      "metric_crosscheck_passed": true,
+      "artifacts": {
+        "batch_timings.jsonl": {
+          "sha256": "66923c20dcca7d10837ad76f2a2c675a1e8bfc3b443d9fffcb0ca1706f33b9c4",
+          "bytes": 427495
+        },
+        "embeddings.npz": {
+          "sha256": "4c99d418dc601fad96b346b587ab1ce5df12e4523aa602c4462084bf19039a50",
+          "bytes": 16525895
+        },
+        "ids.json": {
+          "sha256": "73e9db92c4c66b41b69fc6c7c268054f44561d47659887a4e66013030795731f",
+          "bytes": 270190
+        },
+        "per_query_scores.json": {
+          "sha256": "1271746a002bfeeabbd67ac0225f4e5c04ed1d6adfba4a9125c81e4636938960",
+          "bytes": 2583
+        },
+        "top100.json": {
+          "sha256": "c5c401a34d24a6681d54516415da4584f0074e7acd714f2e0e62ddc0fb917c06",
+          "bytes": 544628
+        }
+      }
+    }
+  ],
+  "all_checks_passed": true,
+  "quality_review_limits": {
+    "per_task_cpu_delta_points": 0.25,
+    "macro_cpu_delta_points": 0.1
+  },
+  "dataset_manifest": {
+    "mteb_version": "1.38.60",
+    "tasks": [
+      {
+        "task": "NanoArguAnaRetrieval",
+        "repo": "zeta-alpha-ai/NanoArguAna",
+        "revision": "8f4a982d470a32c45817738b9d29042ca55d75ad",
+        "split": "train",
+        "definition_sha256": "7341b9ab69c4503e407d9b43c67ca58097964689fa0b1f0640da973468e03d94",
+        "data_file": "NanoArguAnaRetrieval/data.json",
+        "data_sha256": "6e44fc86a664768dfa9022a3d84b560986b010f6eac8594a5baf132a88303257",
+        "corpus_count": 3635,
+        "query_count": 50,
+        "judgment_count": 50,
+        "length_audit": {
+          "corpus": {
+            "count": 3635,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1536
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 1840,
+            "over_2048": 0,
+            "p95_prepared": 1664
+          }
+        }
+      },
+      {
+        "task": "NanoClimateFeverRetrieval",
+        "repo": "zeta-alpha-ai/NanoClimateFEVER",
+        "revision": "96741bfa30b9f56db8c9eb7d08e775ed6474f206",
+        "split": "train",
+        "definition_sha256": "09f7756d11e884db600703cc6c1129f4f6cdc9d1f90c2c1ba21c7ea04643c778",
+        "data_file": "NanoClimateFeverRetrieval/data.json",
+        "data_sha256": "10963af44c5885cc499f771551d5e6329184ba16b2812e6f925ef0ac6b1d6849",
+        "corpus_count": 3408,
+        "query_count": 50,
+        "judgment_count": 148,
+        "length_audit": {
+          "corpus": {
+            "count": 3408,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1872
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 304,
+            "over_2048": 0,
+            "p95_prepared": 240
+          }
+        }
+      },
+      {
+        "task": "NanoDBPediaRetrieval",
+        "repo": "zeta-alpha-ai/NanoDBPedia",
+        "revision": "438f1c25129f05db6238699b5afdc9c6b58d2096",
+        "split": "train",
+        "definition_sha256": "4f5ac56e6b3cf10fe812967b0711f391c839f0be5ef27c91ddc3a5e8646b3eb5",
+        "data_file": "NanoDBPediaRetrieval/data.json",
+        "data_sha256": "25ad285a819ed52b7a25cd39cdf3d5e3fe263687b8a76fd6ff30f33184eca201",
+        "corpus_count": 6045,
+        "query_count": 50,
+        "judgment_count": 1158,
+        "length_audit": {
+          "corpus": {
+            "count": 6045,
+            "max_prepared": 1584,
+            "over_2048": 0,
+            "p95_prepared": 496
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 128,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        }
+      },
+      {
+        "task": "NanoFEVERRetrieval",
+        "repo": "zeta-alpha-ai/NanoFEVER",
+        "revision": "a8bfdf1bf15181167a7e22e69cf8754bdea9b4c8",
+        "split": "train",
+        "definition_sha256": "602e60c17bb5ad5140a7b26b3243a11f5b7c649973653cab56720aa274645d01",
+        "data_file": "NanoFEVERRetrieval/data.json",
+        "data_sha256": "6fb911cd4fda463fc4f789a0ba775465039ba75e9b3aebab9fb7023c04cabf1b",
+        "corpus_count": 4996,
+        "query_count": 50,
+        "judgment_count": 57,
+        "length_audit": {
+          "corpus": {
+            "count": 4996,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1808
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 144,
+            "over_2048": 0,
+            "p95_prepared": 144
+          }
+        }
+      },
+      {
+        "task": "NanoFiQA2018Retrieval",
+        "repo": "zeta-alpha-ai/NanoFiQA2018",
+        "revision": "4163ba032953d5044a7a6244261413f609c14342",
+        "split": "train",
+        "definition_sha256": "313a4300bb162a08a899d85e41d5fecfd9962f93bf26836bc3af5e1dea8d5280",
+        "data_file": "NanoFiQA2018Retrieval/data.json",
+        "data_sha256": "a15adac51ac8c41003478c45a5760b6b0863e73c2308555b5b6f9dfffd7658e3",
+        "corpus_count": 4598,
+        "query_count": 50,
+        "judgment_count": 123,
+        "length_audit": {
+          "corpus": {
+            "count": 4598,
+            "max_prepared": 2448,
+            "over_2048": 2,
+            "p95_prepared": 1632
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 160,
+            "over_2048": 0,
+            "p95_prepared": 160
+          }
+        }
+      },
+      {
+        "task": "NanoHotpotQARetrieval",
+        "repo": "zeta-alpha-ai/NanoHotpotQA",
+        "revision": "d79c0cdda980aba54842756770928035e1b61a51",
+        "split": "train",
+        "definition_sha256": "f0efaa9ca24d328a683bdd6d1de4a2e5ab1f86af28994f4ab4e88d7bf38a5e2a",
+        "data_file": "NanoHotpotQARetrieval/data.json",
+        "data_sha256": "dba4a179d9f126916eff05851236699e3b3b3629d54311f89517b8241ee73760",
+        "corpus_count": 5090,
+        "query_count": 50,
+        "judgment_count": 100,
+        "length_audit": {
+          "corpus": {
+            "count": 5090,
+            "max_prepared": 1712,
+            "over_2048": 0,
+            "p95_prepared": 752
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 224,
+            "over_2048": 0,
+            "p95_prepared": 208
+          }
+        }
+      },
+      {
+        "task": "NanoMSMARCORetrieval",
+        "repo": "zeta-alpha-ai/NanoMSMARCO",
+        "revision": "7b8ff22f2771dc65ac5b439f222eb19a1f56abda",
+        "split": "train",
+        "definition_sha256": "2c7f861f21683b8e10e61556718440c5a49be99326a476a17c5f236c261fa3cc",
+        "data_file": "NanoMSMARCORetrieval/data.json",
+        "data_sha256": "7be25ac28b48b736b8e5327f628630fa44735c5e483f8286a7dd96f89ce5d9b7",
+        "corpus_count": 5043,
+        "query_count": 50,
+        "judgment_count": 50,
+        "length_audit": {
+          "corpus": {
+            "count": 5043,
+            "max_prepared": 1056,
+            "over_2048": 0,
+            "p95_prepared": 544
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 144,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        }
+      },
+      {
+        "task": "NanoNFCorpusRetrieval",
+        "repo": "zeta-alpha-ai/NanoNFCorpus",
+        "revision": "dd542a7efb9ad2136b9e00768b60fca9038f8156",
+        "split": "train",
+        "definition_sha256": "f7f9cf1d5919a869299aed197eedd1332792c2c8966caa7ecf0f9c9bd2a8475a",
+        "data_file": "NanoNFCorpusRetrieval/data.json",
+        "data_sha256": "5e8b10a5db125aa615b91c3d9b761e0b490dcfe6e1a89d9b17325f5cffe07221",
+        "corpus_count": 2953,
+        "query_count": 50,
+        "judgment_count": 2518,
+        "length_audit": {
+          "corpus": {
+            "count": 2953,
+            "max_prepared": 2304,
+            "over_2048": 1,
+            "p95_prepared": 1856
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 128,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        }
+      },
+      {
+        "task": "NanoNQRetrieval",
+        "repo": "zeta-alpha-ai/NanoNQ",
+        "revision": "77540146379abf95df8326a3c5bb9eb21c7146c3",
+        "split": "train",
+        "definition_sha256": "16ec4e4f18416a5ba91b7419485c372b080c45b37f8208c9d9e6ce5ae7ca533d",
+        "data_file": "NanoNQRetrieval/data.json",
+        "data_sha256": "8f427a9ddedf8275926113589bd7a8b84325400271268ca621858273fe659a9d",
+        "corpus_count": 5035,
+        "query_count": 50,
+        "judgment_count": 57,
+        "length_audit": {
+          "corpus": {
+            "count": 5035,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1168
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 160,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        }
+      },
+      {
+        "task": "NanoQuoraRetrieval",
+        "repo": "zeta-alpha-ai/NanoQuoraRetrieval",
+        "revision": "2ab2d73e6c862026282808b913a34f4136928545",
+        "split": "train",
+        "definition_sha256": "83bee77c3e8a3fac8b3a9448869c577aa69a5bcbc1dfa456a33f374029a41fcc",
+        "data_file": "NanoQuoraRetrieval/data.json",
+        "data_sha256": "84628dc99fd2a17615a626c8119a6d5b7f755af14743be98abf88831c6c27d91",
+        "corpus_count": 5046,
+        "query_count": 50,
+        "judgment_count": 70,
+        "length_audit": {
+          "corpus": {
+            "count": 5046,
+            "max_prepared": 320,
+            "over_2048": 0,
+            "p95_prepared": 112
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 208,
+            "over_2048": 0,
+            "p95_prepared": 144
+          }
+        }
+      },
+      {
+        "task": "NanoSCIDOCSRetrieval",
+        "repo": "zeta-alpha-ai/NanoSCIDOCS",
+        "revision": "484eb90549fc3f0b9c42b3551e80ceb999515537",
+        "split": "train",
+        "definition_sha256": "90bc7171ccab2a687ed1bcea37afc403be7914df19b20334ea719592e7f37653",
+        "data_file": "NanoSCIDOCSRetrieval/data.json",
+        "data_sha256": "bfc261e4b59f9b5e3e9915cc9cde95241d2dfe466ee4595a012c7369f4d34190",
+        "corpus_count": 2210,
+        "query_count": 50,
+        "judgment_count": 244,
+        "length_audit": {
+          "corpus": {
+            "count": 2210,
+            "max_prepared": 2032,
+            "over_2048": 0,
+            "p95_prepared": 1360
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 176,
+            "over_2048": 0,
+            "p95_prepared": 160
+          }
+        }
+      },
+      {
+        "task": "NanoSciFactRetrieval",
+        "repo": "zeta-alpha-ai/NanoSciFact",
+        "revision": "309f1d1ae3ae2e092444a8a0c25bed59b82318bc",
+        "split": "train",
+        "definition_sha256": "417d61c491d982953bdf1df6aa782ed4c3e9869a92e5e0fdd430519dfb6d640c",
+        "data_file": "NanoSciFactRetrieval/data.json",
+        "data_sha256": "c5144d5e40b3828b8ede17f7bd1f8cb81d08815492b95e067e8a7468150b955d",
+        "corpus_count": 2919,
+        "query_count": 50,
+        "judgment_count": 56,
+        "length_audit": {
+          "corpus": {
+            "count": 2919,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1824
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 240,
+            "over_2048": 0,
+            "p95_prepared": 224
+          }
+        }
+      },
+      {
+        "task": "NanoTouche2020Retrieval",
+        "repo": "zeta-alpha-ai/NanoTouche2020",
+        "revision": "0d2f26ed8c5ad309f95c7f9499c70a40e140fccd",
+        "split": "train",
+        "definition_sha256": "b9e2d7faace4e0376a202417e14f8c4fd1baf4b6e8fdbd709320a47788b50d7c",
+        "data_file": "NanoTouche2020Retrieval/data.json",
+        "data_sha256": "96cef0ebd72e07b7e980eb5923842b5074cb69dca013bbb6183c883f6a80c70f",
+        "corpus_count": 5745,
+        "query_count": 49,
+        "judgment_count": 932,
+        "length_audit": {
+          "corpus": {
+            "count": 5745,
+            "max_prepared": 7936,
+            "over_2048": 57,
+            "p95_prepared": 1840
+          },
+          "queries": {
+            "count": 49,
+            "max_prepared": 144,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        }
+      }
+    ]
+  },
+  "device_status": "NPU 0: busy HBM=56948/65536MB AICore=5% Health=OK\nNPU 1: busy HBM=57076/65536MB AICore=5% Health=OK\nNPU 2: busy HBM=57077/65536MB AICore=5% Health=OK\nNPU 3: busy HBM=57077/65536MB AICore=6% Health=OK\nNPU 4: busy HBM=57087/65536MB AICore=0% Health=Alarm\nNPU 5: busy HBM=57086/65536MB AICore=16% Health=Alarm\nNPU 6: busy HBM=57223/65536MB AICore=0% Health=OK\nNPU 7: busy HBM=57222/65536MB AICore=20% Health=OK\n",
+  "device": "Ascend910B2",
+  "hbm_before_model": {
+    "free_bytes": 8661811200,
+    "total_bytes": 65452113920
+  },
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "setup_seconds": 13.025369209703058,
+  "preflight": [
+    {
+      "task": "NanoTouche2020Retrieval",
+      "role": "corpus",
+      "id": "9329eedd-2019-04-18T14:04:54Z-00004-000",
+      "shape": [
+        1,
+        2064
+      ],
+      "embedding": {
+        "max_abs": 5.634129047393799e-05,
+        "normalized_rmse": 0.0003888803184963763
+      },
+      "cosine": 0.9999998807907104,
+      "seconds": 30.210053590126336
+    },
+    {
+      "task": "NanoTouche2020Retrieval",
+      "role": "corpus",
+      "id": "f9f87c6a-2019-04-19T12:44:53Z-00050-000",
+      "shape": [
+        1,
+        7936
+      ],
+      "embedding": {
+        "max_abs": 5.1919370889663696e-05,
+        "normalized_rmse": 0.0003124361683148891
+      },
+      "cosine": 1.0000003576278687,
+      "seconds": 114.87532553030178
+    }
+  ],
+  "row_split_preflight": {
+    "shape": [
+      4,
+      144
+    ],
+    "cpu_comparison": {
+      "max_abs": 8.314847946166992e-05,
+      "normalized_rmse": 0.0005018552765250206
+    },
+    "split_vs_batched": {
+      "max_abs": 8.579716086387634e-05,
+      "normalized_rmse": 0.000496010878123343
+    }
+  },
+  "preflight_passed": true,
+  "preflight_seconds": 155.02250017039478,
+  "eval_wall_seconds": 993.3909711800516,
+  "mean_ndcg_at_10": 58.89746153846154,
+  "upstream_cpu_mean": 58.907231,
+  "upstream_gpu_mean": 58.973692,
+  "paper_mean": 59.1,
+  "delta_cpu_mean": -0.009769461538461144,
+  "delta_gpu_mean": -0.07623046153845792,
+  "delta_paper_mean": -0.20253846153845956,
+  "quality_review_required": false,
+  "total_seconds": 1161.443808269687,
+  "peak_hbm_allocated_bytes": 972554752,
+  "peak_hbm_reserved_bytes": 2623537152
+}

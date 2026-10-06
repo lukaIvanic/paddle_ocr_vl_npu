@@ -6,8 +6,9 @@ the experiment's single working document, including research findings, source
 provenance and reference scores. The server CPU environment and C runtime have
 been prepared, and the eight-case CPU FP32 smoke passed on 2026-10-06. The owned
 full embedding forward passes real-case NPU parity in eager and TorchAir, and
-complete NanoSCIDOCS evaluation now matches the reported CPU score at batch 4.
-Full NanoBEIR remains next. Reference scores below remain upstream reports.
+complete NanoBEIR evaluation passed at reference batch 4: macro NDCG@10
+58.897462 versus reported CPU 58.907231. Next is the 90M reranker. Reference
+scores below remain upstream reports.
 
 ## 0. Establish a server CPU reference
 
@@ -108,7 +109,34 @@ Corpus throughput was stable at **21.9/60.8 documents/s** (B1/B4); total times
 including setup and CPU preflight were **143.76/59.14 s**. Logs, timings, per-query
 scores, top-100 candidates and provenance: [`B1`](../tmp/26_rwkv_inference/nanoscidocs_eager_b1_fp16_e8a15dad/)
 and [`B4`](../tmp/26_rwkv_inference/nanoscidocs_eager_b4_fp16_e8a15dad/).
-Next: full NanoBEIR, first auditing prepared lengths against the bridge's T2048 cap.
+Higher NanoSCIDOCS batches passed numerical CPU parity but changed padding and
+scores: B8 **40.210 / 48.4 documents/s**, B16 **40.572 / 42.2 documents/s**.
+Both were slower than B4; preserve reference B4 for benchmark reproduction.
+Evidence: [`B8`](../tmp/26_rwkv_inference/nanoscidocs_eager_b8_fp16_e6bd192d/)
+and [`B16`](../tmp/26_rwkv_inference/nanoscidocs_eager_b16_fp16_e6bd192d/).
+
+**Full NanoBEIR passed**, source `c3166fd1`, shared Ascend 910B2 NPU 7,
+raw eager, FP16 projections/FP32 state. All **13 tasks, 56,723 documents and
+649 queries** use pinned MTEB 1.38.60 revisions; coverage and independent
+per-query metric checks passed. Macro NDCG@10 was **58.897462**, versus CPU
+**58.907231** (−0.009769 points), GPU BF16 **58.973692** (−0.076230 points)
+and paper **59.10**. Twelve task scores match CPU to published precision;
+DBPedia was **54.551 versus 54.678** (−0.127 points). Luka accepted the match;
+no further FP32 diagnostic is planned.
+
+Evaluation took **993.39 s (16m33s)**; including setup and CPU preflight,
+**1,161.44 s (19m21s)**. Sixty documents exceeded 2,048 prepared positions,
+with maximum **7,936**. WKV alone now runs in state-carrying chunks of at most
+2,048 positions; CPU comparisons at T2064/T7936 passed (maximum embedding
+error **5.64e-5**). Device row splitting limits token slots to 8,192 while
+preserving reference B4 padding, EOS masks and complete input sequences.
+Peak reserved HBM was **2.44 GiB**. Top-100 candidates for all 649 queries
+(**64,900 pairs**) are saved for all three rerankers. Compact logs, per-task
+scores, timings, candidates and acquisition/protocol provenance:
+[`full NanoBEIR evidence`](../tmp/26_rwkv_inference/nanobeir_eager_b4_fp16_c3166fd1/).
+Large embedding arrays remain on the server with recorded hashes.
+Next: numerical anchors and NPU adaptation of the **90M reranker**, then
+NanoSCIDOCS and full NanoBEIR.
 
 Start NanoBEIR evaluation on one NPU. If it is not fast enough, use **data
 parallelism**, with a complete model replica on each participating NPU and
@@ -338,10 +366,9 @@ NPZ hash, shape and finite embedding/trace output. The compact committed
 command, log and exit code preserve source/runtime provenance and each server
 artifact's path, hash and shape. Large trace arrays remain outside Git.
 
-Next: implement the correctness-first 0.1B NPU path and compare these exact
-inputs and layer-hidden outputs before NanoSCIDOCS. Raw recurrent-matrix tracing
-is still unavailable in the unchanged C API. No NPU implementation or benchmark
-score is claimed by this smoke.
+These CPU anchors were subsequently used for the NPU comparisons above. Raw
+recurrent-matrix tracing remains unavailable in the unchanged C API; the isolated
+recurrence uses an independent CPU mathematical reference.
 
 ## Released model pairs and accuracy references
 
@@ -397,7 +424,7 @@ Selected container: **`research_vllm_ascend_023_external_workspace`** on
   `--system-site-packages`, inheriting torch `2.10.0+cpu` and NumPy `1.26.4`.
   Both imports were checked with backend autoload disabled. No base packages
   were changed. Checkpoint export, the C build and the eight-case CPU smoke
-  succeeded. NPU inference and benchmark accuracy remain unvalidated.
+  succeeded. Subsequent NPU validation and benchmark results are recorded above.
 
 The current local session reaches the server through the existing task-specific
 SSH configuration, not the default `~/.ssh/config`:
@@ -421,8 +448,8 @@ Run workloads inside the selected container;
 preserve the parent source-through-Git lane and use `source npu-setup` for NPU
 execution. Container inspection did not change packages or launch inference.
 
-The upstream GPU implementation uses custom CUDA kernels; a working Ascend path
-has not been established. There is currently no CUDA validation lane. The
+The upstream GPU implementation uses custom CUDA kernels; the owned Ascend
+embedding path is validated above. There is currently no CUDA validation lane. The
 released C runtime implements **embeddings only**, not the state reranker. It
 can provide an explicitly labeled CPU reference; it is not an NPU fallback.
 

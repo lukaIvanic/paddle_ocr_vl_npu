@@ -1,0 +1,152 @@
+{
+  "test-science-wsihwclscaaw-con01a": {
+    "ndcg_cut_10": 0.5
+  },
+  "test-economy-eptpghdtre-pro02a": {
+    "ndcg_cut_10": 1.0
+  },
+  "test-culture-mthbah-pro02a": {
+    "ndcg_cut_10": 0.6309297535714575
+  },
+  "test-international-amehbuaisji-con04a": {
+    "ndcg_cut_10": 0.6309297535714575
+  },
+  "test-health-hgwhwbjfs-pro03a": {
+    "ndcg_cut_10": 0.5
+  },
+  "test-health-dhghwapgd-con01a": {
+    "ndcg_cut_10": 0.6309297535714575
+  },
+  "test-education-pstrgsehwt-pro03a": {
+    "ndcg_cut_10": 1.0
+  },
+  "test-economy-epiasghbf-con01a": {
+    "ndcg_cut_10": 0.5
+  },
+  "test-sport-otshwbe2uuyt-con03a": {
+    "ndcg_cut_10": 0.5
+  },
+  "test-politics-gvhbhlsbr-con04a": {
+    "ndcg_cut_10": 1.0
+  },
+  "test-economy-egecegphw-pro02a": {
+    "ndcg_cut_10": 0.38685280723454163
+  },
+  "test-politics-ypppgvhwmv-pro03a": {
+    "ndcg_cut_10": 0.6309297535714575
+  },
+  "test-law-phwmfri-con03a": {
+    "ndcg_cut_10": 1.0
+  },
+  "test-culture-tlhrilsfhwr-pro01a": {
+    "ndcg_cut_10": 0.0
+  },
+  "test-culture-thbcsbptwhht-pro04a": {
+    "ndcg_cut_10": 0.43067655807339306
+  },
+  "test-economy-egppphbcb-pro03a": {
+    "ndcg_cut_10": 0.6309297535714575
+  },
+  "test-health-ahiahbgbsp-pro02a": {
+    "ndcg_cut_10": 0.3010299956639812
+  },
+  "test-health-dhiacihwph-pro01a": {
+    "ndcg_cut_10": 1.0
+  },
+  "test-politics-cpegiepgh-con01a": {
+    "ndcg_cut_10": 0.5
+  },
+  "test-religion-grcrgshwbr-pro03a": {
+    "ndcg_cut_10": 0.38685280723454163
+  },
+  "test-culture-mthbah-pro05a": {
+    "ndcg_cut_10": 0.0
+  },
+  "test-politics-oapdhwinkp-con01a": {
+    "ndcg_cut_10": 0.6309297535714575
+  },
+  "test-free-speech-debate-ldhwprhs-pro02a": {
+    "ndcg_cut_10": 0.5
+  },
+  "test-society-epiasghbf-con04a": {
+    "ndcg_cut_10": 0.3562071871080222
+  },
+  "test-law-lgplhbssbco-pro02a": {
+    "ndcg_cut_10": 1.0
+  },
+  "test-health-dhghhbampt-con01a": {
+    "ndcg_cut_10": 0.0
+  },
+  "test-law-umtlilhotac-con02a": {
+    "ndcg_cut_10": 0.43067655807339306
+  },
+  "test-politics-ypppgvhwmv-con03a": {
+    "ndcg_cut_10": 0.2890648263178879
+  },
+  "test-international-appghblsba-con03a": {
+    "ndcg_cut_10": 0.5
+  },
+  "test-culture-ascidfakhba-pro04a": {
+    "ndcg_cut_10": 0.3562071871080222
+  },
+  "test-education-usuprmhbu-con02a": {
+    "ndcg_cut_10": 1.0
+  },
+  "test-law-phwmfri-pro01a": {
+    "ndcg_cut_10": 1.0
+  },
+  "test-international-gmehwasr-pro05a": {
+    "ndcg_cut_10": 0.5
+  },
+  "test-education-ughbuesbf-con03a": {
+    "ndcg_cut_10": 0.5
+  },
+  "test-free-speech-debate-yfsdfkhbwu-pro02a": {
+    "ndcg_cut_10": 0.31546487678572877
+  },
+  "test-international-gmehwasr-con03a": {
+    "ndcg_cut_10": 0.0
+  },
+  "test-economy-egppphbcb-pro01a": {
+    "ndcg_cut_10": 0.6309297535714575
+  },
+  "test-international-siacphbnt-pro04a": {
+    "ndcg_cut_10": 0.3333333333333333
+  },
+  "test-economy-epegiahsc-pro02a": {
+    "ndcg_cut_10": 0.5
+  },
+  "test-international-ipecfiepg-con02a": {
+    "ndcg_cut_10": 0.31546487678572877
+  },
+  "test-international-gpdwhwcusa-pro03a": {
+    "ndcg_cut_10": 0.6309297535714575
+  },
+  "test-religion-msgfhwbamec-con02a": {
+    "ndcg_cut_10": 0.3333333333333333
+  },
+  "test-international-aghbfcpspr-pro03a": {
+    "ndcg_cut_10": 0.5
+  },
+  "test-digital-freedoms-dfiphbgs-pro01a": {
+    "ndcg_cut_10": 0.6309297535714575
+  },
+  "test-philosophy-elhbrd-pro03a": {
+    "ndcg_cut_10": 0.6309297535714575
+  },
+  "test-politics-glghssi-pro03a": {
+    "ndcg_cut_10": 1.0
+  },
+  "test-education-egscphsrdt-con01a": {
+    "ndcg_cut_10": 0.31546487678572877
+  },
+  "test-international-siacphbnt-pro01a": {
+    "ndcg_cut_10": 0.6309297535714575
+  },
+  "test-economy-beplcpdffe-con04a": {
+    "ndcg_cut_10": 1.0
+  },
+  "test-politics-lghwdecm-con02a": {
+    "ndcg_cut_10": 1.0
+  }
+}

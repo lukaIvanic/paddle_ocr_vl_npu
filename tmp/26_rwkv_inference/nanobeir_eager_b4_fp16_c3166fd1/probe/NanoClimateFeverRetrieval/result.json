@@ -1,0 +1,44 @@
+{
+  "task": "NanoClimateFeverRetrieval",
+  "ndcg_at_10": 38.144,
+  "upstream_cpu_fp32": 38.144,
+  "upstream_gpu_bf16": 38.122,
+  "delta_cpu_points": 0.0,
+  "delta_gpu_points": 0.021999999999998465,
+  "wall_seconds": 73.26893595978618,
+  "stages": {
+    "queries": {
+      "texts": 50,
+      "wall_seconds": 0.7714094403199852,
+      "forward_seconds": 0.7498549097217619
+    },
+    "corpus": {
+      "texts": 3408,
+      "wall_seconds": 71.75259501999244,
+      "forward_seconds": 69.67295846669003
+    }
+  },
+  "metric_crosscheck_passed": true,
+  "artifacts": {
+    "batch_timings.jsonl": {
+      "sha256": "19e9048859aa5da5eebec833d6c5bd38a2d9a9473cabc0a7c379b36a967e1a1c",
+      "bytes": 186806
+    },
+    "embeddings.npz": {
+      "sha256": "408aa5a63e09bddf741f5fda5ce7dde107e2ce79235ee0ffbf5b2bca148437d9",
+      "bytes": 9872993
+    },
+    "ids.json": {
+      "sha256": "35c92dbf9dd597077dfb5594ec5f2d825391d3f15e6eb1f414dbf4c90b0b61e9",
+      "bytes": 92999
+    },
+    "per_query_scores.json": {
+      "sha256": "8c4b10adcfc0262d000b4b76c869b4d810058591c2c59172a8d5889d12dbfdbe",
+      "bytes": 2494
+    },
+    "top100.json": {
+      "sha256": "9f224e0db49e17b388bf66d5e1d8fe4370ba3b3ef0bcba4f7ae1aec069e28184",
+      "bytes": 480349
+    }
+  }
+}

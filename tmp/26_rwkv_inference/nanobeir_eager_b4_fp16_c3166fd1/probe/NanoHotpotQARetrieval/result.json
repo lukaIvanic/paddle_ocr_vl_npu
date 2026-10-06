@@ -1,0 +1,44 @@
+{
+  "task": "NanoHotpotQARetrieval",
+  "ndcg_at_10": 71.78999999999999,
+  "upstream_cpu_fp32": 71.79,
+  "upstream_gpu_bf16": 71.827,
+  "delta_cpu_points": -1.4210854715202004e-14,
+  "delta_gpu_points": -0.03700000000000614,
+  "wall_seconds": 71.87533046025783,
+  "stages": {
+    "queries": {
+      "texts": 50,
+      "wall_seconds": 0.6880741403438151,
+      "forward_seconds": 0.6675009205937386
+    },
+    "corpus": {
+      "texts": 5090,
+      "wall_seconds": 70.13495757011697,
+      "forward_seconds": 68.31130355084315
+    }
+  },
+  "metric_crosscheck_passed": true,
+  "artifacts": {
+    "batch_timings.jsonl": {
+      "sha256": "c8fe1fdb8666d92cad4f7c5802c2934e3894bdf0b3b419a07ff338b34540fa88",
+      "bytes": 219660
+    },
+    "embeddings.npz": {
+      "sha256": "30d55c63424cd9009fc62c8934a3a582c23425947aff09fc24d8ce9705ae401f",
+      "bytes": 14680634
+    },
+    "ids.json": {
+      "sha256": "7f9ce3e2377f0cf10b0474bf57fc61eb6da74f8687e486603d62fbfb8e0ac93c",
+      "bytes": 80720
+    },
+    "per_query_scores.json": {
+      "sha256": "94f850419165e06e949a0fe7d52eb85d4a2f64bf7b066f4ade4ae1c93d0e347a",
+      "bytes": 3477
+    },
+    "top100.json": {
+      "sha256": "c7337499ba33a15041f329f5afe3be493735620dbcf7e1855fca96f22aaffa93",
+      "bytes": 401278
+    }
+  }
+}

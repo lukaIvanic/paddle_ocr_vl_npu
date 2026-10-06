@@ -1,0 +1,44 @@
+{
+  "task": "NanoSciFactRetrieval",
+  "ndcg_at_10": 78.971,
+  "upstream_cpu_fp32": 78.971,
+  "upstream_gpu_bf16": 78.956,
+  "delta_cpu_points": 0.0,
+  "delta_gpu_points": 0.015000000000000568,
+  "wall_seconds": 64.5894402898848,
+  "stages": {
+    "queries": {
+      "texts": 50,
+      "wall_seconds": 0.6311189699918032,
+      "forward_seconds": 0.6148418500088155
+    },
+    "corpus": {
+      "texts": 2919,
+      "wall_seconds": 63.31075116014108,
+      "forward_seconds": 61.651263723149896
+    }
+  },
+  "metric_crosscheck_passed": true,
+  "artifacts": {
+    "batch_timings.jsonl": {
+      "sha256": "9bc10d8e4a0b9181134599c25dc6f180a54f4c599e156f758d94d72bb14a76f2",
+      "bytes": 126754
+    },
+    "embeddings.npz": {
+      "sha256": "493582257f85887725f560f7508b1125df93ca839bb217a73a974c90518f5eba",
+      "bytes": 8475722
+    },
+    "ids.json": {
+      "sha256": "2fbab5d4bbbdd5998ce0e9ce57d4e914a12506b59bf8d6b944eca18665b93910",
+      "bytes": 46203
+    },
+    "per_query_scores.json": {
+      "sha256": "9742f7aab0c396169e25ae00d90b03bf8a96ae4fa2ae7c521a6c0f9b90c6a76d",
+      "bytes": 2102
+    },
+    "top100.json": {
+      "sha256": "298d9f10f0ef35768966ad3188af40c043d260745372b3b1af50cec088bcffc8",
+      "bytes": 400928
+    }
+  }
+}

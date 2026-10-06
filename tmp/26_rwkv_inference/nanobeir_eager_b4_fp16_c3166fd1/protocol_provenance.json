@@ -1,0 +1,987 @@
+{
+  "mteb_version": "1.38.60",
+  "mteb_wheel_metadata": {
+    "comment_text": null,
+    "core-metadata": {
+      "sha256": "48cc8209d10fddfa389ef0720142eaf65a24553cd2c0fc504fe63d9f70cd4297"
+    },
+    "digests": {
+      "blake2b_256": "4323f9b3f716bc7ddef6ce7a8c1ea12b0db87623b259f5f73319e43392ea0c3f",
+      "md5": "daccf67af83afe7885a89b7751c93289",
+      "sha256": "d8d4ed1f9c72a62e43474fa3477c004cbd43630b23f89c5d7659ea05e9509425"
+    },
+    "downloads": -1,
+    "filename": "mteb-1.38.60-py3-none-any.whl",
+    "has_sig": false,
+    "md5_digest": "daccf67af83afe7885a89b7751c93289",
+    "packagetype": "bdist_wheel",
+    "python_version": "py3",
+    "requires_python": "<3.13,>=3.9",
+    "size": 1807636,
+    "upload_time": "2025-09-27T19:43:11",
+    "upload_time_iso_8601": "2025-09-27T19:43:11.276492Z",
+    "url": "https://files.pythonhosted.org/packages/43/23/f9b3f716bc7ddef6ce7a8c1ea12b0db87623b259f5f73319e43392ea0c3f/mteb-1.38.60-py3-none-any.whl",
+    "yanked": false,
+    "yanked_reason": null
+  },
+  "task_definition_sha256": {
+    "NanoTouche2020Retrieval.py": "b9e2d7faace4e0376a202417e14f8c4fd1baf4b6e8fdbd709320a47788b50d7c",
+    "NanoSciFactRetrieval.py": "417d61c491d982953bdf1df6aa782ed4c3e9869a92e5e0fdd430519dfb6d640c",
+    "NanoSCIDOCSRetrieval.py": "90bc7171ccab2a687ed1bcea37afc403be7914df19b20334ea719592e7f37653",
+    "NanoQuoraRetrieval.py": "83bee77c3e8a3fac8b3a9448869c577aa69a5bcbc1dfa456a33f374029a41fcc",
+    "NanoNQRetrieval.py": "16ec4e4f18416a5ba91b7419485c372b080c45b37f8208c9d9e6ce5ae7ca533d",
+    "NanoNFCorpusRetrieval.py": "f7f9cf1d5919a869299aed197eedd1332792c2c8966caa7ecf0f9c9bd2a8475a",
+    "NanoMSMARCORetrieval.py": "2c7f861f21683b8e10e61556718440c5a49be99326a476a17c5f236c261fa3cc",
+    "NanoHotpotQARetrieval.py": "f0efaa9ca24d328a683bdd6d1de4a2e5ab1f86af28994f4ab4e88d7bf38a5e2a",
+    "NanoFiQA2018Retrieval.py": "313a4300bb162a08a899d85e41d5fecfd9962f93bf26836bc3af5e1dea8d5280",
+    "NanoFEVERRetrieval.py": "602e60c17bb5ad5140a7b26b3243a11f5b7c649973653cab56720aa274645d01",
+    "NanoDBPediaRetrieval.py": "4f5ac56e6b3cf10fe812967b0711f391c839f0be5ef27c91ddc3a5e8646b3eb5",
+    "NanoClimateFeverRetrieval.py": "09f7756d11e884db600703cc6c1129f4f6cdc9d1f90c2c1ba21c7ea04643c778",
+    "NanoArguAnaRetrieval.py": "7341b9ab69c4503e407d9b43c67ca58097964689fa0b1f0640da973468e03d94"
+  },
+  "upstream_reproduction_source": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/rwkv-emb.c/REPRODUCTION.md",
+  "upstream_reproduction_sha256": "8dc4234d9a839b492d131f351aae252e5a49d47c49508c0862f0886fd9f2364e",
+  "datasets": {
+    "mteb_version": "1.38.60",
+    "tasks": [
+      {
+        "task": "NanoArguAnaRetrieval",
+        "repo": "zeta-alpha-ai/NanoArguAna",
+        "revision": "8f4a982d470a32c45817738b9d29042ca55d75ad",
+        "split": "train",
+        "definition_sha256": "7341b9ab69c4503e407d9b43c67ca58097964689fa0b1f0640da973468e03d94",
+        "data_file": "NanoArguAnaRetrieval/data.json",
+        "data_sha256": "6e44fc86a664768dfa9022a3d84b560986b010f6eac8594a5baf132a88303257",
+        "corpus_count": 3635,
+        "query_count": 50,
+        "judgment_count": 50,
+        "length_audit": {
+          "corpus": {
+            "count": 3635,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1536
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 1840,
+            "over_2048": 0,
+            "p95_prepared": 1664
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "05681e2b5ca7f8828a7d4a3179e9acf23e61e06043f68813517a22f67dba8965",
+            "bytes": 2207566
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "ea913409965ae36b03ccce158a78d659b454508c5b53a714008d752c3459f681",
+            "bytes": 3439
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "315492bdc168aeb77ab35980d891ce24f9d1075e58ea3a24161f2532a304ae15",
+            "bytes": 45590
+          }
+        ]
+      },
+      {
+        "task": "NanoClimateFeverRetrieval",
+        "repo": "zeta-alpha-ai/NanoClimateFEVER",
+        "revision": "96741bfa30b9f56db8c9eb7d08e775ed6474f206",
+        "split": "train",
+        "definition_sha256": "09f7756d11e884db600703cc6c1129f4f6cdc9d1f90c2c1ba21c7ea04643c778",
+        "data_file": "NanoClimateFeverRetrieval/data.json",
+        "data_sha256": "10963af44c5885cc499f771551d5e6329184ba16b2812e6f925ef0ac6b1d6849",
+        "corpus_count": 3408,
+        "query_count": 50,
+        "judgment_count": 148,
+        "length_audit": {
+          "corpus": {
+            "count": 3408,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1872
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 304,
+            "over_2048": 0,
+            "p95_prepared": 240
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "378d60ec0606cf718ff57163bbcac61a384876743fde268c8ea11130365ed09f",
+            "bytes": 3331342
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "7bda449ec7e1965490bb862bae3d8c0f419b5611de561c7fd4ce7d7274b843ac",
+            "bytes": 3770
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "3e16e686f11820189c9a56f9256ede4c7b514aeb38c7889cf252c4852e01c5a4",
+            "bytes": 7569
+          }
+        ]
+      },
+      {
+        "task": "NanoDBPediaRetrieval",
+        "repo": "zeta-alpha-ai/NanoDBPedia",
+        "revision": "438f1c25129f05db6238699b5afdc9c6b58d2096",
+        "split": "train",
+        "definition_sha256": "4f5ac56e6b3cf10fe812967b0711f391c839f0be5ef27c91ddc3a5e8646b3eb5",
+        "data_file": "NanoDBPediaRetrieval/data.json",
+        "data_sha256": "25ad285a819ed52b7a25cd39cdf3d5e3fe263687b8a76fd6ff30f33184eca201",
+        "corpus_count": 6045,
+        "query_count": 50,
+        "judgment_count": 1158,
+        "length_audit": {
+          "corpus": {
+            "count": 6045,
+            "max_prepared": 1584,
+            "over_2048": 0,
+            "p95_prepared": 496
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 128,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "fef96954e4a6f504b344e00d3e2da9b2cc4ae2df9fcfe9fe92ad03b2138ba6bc",
+            "bytes": 1479972
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "139921c4abadda2183102080fd3070228871b60a31e8d45303331d4210f0e573",
+            "bytes": 23171
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "7cdf62ac0270cafbc3ae927c731c9b366ef3bf6718ee4ccfd38685753ec42585",
+            "bytes": 3546
+          }
+        ]
+      },
+      {
+        "task": "NanoFEVERRetrieval",
+        "repo": "zeta-alpha-ai/NanoFEVER",
+        "revision": "a8bfdf1bf15181167a7e22e69cf8754bdea9b4c8",
+        "split": "train",
+        "definition_sha256": "602e60c17bb5ad5140a7b26b3243a11f5b7c649973653cab56720aa274645d01",
+        "data_file": "NanoFEVERRetrieval/data.json",
+        "data_sha256": "6fb911cd4fda463fc4f789a0ba775465039ba75e9b3aebab9fb7023c04cabf1b",
+        "corpus_count": 4996,
+        "query_count": 50,
+        "judgment_count": 57,
+        "length_audit": {
+          "corpus": {
+            "count": 4996,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1808
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 144,
+            "over_2048": 0,
+            "p95_prepared": 144
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "27030417f0df4af2f762bae0477215ea7c5df28ce4f2944df8847f57defd05ad",
+            "bytes": 3930640
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "cf09be06c30eeb422b688a6af06fcb15110549e7eb7d4df61082c5ba4ed3cf6f",
+            "bytes": 2730
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "f3741586cc44563a481b3d12891d46cf33266125cf91f6ddc2ff0d21c82bc9d5",
+            "bytes": 3881
+          }
+        ]
+      },
+      {
+        "task": "NanoFiQA2018Retrieval",
+        "repo": "zeta-alpha-ai/NanoFiQA2018",
+        "revision": "4163ba032953d5044a7a6244261413f609c14342",
+        "split": "train",
+        "definition_sha256": "313a4300bb162a08a899d85e41d5fecfd9962f93bf26836bc3af5e1dea8d5280",
+        "data_file": "NanoFiQA2018Retrieval/data.json",
+        "data_sha256": "a15adac51ac8c41003478c45a5760b6b0863e73c2308555b5b6f9dfffd7658e3",
+        "corpus_count": 4598,
+        "query_count": 50,
+        "judgment_count": 123,
+        "length_audit": {
+          "corpus": {
+            "count": 4598,
+            "max_prepared": 2448,
+            "over_2048": 2,
+            "p95_prepared": 1632
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 160,
+            "over_2048": 0,
+            "p95_prepared": 160
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "8e993600400c59fc5054d94efcf5577be03cd1fc241b80912be0fae8babbd615",
+            "bytes": 2532554
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "dacc374246f91a5d32339b9c0b6993ee553061808575919716322ef76db80d33",
+            "bytes": 2631
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "1659f57414d5b6a7f712062cdd92b06490fc228a7c7b3064a5b8f388f19bedae",
+            "bytes": 4249
+          }
+        ]
+      },
+      {
+        "task": "NanoHotpotQARetrieval",
+        "repo": "zeta-alpha-ai/NanoHotpotQA",
+        "revision": "d79c0cdda980aba54842756770928035e1b61a51",
+        "split": "train",
+        "definition_sha256": "f0efaa9ca24d328a683bdd6d1de4a2e5ab1f86af28994f4ab4e88d7bf38a5e2a",
+        "data_file": "NanoHotpotQARetrieval/data.json",
+        "data_sha256": "dba4a179d9f126916eff05851236699e3b3b3629d54311f89517b8241ee73760",
+        "corpus_count": 5090,
+        "query_count": 50,
+        "judgment_count": 100,
+        "length_audit": {
+          "corpus": {
+            "count": 5090,
+            "max_prepared": 1712,
+            "over_2048": 0,
+            "p95_prepared": 752
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 224,
+            "over_2048": 0,
+            "p95_prepared": 208
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "ba6b24a43534da33144886762af4984dadcd54c8969deeb3cf6689d9fd3174b9",
+            "bytes": 1247690
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "22cdc93f1f37ad3c39b1a94f902c115e79d2f0fe349d77ab960d80cdd5444be5",
+            "bytes": 3424
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "6b65aa944e0d12f9e9996a78fe6f3348c06c169da42cc85d6d4004eff9811890",
+            "bytes": 6431
+          }
+        ]
+      },
+      {
+        "task": "NanoMSMARCORetrieval",
+        "repo": "zeta-alpha-ai/NanoMSMARCO",
+        "revision": "7b8ff22f2771dc65ac5b439f222eb19a1f56abda",
+        "split": "train",
+        "definition_sha256": "2c7f861f21683b8e10e61556718440c5a49be99326a476a17c5f236c261fa3cc",
+        "data_file": "NanoMSMARCORetrieval/data.json",
+        "data_sha256": "7be25ac28b48b736b8e5327f628630fa44735c5e483f8286a7dd96f89ce5d9b7",
+        "corpus_count": 5043,
+        "query_count": 50,
+        "judgment_count": 50,
+        "length_audit": {
+          "corpus": {
+            "count": 5043,
+            "max_prepared": 1056,
+            "over_2048": 0,
+            "p95_prepared": 544
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 144,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "98a9e3acf124ede0af69e2691843321568a653207c615d648c3f79e8b92b8c2f",
+            "bytes": 1115821
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "e804d7e5f0e90c9c06fd8d187fa6989efb9e041eef0000cd732928ca04b1174e",
+            "bytes": 2095
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "c61105bc59b5b7dfef6c03cdee008ff6b6ddba0c4f13d3f09807689ddb8efebd",
+            "bytes": 3219
+          }
+        ]
+      },
+      {
+        "task": "NanoNFCorpusRetrieval",
+        "repo": "zeta-alpha-ai/NanoNFCorpus",
+        "revision": "dd542a7efb9ad2136b9e00768b60fca9038f8156",
+        "split": "train",
+        "definition_sha256": "f7f9cf1d5919a869299aed197eedd1332792c2c8966caa7ecf0f9c9bd2a8475a",
+        "data_file": "NanoNFCorpusRetrieval/data.json",
+        "data_sha256": "5e8b10a5db125aa615b91c3d9b761e0b490dcfe6e1a89d9b17325f5cffe07221",
+        "corpus_count": 2953,
+        "query_count": 50,
+        "judgment_count": 2518,
+        "length_audit": {
+          "corpus": {
+            "count": 2953,
+            "max_prepared": 2304,
+            "over_2048": 1,
+            "p95_prepared": 1856
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 128,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "b8a85ad4fa7b3c8a32dd167db1da9c31201c322e6490f4824a917df2b9de464a",
+            "bytes": 2462576
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "8c3063fc746eb2d6da0acdd64f63ac52308404512fca578b4eb37c44088361c2",
+            "bytes": 16342
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "ade8b0ee3c98a2ff14eea581b49e4b7ec8d73f5c51207536f0a38de2914c001d",
+            "bytes": 2786
+          }
+        ]
+      },
+      {
+        "task": "NanoNQRetrieval",
+        "repo": "zeta-alpha-ai/NanoNQ",
+        "revision": "77540146379abf95df8326a3c5bb9eb21c7146c3",
+        "split": "train",
+        "definition_sha256": "16ec4e4f18416a5ba91b7419485c372b080c45b37f8208c9d9e6ce5ae7ca533d",
+        "data_file": "NanoNQRetrieval/data.json",
+        "data_sha256": "8f427a9ddedf8275926113589bd7a8b84325400271268ca621858273fe659a9d",
+        "corpus_count": 5035,
+        "query_count": 50,
+        "judgment_count": 57,
+        "length_audit": {
+          "corpus": {
+            "count": 5035,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1168
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 160,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "0a23818bfb7f8eeb0aa3c6db6dcd629122adeb1db9ee74a7344b0b17405d06f5",
+            "bytes": 1776094
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "ec0344cbf2075407a0472ab1cc91186b42a0ca5387f4b0af92cb260b19d8b6f5",
+            "bytes": 2020
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "fbcbcff5d8a537e68075a891b565c1891b51c0bcbac4556ed97ff48aa8cebc5b",
+            "bytes": 3658
+          }
+        ]
+      },
+      {
+        "task": "NanoQuoraRetrieval",
+        "repo": "zeta-alpha-ai/NanoQuoraRetrieval",
+        "revision": "2ab2d73e6c862026282808b913a34f4136928545",
+        "split": "train",
+        "definition_sha256": "83bee77c3e8a3fac8b3a9448869c577aa69a5bcbc1dfa456a33f374029a41fcc",
+        "data_file": "NanoQuoraRetrieval/data.json",
+        "data_sha256": "84628dc99fd2a17615a626c8119a6d5b7f755af14743be98abf88831c6c27d91",
+        "corpus_count": 5046,
+        "query_count": 50,
+        "judgment_count": 70,
+        "length_audit": {
+          "corpus": {
+            "count": 5046,
+            "max_prepared": 320,
+            "over_2048": 0,
+            "p95_prepared": 112
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 208,
+            "over_2048": 0,
+            "p95_prepared": 144
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "d58cbcea8c2cfaba79b3da37c1d6ebd0ab6f692ff17c783e832e1bd1a98198f3",
+            "bytes": 229172
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "cad732a7ae59eca75c0a1e00b541bcce1b4e7ede989761363a1d4188a5f33f00",
+            "bytes": 2266
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "cd353dbc4baa746dcc5c5278b704a22dfaf2491d22b32a02c142e47be72412e8",
+            "bytes": 3918
+          }
+        ]
+      },
+      {
+        "task": "NanoSCIDOCSRetrieval",
+        "repo": "zeta-alpha-ai/NanoSCIDOCS",
+        "revision": "484eb90549fc3f0b9c42b3551e80ceb999515537",
+        "split": "train",
+        "definition_sha256": "90bc7171ccab2a687ed1bcea37afc403be7914df19b20334ea719592e7f37653",
+        "data_file": "NanoSCIDOCSRetrieval/data.json",
+        "data_sha256": "bfc261e4b59f9b5e3e9915cc9cde95241d2dfe466ee4595a012c7369f4d34190",
+        "corpus_count": 2210,
+        "query_count": 50,
+        "judgment_count": 244,
+        "length_audit": {
+          "corpus": {
+            "count": 2210,
+            "max_prepared": 2032,
+            "over_2048": 0,
+            "p95_prepared": 1360
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 176,
+            "over_2048": 0,
+            "p95_prepared": 160
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "549175725f66075c8815e3fff8b30477d45fd38b251b8041523c46fe649a1e5a",
+            "bytes": 1271482
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "e7cb52e464f40a0f64b79bc7c74dd5f138713986e35eb9dfab536e29e4eba801",
+            "bytes": 14043
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "887ec8b87145f41a7ae53d7cd42b7fbbccbcacf897513b75db74bad434440fc3",
+            "bytes": 6874
+          }
+        ]
+      },
+      {
+        "task": "NanoSciFactRetrieval",
+        "repo": "zeta-alpha-ai/NanoSciFact",
+        "revision": "309f1d1ae3ae2e092444a8a0c25bed59b82318bc",
+        "split": "train",
+        "definition_sha256": "417d61c491d982953bdf1df6aa782ed4c3e9869a92e5e0fdd430519dfb6d640c",
+        "data_file": "NanoSciFactRetrieval/data.json",
+        "data_sha256": "c5144d5e40b3828b8ede17f7bd1f8cb81d08815492b95e067e8a7468150b955d",
+        "corpus_count": 2919,
+        "query_count": 50,
+        "judgment_count": 56,
+        "length_audit": {
+          "corpus": {
+            "count": 2919,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1824
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 240,
+            "over_2048": 0,
+            "p95_prepared": 224
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "87a40077e7b19ded49aa582fcc7c936dabd982adc6e4f562a36ec9c08ce6909c",
+            "bytes": 2408011
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "e8cd78d051a6a261af067153635e95540642c8bf990767955f4f504d92a7a89d",
+            "bytes": 2082
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "85861ef816cafe12520d2aa264a530b187b0a372862005da93baed31bcd7fb44",
+            "bytes": 5482
+          }
+        ]
+      },
+      {
+        "task": "NanoTouche2020Retrieval",
+        "repo": "zeta-alpha-ai/NanoTouche2020",
+        "revision": "0d2f26ed8c5ad309f95c7f9499c70a40e140fccd",
+        "split": "train",
+        "definition_sha256": "b9e2d7faace4e0376a202417e14f8c4fd1baf4b6e8fdbd709320a47788b50d7c",
+        "data_file": "NanoTouche2020Retrieval/data.json",
+        "data_sha256": "96cef0ebd72e07b7e980eb5923842b5074cb69dca013bbb6183c883f6a80c70f",
+        "corpus_count": 5745,
+        "query_count": 49,
+        "judgment_count": 932,
+        "length_audit": {
+          "corpus": {
+            "count": 5745,
+            "max_prepared": 7936,
+            "over_2048": 57,
+            "p95_prepared": 1840
+          },
+          "queries": {
+            "count": 49,
+            "max_prepared": 144,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        },
+        "parquet_files": [
+          {
+            "path": "corpus/train-00000-of-00001.parquet",
+            "sha256": "2733ae6fd21c473ffabe7bffdc4d5780c1ceacfd4b084e208e375363d184cb02",
+            "bytes": 7265307
+          },
+          {
+            "path": "qrels/train-00000-of-00001.parquet",
+            "sha256": "7c9399a80c7c0c8c115140d39dc8580d77c9c72289cb13387a34d0ebc40bde87",
+            "bytes": 17746
+          },
+          {
+            "path": "queries/train-00000-of-00001.parquet",
+            "sha256": "0bc4d782e7786cdbac17dbd240ccd034d132de15c0c82a062964b5ddb35ca040",
+            "bytes": 3348
+          }
+        ]
+      }
+    ]
+  },
+  "full_length_audit": {
+    "mteb_version": "1.38.60",
+    "tasks": [
+      {
+        "task": "NanoArguAnaRetrieval",
+        "repo": "zeta-alpha-ai/NanoArguAna",
+        "revision": "8f4a982d470a32c45817738b9d29042ca55d75ad",
+        "split": "train",
+        "definition_sha256": "7341b9ab69c4503e407d9b43c67ca58097964689fa0b1f0640da973468e03d94",
+        "data_file": "NanoArguAnaRetrieval/data.json",
+        "data_sha256": "6e44fc86a664768dfa9022a3d84b560986b010f6eac8594a5baf132a88303257",
+        "corpus_count": 3635,
+        "query_count": 50,
+        "judgment_count": 50,
+        "length_audit": {
+          "corpus": {
+            "count": 3635,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1536
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 1840,
+            "over_2048": 0,
+            "p95_prepared": 1664
+          }
+        }
+      },
+      {
+        "task": "NanoClimateFeverRetrieval",
+        "repo": "zeta-alpha-ai/NanoClimateFEVER",
+        "revision": "96741bfa30b9f56db8c9eb7d08e775ed6474f206",
+        "split": "train",
+        "definition_sha256": "09f7756d11e884db600703cc6c1129f4f6cdc9d1f90c2c1ba21c7ea04643c778",
+        "data_file": "NanoClimateFeverRetrieval/data.json",
+        "data_sha256": "10963af44c5885cc499f771551d5e6329184ba16b2812e6f925ef0ac6b1d6849",
+        "corpus_count": 3408,
+        "query_count": 50,
+        "judgment_count": 148,
+        "length_audit": {
+          "corpus": {
+            "count": 3408,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1872
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 304,
+            "over_2048": 0,
+            "p95_prepared": 240
+          }
+        }
+      },
+      {
+        "task": "NanoDBPediaRetrieval",
+        "repo": "zeta-alpha-ai/NanoDBPedia",
+        "revision": "438f1c25129f05db6238699b5afdc9c6b58d2096",
+        "split": "train",
+        "definition_sha256": "4f5ac56e6b3cf10fe812967b0711f391c839f0be5ef27c91ddc3a5e8646b3eb5",
+        "data_file": "NanoDBPediaRetrieval/data.json",
+        "data_sha256": "25ad285a819ed52b7a25cd39cdf3d5e3fe263687b8a76fd6ff30f33184eca201",
+        "corpus_count": 6045,
+        "query_count": 50,
+        "judgment_count": 1158,
+        "length_audit": {
+          "corpus": {
+            "count": 6045,
+            "max_prepared": 1584,
+            "over_2048": 0,
+            "p95_prepared": 496
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 128,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        }
+      },
+      {
+        "task": "NanoFEVERRetrieval",
+        "repo": "zeta-alpha-ai/NanoFEVER",
+        "revision": "a8bfdf1bf15181167a7e22e69cf8754bdea9b4c8",
+        "split": "train",
+        "definition_sha256": "602e60c17bb5ad5140a7b26b3243a11f5b7c649973653cab56720aa274645d01",
+        "data_file": "NanoFEVERRetrieval/data.json",
+        "data_sha256": "6fb911cd4fda463fc4f789a0ba775465039ba75e9b3aebab9fb7023c04cabf1b",
+        "corpus_count": 4996,
+        "query_count": 50,
+        "judgment_count": 57,
+        "length_audit": {
+          "corpus": {
+            "count": 4996,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1808
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 144,
+            "over_2048": 0,
+            "p95_prepared": 144
+          }
+        }
+      },
+      {
+        "task": "NanoFiQA2018Retrieval",
+        "repo": "zeta-alpha-ai/NanoFiQA2018",
+        "revision": "4163ba032953d5044a7a6244261413f609c14342",
+        "split": "train",
+        "definition_sha256": "313a4300bb162a08a899d85e41d5fecfd9962f93bf26836bc3af5e1dea8d5280",
+        "data_file": "NanoFiQA2018Retrieval/data.json",
+        "data_sha256": "a15adac51ac8c41003478c45a5760b6b0863e73c2308555b5b6f9dfffd7658e3",
+        "corpus_count": 4598,
+        "query_count": 50,
+        "judgment_count": 123,
+        "length_audit": {
+          "corpus": {
+            "count": 4598,
+            "max_prepared": 2448,
+            "over_2048": 2,
+            "p95_prepared": 1632
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 160,
+            "over_2048": 0,
+            "p95_prepared": 160
+          }
+        }
+      },
+      {
+        "task": "NanoHotpotQARetrieval",
+        "repo": "zeta-alpha-ai/NanoHotpotQA",
+        "revision": "d79c0cdda980aba54842756770928035e1b61a51",
+        "split": "train",
+        "definition_sha256": "f0efaa9ca24d328a683bdd6d1de4a2e5ab1f86af28994f4ab4e88d7bf38a5e2a",
+        "data_file": "NanoHotpotQARetrieval/data.json",
+        "data_sha256": "dba4a179d9f126916eff05851236699e3b3b3629d54311f89517b8241ee73760",
+        "corpus_count": 5090,
+        "query_count": 50,
+        "judgment_count": 100,
+        "length_audit": {
+          "corpus": {
+            "count": 5090,
+            "max_prepared": 1712,
+            "over_2048": 0,
+            "p95_prepared": 752
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 224,
+            "over_2048": 0,
+            "p95_prepared": 208
+          }
+        }
+      },
+      {
+        "task": "NanoMSMARCORetrieval",
+        "repo": "zeta-alpha-ai/NanoMSMARCO",
+        "revision": "7b8ff22f2771dc65ac5b439f222eb19a1f56abda",
+        "split": "train",
+        "definition_sha256": "2c7f861f21683b8e10e61556718440c5a49be99326a476a17c5f236c261fa3cc",
+        "data_file": "NanoMSMARCORetrieval/data.json",
+        "data_sha256": "7be25ac28b48b736b8e5327f628630fa44735c5e483f8286a7dd96f89ce5d9b7",
+        "corpus_count": 5043,
+        "query_count": 50,
+        "judgment_count": 50,
+        "length_audit": {
+          "corpus": {
+            "count": 5043,
+            "max_prepared": 1056,
+            "over_2048": 0,
+            "p95_prepared": 544
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 144,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        }
+      },
+      {
+        "task": "NanoNFCorpusRetrieval",
+        "repo": "zeta-alpha-ai/NanoNFCorpus",
+        "revision": "dd542a7efb9ad2136b9e00768b60fca9038f8156",
+        "split": "train",
+        "definition_sha256": "f7f9cf1d5919a869299aed197eedd1332792c2c8966caa7ecf0f9c9bd2a8475a",
+        "data_file": "NanoNFCorpusRetrieval/data.json",
+        "data_sha256": "5e8b10a5db125aa615b91c3d9b761e0b490dcfe6e1a89d9b17325f5cffe07221",
+        "corpus_count": 2953,
+        "query_count": 50,
+        "judgment_count": 2518,
+        "length_audit": {
+          "corpus": {
+            "count": 2953,
+            "max_prepared": 2304,
+            "over_2048": 1,
+            "p95_prepared": 1856
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 128,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        }
+      },
+      {
+        "task": "NanoNQRetrieval",
+        "repo": "zeta-alpha-ai/NanoNQ",
+        "revision": "77540146379abf95df8326a3c5bb9eb21c7146c3",
+        "split": "train",
+        "definition_sha256": "16ec4e4f18416a5ba91b7419485c372b080c45b37f8208c9d9e6ce5ae7ca533d",
+        "data_file": "NanoNQRetrieval/data.json",
+        "data_sha256": "8f427a9ddedf8275926113589bd7a8b84325400271268ca621858273fe659a9d",
+        "corpus_count": 5035,
+        "query_count": 50,
+        "judgment_count": 57,
+        "length_audit": {
+          "corpus": {
+            "count": 5035,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1168
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 160,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        }
+      },
+      {
+        "task": "NanoQuoraRetrieval",
+        "repo": "zeta-alpha-ai/NanoQuoraRetrieval",
+        "revision": "2ab2d73e6c862026282808b913a34f4136928545",
+        "split": "train",
+        "definition_sha256": "83bee77c3e8a3fac8b3a9448869c577aa69a5bcbc1dfa456a33f374029a41fcc",
+        "data_file": "NanoQuoraRetrieval/data.json",
+        "data_sha256": "84628dc99fd2a17615a626c8119a6d5b7f755af14743be98abf88831c6c27d91",
+        "corpus_count": 5046,
+        "query_count": 50,
+        "judgment_count": 70,
+        "length_audit": {
+          "corpus": {
+            "count": 5046,
+            "max_prepared": 320,
+            "over_2048": 0,
+            "p95_prepared": 112
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 208,
+            "over_2048": 0,
+            "p95_prepared": 144
+          }
+        }
+      },
+      {
+        "task": "NanoSCIDOCSRetrieval",
+        "repo": "zeta-alpha-ai/NanoSCIDOCS",
+        "revision": "484eb90549fc3f0b9c42b3551e80ceb999515537",
+        "split": "train",
+        "definition_sha256": "90bc7171ccab2a687ed1bcea37afc403be7914df19b20334ea719592e7f37653",
+        "data_file": "NanoSCIDOCSRetrieval/data.json",
+        "data_sha256": "bfc261e4b59f9b5e3e9915cc9cde95241d2dfe466ee4595a012c7369f4d34190",
+        "corpus_count": 2210,
+        "query_count": 50,
+        "judgment_count": 244,
+        "length_audit": {
+          "corpus": {
+            "count": 2210,
+            "max_prepared": 2032,
+            "over_2048": 0,
+            "p95_prepared": 1360
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 176,
+            "over_2048": 0,
+            "p95_prepared": 160
+          }
+        }
+      },
+      {
+        "task": "NanoSciFactRetrieval",
+        "repo": "zeta-alpha-ai/NanoSciFact",
+        "revision": "309f1d1ae3ae2e092444a8a0c25bed59b82318bc",
+        "split": "train",
+        "definition_sha256": "417d61c491d982953bdf1df6aa782ed4c3e9869a92e5e0fdd430519dfb6d640c",
+        "data_file": "NanoSciFactRetrieval/data.json",
+        "data_sha256": "c5144d5e40b3828b8ede17f7bd1f8cb81d08815492b95e067e8a7468150b955d",
+        "corpus_count": 2919,
+        "query_count": 50,
+        "judgment_count": 56,
+        "length_audit": {
+          "corpus": {
+            "count": 2919,
+            "max_prepared": 2048,
+            "over_2048": 0,
+            "p95_prepared": 1824
+          },
+          "queries": {
+            "count": 50,
+            "max_prepared": 240,
+            "over_2048": 0,
+            "p95_prepared": 224
+          }
+        }
+      },
+      {
+        "task": "NanoTouche2020Retrieval",
+        "repo": "zeta-alpha-ai/NanoTouche2020",
+        "revision": "0d2f26ed8c5ad309f95c7f9499c70a40e140fccd",
+        "split": "train",
+        "definition_sha256": "b9e2d7faace4e0376a202417e14f8c4fd1baf4b6e8fdbd709320a47788b50d7c",
+        "data_file": "NanoTouche2020Retrieval/data.json",
+        "data_sha256": "96cef0ebd72e07b7e980eb5923842b5074cb69dca013bbb6183c883f6a80c70f",
+        "corpus_count": 5745,
+        "query_count": 49,
+        "judgment_count": 932,
+        "length_audit": {
+          "corpus": {
+            "count": 5745,
+            "max_prepared": 7936,
+            "over_2048": 57,
+            "p95_prepared": 1840
+          },
+          "queries": {
+            "count": 49,
+            "max_prepared": 144,
+            "over_2048": 0,
+            "p95_prepared": 128
+          }
+        }
+      }
+    ]
+  },
+  "parquet_reader": {
+    "comment_text": null,
+    "core-metadata": {
+      "sha256": "120a17c8e006d2e1f3f4071385fd0b5f09b9c17b600043dd28b00607fb02265c"
+    },
+    "digests": {
+      "blake2b_256": "fe4fa2c0ed309167ef436674782dfee4a124570ba64299c551e38d3fdaf0a17b",
+      "md5": "5bd3a3bd3890d54658e782a5b05cf4bf",
+      "sha256": "d383591f3dcbe545f6cc62daaef9c7cdfe0dff0fb9e1c8121101cabe9098cfa6"
+    },
+    "downloads": -1,
+    "filename": "pyarrow-19.0.1-cp312-cp312-manylinux_2_28_aarch64.whl",
+    "has_sig": false,
+    "md5_digest": "5bd3a3bd3890d54658e782a5b05cf4bf",
+    "packagetype": "bdist_wheel",
+    "python_version": "cp312",
+    "requires_python": ">=3.9",
+    "size": 40507986,
+    "upload_time": "2025-02-18T18:53:26",
+    "upload_time_iso_8601": "2025-02-18T18:53:26.263423Z",
+    "url": "https://files.pythonhosted.org/packages/fe/4f/a2c0ed309167ef436674782dfee4a124570ba64299c551e38d3fdaf0a17b/pyarrow-19.0.1-cp312-cp312-manylinux_2_28_aarch64.whl",
+    "yanked": false,
+    "yanked_reason": null
+  },
+  "acquisition": "Datasets downloaded directly on the server from hf-mirror.com at pinned revisions; every Parquet byte count and SHA256 checked against primary Hugging Face metadata. Independently parsed local/server JSON snapshots match hashes. Local acquisition used HF dataset rows for ArguAna, pinned Parquet files for remaining tasks after ClimateFEVER rows endpoint HTTP500.",
+  "protocol": {
+    "reference_batch": 4,
+    "context": 2048,
+    "eos_chunk": 512,
+    "corpus_order": "descending document ID",
+    "ignore_identical_ids": false,
+    "relevance": "Every positive qrels row mapped to 1, as in all 13 pinned MTEB task definitions",
+    "query_instruction": "Instruct: Given a query, retrieve documents that answer the query\nQuery: {query}",
+    "long_inputs": "Full prepared sequences retained; WKV calls split at 2048 tokens with FP32 state continuation. B4 preprocessed rows may be split into smaller device calls for memory; padding/EOS masks remain unchanged."
+  },
+  "artifacts": "Server keeps embeddings.npz; Git evidence keeps compact results/logs plus lossless gzip of IDs, timings and top100. Decompressed hashes match result.json manifests."
+}

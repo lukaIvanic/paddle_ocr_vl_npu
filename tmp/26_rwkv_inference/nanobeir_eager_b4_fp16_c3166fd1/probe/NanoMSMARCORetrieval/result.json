@@ -1,0 +1,44 @@
+{
+  "task": "NanoMSMARCORetrieval",
+  "ndcg_at_10": 49.752,
+  "upstream_cpu_fp32": 49.752,
+  "upstream_gpu_bf16": 49.779,
+  "delta_cpu_points": 0.0,
+  "delta_gpu_points": -0.027000000000001023,
+  "wall_seconds": 72.57302461005747,
+  "stages": {
+    "queries": {
+      "texts": 50,
+      "wall_seconds": 0.6286037699319422,
+      "forward_seconds": 0.613930799998343
+    },
+    "corpus": {
+      "texts": 5043,
+      "wall_seconds": 70.77556210989133,
+      "forward_seconds": 68.9546593632549
+    }
+  },
+  "metric_crosscheck_passed": true,
+  "artifacts": {
+    "batch_timings.jsonl": {
+      "sha256": "ac727d076dce3cc6f343665809106ca3b30de406271ba943c2fe9c2bdd5e1039",
+      "bytes": 213382
+    },
+    "embeddings.npz": {
+      "sha256": "a31177e53d05ceeac0bfe74ebe954380b24c8f187f5d026b91fd3216eb45cb03",
+      "bytes": 14539621
+    },
+    "ids.json": {
+      "sha256": "9a8da3d57bbbb6939cb49a713a6926e77977534f0c6e2b15561c3c8ab83b9fa8",
+      "bytes": 75815
+    },
+    "per_query_scores.json": {
+      "sha256": "b018a0057b7c6706c6b7feb33b496353768d8ab0399e50b00629d96ec8e184ef",
+      "bytes": 2442
+    },
+    "top100.json": {
+      "sha256": "d8e89fa062af6a00c239af8b24b2276c52b83e0915e60530d6af67b1ed9db06b",
+      "bytes": 396457
+    }
+  }
+}

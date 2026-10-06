@@ -1,0 +1,44 @@
+{
+  "task": "NanoArguAnaRetrieval",
+  "ndcg_at_10": 55.982,
+  "upstream_cpu_fp32": 55.982,
+  "upstream_gpu_bf16": 55.989,
+  "delta_cpu_points": 0.0,
+  "delta_gpu_points": -0.006999999999997897,
+  "wall_seconds": 64.00301195960492,
+  "stages": {
+    "queries": {
+      "texts": 50,
+      "wall_seconds": 1.0806079097092152,
+      "forward_seconds": 1.0424908911809325
+    },
+    "corpus": {
+      "texts": 3635,
+      "wall_seconds": 62.00684879021719,
+      "forward_seconds": 60.18454181216657
+    }
+  },
+  "metric_crosscheck_passed": true,
+  "artifacts": {
+    "batch_timings.jsonl": {
+      "sha256": "fe23ff8e10649cba5a3266455c82c566991bc84414ee8360eee8a6524d69bc68",
+      "bytes": 256740
+    },
+    "embeddings.npz": {
+      "sha256": "00ae928e5dc16c3601f469e85d7fcfee46ea1b0c7a76e1271a14410cbadeb26d",
+      "bytes": 10517341
+    },
+    "ids.json": {
+      "sha256": "7ca8d281dae52b4734336a7013d160f63369ef297edc0b5d00c01769e3972133",
+      "bytes": 156836
+    },
+    "per_query_scores.json": {
+      "sha256": "b8944c384af96eb5f54fb633304dedf8ced85abc837883c164095710590e7f22",
+      "bytes": 3718
+    },
+    "top100.json": {
+      "sha256": "92fc30560486d6433b3bbbd02e671a128dbc3b1af98b719226b4701537ad7f01",
+      "bytes": 535474
+    }
+  }
+}

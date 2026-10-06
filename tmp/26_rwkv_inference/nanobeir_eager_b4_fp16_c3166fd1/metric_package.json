@@ -1,0 +1,22 @@
+{
+  "comment_text": null,
+  "core-metadata": false,
+  "digests": {
+    "blake2b_256": "04964925a95e4865a647bc74d3bb052243d12a3c8e8a34909d7d097b5a4d08c5",
+    "md5": "d3fc216202a732db691284fa72d5d01f",
+    "sha256": "eaaf20580d17b5575a233e04dab8a4cbcc01a7e45be8cf547c07f0a2bb3e7eb9"
+  },
+  "downloads": -1,
+  "filename": "pytrec_eval_terrier-0.5.10.tar.gz",
+  "has_sig": false,
+  "md5_digest": "d3fc216202a732db691284fa72d5d01f",
+  "packagetype": "sdist",
+  "python_version": "source",
+  "requires_python": ">=3",
+  "size": 18634,
+  "upload_time": "2025-10-20T16:50:18",
+  "upload_time_iso_8601": "2025-10-20T16:50:18.098681Z",
+  "url": "https://files.pythonhosted.org/packages/04/96/4925a95e4865a647bc74d3bb052243d12a3c8e8a34909d7d097b5a4d08c5/pytrec_eval_terrier-0.5.10.tar.gz",
+  "yanked": false,
+  "yanked_reason": null
+}

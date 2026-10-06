@@ -1,0 +1,174 @@
+{
+  "source_commit": "e6bd192dbe39468855a1bbc88d0bc51d82baf8b1",
+  "script_sha256": "cfe314faf56ef2791438496789aa93e476622e62b9381e503cddfd0c0ac3192a",
+  "model_script_sha256": "62ac46e34a38e105870efa530dc83efa099ca8707c3b09fcd986e28bfdde5d09",
+  "checkpoint_sha256": "9033eec92f163d1a710474977fa3fb68b7ee04697e0e961d83434743bd256a15",
+  "data_sha256": "c1be79f83593929a7dd1c9d900ec91534de0f532e19a38293c1352c27112f557",
+  "dataset": "zeta-alpha-ai/NanoSCIDOCS",
+  "revision": "484eb90549fc3f0b9c42b3551e80ceb999515537",
+  "split": "train",
+  "hostname": "liteserver-c001-4",
+  "physical_npu": "7",
+  "backend": "raw_eager",
+  "batch_size": 16,
+  "dense_dtype": "fp16",
+  "state_pointwise_dtype": "float32",
+  "shared_device": true,
+  "context": 2048,
+  "eos_chunk": 512,
+  "instruction": "Instruct: Given a query, retrieve documents that answer the query\nQuery: {query}",
+  "mteb_contract_version": "1.38.60",
+  "mteb_framework_used": false,
+  "corpus_order": "descending document ID",
+  "ignore_identical_ids": false,
+  "stages": {
+    "queries": {
+      "texts": 50,
+      "batches": 4,
+      "forward_seconds": 0.21604353981092572,
+      "wall_seconds": 0.2237940700724721,
+      "prepared_token_slots": 7968
+    },
+    "corpus": {
+      "texts": 2210,
+      "batches": 139,
+      "forward_seconds": 51.71528306044638,
+      "wall_seconds": 52.373578359838575,
+      "prepared_token_slots": 3165088
+    }
+  },
+  "all_checks_passed": true,
+  "pytrec_eval": "0.5.10",
+  "device_status": "NPU 0: busy HBM=56947/65536MB AICore=5% Health=OK\nNPU 1: busy HBM=57076/65536MB AICore=4% Health=OK\nNPU 2: busy HBM=57077/65536MB AICore=5% Health=OK\nNPU 3: busy HBM=57078/65536MB AICore=5% Health=OK\nNPU 4: busy HBM=57047/65536MB AICore=17% Health=Alarm\nNPU 5: busy HBM=57046/65536MB AICore=16% Health=Alarm\nNPU 6: busy HBM=57183/65536MB AICore=16% Health=OK\nNPU 7: busy HBM=57182/65536MB AICore=17% Health=OK\n",
+  "hbm_before_model": {
+    "free_bytes": 8703840256,
+    "total_bytes": 65452113920
+  },
+  "device": "Ascend910B2",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "setup_seconds": 12.74919258011505,
+  "thresholds": {
+    "layer_normalized_rmse": 0.02,
+    "embedding_max_abs": 0.002,
+    "min_cosine": 0.9995
+  },
+  "maximum_preflight": {
+    "passed": true,
+    "document_id": "7dfce578644bc101ae4ffcd0184d2227c6d07809",
+    "shape": [
+      1,
+      2032
+    ],
+    "layers": [
+      {
+        "max_abs": 0.0,
+        "normalized_rmse": 0.0
+      },
+      {
+        "max_abs": 0.002288341522216797,
+        "normalized_rmse": 0.0002500229165889323
+      },
+      {
+        "max_abs": 0.009793281555175781,
+        "normalized_rmse": 0.0003216842596884817
+      },
+      {
+        "max_abs": 0.0074672698974609375,
+        "normalized_rmse": 0.0004336510901339352
+      },
+      {
+        "max_abs": 0.0074024200439453125,
+        "normalized_rmse": 0.00048364236135967076
+      },
+      {
+        "max_abs": 0.007312774658203125,
+        "normalized_rmse": 0.0005409308942034841
+      },
+      {
+        "max_abs": 0.030872344970703125,
+        "normalized_rmse": 0.0005159437423571944
+      },
+      {
+        "max_abs": 0.03087615966796875,
+        "normalized_rmse": 0.0006005234899930656
+      },
+      {
+        "max_abs": 0.030731201171875,
+        "normalized_rmse": 0.0005537235410884023
+      },
+      {
+        "max_abs": 0.030796051025390625,
+        "normalized_rmse": 0.0004452762077562511
+      },
+      {
+        "max_abs": 0.04598236083984375,
+        "normalized_rmse": 0.0004403769562486559
+      },
+      {
+        "max_abs": 0.06510162353515625,
+        "normalized_rmse": 0.00041765376226976514
+      },
+      {
+        "max_abs": 0.10919189453125,
+        "normalized_rmse": 0.0007849374087527394
+      },
+      {
+        "max_abs": 0.2595977783203125,
+        "normalized_rmse": 0.000862692657392472
+      }
+    ],
+    "embedding": {
+      "max_abs": 7.625482976436615e-05,
+      "normalized_rmse": 0.0003667068958748132
+    },
+    "cosine": 1.0,
+    "seconds": 26.696033120155334,
+    "reused_from": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanoscidocs_eager_b1_fp16_e8a15dad/probe/result.json"
+  },
+  "batch_preflight": {
+    "passed": true,
+    "shape": [
+      16,
+      144
+    ],
+    "embedding": {
+      "max_abs": 0.00025522708892822266,
+      "normalized_rmse": 0.000531475932803005
+    }
+  },
+  "preflight_and_warmup_seconds": 29.1087255300954,
+  "ndcg_at_10_unrounded": 0.40572029953927696,
+  "ndcg_at_10": 40.572,
+  "upstream_gpu_bf16_ndcg_at_10": 40.988,
+  "upstream_cpu_fp32_ndcg_at_10": 41.058,
+  "delta_gpu_percentage_points": -0.4159999999999968,
+  "delta_cpu_percentage_points": -0.4859999999999971,
+  "metric_crosscheck_passed": true,
+  "eval_wall_seconds": 53.0918525098823,
+  "artifacts": {
+    "embeddings.npz": {
+      "sha256": "1e395fd41090ce447f96ba1ff608789ec600b1bdc3e73919cfe777808431b906",
+      "bytes": 6399467
+    },
+    "ids.json": {
+      "sha256": "0804bdb7c0bd7b856289eddbb4cb19fba7b24ce1de88bcb023dfbae80dcb59b6",
+      "bytes": 108520
+    },
+    "batch_timings.json": {
+      "sha256": "0a8fd00786d878f58852ce1af05e768610cde25a638d80fd7f6439c207d9f6f1",
+      "bytes": 160318
+    },
+    "per_query_scores.json": {
+      "sha256": "07037345e3cb949bf394b501ceaa82887c705c763c7380b18d8027c7b57507c0",
+      "bytes": 4443
+    },
+    "top100.json": {
+      "sha256": "37f85b85d0bad8b38619e532a7b9452137ab8d2452b6a45c7be206c6af6aadd2",
+      "bytes": 564705
+    }
+  },
+  "peak_hbm_allocated_bytes": 2799109120,
+  "peak_hbm_reserved_bytes": 7597981696,
+  "total_seconds": 94.99984114989638
+}
