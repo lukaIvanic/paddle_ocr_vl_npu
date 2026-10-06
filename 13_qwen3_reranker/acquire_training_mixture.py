@@ -51,7 +51,21 @@ def main():
         pages = list(range(0, count, 100))
         rng.shuffle(pages)
         pages = pages[:min(len(pages), max(1, (target[config] + 99) // 100))]
-        jobs.extend((config, offset, min(100, count - offset)) for offset in pages)
+        remaining = target[config]
+        for base in pages:
+            block_size = min(100, count - base)
+            length = min(remaining, block_size)
+            if not length:
+                break
+            # A circular random window gives every row in the sampled block
+            # equal inclusion probability, including its beginning and end.
+            window_rng = random.Random(f"{args.seed}/{config}/{base}")
+            start = window_rng.randrange(block_size) if length < block_size else 0
+            first = min(length, block_size - start)
+            jobs.append((config, base + start, first, base, block_size))
+            if first < length:
+                jobs.append((config, base, length - first, base, block_size))
+            remaining -= length
     print("ACQUISITION_PLAN", json.dumps({"requests": len(jobs), "configs": len(counts),
           "source_rows": sum(counts.values()), "excluded": EXCLUDED}), flush=True)
     responses, pool = [], []
@@ -85,15 +99,22 @@ def main():
         return {"rows": [{"row_idx": offset + i, "row": r} for i, r in enumerate(rows)]}, url
 
     def fetch(job):
-        config, offset, length = job
+        config, offset, length, base, block_size = job
         url = "https://datasets-server.huggingface.co/rows?" + urllib.parse.urlencode(
             dict(dataset=MIRROR, config=config, split="train", offset=offset, length=length))
         t = time.monotonic()
         cached = args.cache / (hashlib.sha256(url.encode()).hexdigest() + ".json.gz")
+        whole_url = "https://datasets-server.huggingface.co/rows?" + urllib.parse.urlencode(
+            dict(dataset=MIRROR, config=config, split="train", offset=base, length=block_size))
+        whole_cached = args.cache / (hashlib.sha256(whole_url.encode()).hexdigest() + ".json.gz")
+        source_url = url
         for attempt in range(8):
             try:
                 if cached.exists():
                     raw = gzip.decompress(cached.read_bytes())
+                elif whole_cached.exists():
+                    raw = gzip.decompress(whole_cached.read_bytes())
+                    source_url = whole_url
                 else:
                     with request_lock:
                         time.sleep(max(0, 1.2 - (time.monotonic() - last_request[0])))
@@ -119,8 +140,8 @@ def main():
                       "error": str(e), "delay_seconds": delay}), flush=True)
                 time.sleep(delay)
         valid = [clean_row(r["row"], config, r["row_idx"], blocked)
-                 for r in data["rows"] if not r.get("truncated_cells")]
-        return {"config": config, "offset": offset, "url": url,
+                 for r in data["rows"] if offset <= r["row_idx"] < offset + length and not r.get("truncated_cells")]
+        return {"config": config, "offset": offset, "length": length, "url": source_url,
                 "parquet_fallback": data.get("acquisition_parquet_url"),
                 "sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw),
                 "seconds": time.monotonic() - t}, [r for r in valid if r]
@@ -143,7 +164,8 @@ def main():
         "benchmark_mteb_version": "1.38.9", "excluded_families": EXCLUDED,
         "touche_exclusion": blocked_meta,
         "filter_scope": "whole dataset-family exclusion plus exact normalized Touché text exclusion; not exhaustive cross-benchmark corpus-text decontamination",
-        "sampling": "proportional released-row source and length quotas; source floors 4 train/2 validation; random 100-row blocks without replacement; quota caps reflect eligible unique rows",
+        "sampling": "proportional released-row source and length quotas; source floors 4 train/2 validation; random blocks without replacement with uniform circular windows inside partial blocks; quota caps reflect eligible unique rows",
+        "acquisition_script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "counts_by_config": counts, "responses": responses, "seed": args.seed,
         "seconds": time.monotonic() - started,
     }
