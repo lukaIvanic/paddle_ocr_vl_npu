@@ -97,7 +97,7 @@ def main():
                     url = f"{args.hub_endpoint.rstrip('/')}/datasets/{MIRROR}/resolve/{REVISION}/{filename}?download=true"
                     stream = fsspec.open(url, mode="rb", block_size=1024**2,
                         client_kwargs={"trust_env": True,
-                            "timeout": aiohttp.ClientTimeout(total=60, sock_connect=10, sock_read=30)}).open()
+                            "timeout": aiohttp.ClientTimeout(total=None, sock_connect=10, sock_read=30)}).open()
                     parquet_files[filename] = (pq.ParquetFile(stream), url)
                 reader, url = parquet_files[filename]
                 if base + reader.metadata.num_rows <= offset:
