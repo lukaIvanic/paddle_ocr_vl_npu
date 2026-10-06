@@ -120,7 +120,7 @@ def main():
     encode = lambda text: tokenizer.encode(text, add_special_tokens=False)
     prior = json.loads(args.prior_result.read_text())
     if args.phase == 'calibration':
-        pairs = [{k: v for k, v in r.items() if k != 'variants'} for r in prior['pairs']]
+        pairs = [{k: v for k, v in r.items() if k != 'variants'} | {'partition': 'calibration'} for r in prior['pairs']]
     else:
         fixture = json.loads(args.fixture.read_text())
         excluded = {r['query_id'] for r in prior['pairs']}
@@ -137,7 +137,10 @@ def main():
                     did = eligible[index]
                     pairs.append(dict(id=f'{qid}/{did}', query_id=qid, document_id=did,
                                       query=query['text'], document=fixture['documents'][did]['text'],
-                                      grade=grade, instruction=fixture['instruction'], source='Touche2020Retrieval.v3'))
+                                      grade=grade, instruction=fixture['instruction'], source='Touche2020Retrieval.v3', partition='holdout'))
+        if args.joint_remap_only:
+            pairs += [{k: v for k, v in r.items() if k != 'variants'} | {'partition': 'calibration'}
+                      for r in prior['pairs'] if len(encode(r['document'])) <= args.max_document_tokens]
     assert pairs
     yes, no = tokenizer.convert_tokens_to_ids('yes'), tokenizer.convert_tokens_to_ids('no')
     assert encode('yes') == [yes] and encode('no') == [no]
@@ -210,7 +213,7 @@ def main():
                 value['token_inventory_changes'] = [dict(id=i, text=tokenizer.decode([i]),
                                                         normal_count=baseline_bag[i], variant_count=bag[i])
                     for i in sorted(baseline_bag.keys() | bag.keys()) if baseline_bag[i] != bag[i]]
-            if args.phase == 'calibration':
+            if pair['partition'] == 'calibration':
                 previous = next(r for r in prior['pairs'] if r['id'] == pair['id'])
                 assert row['variants']['normal']['input_ids'] == previous['variants']['query_first']['input_ids']
                 row['normal_score_change_from_prior'] = row['variants']['normal']['score'] - previous['variants']['query_first']['score']
@@ -221,6 +224,8 @@ def main():
                                   scores={k: round(v['score'], 6) for k, v in row['variants'].items()})), flush=True)
     handle.remove()
     result['summary'] = summarize(result['pairs'])
+    result['partition_summaries'] = {partition: summarize([r for r in result['pairs'] if r['partition'] == partition])
+                                    for partition in sorted({r['partition'] for r in result['pairs']})}
     result['summary']['all_control_token_sequences_preserved'] = True
     result['summary']['atomic_token_multisets_identical'] = args.phase == 'calibration' and not args.joint_remap_only
     result['status'] = 'completed'
