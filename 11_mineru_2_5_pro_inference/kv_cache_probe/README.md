@@ -1,8 +1,9 @@
 # MinerU KV-cache layout and storage-format probe
 
 Status, 2026-10-06: implemented; CPU packing checks passed on the Mac. **No NPU
-timing or correctness result yet.** The blue-zone gateway is reachable but its
-container forward to `127.0.0.1:22021` currently returns connection refused.
+timing or correctness result yet.** The current host-master plus `docker exec`
+route is verified working; the earlier connection-blocker report used a retired
+container SSH alias.
 
 This probes one-token **text decode attention** with synthetic, identical FP16
 Q/K/V and MinerU dimensions: 14 query heads, 2 KV heads, D64, KV4096. Vision
@@ -97,8 +98,11 @@ with the same operator, logical shape, fill method and fixture hashes.
 
 ## 910B run ladder
 
-Tracked source must arrive through a commit/push and `git pull`; never edit
-tracked files in the container. Once the SSH route is restored, run from the
+Tracked source must arrive through a commit/push and source fetch; never edit
+tracked files in the container. Use the existing host master via
+`bash scripts/blue_zone_exec.sh bash --noprofile --norc -c '<commands>'`, or
+pipe a script to `bash scripts/blue_zone_exec.sh bash --noprofile --norc -s`.
+Run the following from the
 container checkout. Check for tracked changes first and stop if any are present;
 never discard existing work. The published probe branch is
 `codex/mineru-kv-cache-layout-probe`; select it without creating a work-server

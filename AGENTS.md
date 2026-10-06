@@ -11,8 +11,9 @@ The short version:
 - **Local authoring** — Luka's Mac checkout, no accelerator. Edits tracked files,
   commits, pushes, and drives the 910B container over SSH. It must not present
   unrun local code as validated inference.
-- **Blue-zone 910B container** (`ssh blue_zone_npu_container`) — the real
-  validation lane, reachable from local. Pull-only for source: edit locally,
+- **Blue-zone 910B container** (existing host SSH master + `docker exec`) — the
+  real validation lane, reachable through `scripts/blue_zone_exec.sh`.
+  Pull-only for source: edit locally,
   push, `git pull` there, run. Never hand-edit tracked files on the container.
 - **310P work server** — Atlas 310P devices, not reachable from local and
   pull-only from GitHub. Driven by a self-contained written handoff brief; its
@@ -684,7 +685,8 @@ selects a free device into `ASCEND_RT_VISIBLE_DEVICES` via `npu-status
 `npu-smi` fails on `libc_sec.so` and `import torch_npu` fails outright:
 
 ```sh
-ssh blue_zone_npu_container 'cd /workspace/repos/paddle_ocr_vl_npu && source npu-setup && <command>'
+bash scripts/blue_zone_exec.sh bash --noprofile --norc -c \
+  'cd /workspace/repos/paddle_ocr_vl_npu && source /usr/local/bin/npu-setup && <command>'
 ```
 
 The box is shared: 8 × Ascend 910B2, one process per device. Let `npu-setup` pick
