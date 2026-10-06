@@ -1,0 +1,73 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 4652.14it/s]
+/workspace/repos/qwen-order-ed892111/22_qwen3_embedding_benchmark/investigate_prompt_roles.py:174: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  full_logits = model(input_ids=tensor, attention_mask=torch.ones_like(tensor), use_cache=False,
+{"pair": "2/17e9941d-2019-04-18T11:19:19Z-00001-000", "done": 1, "total": 262, "scores": {"normal": 0.025957, "document_first": 0.173288, "swapped_contents": 0.090093, "query_first_wrong_labels": 0.106691, "normal_clarified": 0.025957, "document_first_clarified": 0.140336, "swapped_contents_remapped": 0.080357, "swapped_contents_reverse_task": 0.112795, "normal_general_task": 0.015906, "swapped_contents_general_task": 0.060087, "swapped_contents_system_remapped": 0.085099}}
+{"pair": "2/6aa773f4-2019-04-18T14:45:16Z-00005-000", "done": 2, "total": 262, "scores": {"normal": 0.033086, "document_first": 0.125923, "swapped_contents": 0.140336, "query_first_wrong_labels": 0.125923, "normal_clarified": 0.039639, "document_first_clarified": 0.119203, "swapped_contents_remapped": 0.268941, "swapped_contents_reverse_task": 0.233706, "normal_general_task": 0.037327, "swapped_contents_general_task": 0.148047, "swapped_contents_system_remapped": 0.140336}}
+{"pair": "2/e435a482-2019-04-18T11:12:51Z-00001-000", "done": 3, "total": 262, "scores": {"normal": 0.191933, "document_first": 0.281406, "swapped_contents": 0.377541, "query_first_wrong_labels": 0.132964, "normal_clarified": 0.191933, "document_first_clarified": 0.268941, "swapped_contents_remapped": 0.453262, "swapped_contents_reverse_task": 0.705785, "normal_general_task": 0.119203, "swapped_contents_general_task": 0.233706, "swapped_contents_system_remapped": 0.348645}}
+{"pair": "2/18710bc8-2019-04-18T16:37:00Z-00003-000", "done": 4, "total": 262, "scores": {"normal": 0.140336, "document_first": 0.148047, "swapped_contents": 0.085099, "query_first_wrong_labels": 0.080357, "normal_clarified": 0.164516, "document_first_clarified": 0.112795, "swapped_contents_remapped": 0.112795, "swapped_contents_reverse_task": 0.233706, "normal_general_task": 0.245085, "swapped_contents_general_task": 0.085099, "swapped_contents_system_remapped": 0.100879}}
+{"pair": "2/65de0e0f-2019-04-18T14:18:27Z-00005-000", "done": 5, "total": 262, "scores": {"normal": 0.377541, "document_first": 0.245085, "swapped_contents": 0.281406, "query_first_wrong_labels": 0.140336, "normal_clarified": 0.531209, "document_first_clarified": 0.173288, "swapped_contents_remapped": 0.307358, "swapped_contents_reverse_task": 0.437824, "normal_general_task": 0.592667, "swapped_contents_general_task": 0.307358, "swapped_contents_system_remapped": 0.245085}}
+{"pair": "2/b2b2d4a9-2019-04-18T15:55:06Z-00000-000", "done": 6, "total": 262, "scores": {"normal": 0.182426, "document_first": 0.281406, "swapped_contents": 0.392337, "query_first_wrong_labels": 0.2227, "normal_clarified": 0.348645, "document_first_clarified": 0.245085, "swapped_contents_remapped": 0.422505, "swapped_contents_reverse_task": 0.348645, "normal_general_task": 0.156105, "swapped_contents_general_task": 0.705785, "swapped_contents_system_remapped": 0.392337}}
+{"pair": "3/1d2c3937-2019-04-18T16:30:38Z-00004-000", "done": 7, "total": 262, "scores": {"normal": 0.001099, "document_first": 0.001207, "swapped_contents": 0.001927, "query_first_wrong_labels": 0.002801, "normal_clarified": 0.000883, "document_first_clarified": 0.00071, "swapped_contents_remapped": 0.002801, "swapped_contents_reverse_task": 0.00071, "normal_general_task": 0.001284, "swapped_contents_general_task": 0.004332, "swapped_contents_system_remapped": 0.001245}}
+{"pair": "3/a1db94b6-2019-04-18T18:22:29Z-00003-000", "done": 8, "total": 262, "scores": {"normal": 0.00629, "document_first": 0.119203, "swapped_contents": 0.100879, "query_first_wrong_labels": 0.011687, "normal_clarified": 0.007121, "document_first_clarified": 0.071591, "swapped_contents_remapped": 0.100879, "swapped_contents_reverse_task": 0.075858, "normal_general_task": 0.014957, "swapped_contents_general_task": 0.095349, "swapped_contents_system_remapped": 0.095349}}
+{"pair": "3/f0bf014b-2019-04-15T20:23:05Z-00029-000", "done": 9, "total": 262, "scores": {"normal": 0.003945, "document_first": 0.008577, "swapped_contents": 0.047426, "query_first_wrong_labels": 0.100879, "normal_clarified": 0.001755, "document_first_clarified": 0.00141, "swapped_contents_remapped": 0.035145, "swapped_contents_reverse_task": 0.080357, "normal_general_task": 0.000607, "swapped_contents_general_task": 0.037327, "swapped_contents_system_remapped": 0.050331}}
+[33742] [2026-10-06 09:45:14:628] torch_npu.memory: [ERROR] [33742] NPU out of memory. Tried to allocate 92.00 MiB (NPU 0; 60.96 GiB total capacity; 7.58 GiB already allocated; 7.58 GiB current active; 10.45 MiB free; 7.87 GiB reserved in total by PyTorch).If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.
+Traceback (most recent call last):
+  File "/workspace/repos/qwen-order-ed892111/22_qwen3_embedding_benchmark/investigate_prompt_roles.py", line 215, in <module>
+    main()
+  File "/workspace/repos/qwen-order-ed892111/22_qwen3_embedding_benchmark/investigate_prompt_roles.py", line 174, in main
+    full_logits = model(input_ids=tensor, attention_mask=torch.ones_like(tensor), use_cache=False,
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/utils/generic.py", line 876, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/qwen3/modeling_qwen3.py", line 492, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+                                       ^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/utils/generic.py", line 952, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/utils/output_capturing.py", line 248, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/qwen3/modeling_qwen3.py", line 424, in forward
+    hidden_states = decoder_layer(
+                    ^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/modeling_layers.py", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/qwen3/modeling_qwen3.py", line 318, in forward
+    hidden_states, _ = self.self_attn(
+                       ^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/qwen3/modeling_qwen3.py", line 277, in forward
+    attn_output, attn_weights = attention_interface(
+                                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/integrations/sdpa_attention.py", line 92, in sdpa_attention_forward
+    attn_output = torch.nn.functional.scaled_dot_product_attention(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: NPU out of memory. Tried to allocate 92.00 MiB (NPU 0; 60.96 GiB total capacity; 7.58 GiB already allocated; 7.58 GiB current active; 10.45 MiB free; 7.87 GiB reserved in total by PyTorch).If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.
+[ERROR] 2026-10-06-09:45:16 (PID:33742, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception

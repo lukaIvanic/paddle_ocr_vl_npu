@@ -1,0 +1,382 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 4685.95it/s]
+/workspace/repos/qwen-order-ed892111/22_qwen3_embedding_benchmark/investigate_prompt_roles.py:194: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  full_logits = model(input_ids=tensor, attention_mask=torch.ones_like(tensor), use_cache=False,
+{"pair": "2/17e9941d-2019-04-18T11:19:19Z-00001-000", "done": 1, "total": 278, "scores": {"normal": 0.025957, "swapped_contents_joint_remap": 0.080357}}
+{"pair": "2/6aa773f4-2019-04-18T14:45:16Z-00005-000", "done": 2, "total": 278, "scores": {"normal": 0.033086, "swapped_contents_joint_remap": 0.256832}}
+{"pair": "2/e435a482-2019-04-18T11:12:51Z-00001-000", "done": 3, "total": 278, "scores": {"normal": 0.191933, "swapped_contents_joint_remap": 0.362969}}
+{"pair": "2/18710bc8-2019-04-18T16:37:00Z-00003-000", "done": 4, "total": 278, "scores": {"normal": 0.140336, "swapped_contents_joint_remap": 0.106691}}
+{"pair": "2/65de0e0f-2019-04-18T14:18:27Z-00005-000", "done": 5, "total": 278, "scores": {"normal": 0.377541, "swapped_contents_joint_remap": 0.281406}}
+{"pair": "2/6aa773f4-2019-04-18T14:45:16Z-00003-000", "done": 6, "total": 278, "scores": {"normal": 0.679179, "swapped_contents_joint_remap": 0.392337}}
+{"pair": "3/1d2c3937-2019-04-18T16:30:38Z-00004-000", "done": 7, "total": 278, "scores": {"normal": 0.001099, "swapped_contents_joint_remap": 0.001755}}
+{"pair": "3/d7639a3f-2019-04-19T12:47:41Z-00009-000", "done": 8, "total": 278, "scores": {"normal": 0.001001, "swapped_contents_joint_remap": 6.4e-05}}
+{"pair": "3/f0bf014b-2019-04-15T20:23:05Z-00029-000", "done": 9, "total": 278, "scores": {"normal": 0.003945, "swapped_contents_joint_remap": 0.042088}}
+{"pair": "4/4d028cd3-2019-04-18T18:37:10Z-00007-000", "done": 10, "total": 278, "scores": {"normal": 0.362969, "swapped_contents_joint_remap": 0.407333}}
+{"pair": "4/1d10487f-2019-04-17T11:47:31Z-00064-000", "done": 11, "total": 278, "scores": {"normal": 0.256832, "swapped_contents_joint_remap": 0.348645}}
+{"pair": "4/4712ec0a-2019-04-18T12:53:28Z-00000-000", "done": 12, "total": 278, "scores": {"normal": 0.407333, "swapped_contents_joint_remap": 0.968856}}
+{"pair": "4/c6b2791c-2019-04-18T14:59:08Z-00003-000", "done": 13, "total": 278, "scores": {"normal": 0.651355, "swapped_contents_joint_remap": 0.766294}}
+{"pair": "4/c6b278de-2019-04-18T15:01:18Z-00002-000", "done": 14, "total": 278, "scores": {"normal": 0.531209, "swapped_contents_joint_remap": 0.843895}}
+{"pair": "4/1df1290b-2019-04-19T12:44:36Z-00076-000", "done": 15, "total": 278, "scores": {"normal": 0.622459, "swapped_contents_joint_remap": 0.867036}}
+{"pair": "5/cf4c9cbf-2019-04-17T11:47:24Z-00052-000", "done": 16, "total": 278, "scores": {"normal": 0.377541, "swapped_contents_joint_remap": 0.705785}}
+{"pair": "5/cf4c9cbf-2019-04-17T11:47:24Z-00063-000", "done": 17, "total": 278, "scores": {"normal": 0.233706, "swapped_contents_joint_remap": 0.577495}}
+{"pair": "5/cf4c9cbf-2019-04-17T11:47:24Z-00042-000", "done": 18, "total": 278, "scores": {"normal": 0.531209, "swapped_contents_joint_remap": 0.743168}}
+{"pair": "5/cf4c9cbf-2019-04-17T11:47:24Z-00074-000", "done": 19, "total": 278, "scores": {"normal": 0.437824, "swapped_contents_joint_remap": 0.546738}}
+{"pair": "5/38b0fdf5-2019-04-18T12:55:15Z-00001-000", "done": 20, "total": 278, "scores": {"normal": 0.592667, "swapped_contents_joint_remap": 0.787931}}
+{"pair": "5/cf4c9cbf-2019-04-17T11:47:24Z-00075-000", "done": 21, "total": 278, "scores": {"normal": 0.705785, "swapped_contents_joint_remap": 0.766294}}
+{"pair": "6/e78f47fa-2019-04-18T18:20:34Z-00004-000", "done": 22, "total": 278, "scores": {"normal": 0.106691, "swapped_contents_joint_remap": 0.531209}}
+{"pair": "6/561c5e25-2019-04-18T15:50:58Z-00004-000", "done": 23, "total": 278, "scores": {"normal": 0.268941, "swapped_contents_joint_remap": 0.968856}}
+{"pair": "6/561c5e25-2019-04-18T15:50:58Z-00003-000", "done": 24, "total": 278, "scores": {"normal": 0.075858, "swapped_contents_joint_remap": 0.592667}}
+{"pair": "6/472d8abe-2019-04-18T12:17:23Z-00005-000", "done": 25, "total": 278, "scores": {"normal": 0.562177, "swapped_contents_joint_remap": 0.798187}}
+{"pair": "6/32e58fb0-2019-04-18T18:29:04Z-00001-000", "done": 26, "total": 278, "scores": {"normal": 0.245085, "swapped_contents_joint_remap": 0.592667}}
+{"pair": "6/c195ff79-2019-04-18T13:35:02Z-00003-000", "done": 27, "total": 278, "scores": {"normal": 0.705785, "swapped_contents_joint_remap": 0.705785}}
+{"pair": "7/ed449e61-2019-04-18T15:13:37Z-00004-000", "done": 28, "total": 278, "scores": {"normal": 0.132964, "swapped_contents_joint_remap": 0.787931}}
+{"pair": "7/ed449e61-2019-04-18T15:13:37Z-00005-000", "done": 29, "total": 278, "scores": {"normal": 0.201813, "swapped_contents_joint_remap": 0.932453}}
+{"pair": "7/36c2c315-2019-04-18T11:41:22Z-00005-000", "done": 30, "total": 278, "scores": {"normal": 0.233706, "swapped_contents_joint_remap": 0.437824}}
+{"pair": "7/cb1a30bc-2019-04-18T19:35:27Z-00002-000", "done": 31, "total": 278, "scores": {"normal": 0.348645, "swapped_contents_joint_remap": 0.798187}}
+{"pair": "7/ffc1c5ad-2019-04-18T16:49:56Z-00000-000", "done": 32, "total": 278, "scores": {"normal": 0.233706, "swapped_contents_joint_remap": 0.826712}}
+{"pair": "8/3e1e0ade-2019-04-18T16:30:20Z-00005-000", "done": 33, "total": 278, "scores": {"normal": 0.106691, "swapped_contents_joint_remap": 0.173288}}
+{"pair": "8/b1869bc9-2019-04-18T13:46:50Z-00004-000", "done": 34, "total": 278, "scores": {"normal": 0.112795, "swapped_contents_joint_remap": 0.48438}}
+{"pair": "8/b186236b-2019-04-18T15:07:33Z-00004-000", "done": 35, "total": 278, "scores": {"normal": 0.268941, "swapped_contents_joint_remap": 0.334589}}
+{"pair": "8/b54275ec-2019-04-18T11:43:18Z-00002-000", "done": 36, "total": 278, "scores": {"normal": 0.320821, "swapped_contents_joint_remap": 0.5}}
+{"pair": "8/47ca8c0a-2019-04-18T19:12:38Z-00002-000", "done": 37, "total": 278, "scores": {"normal": 0.191933, "swapped_contents_joint_remap": 0.453262}}
+{"pair": "10/36c2c315-2019-04-18T11:41:22Z-00006-000", "done": 38, "total": 278, "scores": {"normal": 0.377541, "swapped_contents_joint_remap": 0.835484}}
+{"pair": "10/79f05a51-2019-04-18T14:20:37Z-00006-000", "done": 39, "total": 278, "scores": {"normal": 0.294215, "swapped_contents_joint_remap": 0.787931}}
+{"pair": "10/6c8d356f-2019-04-18T20:03:16Z-00005-000", "done": 40, "total": 278, "scores": {"normal": 0.705785, "swapped_contents_joint_remap": 0.874077}}
+{"pair": "10/6c8d356f-2019-04-18T20:03:16Z-00003-000", "done": 41, "total": 278, "scores": {"normal": 0.201813, "swapped_contents_joint_remap": 0.392337}}
+{"pair": "10/a70ffd6e-2019-04-18T15:13:01Z-00005-000", "done": 42, "total": 278, "scores": {"normal": 0.437824, "swapped_contents_joint_remap": 0.607663}}
+{"pair": "10/8906c1ae-2019-04-18T16:24:58Z-00009-000", "done": 43, "total": 278, "scores": {"normal": 0.468791, "swapped_contents_joint_remap": 0.637031}}
+{"pair": "11/6b570162-2019-04-19T12:47:54Z-00012-000", "done": 44, "total": 278, "scores": {"normal": 0.362969, "swapped_contents_joint_remap": 0.787931}}
+{"pair": "11/bcde55c5-2019-04-19T12:44:29Z-00007-000", "done": 45, "total": 278, "scores": {"normal": 0.164516, "swapped_contents_joint_remap": 0.592667}}
+{"pair": "11/6b570162-2019-04-19T12:47:54Z-00011-000", "done": 46, "total": 278, "scores": {"normal": 0.348645, "swapped_contents_joint_remap": 0.851953}}
+{"pair": "11/add356d0-2019-04-18T17:26:20Z-00004-000", "done": 47, "total": 278, "scores": {"normal": 0.531209, "swapped_contents_joint_remap": 0.826712}}
+{"pair": "11/1cbf91f8-2019-04-18T17:32:45Z-00004-000", "done": 48, "total": 278, "scores": {"normal": 0.651355, "swapped_contents_joint_remap": 0.787931}}
+{"pair": "11/6143b928-2019-04-15T20:22:25Z-00013-000", "done": 49, "total": 278, "scores": {"normal": 0.531209, "swapped_contents_joint_remap": 0.48438}}
+{"pair": "12/8791f9a4-2019-04-18T15:46:11Z-00002-000", "done": 50, "total": 278, "scores": {"normal": 0.021615, "swapped_contents_joint_remap": 0.022977}}
+{"pair": "12/f3fff4a7-2019-04-18T15:33:41Z-00004-000", "done": 51, "total": 278, "scores": {"normal": 0.320821, "swapped_contents_joint_remap": 0.562177}}
+{"pair": "12/8e214b94-2019-04-18T12:19:56Z-00001-000", "done": 52, "total": 278, "scores": {"normal": 0.063715, "swapped_contents_joint_remap": 0.407333}}
+{"pair": "12/6b19ea3e-2019-04-18T18:37:17Z-00000-000", "done": 53, "total": 278, "scores": {"normal": 0.100879, "swapped_contents_joint_remap": 0.182426}}
+{"pair": "12/e1347bd3-2019-04-19T12:47:56Z-00009-000", "done": 54, "total": 278, "scores": {"normal": 0.106691, "swapped_contents_joint_remap": 0.156105}}
+{"pair": "12/3d1a752c-2019-04-18T17:01:05Z-00006-000", "done": 55, "total": 278, "scores": {"normal": 0.031144, "swapped_contents_joint_remap": 0.256832}}
+{"pair": "13/1baa36a6-2019-04-18T16:31:18Z-00005-000", "done": 56, "total": 278, "scores": {"normal": 0.880797, "swapped_contents_joint_remap": 0.914901}}
+{"pair": "13/74a77292-2019-04-18T11:10:47Z-00003-000", "done": 57, "total": 278, "scores": {"normal": 0.156105, "swapped_contents_joint_remap": 0.334589}}
+{"pair": "13/f8fc8c9e-2019-04-18T19:30:17Z-00000-000", "done": 58, "total": 278, "scores": {"normal": 0.437824, "swapped_contents_joint_remap": 0.392337}}
+{"pair": "13/d7bf3b30-2019-04-18T20:00:36Z-00002-000", "done": 59, "total": 278, "scores": {"normal": 0.377541, "swapped_contents_joint_remap": 0.047426}}
+{"pair": "13/6e782a7f-2019-04-18T13:11:24Z-00003-000", "done": 60, "total": 278, "scores": {"normal": 0.936285, "swapped_contents_joint_remap": 0.968856}}
+{"pair": "13/ae945b47-2019-04-19T12:43:59Z-00004-000", "done": 61, "total": 278, "scores": {"normal": 0.817574, "swapped_contents_joint_remap": 0.679179}}
+{"pair": "14/f8070fca-2019-04-18T17:34:05Z-00005-000", "done": 62, "total": 278, "scores": {"normal": 0.085099, "swapped_contents_joint_remap": 0.132964}}
+{"pair": "14/2771aba0-2019-04-18T15:29:45Z-00004-000", "done": 63, "total": 278, "scores": {"normal": 0.256832, "swapped_contents_joint_remap": 0.453262}}
+{"pair": "14/dfb058ea-2019-04-18T18:50:06Z-00003-000", "done": 64, "total": 278, "scores": {"normal": 0.899121, "swapped_contents_joint_remap": 0.798187}}
+{"pair": "14/caecc1bf-2019-04-18T13:39:21Z-00001-000", "done": 65, "total": 278, "scores": {"normal": 0.622459, "swapped_contents_joint_remap": 0.7773}}
+{"pair": "14/d2d4219f-2019-04-18T13:20:48Z-00001-000", "done": 66, "total": 278, "scores": {"normal": 0.7773, "swapped_contents_joint_remap": 0.766294}}
+{"pair": "14/3584cf5e-2019-04-18T12:25:29Z-00000-000", "done": 67, "total": 278, "scores": {"normal": 0.899121, "swapped_contents_joint_remap": 0.592667}}
+{"pair": "15/3e6f0cf1-2019-04-18T16:00:16Z-00004-000", "done": 68, "total": 278, "scores": {"normal": 0.914901, "swapped_contents_joint_remap": 0.992879}}
+{"pair": "15/171633f7-2019-04-18T12:17:13Z-00002-000", "done": 69, "total": 278, "scores": {"normal": 0.5, "swapped_contents_joint_remap": 0.867036}}
+{"pair": "15/fd3161b0-2019-04-17T11:47:42Z-00229-000", "done": 70, "total": 278, "scores": {"normal": 0.025957, "swapped_contents_joint_remap": 0.281406}}
+{"pair": "15/a56a8385-2019-04-18T16:19:49Z-00004-000", "done": 71, "total": 278, "scores": {"normal": 0.294215, "swapped_contents_joint_remap": 0.422505}}
+{"pair": "15/daece536-2019-04-18T15:14:44Z-00005-000", "done": 72, "total": 278, "scores": {"normal": 0.808067, "swapped_contents_joint_remap": 0.974043}}
+{"pair": "16/6c503906-2019-04-19T12:45:38Z-00015-000", "done": 73, "total": 278, "scores": {"normal": 0.033086, "swapped_contents_joint_remap": 0.268941}}
+{"pair": "16/292b475e-2019-04-15T20:22:25Z-00009-000", "done": 74, "total": 278, "scores": {"normal": 0.140336, "swapped_contents_joint_remap": 0.348645}}
+{"pair": "16/5cb7db3d-2019-04-18T19:04:48Z-00003-000", "done": 75, "total": 278, "scores": {"normal": 0.001648, "swapped_contents_joint_remap": 0.002981}}
+{"pair": "16/8cb27dbc-2019-04-15T20:22:42Z-00007-000", "done": 76, "total": 278, "scores": {"normal": 0.5, "swapped_contents_joint_remap": 0.826712}}
+{"pair": "16/6a050331-2019-04-18T18:57:24Z-00005-000", "done": 77, "total": 278, "scores": {"normal": 0.592667, "swapped_contents_joint_remap": 0.986777}}
+{"pair": "16/8cb27dbc-2019-04-15T20:22:42Z-00018-000", "done": 78, "total": 278, "scores": {"normal": 0.437824, "swapped_contents_joint_remap": 0.679179}}
+{"pair": "17/ac6030a1-2019-04-18T12:27:04Z-00000-000", "done": 79, "total": 278, "scores": {"normal": 0.063715, "swapped_contents_joint_remap": 0.453262}}
+{"pair": "17/2a5141f4-2019-04-18T12:43:08Z-00001-000", "done": 80, "total": 278, "scores": {"normal": 0.437824, "swapped_contents_joint_remap": 0.899121}}
+{"pair": "17/14b9fbff-2019-04-18T12:11:41Z-00002-000", "done": 81, "total": 278, "scores": {"normal": 0.377541, "swapped_contents_joint_remap": 0.622459}}
+{"pair": "17/d9e092bc-2019-04-18T18:38:25Z-00005-000", "done": 82, "total": 278, "scores": {"normal": 0.037327, "swapped_contents_joint_remap": 0.637031}}
+{"pair": "17/d9e09240-2019-04-18T19:13:37Z-00006-000", "done": 83, "total": 278, "scores": {"normal": 0.056652, "swapped_contents_joint_remap": 0.320821}}
+{"pair": "17/e3b7cf32-2019-04-18T19:40:04Z-00005-000", "done": 84, "total": 278, "scores": {"normal": 0.5, "swapped_contents_joint_remap": 0.546738}}
+{"pair": "18/f1173c1a-2019-04-18T17:52:03Z-00006-000", "done": 85, "total": 278, "scores": {"normal": 0.067547, "swapped_contents_joint_remap": 0.531209}}
+{"pair": "18/f2f7c9c0-2019-04-18T12:43:51Z-00007-000", "done": 86, "total": 278, "scores": {"normal": 0.191933, "swapped_contents_joint_remap": 0.731059}}
+{"pair": "18/7f792826-2019-04-18T15:23:48Z-00004-000", "done": 87, "total": 278, "scores": {"normal": 0.531209, "swapped_contents_joint_remap": 0.637031}}
+{"pair": "18/32e89ba9-2019-04-18T16:30:48Z-00002-000", "done": 88, "total": 278, "scores": {"normal": 0.182426, "swapped_contents_joint_remap": 0.743168}}
+{"pair": "18/3f1c75e-2019-04-18T11:15:58Z-00003-000", "done": 89, "total": 278, "scores": {"normal": 0.407333, "swapped_contents_joint_remap": 0.754915}}
+{"pair": "18/a84c3c83-2019-04-18T15:40:29Z-00001-000", "done": 90, "total": 278, "scores": {"normal": 0.531209, "swapped_contents_joint_remap": 0.562177}}
+{"pair": "19/8d358e35-2019-04-18T14:45:58Z-00002-000", "done": 91, "total": 278, "scores": {"normal": 0.112795, "swapped_contents_joint_remap": 0.407333}}
+{"pair": "19/48d177bf-2019-04-18T16:12:00Z-00005-000", "done": 92, "total": 278, "scores": {"normal": 0.212069, "swapped_contents_joint_remap": 0.453262}}
+{"pair": "19/d9e8f6e2-2019-04-18T19:03:35Z-00005-000", "done": 93, "total": 278, "scores": {"normal": 0.212069, "swapped_contents_joint_remap": 0.51562}}
+{"pair": "19/933d85b9-2019-04-18T16:11:47Z-00005-000", "done": 94, "total": 278, "scores": {"normal": 0.407333, "swapped_contents_joint_remap": 0.422505}}
+{"pair": "19/630bca14-2019-04-18T16:30:59Z-00003-000", "done": 95, "total": 278, "scores": {"normal": 0.377541, "swapped_contents_joint_remap": 0.348645}}
+{"pair": "19/d00d2f7a-2019-04-18T17:48:12Z-00004-000", "done": 96, "total": 278, "scores": {"normal": 0.212069, "swapped_contents_joint_remap": 0.48438}}
+{"pair": "20/3f566289-2019-04-18T13:21:59Z-00008-000", "done": 97, "total": 278, "scores": {"normal": 0.071591, "swapped_contents_joint_remap": 0.392337}}
+{"pair": "20/c2eeacb1-2019-04-18T18:59:19Z-00000-000", "done": 98, "total": 278, "scores": {"normal": 0.731059, "swapped_contents_joint_remap": 0.817574}}
+{"pair": "20/8ab0c1d5-2019-04-18T11:47:23Z-00000-000", "done": 99, "total": 278, "scores": {"normal": 0.080357, "swapped_contents_joint_remap": 0.307358}}
+{"pair": "20/53a2843c-2019-04-18T17:59:58Z-00007-000", "done": 100, "total": 278, "scores": {"normal": 0.348645, "swapped_contents_joint_remap": 0.212069}}
+{"pair": "20/c2eeacb1-2019-04-18T18:59:19Z-00004-000", "done": 101, "total": 278, "scores": {"normal": 0.817574, "swapped_contents_joint_remap": 0.943348}}
+{"pair": "20/c2eeacb1-2019-04-18T18:59:19Z-00002-000", "done": 102, "total": 278, "scores": {"normal": 0.798187, "swapped_contents_joint_remap": 0.453262}}
+{"pair": "21/212f2296-2019-04-19T12:47:07Z-00008-000", "done": 103, "total": 278, "scores": {"normal": 0.407333, "swapped_contents_joint_remap": 0.808067}}
+{"pair": "21/aac88cec-2019-04-19T12:45:13Z-00029-000", "done": 104, "total": 278, "scores": {"normal": 0.531209, "swapped_contents_joint_remap": 0.5}}
+{"pair": "21/9c07825d-2019-04-18T13:31:03Z-00004-000", "done": 105, "total": 278, "scores": {"normal": 0.562177, "swapped_contents_joint_remap": 0.817574}}
+{"pair": "21/9c07825d-2019-04-18T13:31:03Z-00003-000", "done": 106, "total": 278, "scores": {"normal": 0.731059, "swapped_contents_joint_remap": 0.826712}}
+{"pair": "22/402902df-2019-04-17T11:47:31Z-00063-000", "done": 107, "total": 278, "scores": {"normal": 0.320821, "swapped_contents_joint_remap": 0.932453}}
+{"pair": "22/402902df-2019-04-17T11:47:31Z-00064-000", "done": 108, "total": 278, "scores": {"normal": 0.320821, "swapped_contents_joint_remap": 0.826712}}
+{"pair": "22/402902df-2019-04-17T11:47:31Z-00052-000", "done": 109, "total": 278, "scores": {"normal": 0.201813, "swapped_contents_joint_remap": 0.743168}}
+{"pair": "22/402902df-2019-04-17T11:47:31Z-00057-000", "done": 110, "total": 278, "scores": {"normal": 0.592667, "swapped_contents_joint_remap": 0.974043}}
+{"pair": "22/402902df-2019-04-17T11:47:31Z-00044-000", "done": 111, "total": 278, "scores": {"normal": 0.156105, "swapped_contents_joint_remap": 0.5}}
+{"pair": "22/402902df-2019-04-17T11:47:31Z-00066-000", "done": 112, "total": 278, "scores": {"normal": 0.754915, "swapped_contents_joint_remap": 0.835484}}
+{"pair": "23/d80382e8-2019-04-18T15:28:06Z-00003-000", "done": 113, "total": 278, "scores": {"normal": 0.201813, "swapped_contents_joint_remap": 0.468791}}
+{"pair": "23/dccf7263-2019-04-18T16:52:37Z-00004-000", "done": 114, "total": 278, "scores": {"normal": 0.468791, "swapped_contents_joint_remap": 0.7773}}
+{"pair": "23/3fcde3d5-2019-04-18T19:24:36Z-00008-000", "done": 115, "total": 278, "scores": {"normal": 0.050331, "swapped_contents_joint_remap": 0.468791}}
+{"pair": "23/294713ae-2019-04-18T15:54:26Z-00005-000", "done": 116, "total": 278, "scores": {"normal": 0.164516, "swapped_contents_joint_remap": 0.692642}}
+{"pair": "23/114892b1-2019-04-18T11:52:47Z-00006-000", "done": 117, "total": 278, "scores": {"normal": 0.080357, "swapped_contents_joint_remap": 0.422505}}
+{"pair": "23/7dba56a5-2019-04-18T12:15:17Z-00003-000", "done": 118, "total": 278, "scores": {"normal": 0.531209, "swapped_contents_joint_remap": 0.637031}}
+{"pair": "24/2c183942-2019-04-18T16:35:26Z-00001-000", "done": 119, "total": 278, "scores": {"normal": 0.201813, "swapped_contents_joint_remap": 0.437824}}
+{"pair": "24/3b46eaaf-2019-04-18T16:12:59Z-00005-000", "done": 120, "total": 278, "scores": {"normal": 0.201813, "swapped_contents_joint_remap": 0.021615}}
+{"pair": "24/2131c836-2019-04-18T12:42:05Z-00002-000", "done": 121, "total": 278, "scores": {"normal": 0.348645, "swapped_contents_joint_remap": 0.651355}}
+{"pair": "24/2131c836-2019-04-18T12:42:05Z-00003-000", "done": 122, "total": 278, "scores": {"normal": 0.468791, "swapped_contents_joint_remap": 0.468791}}
+{"pair": "24/70ffe88-2019-04-17T11:47:25Z-00119-000", "done": 123, "total": 278, "scores": {"normal": 0.407333, "swapped_contents_joint_remap": 0.531209}}
+{"pair": "24/4cd87808-2019-04-18T17:29:44Z-00000-000", "done": 124, "total": 278, "scores": {"normal": 0.362969, "swapped_contents_joint_remap": 0.212069}}
+{"pair": "26/40f19507-2019-04-17T11:47:33Z-00065-000", "done": 125, "total": 278, "scores": {"normal": 0.5, "swapped_contents_joint_remap": 0.622459}}
+{"pair": "26/eb991d36-2019-04-15T20:24:15Z-00018-000", "done": 126, "total": 278, "scores": {"normal": 0.705785, "swapped_contents_joint_remap": 0.437824}}
+{"pair": "26/952e7fd8-2019-04-18T18:59:54Z-00000-000", "done": 127, "total": 278, "scores": {"normal": 0.754915, "swapped_contents_joint_remap": 0.468791}}
+{"pair": "26/40f19507-2019-04-17T11:47:33Z-00076-000", "done": 128, "total": 278, "scores": {"normal": 0.377541, "swapped_contents_joint_remap": 0.531209}}
+{"pair": "26/288c2167-2019-04-18T13:45:09Z-00000-000", "done": 129, "total": 278, "scores": {"normal": 0.679179, "swapped_contents_joint_remap": 0.592667}}
+{"pair": "27/93e44982-2019-04-18T17:37:53Z-00005-000", "done": 130, "total": 278, "scores": {"normal": 0.106691, "swapped_contents_joint_remap": 0.5}}
+{"pair": "27/fc60053c-2019-04-18T17:42:17Z-00005-000", "done": 131, "total": 278, "scores": {"normal": 0.112795, "swapped_contents_joint_remap": 0.164516}}
+{"pair": "27/e0c0a46a-2019-04-18T15:00:02Z-00005-000", "done": 132, "total": 278, "scores": {"normal": 0.056652, "swapped_contents_joint_remap": 0.245085}}
+{"pair": "27/3dc74951-2019-04-18T12:37:41Z-00005-000", "done": 133, "total": 278, "scores": {"normal": 0.245085, "swapped_contents_joint_remap": 0.407333}}
+{"pair": "27/90dc256e-2019-04-18T16:43:44Z-00005-000", "done": 134, "total": 278, "scores": {"normal": 0.095349, "swapped_contents_joint_remap": 0.334589}}
+{"pair": "27/38cc7021-2019-04-18T17:43:52Z-00003-000", "done": 135, "total": 278, "scores": {"normal": 0.173288, "swapped_contents_joint_remap": 0.468791}}
+{"pair": "28/f2b76fc7-2019-04-18T14:52:56Z-00004-000", "done": 136, "total": 278, "scores": {"normal": 0.437824, "swapped_contents_joint_remap": 0.531209}}
+{"pair": "28/fc16d928-2019-04-18T18:05:52Z-00004-000", "done": 137, "total": 278, "scores": {"normal": 0.468791, "swapped_contents_joint_remap": 0.607663}}
+{"pair": "28/286347c6-2019-04-18T12:24:41Z-00004-000", "done": 138, "total": 278, "scores": {"normal": 0.562177, "swapped_contents_joint_remap": 0.562177}}
+{"pair": "28/87d0ccd3-2019-04-17T11:47:45Z-00099-000", "done": 139, "total": 278, "scores": {"normal": 0.245085, "swapped_contents_joint_remap": 0.48438}}
+{"pair": "28/daa1bf82-2019-04-18T16:57:22Z-00005-000", "done": 140, "total": 278, "scores": {"normal": 0.377541, "swapped_contents_joint_remap": 0.577495}}
+{"pair": "29/9da75b55-2019-04-18T16:22:46Z-00005-000", "done": 141, "total": 278, "scores": {"normal": 0.017986, "swapped_contents_joint_remap": 0.020332}}
+{"pair": "29/cac6bfdf-2019-04-18T12:31:47Z-00002-000", "done": 142, "total": 278, "scores": {"normal": 0.233706, "swapped_contents_joint_remap": 0.851953}}
+{"pair": "29/f40414eb-2019-04-18T11:51:17Z-00004-000", "done": 143, "total": 278, "scores": {"normal": 0.334589, "swapped_contents_joint_remap": 0.960361}}
+{"pair": "29/4cf9e3c5-2019-04-17T11:47:27Z-00062-000", "done": 144, "total": 278, "scores": {"normal": 0.334589, "swapped_contents_joint_remap": 0.743168}}
+{"pair": "29/9e36ecf4-2019-04-18T11:47:16Z-00002-000", "done": 145, "total": 278, "scores": {"normal": 0.320821, "swapped_contents_joint_remap": 0.112795}}
+{"pair": "30/c633bfbe-2019-04-18T16:54:41Z-00004-000", "done": 146, "total": 278, "scores": {"normal": 0.294215, "swapped_contents_joint_remap": 0.798187}}
+{"pair": "30/711f3f19-2019-04-18T18:36:07Z-00007-000", "done": 147, "total": 278, "scores": {"normal": 0.132964, "swapped_contents_joint_remap": 0.7773}}
+{"pair": "30/219f521f-2019-04-17T11:47:23Z-00050-000", "done": 148, "total": 278, "scores": {"normal": 0.233706, "swapped_contents_joint_remap": 0.362969}}
+{"pair": "30/717c0448-2019-04-18T14:29:15Z-00003-000", "done": 149, "total": 278, "scores": {"normal": 0.132964, "swapped_contents_joint_remap": 0.531209}}
+{"pair": "30/81403fde-2019-04-18T11:16:40Z-00005-000", "done": 150, "total": 278, "scores": {"normal": 0.377541, "swapped_contents_joint_remap": 0.766294}}
+{"pair": "30/f35758f7-2019-04-18T12:59:35Z-00001-000", "done": 151, "total": 278, "scores": {"normal": 0.407333, "swapped_contents_joint_remap": 0.859664}}
+{"pair": "31/2245ae98-2019-04-18T16:15:50Z-00005-000", "done": 152, "total": 278, "scores": {"normal": 0.191933, "swapped_contents_joint_remap": 0.100879}}
+{"pair": "31/636669d7-2019-04-18T19:49:10Z-00000-000", "done": 153, "total": 278, "scores": {"normal": 0.754915, "swapped_contents_joint_remap": 0.577495}}
+{"pair": "31/d4a2b65c-2019-04-18T18:00:36Z-00003-000", "done": 154, "total": 278, "scores": {"normal": 0.182426, "swapped_contents_joint_remap": 0.294215}}
+{"pair": "31/cb509540-2019-04-18T13:01:05Z-00001-000", "done": 155, "total": 278, "scores": {"normal": 0.119203, "swapped_contents_joint_remap": 0.191933}}
+{"pair": "31/21e2b85c-2019-04-18T15:17:47Z-00005-000", "done": 156, "total": 278, "scores": {"normal": 0.843895, "swapped_contents_joint_remap": 0.692642}}
+{"pair": "31/b5b096db-2019-04-18T18:54:54Z-00001-000", "done": 157, "total": 278, "scores": {"normal": 0.936285, "swapped_contents_joint_remap": 0.592667}}
+{"pair": "32/2c05e9fb-2019-04-15T20:23:05Z-00027-000", "done": 158, "total": 278, "scores": {"normal": 0.348645, "swapped_contents_joint_remap": 0.148047}}
+{"pair": "32/f2c72c91-2019-04-18T19:54:40Z-00000-000", "done": 159, "total": 278, "scores": {"normal": 0.212069, "swapped_contents_joint_remap": 0.140336}}
+{"pair": "32/b76ec089-2019-04-19T12:45:35Z-00014-000", "done": 160, "total": 278, "scores": {"normal": 0.156105, "swapped_contents_joint_remap": 0.191933}}
+{"pair": "32/2c05e9fb-2019-04-15T20:23:05Z-00020-000", "done": 161, "total": 278, "scores": {"normal": 0.233706, "swapped_contents_joint_remap": 0.035145}}
+{"pair": "32/e6af11b5-2019-04-15T20:22:52Z-00012-000", "done": 162, "total": 278, "scores": {"normal": 0.407333, "swapped_contents_joint_remap": 0.468791}}
+{"pair": "32/2c05e9fb-2019-04-15T20:23:05Z-00021-000", "done": 163, "total": 278, "scores": {"normal": 0.245085, "swapped_contents_joint_remap": 0.100879}}
+{"pair": "34/562197e9-2019-04-18T16:01:31Z-00005-000", "done": 164, "total": 278, "scores": {"normal": 0.909907, "swapped_contents_joint_remap": 0.887205}}
+{"pair": "34/4befcae3-2019-04-18T17:19:09Z-00004-000", "done": 165, "total": 278, "scores": {"normal": 0.592667, "swapped_contents_joint_remap": 0.592667}}
+{"pair": "34/4befcae3-2019-04-18T17:19:09Z-00003-000", "done": 166, "total": 278, "scores": {"normal": 0.320821, "swapped_contents_joint_remap": 0.637031}}
+{"pair": "34/ab9f69d4-2019-04-18T15:31:53Z-00002-000", "done": 167, "total": 278, "scores": {"normal": 0.731059, "swapped_contents_joint_remap": 0.651355}}
+{"pair": "34/2e54c887-2019-04-18T18:01:19Z-00006-000", "done": 168, "total": 278, "scores": {"normal": 0.679179, "swapped_contents_joint_remap": 0.718594}}
+{"pair": "34/528fb34-2019-04-18T16:00:42Z-00003-000", "done": 169, "total": 278, "scores": {"normal": 0.946597, "swapped_contents_joint_remap": 0.731059}}
+{"pair": "35/7bb5fe56-2019-04-18T17:45:28Z-00004-000", "done": 170, "total": 278, "scores": {"normal": 0.320821, "swapped_contents_joint_remap": 0.874077}}
+{"pair": "35/a5ca39dc-2019-04-18T11:43:36Z-00005-000", "done": 171, "total": 278, "scores": {"normal": 0.294215, "swapped_contents_joint_remap": 0.851953}}
+{"pair": "35/c827393f-2019-04-18T17:49:30Z-00001-000", "done": 172, "total": 278, "scores": {"normal": 0.377541, "swapped_contents_joint_remap": 0.622459}}
+{"pair": "35/b4849efd-2019-04-18T17:56:23Z-00001-000", "done": 173, "total": 278, "scores": {"normal": 0.731059, "swapped_contents_joint_remap": 0.705785}}
+{"pair": "35/6da2e494-2019-04-15T20:22:30Z-00010-000", "done": 174, "total": 278, "scores": {"normal": 0.7773, "swapped_contents_joint_remap": 0.817574}}
+{"pair": "36/331dbe36-2019-04-18T14:51:04Z-00004-000", "done": 175, "total": 278, "scores": {"normal": 0.7773, "swapped_contents_joint_remap": 0.679179}}
+{"pair": "36/2c13cc23-2019-04-18T16:11:23Z-00000-000", "done": 176, "total": 278, "scores": {"normal": 0.880797, "swapped_contents_joint_remap": 0.808067}}
+{"pair": "36/2c13cc23-2019-04-18T16:11:23Z-00003-000", "done": 177, "total": 278, "scores": {"normal": 0.754915, "swapped_contents_joint_remap": 0.622459}}
+{"pair": "36/edab08a8-2019-04-18T16:34:53Z-00002-000", "done": 178, "total": 278, "scores": {"normal": 0.437824, "swapped_contents_joint_remap": 0.679179}}
+{"pair": "36/f6c3ab3f-2019-04-18T16:53:00Z-00000-000", "done": 179, "total": 278, "scores": {"normal": 0.705785, "swapped_contents_joint_remap": 0.562177}}
+{"pair": "36/2c13cc23-2019-04-18T16:11:23Z-00004-000", "done": 180, "total": 278, "scores": {"normal": 0.932453, "swapped_contents_joint_remap": 0.817574}}
+{"pair": "37/240561fd-2019-04-17T11:47:40Z-00047-000", "done": 181, "total": 278, "scores": {"normal": 0.012432, "swapped_contents_joint_remap": 0.002801}}
+{"pair": "37/b2b3385f-2019-04-18T11:40:05Z-00006-000", "done": 182, "total": 278, "scores": {"normal": 0.798187, "swapped_contents_joint_remap": 0.880797}}
+{"pair": "37/9aa2da1b-2019-04-19T12:46:59Z-00010-000", "done": 183, "total": 278, "scores": {"normal": 0.651355, "swapped_contents_joint_remap": 0.743168}}
+{"pair": "37/1a94f253-2019-04-18T17:01:12Z-00003-000", "done": 184, "total": 278, "scores": {"normal": 0.268941, "swapped_contents_joint_remap": 0.362969}}
+{"pair": "37/b2b3385f-2019-04-18T11:40:05Z-00004-000", "done": 185, "total": 278, "scores": {"normal": 0.924142, "swapped_contents_joint_remap": 0.843895}}
+{"pair": "37/9aa2da1b-2019-04-19T12:46:59Z-00013-000", "done": 186, "total": 278, "scores": {"normal": 0.887205, "swapped_contents_joint_remap": 0.679179}}
+{"pair": "38/6231ab28-2019-04-18T16:19:10Z-00004-000", "done": 187, "total": 278, "scores": {"normal": 0.071591, "swapped_contents_joint_remap": 0.245085}}
+{"pair": "38/6231ab47-2019-04-18T16:20:48Z-00008-000", "done": 188, "total": 278, "scores": {"normal": 0.233706, "swapped_contents_joint_remap": 0.245085}}
+{"pair": "38/174daa99-2019-04-18T19:27:29Z-00004-000", "done": 189, "total": 278, "scores": {"normal": 0.294215, "swapped_contents_joint_remap": 0.562177}}
+{"pair": "38/87b8c230-2019-04-17T11:47:26Z-00149-000", "done": 190, "total": 278, "scores": {"normal": 0.294215, "swapped_contents_joint_remap": 0.592667}}
+{"pair": "38/87b8c230-2019-04-17T11:47:26Z-00118-000", "done": 191, "total": 278, "scores": {"normal": 0.112795, "swapped_contents_joint_remap": 0.422505}}
+{"pair": "38/c6aab7ec-2019-04-18T19:30:19Z-00003-000", "done": 192, "total": 278, "scores": {"normal": 0.562177, "swapped_contents_joint_remap": 0.705785}}
+{"pair": "39/51c34db5-2019-04-18T13:22:25Z-00006-000", "done": 193, "total": 278, "scores": {"normal": 0.362969, "swapped_contents_joint_remap": 0.705785}}
+{"pair": "39/1d5f1558-2019-04-18T15:25:13Z-00006-000", "done": 194, "total": 278, "scores": {"normal": 0.148047, "swapped_contents_joint_remap": 0.562177}}
+{"pair": "39/630f7c6f-2019-04-18T12:52:49Z-00002-000", "done": 195, "total": 278, "scores": {"normal": 0.651355, "swapped_contents_joint_remap": 0.5}}
+{"pair": "39/9443a255-2019-04-18T19:43:34Z-00004-000", "done": 196, "total": 278, "scores": {"normal": 0.119203, "swapped_contents_joint_remap": 0.651355}}
+{"pair": "39/7245daba-2019-04-18T15:27:44Z-00006-000", "done": 197, "total": 278, "scores": {"normal": 0.468791, "swapped_contents_joint_remap": 0.808067}}
+{"pair": "39/5194bbe-2019-04-18T17:30:08Z-00003-000", "done": 198, "total": 278, "scores": {"normal": 0.562177, "swapped_contents_joint_remap": 0.808067}}
+{"pair": "40/e9f1259e-2019-04-18T17:35:39Z-00006-000", "done": 199, "total": 278, "scores": {"normal": 0.5, "swapped_contents_joint_remap": 0.622459}}
+{"pair": "40/ec00b32a-2019-04-18T17:26:25Z-00003-000", "done": 200, "total": 278, "scores": {"normal": 0.651355, "swapped_contents_joint_remap": 0.546738}}
+{"pair": "40/efef4309-2019-04-18T16:10:20Z-00003-000", "done": 201, "total": 278, "scores": {"normal": 0.407333, "swapped_contents_joint_remap": 0.622459}}
+{"pair": "40/780a0341-2019-04-18T16:17:37Z-00004-000", "done": 202, "total": 278, "scores": {"normal": 0.928409, "swapped_contents_joint_remap": 0.622459}}
+{"pair": "40/75f8acc8-2019-04-18T14:13:25Z-00005-000", "done": 203, "total": 278, "scores": {"normal": 0.245085, "swapped_contents_joint_remap": 0.362969}}
+{"pair": "40/cc812c57-2019-04-18T15:27:45Z-00007-000", "done": 204, "total": 278, "scores": {"normal": 0.437824, "swapped_contents_joint_remap": 0.348645}}
+{"pair": "41/5d69331e-2019-04-18T19:00:35Z-00000-000", "done": 205, "total": 278, "scores": {"normal": 0.019124, "swapped_contents_joint_remap": 0.212069}}
+{"pair": "41/1db3eaf8-2019-04-15T20:24:50Z-00015-000", "done": 206, "total": 278, "scores": {"normal": 0.015906, "swapped_contents_joint_remap": 0.050331}}
+{"pair": "41/5279eb1d-2019-04-18T17:25:55Z-00002-000", "done": 207, "total": 278, "scores": {"normal": 0.348645, "swapped_contents_joint_remap": 0.893309}}
+{"pair": "41/a2310a08-2019-04-18T15:11:53Z-00003-000", "done": 208, "total": 278, "scores": {"normal": 0.020332, "swapped_contents_joint_remap": 0.182426}}
+{"pair": "41/5efd650c-2019-04-18T13:45:25Z-00005-000", "done": 209, "total": 278, "scores": {"normal": 0.095349, "swapped_contents_joint_remap": 0.035145}}
+{"pair": "42/3d98c367-2019-04-18T17:02:37Z-00003-000", "done": 210, "total": 278, "scores": {"normal": 0.132964, "swapped_contents_joint_remap": 0.743168}}
+{"pair": "42/3d98c367-2019-04-18T17:02:37Z-00000-000", "done": 211, "total": 278, "scores": {"normal": 0.562177, "swapped_contents_joint_remap": 0.880797}}
+{"pair": "42/5462614-2019-04-18T18:02:38Z-00000-000", "done": 212, "total": 278, "scores": {"normal": 0.679179, "swapped_contents_joint_remap": 0.453262}}
+{"pair": "42/3d98c367-2019-04-18T17:02:37Z-00002-000", "done": 213, "total": 278, "scores": {"normal": 0.281406, "swapped_contents_joint_remap": 0.867036}}
+{"pair": "42/7282d1c1-2019-04-18T11:33:12Z-00001-000", "done": 214, "total": 278, "scores": {"normal": 0.679179, "swapped_contents_joint_remap": 0.7773}}
+{"pair": "42/7282d1c1-2019-04-18T11:33:12Z-00002-000", "done": 215, "total": 278, "scores": {"normal": 0.754915, "swapped_contents_joint_remap": 0.887205}}
+{"pair": "43/8ae07785-2019-04-18T14:01:12Z-00006-000", "done": 216, "total": 278, "scores": {"normal": 0.334589, "swapped_contents_joint_remap": 0.156105}}
+{"pair": "43/39e75959-2019-04-19T12:45:40Z-00033-000", "done": 217, "total": 278, "scores": {"normal": 0.191933, "swapped_contents_joint_remap": 0.562177}}
+{"pair": "43/39e75959-2019-04-19T12:45:40Z-00023-000", "done": 218, "total": 278, "scores": {"normal": 0.173288, "swapped_contents_joint_remap": 0.407333}}
+{"pair": "43/824ed8eb-2019-04-18T18:32:31Z-00007-000", "done": 219, "total": 278, "scores": {"normal": 0.936285, "swapped_contents_joint_remap": 0.851953}}
+{"pair": "43/39e75959-2019-04-19T12:45:40Z-00024-000", "done": 220, "total": 278, "scores": {"normal": 0.651355, "swapped_contents_joint_remap": 0.766294}}
+{"pair": "44/a9586a5-2019-04-18T15:18:07Z-00001-000", "done": 221, "total": 278, "scores": {"normal": 0.025957, "swapped_contents_joint_remap": 0.013223}}
+{"pair": "44/63b4a1cb-2019-04-18T13:13:54Z-00001-000", "done": 222, "total": 278, "scores": {"normal": 0.007577, "swapped_contents_joint_remap": 0.001032}}
+{"pair": "44/13fc3acf-2019-04-19T12:45:38Z-00023-000", "done": 223, "total": 278, "scores": {"normal": 0.407333, "swapped_contents_joint_remap": 0.307358}}
+{"pair": "44/13fc3acf-2019-04-19T12:45:38Z-00022-000", "done": 224, "total": 278, "scores": {"normal": 0.060087, "swapped_contents_joint_remap": 0.044681}}
+{"pair": "44/b7d8dba7-2019-04-18T19:42:33Z-00005-000", "done": 225, "total": 278, "scores": {"normal": 0.182426, "swapped_contents_joint_remap": 0.029312}}
+{"pair": "45/652f23f4-2019-04-18T17:28:19Z-00006-000", "done": 226, "total": 278, "scores": {"normal": 0.334589, "swapped_contents_joint_remap": 0.880797}}
+{"pair": "45/141e3960-2019-04-18T15:20:37Z-00003-000", "done": 227, "total": 278, "scores": {"normal": 0.294215, "swapped_contents_joint_remap": 0.679179}}
+{"pair": "45/42633cc5-2019-04-18T16:25:30Z-00007-000", "done": 228, "total": 278, "scores": {"normal": 0.754915, "swapped_contents_joint_remap": 0.817574}}
+{"pair": "45/87bd157b-2019-04-18T13:37:52Z-00001-000", "done": 229, "total": 278, "scores": {"normal": 0.164516, "swapped_contents_joint_remap": 0.622459}}
+{"pair": "45/87bd157b-2019-04-18T13:37:52Z-00005-000", "done": 230, "total": 278, "scores": {"normal": 0.705785, "swapped_contents_joint_remap": 0.665411}}
+{"pair": "46/1f1620a4-2019-04-18T11:54:27Z-00004-000", "done": 231, "total": 278, "scores": {"normal": 0.106691, "swapped_contents_joint_remap": 0.453262}}
+{"pair": "46/1ae9f84e-2019-04-18T15:25:04Z-00005-000", "done": 232, "total": 278, "scores": {"normal": 0.164516, "swapped_contents_joint_remap": 0.679179}}
+{"pair": "46/40a68302-2019-04-18T14:17:57Z-00003-000", "done": 233, "total": 278, "scores": {"normal": 0.407333, "swapped_contents_joint_remap": 0.531209}}
+{"pair": "46/fca1d19b-2019-04-17T11:47:27Z-00067-000", "done": 234, "total": 278, "scores": {"normal": 0.148047, "swapped_contents_joint_remap": 0.307358}}
+{"pair": "46/5b09f300-2019-04-18T11:54:53Z-00001-000", "done": 235, "total": 278, "scores": {"normal": 0.212069, "swapped_contents_joint_remap": 0.437824}}
+{"pair": "46/5b09f227-2019-04-18T20:01:38Z-00004-000", "done": 236, "total": 278, "scores": {"normal": 0.212069, "swapped_contents_joint_remap": 0.622459}}
+{"pair": "47/76fe7ef5-2019-04-18T16:54:29Z-00004-000", "done": 237, "total": 278, "scores": {"normal": 0.562177, "swapped_contents_joint_remap": 0.592667}}
+{"pair": "47/d81957dd-2019-04-18T11:36:08Z-00000-000", "done": 238, "total": 278, "scores": {"normal": 0.754915, "swapped_contents_joint_remap": 0.334589}}
+{"pair": "47/7de56526-2019-04-18T15:10:01Z-00008-000", "done": 239, "total": 278, "scores": {"normal": 0.754915, "swapped_contents_joint_remap": 0.577495}}
+{"pair": "47/6c734766-2019-04-18T13:20:17Z-00004-000", "done": 240, "total": 278, "scores": {"normal": 0.7773, "swapped_contents_joint_remap": 0.692642}}
+{"pair": "48/ca9d6789-2019-04-15T20:24:25Z-00022-000", "done": 241, "total": 278, "scores": {"normal": 0.5, "swapped_contents_joint_remap": 0.754915}}
+{"pair": "48/6d6965d5-2019-04-18T17:51:17Z-00006-000", "done": 242, "total": 278, "scores": {"normal": 0.233706, "swapped_contents_joint_remap": 0.843895}}
+{"pair": "48/abb42382-2019-04-18T16:14:47Z-00003-000", "done": 243, "total": 278, "scores": {"normal": 0.835484, "swapped_contents_joint_remap": 0.826712}}
+{"pair": "48/cbfd88a8-2019-04-18T13:14:17Z-00005-000", "done": 244, "total": 278, "scores": {"normal": 0.233706, "swapped_contents_joint_remap": 0.422505}}
+{"pair": "48/5f3b3c6d-2019-04-19T12:44:37Z-00027-000", "done": 245, "total": 278, "scores": {"normal": 0.592667, "swapped_contents_joint_remap": 0.607663}}
+{"pair": "48/ca9d6789-2019-04-15T20:24:25Z-00023-000", "done": 246, "total": 278, "scores": {"normal": 0.5, "swapped_contents_joint_remap": 0.651355}}
+{"pair": "49/b9ef185e-2019-04-17T11:47:34Z-00079-000", "done": 247, "total": 278, "scores": {"normal": 0.039639, "swapped_contents_joint_remap": 0.027585}}
+{"pair": "49/431b936a-2019-04-18T14:11:36Z-00005-000", "done": 248, "total": 278, "scores": {"normal": 0.294215, "swapped_contents_joint_remap": 0.651355}}
+{"pair": "49/5d6bbcc-2019-04-18T12:50:03Z-00001-000", "done": 249, "total": 278, "scores": {"normal": 0.090093, "swapped_contents_joint_remap": 0.562177}}
+{"pair": "49/289dc5b0-2019-04-18T12:28:56Z-00001-000", "done": 250, "total": 278, "scores": {"normal": 0.679179, "swapped_contents_joint_remap": 0.665411}}
+{"pair": "49/289dc5b0-2019-04-18T12:28:56Z-00000-000", "done": 251, "total": 278, "scores": {"normal": 0.679179, "swapped_contents_joint_remap": 0.5}}
+{"pair": "50/4d103793-2019-04-18T11:35:54Z-00007-000", "done": 252, "total": 278, "scores": {"normal": 0.256832, "swapped_contents_joint_remap": 0.562177}}
+{"pair": "50/1215c0b1-2019-04-18T19:42:30Z-00003-000", "done": 253, "total": 278, "scores": {"normal": 0.053403, "swapped_contents_joint_remap": 0.014957}}
+{"pair": "50/3ffe2c14-2019-04-18T18:54:28Z-00003-000", "done": 254, "total": 278, "scores": {"normal": 0.005555, "swapped_contents_joint_remap": 0.001001}}
+{"pair": "50/530b96d7-2019-04-18T11:55:04Z-00005-000", "done": 255, "total": 278, "scores": {"normal": 0.679179, "swapped_contents_joint_remap": 0.607663}}
+{"pair": "50/4d1037f0-2019-04-18T11:08:29Z-00002-000", "done": 256, "total": 278, "scores": {"normal": 0.090093, "swapped_contents_joint_remap": 0.531209}}
+{"pair": "50/4d103774-2019-04-18T13:49:55Z-00005-000", "done": 257, "total": 278, "scores": {"normal": 0.437824, "swapped_contents_joint_remap": 0.453262}}
+{"pair": "1/51530f3f-2019-04-18T18:15:02Z-00007-000", "done": 258, "total": 278, "scores": {"normal": 0.233706, "swapped_contents_joint_remap": 0.787931}}
+{"pair": "1/4d8487a-2019-04-18T18:20:20Z-00003-000", "done": 259, "total": 278, "scores": {"normal": 0.348645, "swapped_contents_joint_remap": 0.562177}}
+{"pair": "1/ff0947ec-2019-04-18T12:23:12Z-00001-000", "done": 260, "total": 278, "scores": {"normal": 0.531209, "swapped_contents_joint_remap": 0.705785}}
+{"pair": "1/e3f07189-2019-04-18T17:54:23Z-00006-000", "done": 261, "total": 278, "scores": {"normal": 0.037327, "swapped_contents_joint_remap": 0.056652}}
+{"pair": "1/51530f3f-2019-04-18T18:15:02Z-00004-000", "done": 262, "total": 278, "scores": {"normal": 0.665411, "swapped_contents_joint_remap": 0.787931}}
+{"pair": "9/96158d24-2019-04-18T11:23:27Z-00001-000", "done": 263, "total": 278, "scores": {"normal": 0.437824, "swapped_contents_joint_remap": 0.665411}}
+{"pair": "9/cf842d6a-2019-04-18T17:28:15Z-00006-000", "done": 264, "total": 278, "scores": {"normal": 0.407333, "swapped_contents_joint_remap": 0.5}}
+{"pair": "9/2403550a-2019-04-18T14:02:10Z-00006-000", "done": 265, "total": 278, "scores": {"normal": 0.245085, "swapped_contents_joint_remap": 0.754915}}
+{"pair": "9/b5339025-2019-04-18T18:30:27Z-00003-000", "done": 266, "total": 278, "scores": {"normal": 0.281406, "swapped_contents_joint_remap": 0.546738}}
+{"pair": "9/a7f5e454-2019-04-18T13:43:30Z-00002-000", "done": 267, "total": 278, "scores": {"normal": 0.705785, "swapped_contents_joint_remap": 0.766294}}
+{"pair": "33/8eeab760-2019-04-18T16:21:32Z-00001-000", "done": 268, "total": 278, "scores": {"normal": 0.348645, "swapped_contents_joint_remap": 0.51562}}
+{"pair": "33/57f0866c-2019-04-18T13:10:45Z-00006-000", "done": 269, "total": 278, "scores": {"normal": 0.294215, "swapped_contents_joint_remap": 0.798187}}
+{"pair": "33/2e8edb11-2019-04-18T16:22:57Z-00005-000", "done": 270, "total": 278, "scores": {"normal": 0.562177, "swapped_contents_joint_remap": 0.798187}}
+{"pair": "33/ac45b77d-2019-04-18T13:38:21Z-00007-000", "done": 271, "total": 278, "scores": {"normal": 0.531209, "swapped_contents_joint_remap": 0.718594}}
+{"pair": "33/7eabc63c-2019-04-18T12:18:12Z-00002-000", "done": 272, "total": 278, "scores": {"normal": 0.928409, "swapped_contents_joint_remap": 0.893309}}
+{"pair": "synthetic-0-1", "done": 273, "total": 278, "scores": {"normal": 0.928409, "swapped_contents_joint_remap": 0.294215}}
+{"pair": "synthetic-0-0", "done": 274, "total": 278, "scores": {"normal": 9.6e-05, "swapped_contents_joint_remap": 2e-06}}
+{"pair": "synthetic-1-1", "done": 275, "total": 278, "scores": {"normal": 0.766294, "swapped_contents_joint_remap": 0.48438}}
+{"pair": "synthetic-1-0", "done": 276, "total": 278, "scores": {"normal": 4e-06, "swapped_contents_joint_remap": 2e-06}}
+{"pair": "synthetic-2-1", "done": 277, "total": 278, "scores": {"normal": 0.955319, "swapped_contents_joint_remap": 0.173288}}
+{"pair": "synthetic-2-0", "done": 278, "total": 278, "scores": {"normal": 4e-06, "swapped_contents_joint_remap": 0.0}}
+{
+  "pairs": 278,
+  "queries": 52,
+  "Touche2020Retrieval.v3": {
+    "pairs": 272,
+    "queries": 49,
+    "orderings": {
+      "normal": {
+        "correct": 345,
+        "ties": 13,
+        "total": 502
+      },
+      "swapped_contents_joint_remap": {
+        "correct": 279,
+        "ties": 8,
+        "total": 502
+      }
+    },
+    "fp32_head_orderings": {
+      "normal": {
+        "correct": 350,
+        "ties": 0,
+        "total": 502
+      },
+      "swapped_contents_joint_remap": {
+        "correct": 284,
+        "ties": 0,
+        "total": 502
+      }
+    },
+    "metrics": {
+      "normal": {
+        "mean_margin_shift": 0.0,
+        "mean_absolute_score_change": 0.0,
+        "mean_margin_by_grade": {
+          "0": -1.3768382352941178,
+          "1": -0.8723684210526316,
+          "2": 0.06929347826086957
+        }
+      },
+      "swapped_contents_joint_remap": {
+        "mean_margin_shift": 0.8370863970588235,
+        "mean_absolute_score_change": 0.22695941383546916,
+        "mean_margin_by_grade": {
+          "0": -0.25441176470588234,
+          "1": 0.07730263157894737,
+          "2": 0.5264945652173914
+        }
+      }
+    }
+  },
+  "synthetic_sanity": {
+    "pairs": 6,
+    "queries": 3,
+    "orderings": {
+      "normal": {
+        "correct": 3,
+        "ties": 0,
+        "total": 3
+      },
+      "swapped_contents_joint_remap": {
+        "correct": 3,
+        "ties": 0,
+        "total": 3
+      }
+    },
+    "fp32_head_orderings": {
+      "normal": {
+        "correct": 3,
+        "ties": 0,
+        "total": 3
+      },
+      "swapped_contents_joint_remap": {
+        "correct": 3,
+        "ties": 0,
+        "total": 3
+      }
+    },
+    "metrics": {
+      "normal": {
+        "mean_margin_shift": 0.0,
+        "mean_absolute_score_change": 0.0,
+        "mean_margin_by_grade": {
+          "0": -11.372395833333334,
+          "1": 2.2708333333333335
+        }
+      },
+      "swapped_contents_joint_remap": {
+        "mean_margin_shift": -2.61328125,
+        "mean_absolute_score_change": 0.28303955575646,
+        "mean_margin_by_grade": {
+          "0": -13.494791666666666,
+          "1": -0.8333333333333334
+        }
+      }
+    }
+  },
+  "all_control_token_sequences_preserved": true,
+  "atomic_token_multisets_identical": false
+}

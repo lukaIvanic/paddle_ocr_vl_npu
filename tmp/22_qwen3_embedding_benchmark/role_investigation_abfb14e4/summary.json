@@ -1,0 +1,3966 @@
+{
+  "status": "completed",
+  "commit": "abfb14e451657cb88c74410944c26f70ba988779",
+  "phase": "calibration",
+  "environment": {
+    "host": "liteserver-c001-4",
+    "chip": "Ascend 910B2",
+    "physical_npu": "6",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0.post2",
+    "transformers": "5.5.4",
+    "dtype": "bfloat16",
+    "attention": "sdpa",
+    "use_cache": false,
+    "batch_size": 1
+  },
+  "summary": {
+    "pairs": 22,
+    "queries": 6,
+    "Touche2020Retrieval.v3": {
+      "pairs": 16,
+      "queries": 3,
+      "orderings": {
+        "normal": {
+          "correct": 21,
+          "ties": 0,
+          "total": 28
+        },
+        "document_first": {
+          "correct": 14,
+          "ties": 0,
+          "total": 28
+        },
+        "swapped_contents": {
+          "correct": 18,
+          "ties": 0,
+          "total": 28
+        },
+        "query_first_wrong_labels": {
+          "correct": 16,
+          "ties": 2,
+          "total": 28
+        },
+        "normal_atomic": {
+          "correct": 20,
+          "ties": 2,
+          "total": 28
+        },
+        "document_first_atomic": {
+          "correct": 18,
+          "ties": 0,
+          "total": 28
+        },
+        "swapped_contents_atomic": {
+          "correct": 18,
+          "ties": 0,
+          "total": 28
+        },
+        "query_first_wrong_labels_atomic": {
+          "correct": 17,
+          "ties": 3,
+          "total": 28
+        },
+        "normal_clarified": {
+          "correct": 23,
+          "ties": 0,
+          "total": 28
+        },
+        "document_first_clarified": {
+          "correct": 16,
+          "ties": 2,
+          "total": 28
+        },
+        "swapped_contents_remapped": {
+          "correct": 17,
+          "ties": 0,
+          "total": 28
+        },
+        "swapped_contents_reverse_task": {
+          "correct": 15,
+          "ties": 0,
+          "total": 28
+        },
+        "normal_general_task": {
+          "correct": 20,
+          "ties": 0,
+          "total": 28
+        },
+        "swapped_contents_general_task": {
+          "correct": 15,
+          "ties": 0,
+          "total": 28
+        },
+        "swapped_contents_system_remapped": {
+          "correct": 19,
+          "ties": 0,
+          "total": 28
+        }
+      },
+      "fp32_head_orderings": {
+        "normal": {
+          "correct": 21,
+          "ties": 0,
+          "total": 28
+        },
+        "document_first": {
+          "correct": 14,
+          "ties": 0,
+          "total": 28
+        },
+        "swapped_contents": {
+          "correct": 18,
+          "ties": 0,
+          "total": 28
+        },
+        "query_first_wrong_labels": {
+          "correct": 17,
+          "ties": 0,
+          "total": 28
+        },
+        "normal_atomic": {
+          "correct": 21,
+          "ties": 0,
+          "total": 28
+        },
+        "document_first_atomic": {
+          "correct": 17,
+          "ties": 0,
+          "total": 28
+        },
+        "swapped_contents_atomic": {
+          "correct": 18,
+          "ties": 0,
+          "total": 28
+        },
+        "query_first_wrong_labels_atomic": {
+          "correct": 19,
+          "ties": 0,
+          "total": 28
+        },
+        "normal_clarified": {
+          "correct": 23,
+          "ties": 0,
+          "total": 28
+        },
+        "document_first_clarified": {
+          "correct": 17,
+          "ties": 0,
+          "total": 28
+        },
+        "swapped_contents_remapped": {
+          "correct": 17,
+          "ties": 0,
+          "total": 28
+        },
+        "swapped_contents_reverse_task": {
+          "correct": 15,
+          "ties": 0,
+          "total": 28
+        },
+        "normal_general_task": {
+          "correct": 20,
+          "ties": 0,
+          "total": 28
+        },
+        "swapped_contents_general_task": {
+          "correct": 15,
+          "ties": 0,
+          "total": 28
+        },
+        "swapped_contents_system_remapped": {
+          "correct": 19,
+          "ties": 0,
+          "total": 28
+        }
+      },
+      "metrics": {
+        "normal": {
+          "mean_margin_shift": 0.0,
+          "mean_absolute_score_change": 0.0,
+          "mean_margin_by_grade": {
+            "0": -0.7125,
+            "1": -0.875,
+            "2": 0.6979166666666666
+          }
+        },
+        "document_first": {
+          "mean_margin_shift": -0.35546875,
+          "mean_absolute_score_change": 0.1854461315087974,
+          "mean_margin_by_grade": {
+            "0": -0.775,
+            "1": -0.5875,
+            "2": -0.4375
+          }
+        },
+        "swapped_contents": {
+          "mean_margin_shift": 0.71484375,
+          "mean_absolute_score_change": 0.1752901286818087,
+          "mean_margin_by_grade": {
+            "0": 0.5875,
+            "1": -0.3625,
+            "2": 1.09375
+          }
+        },
+        "query_first_wrong_labels": {
+          "mean_margin_shift": -1.01171875,
+          "mean_absolute_score_change": 0.21058876998722553,
+          "mean_margin_by_grade": {
+            "0": -1.475,
+            "1": -1.65,
+            "2": -0.71875
+          }
+        },
+        "normal_atomic": {
+          "mean_margin_shift": -0.046875,
+          "mean_absolute_score_change": 0.02228516829200089,
+          "mean_margin_by_grade": {
+            "0": -0.75,
+            "1": -0.9375,
+            "2": 0.65625
+          }
+        },
+        "document_first_atomic": {
+          "mean_margin_shift": -0.38671875,
+          "mean_absolute_score_change": 0.1969753378070891,
+          "mean_margin_by_grade": {
+            "0": -0.825,
+            "1": -0.65,
+            "2": -0.4270833333333333
+          }
+        },
+        "swapped_contents_atomic": {
+          "mean_margin_shift": 0.7890625,
+          "mean_absolute_score_change": 0.19400670914910734,
+          "mean_margin_by_grade": {
+            "0": 0.7625,
+            "1": -0.35,
+            "2": 1.1354166666666667
+          }
+        },
+        "query_first_wrong_labels_atomic": {
+          "mean_margin_shift": -1.06640625,
+          "mean_absolute_score_change": 0.22146669356152415,
+          "mean_margin_by_grade": {
+            "0": -1.675,
+            "1": -1.6125,
+            "2": -0.7291666666666666
+          }
+        },
+        "normal_clarified": {
+          "mean_margin_shift": 0.2421875,
+          "mean_absolute_score_change": 0.06889427127316594,
+          "mean_margin_by_grade": {
+            "0": -0.4625,
+            "1": -0.7875,
+            "2": 1.0625
+          }
+        },
+        "document_first_clarified": {
+          "mean_margin_shift": -0.8515625,
+          "mean_absolute_score_change": 0.23659046168904752,
+          "mean_margin_by_grade": {
+            "0": -1.35,
+            "1": -0.875,
+            "2": -1.0416666666666667
+          }
+        },
+        "swapped_contents_remapped": {
+          "mean_margin_shift": 1.09765625,
+          "mean_absolute_score_change": 0.24417864042334259,
+          "mean_margin_by_grade": {
+            "0": 0.9125,
+            "1": 0.3,
+            "2": 1.2916666666666667
+          }
+        },
+        "swapped_contents_reverse_task": {
+          "mean_margin_shift": 2.62109375,
+          "mean_absolute_score_change": 0.4074486461468041,
+          "mean_margin_by_grade": {
+            "0": 3.05,
+            "1": 1.1125,
+            "2": 2.8958333333333335
+          }
+        },
+        "normal_general_task": {
+          "mean_margin_shift": 2.75390625,
+          "mean_absolute_score_change": 0.40925183705985546,
+          "mean_margin_by_grade": {
+            "0": 2.3125,
+            "1": 1.725,
+            "2": 3.3541666666666665
+          }
+        },
+        "swapped_contents_general_task": {
+          "mean_margin_shift": 2.6171875,
+          "mean_absolute_score_change": 0.3914692774415016,
+          "mean_margin_by_grade": {
+            "0": 3.1125,
+            "1": 0.95,
+            "2": 2.96875
+          }
+        },
+        "swapped_contents_system_remapped": {
+          "mean_margin_shift": 0.73828125,
+          "mean_absolute_score_change": 0.17562282155267894,
+          "mean_margin_by_grade": {
+            "0": 0.6875,
+            "1": -0.325,
+            "2": 1.0416666666666667
+          }
+        }
+      }
+    },
+    "synthetic_sanity": {
+      "pairs": 6,
+      "queries": 3,
+      "orderings": {
+        "normal": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "document_first": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "query_first_wrong_labels": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "normal_atomic": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "document_first_atomic": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents_atomic": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "query_first_wrong_labels_atomic": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "normal_clarified": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "document_first_clarified": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents_remapped": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents_reverse_task": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "normal_general_task": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents_general_task": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents_system_remapped": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        }
+      },
+      "fp32_head_orderings": {
+        "normal": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "document_first": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "query_first_wrong_labels": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "normal_atomic": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "document_first_atomic": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents_atomic": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "query_first_wrong_labels_atomic": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "normal_clarified": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "document_first_clarified": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents_remapped": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents_reverse_task": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "normal_general_task": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents_general_task": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        },
+        "swapped_contents_system_remapped": {
+          "correct": 3,
+          "ties": 0,
+          "total": 3
+        }
+      },
+      "metrics": {
+        "normal": {
+          "mean_margin_shift": 0.0,
+          "mean_absolute_score_change": 0.0,
+          "mean_margin_by_grade": {
+            "0": -11.372395833333334,
+            "1": 2.2708333333333335
+          }
+        },
+        "document_first": {
+          "mean_margin_shift": -1.0403645833333333,
+          "mean_absolute_score_change": 0.13480732052300937,
+          "mean_margin_by_grade": {
+            "0": -11.807291666666666,
+            "1": 0.625
+          }
+        },
+        "swapped_contents": {
+          "mean_margin_shift": -2.1764322916666665,
+          "mean_absolute_score_change": 0.27942964845613005,
+          "mean_margin_by_grade": {
+            "0": -12.641927083333334,
+            "1": -0.8125
+          }
+        },
+        "query_first_wrong_labels": {
+          "mean_margin_shift": -1.00390625,
+          "mean_absolute_score_change": 0.24191926649317944,
+          "mean_margin_by_grade": {
+            "0": -10.630208333333334,
+            "1": -0.4791666666666667
+          }
+        },
+        "normal_atomic": {
+          "mean_margin_shift": 0.2708333333333333,
+          "mean_absolute_score_change": 0.013807167941005597,
+          "mean_margin_by_grade": {
+            "0": -10.872395833333334,
+            "1": 2.3125
+          }
+        },
+        "document_first_atomic": {
+          "mean_margin_shift": -0.9622395833333334,
+          "mean_absolute_score_change": 0.11758576081786032,
+          "mean_margin_by_grade": {
+            "0": -11.817708333333334,
+            "1": 0.7916666666666666
+          }
+        },
+        "swapped_contents_atomic": {
+          "mean_margin_shift": -2.0208333333333335,
+          "mean_absolute_score_change": 0.2711306954559897,
+          "mean_margin_by_grade": {
+            "0": -12.372395833333334,
+            "1": -0.7708333333333334
+          }
+        },
+        "query_first_wrong_labels_atomic": {
+          "mean_margin_shift": -0.5559895833333334,
+          "mean_absolute_score_change": 0.234670201829393,
+          "mean_margin_by_grade": {
+            "0": -9.817708333333334,
+            "1": -0.3958333333333333
+          }
+        },
+        "normal_clarified": {
+          "mean_margin_shift": -0.2985026041666667,
+          "mean_absolute_score_change": 0.009957379226345134,
+          "mean_margin_by_grade": {
+            "0": -11.865234375,
+            "1": 2.1666666666666665
+          }
+        },
+        "document_first_clarified": {
+          "mean_margin_shift": -1.5716145833333333,
+          "mean_absolute_score_change": 0.1791671865293362,
+          "mean_margin_by_grade": {
+            "0": -12.348958333333334,
+            "1": 0.10416666666666667
+          }
+        },
+        "swapped_contents_remapped": {
+          "mean_margin_shift": -2.5559895833333335,
+          "mean_absolute_score_change": 0.28670294792563783,
+          "mean_margin_by_grade": {
+            "0": -13.359375,
+            "1": -0.8541666666666666
+          }
+        },
+        "swapped_contents_reverse_task": {
+          "mean_margin_shift": 0.3763020833333333,
+          "mean_absolute_score_change": 0.057378203684190034,
+          "mean_margin_by_grade": {
+            "0": -11.098958333333334,
+            "1": 2.75
+          }
+        },
+        "normal_general_task": {
+          "mean_margin_shift": 0.0,
+          "mean_absolute_score_change": 0.0,
+          "mean_margin_by_grade": {
+            "0": -11.372395833333334,
+            "1": 2.2708333333333335
+          }
+        },
+        "swapped_contents_general_task": {
+          "mean_margin_shift": -2.1764322916666665,
+          "mean_absolute_score_change": 0.27942964845613005,
+          "mean_margin_by_grade": {
+            "0": -12.641927083333334,
+            "1": -0.8125
+          }
+        },
+        "swapped_contents_system_remapped": {
+          "mean_margin_shift": -2.4147135416666665,
+          "mean_absolute_score_change": 0.2876539631013486,
+          "mean_margin_by_grade": {
+            "0": -13.03515625,
+            "1": -0.8958333333333334
+          }
+        }
+      }
+    },
+    "all_control_token_sequences_preserved": true,
+    "atomic_token_multisets_identical": true
+  },
+  "score_diagnostics": {
+    "Touche2020Retrieval.v3": {
+      "normal": {
+        "mean_no_logit_change": 0.0,
+        "mean_yes_logit_change": 0.0,
+        "mean_margin_change": 0.0,
+        "mean_score": 0.45401067938655615,
+        "mean_absolute_score_change": 0.0,
+        "margin_correlation": 1.0,
+        "grade_margin_changes": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0
+        },
+        "full_vocabulary_yes_no_mass_min": 0.11770600453019142,
+        "full_vocabulary_yes_no_mass_max": 0.6146105118095875
+      },
+      "document_first": {
+        "mean_no_logit_change": -0.046875,
+        "mean_yes_logit_change": -0.40234375,
+        "mean_margin_change": -0.35546875,
+        "mean_score": 0.3823663112707436,
+        "mean_absolute_score_change": 0.1854461315087974,
+        "margin_correlation": 0.489065572513211,
+        "grade_margin_changes": {
+          "0": -0.0625,
+          "1": 0.2875,
+          "2": -1.1354166666666667
+        },
+        "full_vocabulary_yes_no_mass_min": 0.2092221975326538,
+        "full_vocabulary_yes_no_mass_max": 0.487446665763855
+      },
+      "swapped_contents": {
+        "mean_no_logit_change": -0.7890625,
+        "mean_yes_logit_change": -0.07421875,
+        "mean_margin_change": 0.71484375,
+        "mean_score": 0.6229494479484856,
+        "mean_absolute_score_change": 0.1752901286818087,
+        "margin_correlation": 0.7328748322029385,
+        "grade_margin_changes": {
+          "0": 1.3,
+          "1": 0.5125,
+          "2": 0.3958333333333333
+        },
+        "full_vocabulary_yes_no_mass_min": 0.16663355170749128,
+        "full_vocabulary_yes_no_mass_max": 0.4295622445642948
+      },
+      "query_first_wrong_labels": {
+        "mean_no_logit_change": 0.23828125,
+        "mean_yes_logit_change": -0.7734375,
+        "mean_margin_change": -1.01171875,
+        "mean_score": 0.24719938542693853,
+        "mean_absolute_score_change": 0.21058876998722553,
+        "margin_correlation": 0.8366943276001872,
+        "grade_margin_changes": {
+          "0": -0.7625,
+          "1": -0.775,
+          "2": -1.4166666666666667
+        },
+        "full_vocabulary_yes_no_mass_min": 0.23626136779785156,
+        "full_vocabulary_yes_no_mass_max": 0.539567843079567
+      },
+      "normal_atomic": {
+        "mean_no_logit_change": -0.0390625,
+        "mean_yes_logit_change": -0.0859375,
+        "mean_margin_change": -0.046875,
+        "mean_score": 0.44403947493992746,
+        "mean_absolute_score_change": 0.02228516829200089,
+        "margin_correlation": 0.9921064245260692,
+        "grade_margin_changes": {
+          "0": -0.0375,
+          "1": -0.0625,
+          "2": -0.041666666666666664
+        },
+        "full_vocabulary_yes_no_mass_min": 0.1186885368078947,
+        "full_vocabulary_yes_no_mass_max": 0.6303389556705952
+      },
+      "document_first_atomic": {
+        "mean_no_logit_change": -0.0546875,
+        "mean_yes_logit_change": -0.44140625,
+        "mean_margin_change": -0.38671875,
+        "mean_score": 0.37628414249047637,
+        "mean_absolute_score_change": 0.1969753378070891,
+        "margin_correlation": 0.4771569385444443,
+        "grade_margin_changes": {
+          "0": -0.1125,
+          "1": 0.225,
+          "2": -1.125
+        },
+        "full_vocabulary_yes_no_mass_min": 0.17526347562670708,
+        "full_vocabulary_yes_no_mass_max": 0.48303282260894775
+      },
+      "swapped_contents_atomic": {
+        "mean_no_logit_change": -0.8359375,
+        "mean_yes_logit_change": -0.046875,
+        "mean_margin_change": 0.7890625,
+        "mean_score": 0.6381121885497123,
+        "mean_absolute_score_change": 0.19400670914910734,
+        "margin_correlation": 0.7257471414430112,
+        "grade_margin_changes": {
+          "0": 1.475,
+          "1": 0.525,
+          "2": 0.4375
+        },
+        "full_vocabulary_yes_no_mass_min": 0.14961779722943902,
+        "full_vocabulary_yes_no_mass_max": 0.38820747658610344
+      },
+      "query_first_wrong_labels_atomic": {
+        "mean_no_logit_change": 0.19921875,
+        "mean_yes_logit_change": -0.8671875,
+        "mean_margin_change": -1.06640625,
+        "mean_score": 0.2363214618526399,
+        "mean_absolute_score_change": 0.22146669356152415,
+        "margin_correlation": 0.8949162080897858,
+        "grade_margin_changes": {
+          "0": -0.9625,
+          "1": -0.7375,
+          "2": -1.4270833333333333
+        },
+        "full_vocabulary_yes_no_mass_min": 0.21250580623745918,
+        "full_vocabulary_yes_no_mass_max": 0.5126577615737915
+      },
+      "normal_clarified": {
+        "mean_no_logit_change": 0.0,
+        "mean_yes_logit_change": 0.2421875,
+        "mean_margin_change": 0.2421875,
+        "mean_score": 0.5102407396771014,
+        "mean_absolute_score_change": 0.06889427127316594,
+        "margin_correlation": 0.9636232844568543,
+        "grade_margin_changes": {
+          "0": 0.25,
+          "1": 0.0875,
+          "2": 0.3645833333333333
+        },
+        "full_vocabulary_yes_no_mass_min": 0.16790231689810753,
+        "full_vocabulary_yes_no_mass_max": 0.6193439997732639
+      },
+      "document_first_clarified": {
+        "mean_no_logit_change": 0.05859375,
+        "mean_yes_logit_change": -0.79296875,
+        "mean_margin_change": -0.8515625,
+        "mean_score": 0.2877690225141123,
+        "mean_absolute_score_change": 0.23659046168904752,
+        "margin_correlation": 0.39857263223637895,
+        "grade_margin_changes": {
+          "0": -0.6375,
+          "1": 0.0,
+          "2": -1.7395833333333333
+        },
+        "full_vocabulary_yes_no_mass_min": 0.27400832157582045,
+        "full_vocabulary_yes_no_mass_max": 0.5514239221811295
+      },
+      "swapped_contents_remapped": {
+        "mean_no_logit_change": -0.94921875,
+        "mean_yes_logit_change": 0.1484375,
+        "mean_margin_change": 1.09765625,
+        "mean_score": 0.6958765925373882,
+        "mean_absolute_score_change": 0.24417864042334259,
+        "margin_correlation": 0.7026734604708379,
+        "grade_margin_changes": {
+          "0": 1.625,
+          "1": 1.175,
+          "2": 0.59375
+        },
+        "full_vocabulary_yes_no_mass_min": 0.17647817265242338,
+        "full_vocabulary_yes_no_mass_max": 0.5094560198485851
+      },
+      "swapped_contents_reverse_task": {
+        "mean_no_logit_change": -1.3984375,
+        "mean_yes_logit_change": 1.22265625,
+        "mean_margin_change": 2.62109375,
+        "mean_score": 0.8614593255333602,
+        "mean_absolute_score_change": 0.4074486461468041,
+        "margin_correlation": 0.5376873388142056,
+        "grade_margin_changes": {
+          "0": 3.7625,
+          "1": 1.9875,
+          "2": 2.1979166666666665
+        },
+        "full_vocabulary_yes_no_mass_min": 0.33642741572111845,
+        "full_vocabulary_yes_no_mass_max": 0.7680463595315814
+      },
+      "normal_general_task": {
+        "mean_no_logit_change": -1.1328125,
+        "mean_yes_logit_change": 1.62109375,
+        "mean_margin_change": 2.75390625,
+        "mean_score": 0.8632625164464116,
+        "mean_absolute_score_change": 0.40925183705985546,
+        "margin_correlation": 0.8022318227300034,
+        "grade_margin_changes": {
+          "0": 3.025,
+          "1": 2.6,
+          "2": 2.65625
+        },
+        "full_vocabulary_yes_no_mass_min": 0.4975503161549568,
+        "full_vocabulary_yes_no_mass_max": 0.7640938311815262
+      },
+      "swapped_contents_general_task": {
+        "mean_no_logit_change": -1.734375,
+        "mean_yes_logit_change": 0.8828125,
+        "mean_margin_change": 2.6171875,
+        "mean_score": 0.8454799568280578,
+        "mean_absolute_score_change": 0.3914692774415016,
+        "margin_correlation": 0.6057034054578967,
+        "grade_margin_changes": {
+          "0": 3.825,
+          "1": 1.825,
+          "2": 2.2708333333333335
+        },
+        "full_vocabulary_yes_no_mass_min": 0.15910137072205544,
+        "full_vocabulary_yes_no_mass_max": 0.6887014843523502
+      },
+      "swapped_contents_system_remapped": {
+        "mean_no_logit_change": -0.83984375,
+        "mean_yes_logit_change": -0.1015625,
+        "mean_margin_change": 0.73828125,
+        "mean_score": 0.6228982133325189,
+        "mean_absolute_score_change": 0.17562282155267894,
+        "margin_correlation": 0.7804985375696727,
+        "grade_margin_changes": {
+          "0": 1.4,
+          "1": 0.55,
+          "2": 0.34375
+        },
+        "full_vocabulary_yes_no_mass_min": 0.12972978502511978,
+        "full_vocabulary_yes_no_mass_max": 0.43380145356059074
+      }
+    },
+    "synthetic_sanity": {
+      "normal": {
+        "mean_no_logit_change": 0.0,
+        "mean_yes_logit_change": 0.0,
+        "mean_margin_change": 0.0,
+        "mean_score": 0.44168761562745357,
+        "mean_absolute_score_change": 0.0,
+        "margin_correlation": 1.0,
+        "grade_margin_changes": {
+          "0": 0.0,
+          "1": 0.0
+        },
+        "full_vocabulary_yes_no_mass_min": 0.14071611350482272,
+        "full_vocabulary_yes_no_mass_max": 0.544544504955411
+      },
+      "document_first": {
+        "mean_no_logit_change": 0.21875,
+        "mean_yes_logit_change": -0.8216145833333334,
+        "mean_margin_change": -1.0403645833333333,
+        "mean_score": 0.306883408155727,
+        "mean_absolute_score_change": 0.13480732052300937,
+        "margin_correlation": 0.9767778698643895,
+        "grade_margin_changes": {
+          "0": -0.4348958333333333,
+          "1": -1.6458333333333333
+        },
+        "full_vocabulary_yes_no_mass_min": 0.04531234875321388,
+        "full_vocabulary_yes_no_mass_max": 0.4130801050766877
+      },
+      "swapped_contents": {
+        "mean_no_logit_change": 0.6458333333333334,
+        "mean_yes_logit_change": -1.5305989583333333,
+        "mean_margin_change": -2.1764322916666665,
+        "mean_score": 0.16225873970597604,
+        "mean_absolute_score_change": 0.27942964845613005,
+        "margin_correlation": 0.9786806367262139,
+        "grade_margin_changes": {
+          "0": -1.26953125,
+          "1": -3.0833333333333335
+        },
+        "full_vocabulary_yes_no_mass_min": 0.04997986927628517,
+        "full_vocabulary_yes_no_mass_max": 0.3284687941629727
+      },
+      "query_first_wrong_labels": {
+        "mean_no_logit_change": 1.09375,
+        "mean_yes_logit_change": 0.08984375,
+        "mean_margin_change": -1.00390625,
+        "mean_score": 0.19981579405612138,
+        "mean_absolute_score_change": 0.24191926649317944,
+        "margin_correlation": 0.9880281600397003,
+        "grade_margin_changes": {
+          "0": 0.7421875,
+          "1": -2.75
+        },
+        "full_vocabulary_yes_no_mass_min": 0.18693151551269693,
+        "full_vocabulary_yes_no_mass_max": 0.47728845477104187
+      },
+      "normal_atomic": {
+        "mean_no_logit_change": -0.125,
+        "mean_yes_logit_change": 0.14583333333333334,
+        "mean_margin_change": 0.2708333333333333,
+        "mean_score": 0.43532524729577443,
+        "mean_absolute_score_change": 0.013807167941005597,
+        "margin_correlation": 0.9994802098421024,
+        "grade_margin_changes": {
+          "0": 0.5,
+          "1": 0.041666666666666664
+        },
+        "full_vocabulary_yes_no_mass_min": 0.12560111518905615,
+        "full_vocabulary_yes_no_mass_max": 0.5571712628006935
+      },
+      "document_first_atomic": {
+        "mean_no_logit_change": 0.08333333333333333,
+        "mean_yes_logit_change": -0.87890625,
+        "mean_margin_change": -0.9622395833333334,
+        "mean_score": 0.32410570673694866,
+        "mean_absolute_score_change": 0.11758576081786032,
+        "margin_correlation": 0.9753045149523606,
+        "grade_margin_changes": {
+          "0": -0.4453125,
+          "1": -1.4791666666666667
+        },
+        "full_vocabulary_yes_no_mass_min": 0.024664067197591066,
+        "full_vocabulary_yes_no_mass_max": 0.4029663201732774
+      },
+      "swapped_contents_atomic": {
+        "mean_no_logit_change": 0.4791666666666667,
+        "mean_yes_logit_change": -1.5416666666666667,
+        "mean_margin_change": -2.0208333333333335,
+        "mean_score": 0.17055835600029923,
+        "mean_absolute_score_change": 0.2711306954559897,
+        "margin_correlation": 0.9784043730255365,
+        "grade_margin_changes": {
+          "0": -1.0,
+          "1": -3.0416666666666665
+        },
+        "full_vocabulary_yes_no_mass_min": 0.053375814110040665,
+        "full_vocabulary_yes_no_mass_max": 0.2917959213521897
+      },
+      "query_first_wrong_labels_atomic": {
+        "mean_no_logit_change": 1.1145833333333333,
+        "mean_yes_logit_change": 0.55859375,
+        "mean_margin_change": -0.5559895833333334,
+        "mean_score": 0.20707984944753358,
+        "mean_absolute_score_change": 0.234670201829393,
+        "margin_correlation": 0.9929881142551867,
+        "grade_margin_changes": {
+          "0": 1.5546875,
+          "1": -2.6666666666666665
+        },
+        "full_vocabulary_yes_no_mass_min": 0.20524855459007085,
+        "full_vocabulary_yes_no_mass_max": 0.4525587558746338
+      },
+      "normal_clarified": {
+        "mean_no_logit_change": 0.20833333333333334,
+        "mean_yes_logit_change": -0.09016927083333333,
+        "mean_margin_change": -0.2985026041666667,
+        "mean_score": 0.4423612811068172,
+        "mean_absolute_score_change": 0.009957379226345134,
+        "margin_correlation": 0.9992303252529623,
+        "grade_margin_changes": {
+          "0": -0.4928385416666667,
+          "1": -0.10416666666666667
+        },
+        "full_vocabulary_yes_no_mass_min": 0.25346987365264795,
+        "full_vocabulary_yes_no_mass_max": 0.5464597940444946
+      },
+      "document_first_clarified": {
+        "mean_no_logit_change": 0.8229166666666666,
+        "mean_yes_logit_change": -0.7486979166666666,
+        "mean_margin_change": -1.5716145833333333,
+        "mean_score": 0.26252234580075157,
+        "mean_absolute_score_change": 0.1791671865293362,
+        "margin_correlation": 0.9786938574679953,
+        "grade_margin_changes": {
+          "0": -0.9765625,
+          "1": -2.1666666666666665
+        },
+        "full_vocabulary_yes_no_mass_min": 0.05794321745634079,
+        "full_vocabulary_yes_no_mass_max": 0.6671663904463685
+      },
+      "swapped_contents_remapped": {
+        "mean_no_logit_change": 0.8854166666666666,
+        "mean_yes_logit_change": -1.6705729166666667,
+        "mean_margin_change": -2.5559895833333335,
+        "mean_score": 0.1549846677018157,
+        "mean_absolute_score_change": 0.28670294792563783,
+        "margin_correlation": 0.9830952504637258,
+        "grade_margin_changes": {
+          "0": -1.9869791666666667,
+          "1": -3.125
+        },
+        "full_vocabulary_yes_no_mass_min": 0.08413824439048767,
+        "full_vocabulary_yes_no_mass_max": 0.5274288440696466
+      },
+      "swapped_contents_reverse_task": {
+        "mean_no_logit_change": 0.8958333333333334,
+        "mean_yes_logit_change": 1.2721354166666667,
+        "mean_margin_change": 0.3763020833333333,
+        "mean_score": 0.46192418225575693,
+        "mean_absolute_score_change": 0.057378203684190034,
+        "margin_correlation": 0.9881586443688856,
+        "grade_margin_changes": {
+          "0": 0.2734375,
+          "1": 0.4791666666666667
+        },
+        "full_vocabulary_yes_no_mass_min": 0.480529572814703,
+        "full_vocabulary_yes_no_mass_max": 0.6457308587400803
+      },
+      "normal_general_task": {
+        "mean_no_logit_change": 0.0,
+        "mean_yes_logit_change": 0.0,
+        "mean_margin_change": 0.0,
+        "mean_score": 0.44168761562745357,
+        "mean_absolute_score_change": 0.0,
+        "margin_correlation": 1.0,
+        "grade_margin_changes": {
+          "0": 0.0,
+          "1": 0.0
+        },
+        "full_vocabulary_yes_no_mass_min": 0.14071611350482272,
+        "full_vocabulary_yes_no_mass_max": 0.544544504955411
+      },
+      "swapped_contents_general_task": {
+        "mean_no_logit_change": 0.6458333333333334,
+        "mean_yes_logit_change": -1.5305989583333333,
+        "mean_margin_change": -2.1764322916666665,
+        "mean_score": 0.16225873970597604,
+        "mean_absolute_score_change": 0.27942964845613005,
+        "margin_correlation": 0.9786806367262139,
+        "grade_margin_changes": {
+          "0": -1.26953125,
+          "1": -3.0833333333333335
+        },
+        "full_vocabulary_yes_no_mass_min": 0.04997986927628517,
+        "full_vocabulary_yes_no_mass_max": 0.3284687941629727
+      },
+      "swapped_contents_system_remapped": {
+        "mean_no_logit_change": 0.6770833333333334,
+        "mean_yes_logit_change": -1.7376302083333333,
+        "mean_margin_change": -2.4147135416666665,
+        "mean_score": 0.15403408078351313,
+        "mean_absolute_score_change": 0.2876539631013486,
+        "margin_correlation": 0.9768096645365273,
+        "grade_margin_changes": {
+          "0": -1.6627604166666667,
+          "1": -3.1666666666666665
+        },
+        "full_vocabulary_yes_no_mass_min": 0.060578012838959694,
+        "full_vocabulary_yes_no_mass_max": 0.3525178968135947
+      }
+    }
+  },
+  "fp32_head_margin_error": {
+    "mean": 0.03207217346538197,
+    "max": 0.11650657653808594,
+    "scope": "only final projection recomputed; backbone and its hidden states remain BF16"
+  },
+  "prompt_audit": {
+    "all_suffix_ids_identical": true,
+    "all_prefix_ids_identical_except_declared_system_remap": true,
+    "max_input_tokens": 1013
+  },
+  "normal_max_abs_score_change_from_prior": 0.0,
+  "pairs": [
+    {
+      "id": "1/51530f3f-2019-04-18T18:15:02Z-00007-000",
+      "query_id": "1",
+      "document_id": "51530f3f-2019-04-18T18:15:02Z-00007-000",
+      "query": "Should teachers get tenure?",
+      "grade": 0,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.23971034586429596,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.23370636999607086,
+          "margin": -1.1875,
+          "no_logit": 15.75,
+          "yes_logit": 14.5625,
+          "fp32_head_margin": -1.1438331604003906,
+          "tokens": 175
+        },
+        "document_first": {
+          "score": 0.3073580265045166,
+          "margin": -0.8125,
+          "no_logit": 16.25,
+          "yes_logit": 15.4375,
+          "fp32_head_margin": -0.7464609146118164,
+          "tokens": 175
+        },
+        "swapped_contents": {
+          "score": 0.8670357465744019,
+          "margin": 1.875,
+          "no_logit": 14.75,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 1.849583625793457,
+          "tokens": 175
+        },
+        "query_first_wrong_labels": {
+          "score": 0.18242551386356354,
+          "margin": -1.5,
+          "no_logit": 16.25,
+          "yes_logit": 14.75,
+          "fp32_head_margin": -1.5238981246948242,
+          "tokens": 175
+        },
+        "normal_atomic": {
+          "score": 0.2568320035934448,
+          "margin": -1.0625,
+          "no_logit": 15.75,
+          "yes_logit": 14.6875,
+          "fp32_head_margin": -1.0496826171875,
+          "tokens": 176
+        },
+        "document_first_atomic": {
+          "score": 0.3775406777858734,
+          "margin": -0.5,
+          "no_logit": 16.125,
+          "yes_logit": 15.625,
+          "fp32_head_margin": -0.5161151885986328,
+          "tokens": 176
+        },
+        "swapped_contents_atomic": {
+          "score": 0.8807970285415649,
+          "margin": 2.0,
+          "no_logit": 14.625,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 1.9880447387695312,
+          "tokens": 176
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.13296423852443695,
+          "margin": -1.875,
+          "no_logit": 16.0,
+          "yes_logit": 14.125,
+          "fp32_head_margin": -1.8864126205444336,
+          "tokens": 176
+        },
+        "normal_clarified": {
+          "score": 0.24508501589298248,
+          "margin": -1.125,
+          "no_logit": 15.9375,
+          "yes_logit": 14.8125,
+          "fp32_head_margin": -1.1186981201171875,
+          "tokens": 189
+        },
+        "document_first_clarified": {
+          "score": 0.18242551386356354,
+          "margin": -1.5,
+          "no_logit": 16.375,
+          "yes_logit": 14.875,
+          "fp32_head_margin": -1.4855155944824219,
+          "tokens": 189
+        },
+        "swapped_contents_remapped": {
+          "score": 0.8740772008895874,
+          "margin": 1.9375,
+          "no_logit": 14.9375,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 1.9930906295776367,
+          "tokens": 189
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.9875683188438416,
+          "margin": 4.375,
+          "no_logit": 13.625,
+          "yes_logit": 18.0,
+          "fp32_head_margin": 4.354571342468262,
+          "tokens": 178
+        },
+        "normal_general_task": {
+          "score": 0.893309473991394,
+          "margin": 2.125,
+          "no_logit": 15.625,
+          "yes_logit": 17.75,
+          "fp32_head_margin": 2.1054344177246094,
+          "tokens": 175
+        },
+        "swapped_contents_general_task": {
+          "score": 0.9890130758285522,
+          "margin": 4.5,
+          "no_logit": 13.375,
+          "yes_logit": 17.875,
+          "fp32_head_margin": 4.511554718017578,
+          "tokens": 175
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.7431680560112,
+          "margin": 1.0625,
+          "no_logit": 15.0625,
+          "yes_logit": 16.125,
+          "fp32_head_margin": 1.0527820587158203,
+          "tokens": 175
+        }
+      }
+    },
+    {
+      "id": "1/4d8487a-2019-04-18T18:20:20Z-00003-000",
+      "query_id": "1",
+      "document_id": "4d8487a-2019-04-18T18:20:20Z-00003-000",
+      "query": "Should teachers get tenure?",
+      "grade": 0,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.35213422775268555,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.3486451506614685,
+          "margin": -0.625,
+          "no_logit": 16.75,
+          "yes_logit": 16.125,
+          "fp32_head_margin": -0.6163673400878906,
+          "tokens": 273
+        },
+        "document_first": {
+          "score": 0.2018132209777832,
+          "margin": -1.375,
+          "no_logit": 16.5,
+          "yes_logit": 15.125,
+          "fp32_head_margin": -1.361114501953125,
+          "tokens": 273
+        },
+        "swapped_contents": {
+          "score": 0.4687906503677368,
+          "margin": -0.125,
+          "no_logit": 16.0,
+          "yes_logit": 15.875,
+          "fp32_head_margin": -0.11990070343017578,
+          "tokens": 273
+        },
+        "query_first_wrong_labels": {
+          "score": 0.14804719388484955,
+          "margin": -1.75,
+          "no_logit": 16.5,
+          "yes_logit": 14.75,
+          "fp32_head_margin": -1.7619247436523438,
+          "tokens": 273
+        },
+        "normal_atomic": {
+          "score": 0.24508501589298248,
+          "margin": -1.125,
+          "no_logit": 16.625,
+          "yes_logit": 15.5,
+          "fp32_head_margin": -1.1042709350585938,
+          "tokens": 274
+        },
+        "document_first_atomic": {
+          "score": 0.2120688110589981,
+          "margin": -1.3125,
+          "no_logit": 16.5,
+          "yes_logit": 15.1875,
+          "fp32_head_margin": -1.223653793334961,
+          "tokens": 274
+        },
+        "swapped_contents_atomic": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 15.875,
+          "yes_logit": 16.125,
+          "fp32_head_margin": 0.29314422607421875,
+          "tokens": 274
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.11920291930437088,
+          "margin": -2.0,
+          "no_logit": 16.25,
+          "yes_logit": 14.25,
+          "fp32_head_margin": -2.0618228912353516,
+          "tokens": 274
+        },
+        "normal_clarified": {
+          "score": 0.4073334336280823,
+          "margin": -0.375,
+          "no_logit": 16.875,
+          "yes_logit": 16.5,
+          "fp32_head_margin": -0.40882110595703125,
+          "tokens": 287
+        },
+        "document_first_clarified": {
+          "score": 0.13296423852443695,
+          "margin": -1.875,
+          "no_logit": 16.625,
+          "yes_logit": 14.75,
+          "fp32_head_margin": -1.8281984329223633,
+          "tokens": 287
+        },
+        "swapped_contents_remapped": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 16.125,
+          "yes_logit": 16.375,
+          "fp32_head_margin": 0.24286651611328125,
+          "tokens": 287
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.8807970285415649,
+          "margin": 2.0,
+          "no_logit": 15.5,
+          "yes_logit": 17.5,
+          "fp32_head_margin": 1.9400825500488281,
+          "tokens": 276
+        },
+        "normal_general_task": {
+          "score": 0.8740772008895874,
+          "margin": 1.9375,
+          "no_logit": 15.9375,
+          "yes_logit": 17.875,
+          "fp32_head_margin": 1.8958282470703125,
+          "tokens": 273
+        },
+        "swapped_contents_general_task": {
+          "score": 0.9399133324623108,
+          "margin": 2.75,
+          "no_logit": 14.625,
+          "yes_logit": 17.375,
+          "fp32_head_margin": 2.7591848373413086,
+          "tokens": 273
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 16.0,
+          "yes_logit": 16.25,
+          "fp32_head_margin": 0.3062582015991211,
+          "tokens": 273
+        }
+      }
+    },
+    {
+      "id": "1/ff0947ec-2019-04-18T12:23:12Z-00001-000",
+      "query_id": "1",
+      "document_id": "ff0947ec-2019-04-18T12:23:12Z-00001-000",
+      "query": "Should teachers get tenure?",
+      "grade": 1,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.5239690542221069,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.531209409236908,
+          "margin": 0.125,
+          "no_logit": 16.5,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.11535072326660156,
+          "tokens": 118
+        },
+        "document_first": {
+          "score": 0.622459352016449,
+          "margin": 0.5,
+          "no_logit": 16.125,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.41747093200683594,
+          "tokens": 118
+        },
+        "swapped_contents": {
+          "score": 0.6513548493385315,
+          "margin": 0.625,
+          "no_logit": 15.5,
+          "yes_logit": 16.125,
+          "fp32_head_margin": 0.5592737197875977,
+          "tokens": 118
+        },
+        "query_first_wrong_labels": {
+          "score": 0.4073334336280823,
+          "margin": -0.375,
+          "no_logit": 16.625,
+          "yes_logit": 16.25,
+          "fp32_head_margin": -0.3861827850341797,
+          "tokens": 118
+        },
+        "normal_atomic": {
+          "score": 0.5,
+          "margin": 0.0,
+          "no_logit": 16.5,
+          "yes_logit": 16.5,
+          "fp32_head_margin": -0.0007572174072265625,
+          "tokens": 119
+        },
+        "document_first_atomic": {
+          "score": 0.622459352016449,
+          "margin": 0.5,
+          "no_logit": 16.125,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.43822669982910156,
+          "tokens": 119
+        },
+        "swapped_contents_atomic": {
+          "score": 0.637030839920044,
+          "margin": 0.5625,
+          "no_logit": 15.5625,
+          "yes_logit": 16.125,
+          "fp32_head_margin": 0.5951824188232422,
+          "tokens": 119
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.3486451506614685,
+          "margin": -0.625,
+          "no_logit": 16.75,
+          "yes_logit": 16.125,
+          "fp32_head_margin": -0.678680419921875,
+          "tokens": 119
+        },
+        "normal_clarified": {
+          "score": 0.6791787147521973,
+          "margin": 0.75,
+          "no_logit": 16.375,
+          "yes_logit": 17.125,
+          "fp32_head_margin": 0.7206764221191406,
+          "tokens": 132
+        },
+        "document_first_clarified": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 16.375,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.2843017578125,
+          "tokens": 132
+        },
+        "swapped_contents_remapped": {
+          "score": 0.7310585975646973,
+          "margin": 1.0,
+          "no_logit": 15.625,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.9760675430297852,
+          "tokens": 132
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.9046505093574524,
+          "margin": 2.25,
+          "no_logit": 15.125,
+          "yes_logit": 17.375,
+          "fp32_head_margin": 2.247342109680176,
+          "tokens": 121
+        },
+        "normal_general_task": {
+          "score": 0.977022647857666,
+          "margin": 3.75,
+          "no_logit": 14.375,
+          "yes_logit": 18.125,
+          "fp32_head_margin": 3.7415313720703125,
+          "tokens": 118
+        },
+        "swapped_contents_general_task": {
+          "score": 0.9099069833755493,
+          "margin": 2.3125,
+          "no_logit": 14.5625,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 2.261850357055664,
+          "tokens": 118
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.622459352016449,
+          "margin": 0.5,
+          "no_logit": 15.4375,
+          "yes_logit": 15.9375,
+          "fp32_head_margin": 0.4725465774536133,
+          "tokens": 118
+        }
+      }
+    },
+    {
+      "id": "1/e3f07189-2019-04-18T17:54:23Z-00006-000",
+      "query_id": "1",
+      "document_id": "e3f07189-2019-04-18T17:54:23Z-00006-000",
+      "query": "Should teachers get tenure?",
+      "grade": 1,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.035272371023893356,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.037326887249946594,
+          "margin": -3.25,
+          "no_logit": 15.5625,
+          "yes_logit": 12.3125,
+          "fp32_head_margin": -3.273613929748535,
+          "tokens": 175
+        },
+        "document_first": {
+          "score": 0.042087726294994354,
+          "margin": -3.125,
+          "no_logit": 15.8125,
+          "yes_logit": 12.6875,
+          "fp32_head_margin": -3.090945243835449,
+          "tokens": 175
+        },
+        "swapped_contents": {
+          "score": 0.02161533385515213,
+          "margin": -3.8125,
+          "no_logit": 14.875,
+          "yes_logit": 11.0625,
+          "fp32_head_margin": -3.849363327026367,
+          "tokens": 175
+        },
+        "query_first_wrong_labels": {
+          "score": 0.06754669547080994,
+          "margin": -2.625,
+          "no_logit": 16.25,
+          "yes_logit": 13.625,
+          "fp32_head_margin": -2.6302223205566406,
+          "tokens": 175
+        },
+        "normal_atomic": {
+          "score": 0.03514484688639641,
+          "margin": -3.3125,
+          "no_logit": 15.5,
+          "yes_logit": 12.1875,
+          "fp32_head_margin": -3.3184070587158203,
+          "tokens": 176
+        },
+        "document_first_atomic": {
+          "score": 0.042087726294994354,
+          "margin": -3.125,
+          "no_logit": 15.625,
+          "yes_logit": 12.5,
+          "fp32_head_margin": -3.131753921508789,
+          "tokens": 176
+        },
+        "swapped_contents_atomic": {
+          "score": 0.022977370768785477,
+          "margin": -3.75,
+          "no_logit": 14.8125,
+          "yes_logit": 11.0625,
+          "fp32_head_margin": -3.699871063232422,
+          "tokens": 176
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.06754669547080994,
+          "margin": -2.625,
+          "no_logit": 16.375,
+          "yes_logit": 13.75,
+          "fp32_head_margin": -2.5429697036743164,
+          "tokens": 176
+        },
+        "normal_clarified": {
+          "score": 0.02931223064661026,
+          "margin": -3.5,
+          "no_logit": 15.375,
+          "yes_logit": 11.875,
+          "fp32_head_margin": -3.5215511322021484,
+          "tokens": 189
+        },
+        "document_first_clarified": {
+          "score": 0.020332353189587593,
+          "margin": -3.875,
+          "no_logit": 15.25,
+          "yes_logit": 11.375,
+          "fp32_head_margin": -3.883279800415039,
+          "tokens": 189
+        },
+        "swapped_contents_remapped": {
+          "score": 0.03963884338736534,
+          "margin": -3.1875,
+          "no_logit": 15.125,
+          "yes_logit": 11.9375,
+          "fp32_head_margin": -3.173044204711914,
+          "tokens": 189
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.042087726294994354,
+          "margin": -3.125,
+          "no_logit": 15.875,
+          "yes_logit": 12.75,
+          "fp32_head_margin": -3.185593605041504,
+          "tokens": 178
+        },
+        "normal_general_task": {
+          "score": 0.16451646387577057,
+          "margin": -1.625,
+          "no_logit": 17.0,
+          "yes_logit": 15.375,
+          "fp32_head_margin": -1.6380348205566406,
+          "tokens": 175
+        },
+        "swapped_contents_general_task": {
+          "score": 0.1919327825307846,
+          "margin": -1.4375,
+          "no_logit": 16.25,
+          "yes_logit": 14.8125,
+          "fp32_head_margin": -1.3880786895751953,
+          "tokens": 175
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.03963884338736534,
+          "margin": -3.1875,
+          "no_logit": 14.9375,
+          "yes_logit": 11.75,
+          "fp32_head_margin": -3.204411506652832,
+          "tokens": 175
+        }
+      }
+    },
+    {
+      "id": "1/51530f3f-2019-04-18T18:15:02Z-00004-000",
+      "query_id": "1",
+      "document_id": "51530f3f-2019-04-18T18:15:02Z-00004-000",
+      "query": "Should teachers get tenure?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.6658551096916199,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.665410578250885,
+          "margin": 0.6875,
+          "no_logit": 15.9375,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.7028865814208984,
+          "tokens": 443
+        },
+        "document_first": {
+          "score": 0.5,
+          "margin": 0.0,
+          "no_logit": 16.125,
+          "yes_logit": 16.125,
+          "fp32_head_margin": -0.10067558288574219,
+          "tokens": 443
+        },
+        "swapped_contents": {
+          "score": 0.7185944318771362,
+          "margin": 0.9375,
+          "no_logit": 15.5625,
+          "yes_logit": 16.5,
+          "fp32_head_margin": 0.9445695877075195,
+          "tokens": 443
+        },
+        "query_first_wrong_labels": {
+          "score": 0.5,
+          "margin": 0.0,
+          "no_logit": 16.25,
+          "yes_logit": 16.25,
+          "fp32_head_margin": -0.07955360412597656,
+          "tokens": 443
+        },
+        "normal_atomic": {
+          "score": 0.637030839920044,
+          "margin": 0.5625,
+          "no_logit": 15.9375,
+          "yes_logit": 16.5,
+          "fp32_head_margin": 0.5161542892456055,
+          "tokens": 444
+        },
+        "document_first_atomic": {
+          "score": 0.43782350420951843,
+          "margin": -0.25,
+          "no_logit": 16.25,
+          "yes_logit": 16.0,
+          "fp32_head_margin": -0.2357330322265625,
+          "tokens": 444
+        },
+        "swapped_contents_atomic": {
+          "score": 0.7549149990081787,
+          "margin": 1.125,
+          "no_logit": 15.375,
+          "yes_logit": 16.5,
+          "fp32_head_margin": 1.062993049621582,
+          "tokens": 444
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.4687906503677368,
+          "margin": -0.125,
+          "no_logit": 16.375,
+          "yes_logit": 16.25,
+          "fp32_head_margin": -0.14742088317871094,
+          "tokens": 444
+        },
+        "normal_clarified": {
+          "score": 0.7185944318771362,
+          "margin": 0.9375,
+          "no_logit": 15.8125,
+          "yes_logit": 16.75,
+          "fp32_head_margin": 0.9803943634033203,
+          "tokens": 457
+        },
+        "document_first_clarified": {
+          "score": 0.22270014882087708,
+          "margin": -1.25,
+          "no_logit": 16.375,
+          "yes_logit": 15.125,
+          "fp32_head_margin": -1.181711196899414,
+          "tokens": 457
+        },
+        "swapped_contents_remapped": {
+          "score": 0.7549149990081787,
+          "margin": 1.125,
+          "no_logit": 15.5,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 1.1751432418823242,
+          "tokens": 457
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.9241418242454529,
+          "margin": 2.5,
+          "no_logit": 14.875,
+          "yes_logit": 17.375,
+          "fp32_head_margin": 2.548765182495117,
+          "tokens": 446
+        },
+        "normal_general_task": {
+          "score": 0.9579122066497803,
+          "margin": 3.125,
+          "no_logit": 14.625,
+          "yes_logit": 17.75,
+          "fp32_head_margin": 3.083796501159668,
+          "tokens": 443
+        },
+        "swapped_contents_general_task": {
+          "score": 0.9783847332000732,
+          "margin": 3.8125,
+          "no_logit": 13.5625,
+          "yes_logit": 17.375,
+          "fp32_head_margin": 3.8541812896728516,
+          "tokens": 443
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.6791787147521973,
+          "margin": 0.75,
+          "no_logit": 15.75,
+          "yes_logit": 16.5,
+          "fp32_head_margin": 0.7109146118164062,
+          "tokens": 443
+        }
+      }
+    },
+    {
+      "id": "1/24e47090-2019-04-18T19:22:46Z-00004-000",
+      "query_id": "1",
+      "document_id": "24e47090-2019-04-18T19:22:46Z-00004-000",
+      "query": "Should teachers get tenure?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.7079384922981262,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.7057850360870361,
+          "margin": 0.875,
+          "no_logit": 16.125,
+          "yes_logit": 17.0,
+          "fp32_head_margin": 0.8820781707763672,
+          "tokens": 999
+        },
+        "document_first": {
+          "score": 0.1919327825307846,
+          "margin": -1.4375,
+          "no_logit": 16.375,
+          "yes_logit": 14.9375,
+          "fp32_head_margin": -1.5030908584594727,
+          "tokens": 999
+        },
+        "swapped_contents": {
+          "score": 0.7981867790222168,
+          "margin": 1.375,
+          "no_logit": 15.375,
+          "yes_logit": 16.75,
+          "fp32_head_margin": 1.4013395309448242,
+          "tokens": 999
+        },
+        "query_first_wrong_labels": {
+          "score": 0.4073334336280823,
+          "margin": -0.375,
+          "no_logit": 16.75,
+          "yes_logit": 16.375,
+          "fp32_head_margin": -0.3225517272949219,
+          "tokens": 999
+        },
+        "normal_atomic": {
+          "score": 0.6791787147521973,
+          "margin": 0.75,
+          "no_logit": 16.125,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 0.8079643249511719,
+          "tokens": 1000
+        },
+        "document_first_atomic": {
+          "score": 0.18242551386356354,
+          "margin": -1.5,
+          "no_logit": 16.375,
+          "yes_logit": 14.875,
+          "fp32_head_margin": -1.5176315307617188,
+          "tokens": 1000
+        },
+        "swapped_contents_atomic": {
+          "score": 0.7981867790222168,
+          "margin": 1.375,
+          "no_logit": 15.375,
+          "yes_logit": 16.75,
+          "fp32_head_margin": 1.4192180633544922,
+          "tokens": 1000
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.3486451506614685,
+          "margin": -0.625,
+          "no_logit": 16.625,
+          "yes_logit": 16.0,
+          "fp32_head_margin": -0.6059837341308594,
+          "tokens": 1000
+        },
+        "normal_clarified": {
+          "score": 0.7549149990081787,
+          "margin": 1.125,
+          "no_logit": 16.125,
+          "yes_logit": 17.25,
+          "fp32_head_margin": 1.1182498931884766,
+          "tokens": 1013
+        },
+        "document_first_clarified": {
+          "score": 0.13296423852443695,
+          "margin": -1.875,
+          "no_logit": 16.5,
+          "yes_logit": 14.625,
+          "fp32_head_margin": -1.8506240844726562,
+          "tokens": 1013
+        },
+        "swapped_contents_remapped": {
+          "score": 0.7549149990081787,
+          "margin": 1.125,
+          "no_logit": 15.625,
+          "yes_logit": 16.75,
+          "fp32_head_margin": 1.182570457458496,
+          "tokens": 1013
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.9525741338729858,
+          "margin": 3.0,
+          "no_logit": 14.625,
+          "yes_logit": 17.625,
+          "fp32_head_margin": 3.0655946731567383,
+          "tokens": 1002
+        },
+        "normal_general_task": {
+          "score": 0.9603611826896667,
+          "margin": 3.1875,
+          "no_logit": 14.8125,
+          "yes_logit": 18.0,
+          "fp32_head_margin": 3.1679916381835938,
+          "tokens": 999
+        },
+        "swapped_contents_general_task": {
+          "score": 0.985042929649353,
+          "margin": 4.1875,
+          "no_logit": 13.3125,
+          "yes_logit": 17.5,
+          "fp32_head_margin": 4.255080223083496,
+          "tokens": 999
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.7981867790222168,
+          "margin": 1.375,
+          "no_logit": 15.5,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 1.406855583190918,
+          "tokens": 999
+        }
+      }
+    },
+    {
+      "id": "9/96158d24-2019-04-18T11:23:27Z-00001-000",
+      "query_id": "9",
+      "document_id": "96158d24-2019-04-18T11:23:27Z-00001-000",
+      "query": "Should students have to wear school uniforms?",
+      "grade": 0,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.44581565260887146,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.43782350420951843,
+          "margin": -0.25,
+          "no_logit": 16.75,
+          "yes_logit": 16.5,
+          "fp32_head_margin": -0.19122886657714844,
+          "tokens": 180
+        },
+        "document_first": {
+          "score": 0.4687906503677368,
+          "margin": -0.125,
+          "no_logit": 16.5,
+          "yes_logit": 16.375,
+          "fp32_head_margin": -0.12169647216796875,
+          "tokens": 180
+        },
+        "swapped_contents": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 16.125,
+          "yes_logit": 16.375,
+          "fp32_head_margin": 0.27036094665527344,
+          "tokens": 180
+        },
+        "query_first_wrong_labels": {
+          "score": 0.23370636999607086,
+          "margin": -1.1875,
+          "no_logit": 16.875,
+          "yes_logit": 15.6875,
+          "fp32_head_margin": -1.1751642227172852,
+          "tokens": 180
+        },
+        "normal_atomic": {
+          "score": 0.43782350420951843,
+          "margin": -0.25,
+          "no_logit": 16.75,
+          "yes_logit": 16.5,
+          "fp32_head_margin": -0.23724746704101562,
+          "tokens": 181
+        },
+        "document_first_atomic": {
+          "score": 0.4687906503677368,
+          "margin": -0.125,
+          "no_logit": 16.625,
+          "yes_logit": 16.5,
+          "fp32_head_margin": -0.0846710205078125,
+          "tokens": 181
+        },
+        "swapped_contents_atomic": {
+          "score": 0.5926666259765625,
+          "margin": 0.375,
+          "no_logit": 16.0,
+          "yes_logit": 16.375,
+          "fp32_head_margin": 0.3661918640136719,
+          "tokens": 181
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.22270014882087708,
+          "margin": -1.25,
+          "no_logit": 16.75,
+          "yes_logit": 15.5,
+          "fp32_head_margin": -1.2985458374023438,
+          "tokens": 181
+        },
+        "normal_clarified": {
+          "score": 0.3775406777858734,
+          "margin": -0.5,
+          "no_logit": 17.0,
+          "yes_logit": 16.5,
+          "fp32_head_margin": -0.4883594512939453,
+          "tokens": 194
+        },
+        "document_first_clarified": {
+          "score": 0.3073580265045166,
+          "margin": -0.8125,
+          "no_logit": 16.625,
+          "yes_logit": 15.8125,
+          "fp32_head_margin": -0.8997707366943359,
+          "tokens": 194
+        },
+        "swapped_contents_remapped": {
+          "score": 0.7057850360870361,
+          "margin": 0.875,
+          "no_logit": 15.625,
+          "yes_logit": 16.5,
+          "fp32_head_margin": 0.839421272277832,
+          "tokens": 194
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.9465966820716858,
+          "margin": 2.875,
+          "no_logit": 14.875,
+          "yes_logit": 17.75,
+          "fp32_head_margin": 2.8645219802856445,
+          "tokens": 183
+        },
+        "normal_general_task": {
+          "score": 0.8740772008895874,
+          "margin": 1.9375,
+          "no_logit": 15.6875,
+          "yes_logit": 17.625,
+          "fp32_head_margin": 1.9858312606811523,
+          "tokens": 180
+        },
+        "swapped_contents_general_task": {
+          "score": 0.8740772008895874,
+          "margin": 1.9375,
+          "no_logit": 15.3125,
+          "yes_logit": 17.25,
+          "fp32_head_margin": 1.9465694427490234,
+          "tokens": 180
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.5926666259765625,
+          "margin": 0.375,
+          "no_logit": 15.875,
+          "yes_logit": 16.25,
+          "fp32_head_margin": 0.33205413818359375,
+          "tokens": 180
+        }
+      }
+    },
+    {
+      "id": "9/cf842d6a-2019-04-18T17:28:15Z-00006-000",
+      "query_id": "9",
+      "document_id": "cf842d6a-2019-04-18T17:28:15Z-00006-000",
+      "query": "Should students have to wear school uniforms?",
+      "grade": 1,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.37851303815841675,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.4073334336280823,
+          "margin": -0.375,
+          "no_logit": 16.875,
+          "yes_logit": 16.5,
+          "fp32_head_margin": -0.4654197692871094,
+          "tokens": 104
+        },
+        "document_first": {
+          "score": 0.5,
+          "margin": 0.0,
+          "no_logit": 16.5,
+          "yes_logit": 16.5,
+          "fp32_head_margin": -0.05458831787109375,
+          "tokens": 104
+        },
+        "swapped_contents": {
+          "score": 0.4073334336280823,
+          "margin": -0.375,
+          "no_logit": 15.875,
+          "yes_logit": 15.5,
+          "fp32_head_margin": -0.3907003402709961,
+          "tokens": 104
+        },
+        "query_first_wrong_labels": {
+          "score": 0.14033624529838562,
+          "margin": -1.8125,
+          "no_logit": 16.875,
+          "yes_logit": 15.0625,
+          "fp32_head_margin": -1.7959403991699219,
+          "tokens": 104
+        },
+        "normal_atomic": {
+          "score": 0.3775406777858734,
+          "margin": -0.5,
+          "no_logit": 17.0,
+          "yes_logit": 16.5,
+          "fp32_head_margin": -0.5143947601318359,
+          "tokens": 105
+        },
+        "document_first_atomic": {
+          "score": 0.43782350420951843,
+          "margin": -0.25,
+          "no_logit": 16.625,
+          "yes_logit": 16.375,
+          "fp32_head_margin": -0.21533966064453125,
+          "tokens": 105
+        },
+        "swapped_contents_atomic": {
+          "score": 0.3775406777858734,
+          "margin": -0.5,
+          "no_logit": 16.0,
+          "yes_logit": 15.5,
+          "fp32_head_margin": -0.5514450073242188,
+          "tokens": 105
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.16451646387577057,
+          "margin": -1.625,
+          "no_logit": 16.875,
+          "yes_logit": 15.25,
+          "fp32_head_margin": -1.6166934967041016,
+          "tokens": 105
+        },
+        "normal_clarified": {
+          "score": 0.4687906503677368,
+          "margin": -0.125,
+          "no_logit": 16.875,
+          "yes_logit": 16.75,
+          "fp32_head_margin": -0.18069076538085938,
+          "tokens": 118
+        },
+        "document_first_clarified": {
+          "score": 0.43782350420951843,
+          "margin": -0.25,
+          "no_logit": 16.5,
+          "yes_logit": 16.25,
+          "fp32_head_margin": -0.21626663208007812,
+          "tokens": 118
+        },
+        "swapped_contents_remapped": {
+          "score": 0.5467381477355957,
+          "margin": 0.1875,
+          "no_logit": 15.8125,
+          "yes_logit": 16.0,
+          "fp32_head_margin": 0.1620187759399414,
+          "tokens": 118
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.7057850360870361,
+          "margin": 0.875,
+          "no_logit": 16.125,
+          "yes_logit": 17.0,
+          "fp32_head_margin": 0.9146995544433594,
+          "tokens": 107
+        },
+        "normal_general_task": {
+          "score": 0.970687747001648,
+          "margin": 3.5,
+          "no_logit": 14.5,
+          "yes_logit": 18.0,
+          "fp32_head_margin": 3.478221893310547,
+          "tokens": 104
+        },
+        "swapped_contents_general_task": {
+          "score": 0.637030839920044,
+          "margin": 0.5625,
+          "no_logit": 15.4375,
+          "yes_logit": 16.0,
+          "fp32_head_margin": 0.5836324691772461,
+          "tokens": 104
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.4073334336280823,
+          "margin": -0.375,
+          "no_logit": 15.75,
+          "yes_logit": 15.375,
+          "fp32_head_margin": -0.39133167266845703,
+          "tokens": 104
+        }
+      }
+    },
+    {
+      "id": "9/2403550a-2019-04-18T14:02:10Z-00006-000",
+      "query_id": "9",
+      "document_id": "2403550a-2019-04-18T14:02:10Z-00006-000",
+      "query": "Should students have to wear school uniforms?",
+      "grade": 1,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.2473648190498352,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.24508501589298248,
+          "margin": -1.125,
+          "no_logit": 16.75,
+          "yes_logit": 15.625,
+          "fp32_head_margin": -1.0890998840332031,
+          "tokens": 159
+        },
+        "document_first": {
+          "score": 0.6791787147521973,
+          "margin": 0.75,
+          "no_logit": 16.25,
+          "yes_logit": 17.0,
+          "fp32_head_margin": 0.7115001678466797,
+          "tokens": 159
+        },
+        "swapped_contents": {
+          "score": 0.7431680560112,
+          "margin": 1.0625,
+          "no_logit": 15.6875,
+          "yes_logit": 16.75,
+          "fp32_head_margin": 1.0000038146972656,
+          "tokens": 159
+        },
+        "query_first_wrong_labels": {
+          "score": 0.17328819632530212,
+          "margin": -1.5625,
+          "no_logit": 16.5,
+          "yes_logit": 14.9375,
+          "fp32_head_margin": -1.625986099243164,
+          "tokens": 159
+        },
+        "normal_atomic": {
+          "score": 0.24508501589298248,
+          "margin": -1.125,
+          "no_logit": 16.875,
+          "yes_logit": 15.75,
+          "fp32_head_margin": -1.0811100006103516,
+          "tokens": 160
+        },
+        "document_first_atomic": {
+          "score": 0.6791787147521973,
+          "margin": 0.75,
+          "no_logit": 16.25,
+          "yes_logit": 17.0,
+          "fp32_head_margin": 0.6868057250976562,
+          "tokens": 160
+        },
+        "swapped_contents_atomic": {
+          "score": 0.7772998809814453,
+          "margin": 1.25,
+          "no_logit": 15.625,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 1.239649772644043,
+          "tokens": 160
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.16451646387577057,
+          "margin": -1.625,
+          "no_logit": 16.5,
+          "yes_logit": 14.875,
+          "fp32_head_margin": -1.6822624206542969,
+          "tokens": 160
+        },
+        "normal_clarified": {
+          "score": 0.2120688110589981,
+          "margin": -1.3125,
+          "no_logit": 17.0,
+          "yes_logit": 15.6875,
+          "fp32_head_margin": -1.2541866302490234,
+          "tokens": 173
+        },
+        "document_first_clarified": {
+          "score": 0.6791787147521973,
+          "margin": 0.75,
+          "no_logit": 16.375,
+          "yes_logit": 17.125,
+          "fp32_head_margin": 0.6754589080810547,
+          "tokens": 173
+        },
+        "swapped_contents_remapped": {
+          "score": 0.859663724899292,
+          "margin": 1.8125,
+          "no_logit": 15.0625,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 1.8385629653930664,
+          "tokens": 173
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.9808759689331055,
+          "margin": 3.9375,
+          "no_logit": 14.0625,
+          "yes_logit": 18.0,
+          "fp32_head_margin": 3.9698305130004883,
+          "tokens": 162
+        },
+        "normal_general_task": {
+          "score": 0.5,
+          "margin": 0.0,
+          "no_logit": 16.875,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 0.10620880126953125,
+          "tokens": 159
+        },
+        "swapped_contents_general_task": {
+          "score": 0.859663724899292,
+          "margin": 1.8125,
+          "no_logit": 15.1875,
+          "yes_logit": 17.0,
+          "fp32_head_margin": 1.8172264099121094,
+          "tokens": 159
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.6513548493385315,
+          "margin": 0.625,
+          "no_logit": 15.625,
+          "yes_logit": 16.25,
+          "fp32_head_margin": 0.6501502990722656,
+          "tokens": 159
+        }
+      }
+    },
+    {
+      "id": "9/b5339025-2019-04-18T18:30:27Z-00003-000",
+      "query_id": "9",
+      "document_id": "b5339025-2019-04-18T18:30:27Z-00003-000",
+      "query": "Should students have to wear school uniforms?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.26909467577934265,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.28140559792518616,
+          "margin": -0.9375,
+          "no_logit": 16.875,
+          "yes_logit": 15.9375,
+          "fp32_head_margin": -0.9745845794677734,
+          "tokens": 130
+        },
+        "document_first": {
+          "score": 0.43782350420951843,
+          "margin": -0.25,
+          "no_logit": 16.5,
+          "yes_logit": 16.25,
+          "fp32_head_margin": -0.24020767211914062,
+          "tokens": 130
+        },
+        "swapped_contents": {
+          "score": 0.43782350420951843,
+          "margin": -0.25,
+          "no_logit": 15.9375,
+          "yes_logit": 15.6875,
+          "fp32_head_margin": -0.2559633255004883,
+          "tokens": 130
+        },
+        "query_first_wrong_labels": {
+          "score": 0.14033624529838562,
+          "margin": -1.8125,
+          "no_logit": 16.875,
+          "yes_logit": 15.0625,
+          "fp32_head_margin": -1.8081092834472656,
+          "tokens": 130
+        },
+        "normal_atomic": {
+          "score": 0.24508501589298248,
+          "margin": -1.125,
+          "no_logit": 16.875,
+          "yes_logit": 15.75,
+          "fp32_head_margin": -1.0797672271728516,
+          "tokens": 131
+        },
+        "document_first_atomic": {
+          "score": 0.5,
+          "margin": 0.0,
+          "no_logit": 16.5,
+          "yes_logit": 16.5,
+          "fp32_head_margin": 0.022556304931640625,
+          "tokens": 131
+        },
+        "swapped_contents_atomic": {
+          "score": 0.43782350420951843,
+          "margin": -0.25,
+          "no_logit": 15.875,
+          "yes_logit": 15.625,
+          "fp32_head_margin": -0.28984737396240234,
+          "tokens": 131
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.16451646387577057,
+          "margin": -1.625,
+          "no_logit": 16.875,
+          "yes_logit": 15.25,
+          "fp32_head_margin": -1.6194658279418945,
+          "tokens": 131
+        },
+        "normal_clarified": {
+          "score": 0.3208213150501251,
+          "margin": -0.75,
+          "no_logit": 17.0,
+          "yes_logit": 16.25,
+          "fp32_head_margin": -0.7287483215332031,
+          "tokens": 144
+        },
+        "document_first_clarified": {
+          "score": 0.3486451506614685,
+          "margin": -0.625,
+          "no_logit": 16.75,
+          "yes_logit": 16.125,
+          "fp32_head_margin": -0.5342884063720703,
+          "tokens": 144
+        },
+        "swapped_contents_remapped": {
+          "score": 0.6513548493385315,
+          "margin": 0.625,
+          "no_logit": 15.375,
+          "yes_logit": 16.0,
+          "fp32_head_margin": 0.6710367202758789,
+          "tokens": 144
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.8807970285415649,
+          "margin": 2.0,
+          "no_logit": 15.5,
+          "yes_logit": 17.5,
+          "fp32_head_margin": 2.060192108154297,
+          "tokens": 133
+        },
+        "normal_general_task": {
+          "score": 0.9046505093574524,
+          "margin": 2.25,
+          "no_logit": 15.625,
+          "yes_logit": 17.875,
+          "fp32_head_margin": 2.23728084564209,
+          "tokens": 130
+        },
+        "swapped_contents_general_task": {
+          "score": 0.6791787147521973,
+          "margin": 0.75,
+          "no_logit": 15.75,
+          "yes_logit": 16.5,
+          "fp32_head_margin": 0.7829723358154297,
+          "tokens": 130
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.4532618820667267,
+          "margin": -0.1875,
+          "no_logit": 15.625,
+          "yes_logit": 15.4375,
+          "fp32_head_margin": -0.24594879150390625,
+          "tokens": 130
+        }
+      }
+    },
+    {
+      "id": "9/a7f5e454-2019-04-18T13:43:30Z-00002-000",
+      "query_id": "9",
+      "document_id": "a7f5e454-2019-04-18T13:43:30Z-00002-000",
+      "query": "Should students have to wear school uniforms?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.6856916546821594,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.7057850360870361,
+          "margin": 0.875,
+          "no_logit": 16.375,
+          "yes_logit": 17.25,
+          "fp32_head_margin": 0.8048248291015625,
+          "tokens": 258
+        },
+        "document_first": {
+          "score": 0.531209409236908,
+          "margin": 0.125,
+          "no_logit": 16.5,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.0561370849609375,
+          "tokens": 258
+        },
+        "swapped_contents": {
+          "score": 0.7662936449050903,
+          "margin": 1.1875,
+          "no_logit": 15.6875,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 1.1876583099365234,
+          "tokens": 258
+        },
+        "query_first_wrong_labels": {
+          "score": 0.3208213150501251,
+          "margin": -0.75,
+          "no_logit": 16.875,
+          "yes_logit": 16.125,
+          "fp32_head_margin": -0.8444404602050781,
+          "tokens": 258
+        },
+        "normal_atomic": {
+          "score": 0.7057850360870361,
+          "margin": 0.875,
+          "no_logit": 16.25,
+          "yes_logit": 17.125,
+          "fp32_head_margin": 0.8537578582763672,
+          "tokens": 259
+        },
+        "document_first_atomic": {
+          "score": 0.531209409236908,
+          "margin": 0.125,
+          "no_logit": 16.5,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.030370712280273438,
+          "tokens": 259
+        },
+        "swapped_contents_atomic": {
+          "score": 0.8080672025680542,
+          "margin": 1.4375,
+          "no_logit": 15.5625,
+          "yes_logit": 17.0,
+          "fp32_head_margin": 1.4127092361450195,
+          "tokens": 259
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.3486451506614685,
+          "margin": -0.625,
+          "no_logit": 16.75,
+          "yes_logit": 16.125,
+          "fp32_head_margin": -0.7238807678222656,
+          "tokens": 259
+        },
+        "normal_clarified": {
+          "score": 0.7310585975646973,
+          "margin": 1.0,
+          "no_logit": 16.375,
+          "yes_logit": 17.375,
+          "fp32_head_margin": 1.0737361907958984,
+          "tokens": 272
+        },
+        "document_first_clarified": {
+          "score": 0.3775406777858734,
+          "margin": -0.5,
+          "no_logit": 16.625,
+          "yes_logit": 16.125,
+          "fp32_head_margin": -0.48160362243652344,
+          "tokens": 272
+        },
+        "swapped_contents_remapped": {
+          "score": 0.7879312038421631,
+          "margin": 1.3125,
+          "no_logit": 15.3125,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 1.350621223449707,
+          "tokens": 272
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.9648551344871521,
+          "margin": 3.3125,
+          "no_logit": 14.8125,
+          "yes_logit": 18.125,
+          "fp32_head_margin": 3.3415374755859375,
+          "tokens": 261
+        },
+        "normal_general_task": {
+          "score": 0.9465966820716858,
+          "margin": 2.875,
+          "no_logit": 15.25,
+          "yes_logit": 18.125,
+          "fp32_head_margin": 2.7930173873901367,
+          "tokens": 258
+        },
+        "swapped_contents_general_task": {
+          "score": 0.9099069833755493,
+          "margin": 2.3125,
+          "no_logit": 15.0625,
+          "yes_logit": 17.375,
+          "fp32_head_margin": 2.3464107513427734,
+          "tokens": 258
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.665410578250885,
+          "margin": 0.6875,
+          "no_logit": 15.9375,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.6871986389160156,
+          "tokens": 258
+        }
+      }
+    },
+    {
+      "id": "33/8eeab760-2019-04-18T16:21:32Z-00001-000",
+      "query_id": "33",
+      "document_id": "8eeab760-2019-04-18T16:21:32Z-00001-000",
+      "query": "Should people become vegetarian?",
+      "grade": 0,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.35788536071777344,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.3486451506614685,
+          "margin": -0.625,
+          "no_logit": 16.875,
+          "yes_logit": 16.25,
+          "fp32_head_margin": -0.5853424072265625,
+          "tokens": 107
+        },
+        "document_first": {
+          "score": 0.3073580265045166,
+          "margin": -0.8125,
+          "no_logit": 16.5,
+          "yes_logit": 15.6875,
+          "fp32_head_margin": -0.7979393005371094,
+          "tokens": 107
+        },
+        "swapped_contents": {
+          "score": 0.42250463366508484,
+          "margin": -0.3125,
+          "no_logit": 15.9375,
+          "yes_logit": 15.625,
+          "fp32_head_margin": -0.27924346923828125,
+          "tokens": 107
+        },
+        "query_first_wrong_labels": {
+          "score": 0.1919327825307846,
+          "margin": -1.4375,
+          "no_logit": 16.75,
+          "yes_logit": 15.3125,
+          "fp32_head_margin": -1.4608488082885742,
+          "tokens": 107
+        },
+        "normal_atomic": {
+          "score": 0.3486451506614685,
+          "margin": -0.625,
+          "no_logit": 16.75,
+          "yes_logit": 16.125,
+          "fp32_head_margin": -0.6190719604492188,
+          "tokens": 108
+        },
+        "document_first_atomic": {
+          "score": 0.2689414322376251,
+          "margin": -1.0,
+          "no_logit": 16.375,
+          "yes_logit": 15.375,
+          "fp32_head_margin": -0.9700136184692383,
+          "tokens": 108
+        },
+        "swapped_contents_atomic": {
+          "score": 0.5156199336051941,
+          "margin": 0.0625,
+          "no_logit": 15.9375,
+          "yes_logit": 16.0,
+          "fp32_head_margin": 0.09798526763916016,
+          "tokens": 108
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.18242551386356354,
+          "margin": -1.5,
+          "no_logit": 16.875,
+          "yes_logit": 15.375,
+          "fp32_head_margin": -1.4635038375854492,
+          "tokens": 108
+        },
+        "normal_clarified": {
+          "score": 0.5,
+          "margin": 0.0,
+          "no_logit": 16.875,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 0.0838623046875,
+          "tokens": 121
+        },
+        "document_first_clarified": {
+          "score": 0.2568320035934448,
+          "margin": -1.0625,
+          "no_logit": 16.625,
+          "yes_logit": 15.5625,
+          "fp32_head_margin": -1.0509214401245117,
+          "tokens": 121
+        },
+        "swapped_contents_remapped": {
+          "score": 0.5467381477355957,
+          "margin": 0.1875,
+          "no_logit": 15.8125,
+          "yes_logit": 16.0,
+          "fp32_head_margin": 0.17331314086914062,
+          "tokens": 121
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.8670357465744019,
+          "margin": 1.875,
+          "no_logit": 15.5,
+          "yes_logit": 17.375,
+          "fp32_head_margin": 1.8581581115722656,
+          "tokens": 110
+        },
+        "normal_general_task": {
+          "score": 0.893309473991394,
+          "margin": 2.125,
+          "no_logit": 15.5,
+          "yes_logit": 17.625,
+          "fp32_head_margin": 2.16109561920166,
+          "tokens": 107
+        },
+        "swapped_contents_general_task": {
+          "score": 0.8740772008895874,
+          "margin": 1.9375,
+          "no_logit": 15.0625,
+          "yes_logit": 17.0,
+          "fp32_head_margin": 1.8573150634765625,
+          "tokens": 107
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.531209409236908,
+          "margin": 0.125,
+          "no_logit": 15.8125,
+          "yes_logit": 15.9375,
+          "fp32_head_margin": 0.10948562622070312,
+          "tokens": 107
+        }
+      }
+    },
+    {
+      "id": "33/57f0866c-2019-04-18T13:10:45Z-00006-000",
+      "query_id": "33",
+      "document_id": "57f0866c-2019-04-18T13:10:45Z-00006-000",
+      "query": "Should people become vegetarian?",
+      "grade": 0,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.2949363887310028,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.29421496391296387,
+          "margin": -0.875,
+          "no_logit": 16.375,
+          "yes_logit": 15.5,
+          "fp32_head_margin": -0.8539848327636719,
+          "tokens": 173
+        },
+        "document_first": {
+          "score": 0.3208213150501251,
+          "margin": -0.75,
+          "no_logit": 16.0,
+          "yes_logit": 15.25,
+          "fp32_head_margin": -0.8133058547973633,
+          "tokens": 173
+        },
+        "swapped_contents": {
+          "score": 0.7772998809814453,
+          "margin": 1.25,
+          "no_logit": 15.5,
+          "yes_logit": 16.75,
+          "fp32_head_margin": 1.2658729553222656,
+          "tokens": 173
+        },
+        "query_first_wrong_labels": {
+          "score": 0.18242551386356354,
+          "margin": -1.5,
+          "no_logit": 16.25,
+          "yes_logit": 14.75,
+          "fp32_head_margin": -1.547861099243164,
+          "tokens": 173
+        },
+        "normal_atomic": {
+          "score": 0.3345894515514374,
+          "margin": -0.6875,
+          "no_logit": 16.25,
+          "yes_logit": 15.5625,
+          "fp32_head_margin": -0.6371803283691406,
+          "tokens": 174
+        },
+        "document_first_atomic": {
+          "score": 0.23370636999607086,
+          "margin": -1.1875,
+          "no_logit": 15.9375,
+          "yes_logit": 14.75,
+          "fp32_head_margin": -1.1990652084350586,
+          "tokens": 174
+        },
+        "swapped_contents_atomic": {
+          "score": 0.7549149990081787,
+          "margin": 1.125,
+          "no_logit": 15.5,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 1.1112794876098633,
+          "tokens": 174
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.14804719388484955,
+          "margin": -1.75,
+          "no_logit": 16.25,
+          "yes_logit": 14.5,
+          "fp32_head_margin": -1.7635459899902344,
+          "tokens": 174
+        },
+        "normal_clarified": {
+          "score": 0.42250463366508484,
+          "margin": -0.3125,
+          "no_logit": 16.25,
+          "yes_logit": 15.9375,
+          "fp32_head_margin": -0.31107044219970703,
+          "tokens": 187
+        },
+        "document_first_clarified": {
+          "score": 0.18242551386356354,
+          "margin": -1.5,
+          "no_logit": 16.25,
+          "yes_logit": 14.75,
+          "fp32_head_margin": -1.565413475036621,
+          "tokens": 187
+        },
+        "swapped_contents_remapped": {
+          "score": 0.7879312038421631,
+          "margin": 1.3125,
+          "no_logit": 15.0625,
+          "yes_logit": 16.375,
+          "fp32_head_margin": 1.3698644638061523,
+          "tokens": 187
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.9840936064720154,
+          "margin": 4.125,
+          "no_logit": 14.0,
+          "yes_logit": 18.125,
+          "fp32_head_margin": 4.0900115966796875,
+          "tokens": 176
+        },
+        "normal_general_task": {
+          "score": 0.9688562154769897,
+          "margin": 3.4375,
+          "no_logit": 14.5625,
+          "yes_logit": 18.0,
+          "fp32_head_margin": 3.4542503356933594,
+          "tokens": 173
+        },
+        "swapped_contents_general_task": {
+          "score": 0.9883127808570862,
+          "margin": 4.4375,
+          "no_logit": 13.1875,
+          "yes_logit": 17.625,
+          "fp32_head_margin": 4.491607666015625,
+          "tokens": 173
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.8354835510253906,
+          "margin": 1.625,
+          "no_logit": 15.125,
+          "yes_logit": 16.75,
+          "fp32_head_margin": 1.6380624771118164,
+          "tokens": 173
+        }
+      }
+    },
+    {
+      "id": "33/2e8edb11-2019-04-18T16:22:57Z-00005-000",
+      "query_id": "33",
+      "document_id": "2e8edb11-2019-04-18T16:22:57Z-00005-000",
+      "query": "Should people become vegetarian?",
+      "grade": 1,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.5670397281646729,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 16.625,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 0.2564544677734375,
+          "tokens": 215
+        },
+        "document_first": {
+          "score": 0.2568320035934448,
+          "margin": -1.0625,
+          "no_logit": 16.5,
+          "yes_logit": 15.4375,
+          "fp32_head_margin": -1.0702142715454102,
+          "tokens": 215
+        },
+        "swapped_contents": {
+          "score": 0.665410578250885,
+          "margin": 0.6875,
+          "no_logit": 15.9375,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.6437225341796875,
+          "tokens": 215
+        },
+        "query_first_wrong_labels": {
+          "score": 0.13296423852443695,
+          "margin": -1.875,
+          "no_logit": 16.75,
+          "yes_logit": 14.875,
+          "fp32_head_margin": -1.8436450958251953,
+          "tokens": 215
+        },
+        "normal_atomic": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 16.5,
+          "yes_logit": 16.75,
+          "fp32_head_margin": 0.2511577606201172,
+          "tokens": 216
+        },
+        "document_first_atomic": {
+          "score": 0.24508501589298248,
+          "margin": -1.125,
+          "no_logit": 16.5,
+          "yes_logit": 15.375,
+          "fp32_head_margin": -1.1389570236206055,
+          "tokens": 216
+        },
+        "swapped_contents_atomic": {
+          "score": 0.665410578250885,
+          "margin": 0.6875,
+          "no_logit": 15.9375,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.6657199859619141,
+          "tokens": 216
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.17328819632530212,
+          "margin": -1.5625,
+          "no_logit": 16.625,
+          "yes_logit": 15.0625,
+          "fp32_head_margin": -1.5931434631347656,
+          "tokens": 216
+        },
+        "normal_clarified": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 16.625,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 0.2970008850097656,
+          "tokens": 229
+        },
+        "document_first_clarified": {
+          "score": 0.22270014882087708,
+          "margin": -1.25,
+          "no_logit": 16.5,
+          "yes_logit": 15.25,
+          "fp32_head_margin": -1.256068229675293,
+          "tokens": 229
+        },
+        "swapped_contents_remapped": {
+          "score": 0.8438951373100281,
+          "margin": 1.6875,
+          "no_logit": 15.3125,
+          "yes_logit": 17.0,
+          "fp32_head_margin": 1.7653989791870117,
+          "tokens": 229
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.8354835510253906,
+          "margin": 1.625,
+          "no_logit": 15.75,
+          "yes_logit": 17.375,
+          "fp32_head_margin": 1.6896839141845703,
+          "tokens": 218
+        },
+        "normal_general_task": {
+          "score": 0.9525741338729858,
+          "margin": 3.0,
+          "no_logit": 15.0,
+          "yes_logit": 18.0,
+          "fp32_head_margin": 2.947294235229492,
+          "tokens": 215
+        },
+        "swapped_contents_general_task": {
+          "score": 0.8175744414329529,
+          "margin": 1.5,
+          "no_logit": 15.125,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 1.503499984741211,
+          "tokens": 215
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.6926419734954834,
+          "margin": 0.8125,
+          "no_logit": 15.9375,
+          "yes_logit": 16.75,
+          "fp32_head_margin": 0.8901958465576172,
+          "tokens": 215
+        }
+      }
+    },
+    {
+      "id": "33/ac45b77d-2019-04-18T13:38:21Z-00007-000",
+      "query_id": "33",
+      "document_id": "ac45b77d-2019-04-18T13:38:21Z-00007-000",
+      "query": "Should people become vegetarian?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.5578327178955078,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.531209409236908,
+          "margin": 0.125,
+          "no_logit": 16.5,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.24150657653808594,
+          "tokens": 111
+        },
+        "document_first": {
+          "score": 0.28140559792518616,
+          "margin": -0.9375,
+          "no_logit": 16.375,
+          "yes_logit": 15.4375,
+          "fp32_head_margin": -0.9330062866210938,
+          "tokens": 111
+        },
+        "swapped_contents": {
+          "score": 0.7662936449050903,
+          "margin": 1.1875,
+          "no_logit": 15.4375,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 1.1716899871826172,
+          "tokens": 111
+        },
+        "query_first_wrong_labels": {
+          "score": 0.16451646387577057,
+          "margin": -1.625,
+          "no_logit": 16.75,
+          "yes_logit": 15.125,
+          "fp32_head_margin": -1.5734844207763672,
+          "tokens": 111
+        },
+        "normal_atomic": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 16.375,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 0.23264312744140625,
+          "tokens": 112
+        },
+        "document_first_atomic": {
+          "score": 0.28140559792518616,
+          "margin": -0.9375,
+          "no_logit": 16.375,
+          "yes_logit": 15.4375,
+          "fp32_head_margin": -0.9779634475708008,
+          "tokens": 112
+        },
+        "swapped_contents_atomic": {
+          "score": 0.7310585975646973,
+          "margin": 1.0,
+          "no_logit": 15.5,
+          "yes_logit": 16.5,
+          "fp32_head_margin": 0.9692630767822266,
+          "tokens": 112
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.16451646387577057,
+          "margin": -1.625,
+          "no_logit": 16.625,
+          "yes_logit": 15.0,
+          "fp32_head_margin": -1.6237478256225586,
+          "tokens": 112
+        },
+        "normal_clarified": {
+          "score": 0.7981867790222168,
+          "margin": 1.375,
+          "no_logit": 16.25,
+          "yes_logit": 17.625,
+          "fp32_head_margin": 1.3674945831298828,
+          "tokens": 125
+        },
+        "document_first_clarified": {
+          "score": 0.2568320035934448,
+          "margin": -1.0625,
+          "no_logit": 16.625,
+          "yes_logit": 15.5625,
+          "fp32_head_margin": -1.0337648391723633,
+          "tokens": 125
+        },
+        "swapped_contents_remapped": {
+          "score": 0.7772998809814453,
+          "margin": 1.25,
+          "no_logit": 15.375,
+          "yes_logit": 16.625,
+          "fp32_head_margin": 1.2288074493408203,
+          "tokens": 125
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.9553191661834717,
+          "margin": 3.0625,
+          "no_logit": 14.6875,
+          "yes_logit": 17.75,
+          "fp32_head_margin": 3.0591115951538086,
+          "tokens": 114
+        },
+        "normal_general_task": {
+          "score": 0.9859363436698914,
+          "margin": 4.25,
+          "no_logit": 14.375,
+          "yes_logit": 18.625,
+          "fp32_head_margin": 4.223689079284668,
+          "tokens": 111
+        },
+        "swapped_contents_general_task": {
+          "score": 0.9046505093574524,
+          "margin": 2.25,
+          "no_logit": 14.875,
+          "yes_logit": 17.125,
+          "fp32_head_margin": 2.234299659729004,
+          "tokens": 111
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.7772998809814453,
+          "margin": 1.25,
+          "no_logit": 15.25,
+          "yes_logit": 16.5,
+          "fp32_head_margin": 1.3137197494506836,
+          "tokens": 111
+        }
+      }
+    },
+    {
+      "id": "33/7eabc63c-2019-04-18T12:18:12Z-00002-000",
+      "query_id": "33",
+      "document_id": "7eabc63c-2019-04-18T12:18:12Z-00002-000",
+      "query": "Should people become vegetarian?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.9302287697792053,
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.9284088015556335,
+          "margin": 2.5625,
+          "no_logit": 15.3125,
+          "yes_logit": 17.875,
+          "fp32_head_margin": 2.592975616455078,
+          "tokens": 273
+        },
+        "document_first": {
+          "score": 0.4687906503677368,
+          "margin": -0.125,
+          "no_logit": 16.375,
+          "yes_logit": 16.25,
+          "fp32_head_margin": -0.11238670349121094,
+          "tokens": 273
+        },
+        "swapped_contents": {
+          "score": 0.893309473991394,
+          "margin": 2.125,
+          "no_logit": 15.125,
+          "yes_logit": 17.25,
+          "fp32_head_margin": 2.133427619934082,
+          "tokens": 273
+        },
+        "query_first_wrong_labels": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 16.625,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 0.2555885314941406,
+          "tokens": 273
+        },
+        "normal_atomic": {
+          "score": 0.9324532747268677,
+          "margin": 2.625,
+          "no_logit": 15.25,
+          "yes_logit": 17.875,
+          "fp32_head_margin": 2.6221160888671875,
+          "tokens": 274
+        },
+        "document_first_atomic": {
+          "score": 0.5,
+          "margin": 0.0,
+          "no_logit": 16.375,
+          "yes_logit": 16.375,
+          "fp32_head_margin": 0.06978225708007812,
+          "tokens": 274
+        },
+        "swapped_contents_atomic": {
+          "score": 0.893309473991394,
+          "margin": 2.125,
+          "no_logit": 15.0,
+          "yes_logit": 17.125,
+          "fp32_head_margin": 2.1351089477539062,
+          "tokens": 274
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 16.625,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 0.2790088653564453,
+          "tokens": 274
+        },
+        "normal_clarified": {
+          "score": 0.9362850189208984,
+          "margin": 2.6875,
+          "no_logit": 15.1875,
+          "yes_logit": 17.875,
+          "fp32_head_margin": 2.7138004302978516,
+          "tokens": 287
+        },
+        "document_first_clarified": {
+          "score": 0.28140559792518616,
+          "margin": -0.9375,
+          "no_logit": 16.5,
+          "yes_logit": 15.5625,
+          "fp32_head_margin": -0.9801044464111328,
+          "tokens": 287
+        },
+        "swapped_contents_remapped": {
+          "score": 0.9099069833755493,
+          "margin": 2.3125,
+          "no_logit": 15.0625,
+          "yes_logit": 17.375,
+          "fp32_head_margin": 2.294839859008789,
+          "tokens": 287
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.970687747001648,
+          "margin": 3.5,
+          "no_logit": 14.625,
+          "yes_logit": 18.125,
+          "fp32_head_margin": 3.457219123840332,
+          "tokens": 276
+        },
+        "normal_general_task": {
+          "score": 0.9883127808570862,
+          "margin": 4.4375,
+          "no_logit": 14.0625,
+          "yes_logit": 18.5,
+          "fp32_head_margin": 4.3931684494018555,
+          "tokens": 273
+        },
+        "swapped_contents_general_task": {
+          "score": 0.9890130758285522,
+          "margin": 4.5,
+          "no_logit": 13.5,
+          "yes_logit": 18.0,
+          "fp32_head_margin": 4.491748809814453,
+          "tokens": 273
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.9149009585380554,
+          "margin": 2.375,
+          "no_logit": 14.875,
+          "yes_logit": 17.25,
+          "fp32_head_margin": 2.4514341354370117,
+          "tokens": 273
+        }
+      }
+    },
+    {
+      "id": "synthetic-0-1",
+      "query_id": "synthetic-0",
+      "query": "What is the capital of France?",
+      "grade": 1,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.9284088015556335,
+          "margin": 2.5625,
+          "no_logit": 14.3125,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 2.591275215148926,
+          "tokens": 85
+        },
+        "document_first": {
+          "score": 0.8872045874595642,
+          "margin": 2.0625,
+          "no_logit": 12.6875,
+          "yes_logit": 14.75,
+          "fp32_head_margin": 2.0401363372802734,
+          "tokens": 85
+        },
+        "swapped_contents": {
+          "score": 0.4687906503677368,
+          "margin": -0.125,
+          "no_logit": 15.875,
+          "yes_logit": 15.75,
+          "fp32_head_margin": -0.16670989990234375,
+          "tokens": 85
+        },
+        "query_first_wrong_labels": {
+          "score": 0.16451646387577057,
+          "margin": -1.625,
+          "no_logit": 16.375,
+          "yes_logit": 14.75,
+          "fp32_head_margin": -1.577260971069336,
+          "tokens": 85
+        },
+        "normal_atomic": {
+          "score": 0.9433475732803345,
+          "margin": 2.8125,
+          "no_logit": 13.9375,
+          "yes_logit": 16.75,
+          "fp32_head_margin": 2.8727188110351562,
+          "tokens": 86
+        },
+        "document_first_atomic": {
+          "score": 0.8991213440895081,
+          "margin": 2.1875,
+          "no_logit": 11.5625,
+          "yes_logit": 13.75,
+          "fp32_head_margin": 2.1386070251464844,
+          "tokens": 86
+        },
+        "swapped_contents_atomic": {
+          "score": 0.562176525592804,
+          "margin": 0.25,
+          "no_logit": 15.75,
+          "yes_logit": 16.0,
+          "fp32_head_margin": 0.29221439361572266,
+          "tokens": 86
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.3345894515514374,
+          "margin": -0.6875,
+          "no_logit": 16.5,
+          "yes_logit": 15.8125,
+          "fp32_head_margin": -0.7033061981201172,
+          "tokens": 86
+        },
+        "normal_clarified": {
+          "score": 0.9196425676345825,
+          "margin": 2.4375,
+          "no_logit": 14.4375,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 2.493382453918457,
+          "tokens": 99
+        },
+        "document_first_clarified": {
+          "score": 0.665410578250885,
+          "margin": 0.6875,
+          "no_logit": 13.6875,
+          "yes_logit": 14.375,
+          "fp32_head_margin": 0.6995334625244141,
+          "tokens": 99
+        },
+        "swapped_contents_remapped": {
+          "score": 0.29421496391296387,
+          "margin": -0.875,
+          "no_logit": 15.625,
+          "yes_logit": 14.75,
+          "fp32_head_margin": -0.8656558990478516,
+          "tokens": 99
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.9626730680465698,
+          "margin": 3.25,
+          "no_logit": 14.875,
+          "yes_logit": 18.125,
+          "fp32_head_margin": 3.240203857421875,
+          "tokens": 83
+        },
+        "normal_general_task": {
+          "score": 0.9284088015556335,
+          "margin": 2.5625,
+          "no_logit": 14.3125,
+          "yes_logit": 16.875,
+          "fp32_head_margin": 2.591275215148926,
+          "tokens": 85
+        },
+        "swapped_contents_general_task": {
+          "score": 0.4687906503677368,
+          "margin": -0.125,
+          "no_logit": 15.875,
+          "yes_logit": 15.75,
+          "fp32_head_margin": -0.16670989990234375,
+          "tokens": 85
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.4687906503677368,
+          "margin": -0.125,
+          "no_logit": 15.75,
+          "yes_logit": 15.625,
+          "fp32_head_margin": -0.09836101531982422,
+          "tokens": 85
+        }
+      }
+    },
+    {
+      "id": "synthetic-0-0",
+      "query_id": "synthetic-0",
+      "query": "What is the capital of France?",
+      "grade": 0,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 9.610241977497935e-05,
+          "margin": -9.25,
+          "no_logit": 13.5625,
+          "yes_logit": 4.3125,
+          "fp32_head_margin": -9.219023704528809,
+          "tokens": 85
+        },
+        "document_first": {
+          "score": 6.962256520637311e-06,
+          "margin": -11.875,
+          "no_logit": 14.3125,
+          "yes_logit": 2.4375,
+          "fp32_head_margin": -11.839996576309204,
+          "tokens": 85
+        },
+        "swapped_contents": {
+          "score": 3.8449352359748445e-06,
+          "margin": -12.46875,
+          "no_logit": 14.5625,
+          "yes_logit": 2.09375,
+          "fp32_head_margin": -12.4458327293396,
+          "tokens": 85
+        },
+        "query_first_wrong_labels": {
+          "score": 0.0002305067318957299,
+          "margin": -8.375,
+          "no_logit": 13.875,
+          "yes_logit": 5.5,
+          "fp32_head_margin": -8.376625537872314,
+          "tokens": 85
+        },
+        "normal_atomic": {
+          "score": 0.00013135180051904172,
+          "margin": -8.9375,
+          "no_logit": 13.375,
+          "yes_logit": 4.4375,
+          "fp32_head_margin": -8.898104667663574,
+          "tokens": 86
+        },
+        "document_first_atomic": {
+          "score": 6.643433152930811e-06,
+          "margin": -11.921875,
+          "no_logit": 14.3125,
+          "yes_logit": 2.390625,
+          "fp32_head_margin": -11.915596008300781,
+          "tokens": 86
+        },
+        "swapped_contents_atomic": {
+          "score": 6.04891829425469e-06,
+          "margin": -12.015625,
+          "no_logit": 14.1875,
+          "yes_logit": 2.171875,
+          "fp32_head_margin": -12.02468752861023,
+          "tokens": 86
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.0002234163403045386,
+          "margin": -8.40625,
+          "no_logit": 14.0,
+          "yes_logit": 5.59375,
+          "fp32_head_margin": -8.406652450561523,
+          "tokens": 86
+        },
+        "normal_clarified": {
+          "score": 4.7576457291143015e-05,
+          "margin": -9.953125,
+          "no_logit": 13.625,
+          "yes_logit": 3.671875,
+          "fp32_head_margin": -9.936232805252075,
+          "tokens": 99
+        },
+        "document_first_clarified": {
+          "score": 4.2228334677929524e-06,
+          "margin": -12.375,
+          "no_logit": 15.125,
+          "yes_logit": 2.75,
+          "fp32_head_margin": -12.395084142684937,
+          "tokens": 99
+        },
+        "swapped_contents_remapped": {
+          "score": 2.835080067598028e-06,
+          "margin": -12.7734375,
+          "no_logit": 14.75,
+          "yes_logit": 1.9765625,
+          "fp32_head_margin": -12.795288324356079,
+          "tokens": 99
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.00010889690020121634,
+          "margin": -9.125,
+          "no_logit": 15.25,
+          "yes_logit": 6.125,
+          "fp32_head_margin": -9.126520156860352,
+          "tokens": 83
+        },
+        "normal_general_task": {
+          "score": 9.610241977497935e-05,
+          "margin": -9.25,
+          "no_logit": 13.5625,
+          "yes_logit": 4.3125,
+          "fp32_head_margin": -9.219023704528809,
+          "tokens": 85
+        },
+        "swapped_contents_general_task": {
+          "score": 3.8449352359748445e-06,
+          "margin": -12.46875,
+          "no_logit": 14.5625,
+          "yes_logit": 2.09375,
+          "fp32_head_margin": -12.4458327293396,
+          "tokens": 85
+        },
+        "swapped_contents_system_remapped": {
+          "score": 2.2780520794185577e-06,
+          "margin": -12.9921875,
+          "no_logit": 14.6875,
+          "yes_logit": 1.6953125,
+          "fp32_head_margin": -12.96353030204773,
+          "tokens": 85
+        }
+      }
+    },
+    {
+      "id": "synthetic-1-1",
+      "query_id": "synthetic-1",
+      "query": "How do I reset a forgotten password?",
+      "grade": 1,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.7662936449050903,
+          "margin": 1.1875,
+          "no_logit": 15.9375,
+          "yes_logit": 17.125,
+          "fp32_head_margin": 1.161574363708496,
+          "tokens": 93
+        },
+        "document_first": {
+          "score": 0.5467381477355957,
+          "margin": 0.1875,
+          "no_logit": 14.4375,
+          "yes_logit": 14.625,
+          "fp32_head_margin": 0.14729976654052734,
+          "tokens": 93
+        },
+        "swapped_contents": {
+          "score": 0.3486451506614685,
+          "margin": -0.625,
+          "no_logit": 14.9375,
+          "yes_logit": 14.3125,
+          "fp32_head_margin": -0.6019296646118164,
+          "tokens": 93
+        },
+        "query_first_wrong_labels": {
+          "score": 0.2568320035934448,
+          "margin": -1.0625,
+          "no_logit": 17.0,
+          "yes_logit": 15.9375,
+          "fp32_head_margin": -1.0310754776000977,
+          "tokens": 93
+        },
+        "normal_atomic": {
+          "score": 0.7057850360870361,
+          "margin": 0.875,
+          "no_logit": 16.125,
+          "yes_logit": 17.0,
+          "fp32_head_margin": 0.7750892639160156,
+          "tokens": 94
+        },
+        "document_first_atomic": {
+          "score": 0.6076632142066956,
+          "margin": 0.4375,
+          "no_logit": 15.0625,
+          "yes_logit": 15.5,
+          "fp32_head_margin": 0.44301795959472656,
+          "tokens": 94
+        },
+        "swapped_contents_atomic": {
+          "score": 0.3208213150501251,
+          "margin": -0.75,
+          "no_logit": 15.0,
+          "yes_logit": 14.25,
+          "fp32_head_margin": -0.7193269729614258,
+          "tokens": 94
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.2018132209777832,
+          "margin": -1.375,
+          "no_logit": 16.875,
+          "yes_logit": 15.5,
+          "fp32_head_margin": -1.353806495666504,
+          "tokens": 94
+        },
+        "normal_clarified": {
+          "score": 0.7981867790222168,
+          "margin": 1.375,
+          "no_logit": 16.0,
+          "yes_logit": 17.375,
+          "fp32_head_margin": 1.4286012649536133,
+          "tokens": 107
+        },
+        "document_first_clarified": {
+          "score": 0.5467381477355957,
+          "margin": 0.1875,
+          "no_logit": 15.0,
+          "yes_logit": 15.1875,
+          "fp32_head_margin": 0.22601604461669922,
+          "tokens": 107
+        },
+        "swapped_contents_remapped": {
+          "score": 0.4532618820667267,
+          "margin": -0.1875,
+          "no_logit": 15.0,
+          "yes_logit": 14.8125,
+          "fp32_head_margin": -0.16319751739501953,
+          "tokens": 107
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.9648551344871521,
+          "margin": 3.3125,
+          "no_logit": 14.3125,
+          "yes_logit": 17.625,
+          "fp32_head_margin": 3.3429365158081055,
+          "tokens": 91
+        },
+        "normal_general_task": {
+          "score": 0.7662936449050903,
+          "margin": 1.1875,
+          "no_logit": 15.9375,
+          "yes_logit": 17.125,
+          "fp32_head_margin": 1.161574363708496,
+          "tokens": 93
+        },
+        "swapped_contents_general_task": {
+          "score": 0.3486451506614685,
+          "margin": -0.625,
+          "no_logit": 14.9375,
+          "yes_logit": 14.3125,
+          "fp32_head_margin": -0.6019296646118164,
+          "tokens": 93
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.3073580265045166,
+          "margin": -0.8125,
+          "no_logit": 15.0625,
+          "yes_logit": 14.25,
+          "fp32_head_margin": -0.8261375427246094,
+          "tokens": 93
+        }
+      }
+    },
+    {
+      "id": "synthetic-1-0",
+      "query_id": "synthetic-1",
+      "query": "How do I reset a forgotten password?",
+      "grade": 0,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 4.2228334677929524e-06,
+          "margin": -12.375,
+          "no_logit": 13.8125,
+          "yes_logit": 1.4375,
+          "fp32_head_margin": -12.385810375213623,
+          "tokens": 87
+        },
+        "document_first": {
+          "score": 1.2606946256710216e-05,
+          "margin": -11.28125,
+          "no_logit": 14.375,
+          "yes_logit": 3.09375,
+          "fp32_head_margin": -11.267496824264526,
+          "tokens": 87
+        },
+        "swapped_contents": {
+          "score": 6.540437425428536e-06,
+          "margin": -11.9375,
+          "no_logit": 13.5625,
+          "yes_logit": 1.625,
+          "fp32_head_margin": -11.914106369018555,
+          "tokens": 87
+        },
+        "query_first_wrong_labels": {
+          "score": 6.540437425428536e-06,
+          "margin": -11.9375,
+          "no_logit": 14.1875,
+          "yes_logit": 2.25,
+          "fp32_head_margin": -11.920911073684692,
+          "tokens": 87
+        },
+        "normal_atomic": {
+          "score": 6.748051418981049e-06,
+          "margin": -11.90625,
+          "no_logit": 13.6875,
+          "yes_logit": 1.78125,
+          "fp32_head_margin": -11.90848696231842,
+          "tokens": 88
+        },
+        "document_first_atomic": {
+          "score": 1.56895475811325e-05,
+          "margin": -11.0625,
+          "no_logit": 14.3125,
+          "yes_logit": 3.25,
+          "fp32_head_margin": -11.066929340362549,
+          "tokens": 88
+        },
+        "swapped_contents_atomic": {
+          "score": 8.530319973942824e-06,
+          "margin": -11.671875,
+          "no_logit": 13.5,
+          "yes_logit": 1.828125,
+          "fp32_head_margin": -11.670653104782104,
+          "tokens": 88
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 1.32119585032342e-05,
+          "margin": -11.234375,
+          "no_logit": 14.125,
+          "yes_logit": 2.890625,
+          "fp32_head_margin": -11.21565842628479,
+          "tokens": 88
+        },
+        "normal_clarified": {
+          "score": 3.8449352359748445e-06,
+          "margin": -12.46875,
+          "no_logit": 14.375,
+          "yes_logit": 1.90625,
+          "fp32_head_margin": -12.49794316291809,
+          "tokens": 101
+        },
+        "document_first_clarified": {
+          "score": 9.972941370506305e-06,
+          "margin": -11.515625,
+          "no_logit": 14.9375,
+          "yes_logit": 3.421875,
+          "fp32_head_margin": -11.549931526184082,
+          "tokens": 101
+        },
+        "swapped_contents_remapped": {
+          "score": 2.1737328097515274e-06,
+          "margin": -13.0390625,
+          "no_logit": 14.3125,
+          "yes_logit": 1.2734375,
+          "fp32_head_margin": -13.037691354751587,
+          "tokens": 101
+        },
+        "swapped_contents_reverse_task": {
+          "score": 3.3405392514396226e-06,
+          "margin": -12.609375,
+          "no_logit": 15.375,
+          "yes_logit": 2.765625,
+          "fp32_head_margin": -12.584285736083984,
+          "tokens": 85
+        },
+        "normal_general_task": {
+          "score": 4.2228334677929524e-06,
+          "margin": -12.375,
+          "no_logit": 13.8125,
+          "yes_logit": 1.4375,
+          "fp32_head_margin": -12.385810375213623,
+          "tokens": 87
+        },
+        "swapped_contents_general_task": {
+          "score": 6.540437425428536e-06,
+          "margin": -11.9375,
+          "no_logit": 13.5625,
+          "yes_logit": 1.625,
+          "fp32_head_margin": -11.914106369018555,
+          "tokens": 87
+        },
+        "swapped_contents_system_remapped": {
+          "score": 5.50760569240083e-06,
+          "margin": -12.109375,
+          "no_logit": 13.625,
+          "yes_logit": 1.515625,
+          "fp32_head_margin": -12.126394987106323,
+          "tokens": 87
+        }
+      }
+    },
+    {
+      "id": "synthetic-2-1",
+      "query_id": "synthetic-2",
+      "query": "Why do leaves look green?",
+      "grade": 1,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 0.9553191661834717,
+          "margin": 3.0625,
+          "no_logit": 15.0625,
+          "yes_logit": 18.125,
+          "fp32_head_margin": 3.1051511764526367,
+          "tokens": 90
+        },
+        "document_first": {
+          "score": 0.4073334336280823,
+          "margin": -0.375,
+          "no_logit": 16.375,
+          "yes_logit": 16.0,
+          "fp32_head_margin": -0.3581275939941406,
+          "tokens": 90
+        },
+        "swapped_contents": {
+          "score": 0.1561049073934555,
+          "margin": -1.6875,
+          "no_logit": 16.375,
+          "yes_logit": 14.6875,
+          "fp32_head_margin": -1.638223648071289,
+          "tokens": 90
+        },
+        "query_first_wrong_labels": {
+          "score": 0.7772998809814453,
+          "margin": 1.25,
+          "no_logit": 16.125,
+          "yes_logit": 17.375,
+          "fp32_head_margin": 1.24908447265625,
+          "tokens": 90
+        },
+        "normal_atomic": {
+          "score": 0.9626730680465698,
+          "margin": 3.25,
+          "no_logit": 14.875,
+          "yes_logit": 18.125,
+          "fp32_head_margin": 3.238424301147461,
+          "tokens": 91
+        },
+        "document_first_atomic": {
+          "score": 0.43782350420951843,
+          "margin": -0.25,
+          "no_logit": 16.25,
+          "yes_logit": 16.0,
+          "fp32_head_margin": -0.22127532958984375,
+          "tokens": 91
+        },
+        "swapped_contents_atomic": {
+          "score": 0.14033624529838562,
+          "margin": -1.8125,
+          "no_logit": 16.125,
+          "yes_logit": 14.3125,
+          "fp32_head_margin": -1.7931766510009766,
+          "tokens": 91
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 0.7057850360870361,
+          "margin": 0.875,
+          "no_logit": 16.375,
+          "yes_logit": 17.25,
+          "fp32_head_margin": 0.8217926025390625,
+          "tokens": 91
+        },
+        "normal_clarified": {
+          "score": 0.9362850189208984,
+          "margin": 2.6875,
+          "no_logit": 15.1875,
+          "yes_logit": 17.875,
+          "fp32_head_margin": 2.6840591430664062,
+          "tokens": 104
+        },
+        "document_first_clarified": {
+          "score": 0.36296921968460083,
+          "margin": -0.5625,
+          "no_logit": 16.375,
+          "yes_logit": 15.8125,
+          "fp32_head_margin": -0.6371517181396484,
+          "tokens": 104
+        },
+        "swapped_contents_remapped": {
+          "score": 0.18242551386356354,
+          "margin": -1.5,
+          "no_logit": 16.5,
+          "yes_logit": 15.0,
+          "fp32_head_margin": -1.5779476165771484,
+          "tokens": 104
+        },
+        "swapped_contents_reverse_task": {
+          "score": 0.8438951373100281,
+          "margin": 1.6875,
+          "no_logit": 15.8125,
+          "yes_logit": 17.5,
+          "fp32_head_margin": 1.7366533279418945,
+          "tokens": 88
+        },
+        "normal_general_task": {
+          "score": 0.9553191661834717,
+          "margin": 3.0625,
+          "no_logit": 15.0625,
+          "yes_logit": 18.125,
+          "fp32_head_margin": 3.1051511764526367,
+          "tokens": 90
+        },
+        "swapped_contents_general_task": {
+          "score": 0.1561049073934555,
+          "margin": -1.6875,
+          "no_logit": 16.375,
+          "yes_logit": 14.6875,
+          "fp32_head_margin": -1.638223648071289,
+          "tokens": 90
+        },
+        "swapped_contents_system_remapped": {
+          "score": 0.14804719388484955,
+          "margin": -1.75,
+          "no_logit": 16.25,
+          "yes_logit": 14.5,
+          "fp32_head_margin": -1.7965402603149414,
+          "tokens": 90
+        }
+      }
+    },
+    {
+      "id": "synthetic-2-0",
+      "query_id": "synthetic-2",
+      "query": "Why do leaves look green?",
+      "grade": 0,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "normal_score_change_from_prior": 0.0,
+      "variants": {
+        "normal": {
+          "score": 3.7558672829618445e-06,
+          "margin": -12.4921875,
+          "no_logit": 13.25,
+          "yes_logit": 0.7578125,
+          "fp32_head_margin": -12.482657670974731,
+          "tokens": 84
+        },
+        "document_first": {
+          "score": 4.710908342531184e-06,
+          "margin": -12.265625,
+          "no_logit": 15.0625,
+          "yes_logit": 2.796875,
+          "fp32_head_margin": -12.28303575515747,
+          "tokens": 84
+        },
+        "swapped_contents": {
+          "score": 1.3444405340123922e-06,
+          "margin": -13.51953125,
+          "no_logit": 14.5,
+          "yes_logit": 0.98046875,
+          "fp32_head_margin": -13.549186706542969,
+          "tokens": 84
+        },
+        "query_first_wrong_labels": {
+          "score": 9.368716746394057e-06,
+          "margin": -11.578125,
+          "no_logit": 14.9375,
+          "yes_logit": 3.359375,
+          "fp32_head_margin": -11.597710609436035,
+          "tokens": 84
+        },
+        "normal_atomic": {
+          "score": 7.706508768023923e-06,
+          "margin": -11.7734375,
+          "no_logit": 13.1875,
+          "yes_logit": 1.4140625,
+          "fp32_head_margin": -11.790139317512512,
+          "tokens": 85
+        },
+        "document_first_atomic": {
+          "score": 3.8449352359748445e-06,
+          "margin": -12.46875,
+          "no_logit": 14.9375,
+          "yes_logit": 2.46875,
+          "fp32_head_margin": -12.474286556243896,
+          "tokens": 85
+        },
+        "swapped_contents_atomic": {
+          "score": 1.4708222124681924e-06,
+          "margin": -13.4296875,
+          "no_logit": 14.25,
+          "yes_logit": 0.8203125,
+          "fp32_head_margin": -13.448833882808685,
+          "tokens": 85
+        },
+        "query_first_wrong_labels_atomic": {
+          "score": 5.475977013702504e-05,
+          "margin": -9.8125,
+          "no_logit": 14.75,
+          "yes_logit": 4.9375,
+          "fp32_head_margin": -9.845779418945312,
+          "tokens": 85
+        },
+        "normal_clarified": {
+          "score": 1.899670678540133e-06,
+          "margin": -13.173828125,
+          "no_logit": 13.5625,
+          "yes_logit": 0.388671875,
+          "fp32_head_margin": -13.203176379203796,
+          "tokens": 98
+        },
+        "document_first_clarified": {
+          "score": 1.9333585896674776e-06,
+          "margin": -13.15625,
+          "no_logit": 15.75,
+          "yes_logit": 2.59375,
+          "fp32_head_margin": -13.161419868469238,
+          "tokens": 98
+        },
+        "swapped_contents_remapped": {
+          "score": 6.375547627612832e-07,
+          "margin": -14.265625,
+          "no_logit": 15.0625,
+          "yes_logit": 0.796875,
+          "fp32_head_margin": -14.28348982334137,
+          "tokens": 98
+        },
+        "swapped_contents_reverse_task": {
+          "score": 9.516251338936854e-06,
+          "margin": -11.5625,
+          "no_logit": 15.6875,
+          "yes_logit": 4.125,
+          "fp32_head_margin": -11.581494331359863,
+          "tokens": 82
+        },
+        "normal_general_task": {
+          "score": 3.7558672829618445e-06,
+          "margin": -12.4921875,
+          "no_logit": 13.25,
+          "yes_logit": 0.7578125,
+          "fp32_head_margin": -12.482657670974731,
+          "tokens": 84
+        },
+        "swapped_contents_general_task": {
+          "score": 1.3444405340123922e-06,
+          "margin": -13.51953125,
+          "no_logit": 14.5,
+          "yes_logit": 0.98046875,
+          "fp32_head_margin": -13.549186706542969,
+          "tokens": 84
+        },
+        "swapped_contents_system_remapped": {
+          "score": 8.282862040687178e-07,
+          "margin": -14.00390625,
+          "no_logit": 14.625,
+          "yes_logit": 0.62109375,
+          "fp32_head_margin": -14.02527266740799,
+          "tokens": 84
+        }
+      }
+    }
+  ]
+}
