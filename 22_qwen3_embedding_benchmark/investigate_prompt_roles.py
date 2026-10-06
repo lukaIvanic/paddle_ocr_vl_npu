@@ -62,6 +62,32 @@ def joint_remap(pair):
     return prefix, task, [('Query', pair['document']), ('Document', pair['query'])], False
 
 
+def positional_variants(pair, atomic=False):
+    """Define input roles by first/second position, independently of labels."""
+    existing = variants(pair, holdout=True)
+    core = {name: existing[name] for name in ('normal', 'document_first', 'swapped_contents', 'query_first_wrong_labels')}
+    core['document_then_instruction'] = existing['document_first']
+    result = dict(core)
+    for name, (prefix, task, fields, _) in core.items():
+        first, second = (('query', 'document') if name in ('normal', 'query_first_wrong_labels')
+                         else ('document', 'query'))
+        explanation = (f'The first input text field contains the {first}. '
+                       f'The second input text field contains the {second}. '
+                       'The task instruction is not an input text field. '
+                       'Identify the document and query by field position, regardless of the field labels.')
+        positional_task = task + '. ' + explanation
+        positional_prefix = ('<|im_start|>system\n'
+                             'Judge whether the document meets the requirements of the query and the task instruction. '
+                             + explanation + ' Note that the answer can only be "yes" or "no".'
+                             '<|im_end|>\n<|im_start|>user\n')
+        result[name + '_position_task'] = (prefix, positional_task, fields, False)
+        result[name + '_position_system'] = (positional_prefix, task, fields, False)
+        result[name + '_position_both'] = (positional_prefix, positional_task, fields, False)
+    if atomic:
+        result.update({name + '_atomic': (*spec[:3], True) for name, spec in list(result.items())})
+    return result
+
+
 def ordering(rows, names, key='score'):
     result = {}
     for name in names:
@@ -108,7 +134,10 @@ def main():
                         help='Holdout selection limit only; documents are never truncated')
     parser.add_argument('--joint-remap-only', action='store_true',
                         help='Follow-up: score the normal baseline and joint system/task remap only')
+    parser.add_argument('--positional-instructions', action='store_true',
+                        help='Rerun five layouts with explicit first/second roles in task, system, or both')
     args = parser.parse_args()
+    assert not (args.joint_remap_only and args.positional_instructions)
     import torch
     import torch_npu
     import transformers
@@ -138,7 +167,7 @@ def main():
                     pairs.append(dict(id=f'{qid}/{did}', query_id=qid, document_id=did,
                                       query=query['text'], document=fixture['documents'][did]['text'],
                                       grade=grade, instruction=fixture['instruction'], source='Touche2020Retrieval.v3', partition='holdout'))
-        if args.joint_remap_only:
+        if args.joint_remap_only or args.positional_instructions:
             pairs += [{k: v for k, v in r.items() if k != 'variants'} | {'partition': 'calibration'}
                       for r in prior['pairs'] if len(encode(r['document'])) <= args.max_document_tokens]
     assert pairs
@@ -157,6 +186,7 @@ def main():
         head_input['last'] = inputs[0][:, -1, :].detach().float()
     handle = model.lm_head.register_forward_pre_hook(capture_head)
     result = dict(status='running', phase=args.phase, scope='controlled selected-pair diagnostic, not full benchmark',
+                  positional_instructions=args.positional_instructions,
                   holdout_max_document_tokens=args.max_document_tokens,
                   commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
                   source_sha256=sha(__file__), prior_sha256=sha(args.prior_result), fixture_sha256=sha(args.fixture),
@@ -171,20 +201,29 @@ def main():
             if args.phase == 'holdout':
                 torch.npu.empty_cache()
             row = {**pair, 'variants': {}}
-            atomic_bags = []
+            atomic_groups = {}
             layouts = variants(pair, args.phase == 'holdout')
             if args.joint_remap_only:
                 layouts = {'normal': layouts['normal'], 'swapped_contents_joint_remap': joint_remap(pair)}
+            elif args.positional_instructions:
+                layouts = positional_variants(pair, atomic=pair['partition'] == 'calibration')
             for name, (prefix, task, fields, atomic) in layouts.items():
-                body = '<Instruct>: ' + task + '\n' + '\n'.join(f'<{label}>: {content}' for label, content in fields)
+                text_fields = [f'<{label}>: {content}' for label, content in fields]
+                task_after_document = name.startswith('document_then_instruction')
+                parts = ([text_fields[0], '<Instruct>: ' + task, text_fields[1]] if task_after_document
+                         else ['<Instruct>: ' + task] + text_fields)
+                body = '\n'.join(parts)
                 if atomic:
-                    ids = encode(prefix) + encode('<Instruct>:') + encode(' ' + task) + encode('\n')
-                    for i, (label, content) in enumerate(fields):
+                    chunks = [encode(f'<{label}>:') + encode(' ' + content) for label, content in fields]
+                    instruction_chunk = encode('<Instruct>:') + encode(' ' + task)
+                    chunks.insert(1 if task_after_document else 0, instruction_chunk)
+                    ids = encode(prefix)
+                    for i, chunk in enumerate(chunks):
                         if i:
                             ids += encode('\n')
-                        ids += encode(f'<{label}>:') + encode(' ' + content)
+                        ids += chunk
                     ids += encode(SUFFIX)
-                    atomic_bags.append(Counter(ids))
+                    atomic_groups.setdefault((prefix, task), []).append(Counter(ids))
                 else:
                     ids = encode(prefix) + encode(body) + encode(SUFFIX)
                 assert len(ids) <= 8192, 'No truncation permitted'
@@ -206,7 +245,8 @@ def main():
                     fp32_head_score=fp32_head_logits.softmax(-1)[1].item(),
                     full_vocabulary_no_probability=probabilities[0], full_vocabulary_yes_probability=probabilities[1],
                     top_tokens=[dict(id=i, text=tokenizer.decode([i]), logit=value) for i, value in zip(top_ids, top.values.cpu().tolist())])
-            assert all(bag == atomic_bags[0] for bag in atomic_bags) if atomic_bags else True
+            assert all(all(bag == bags[0] for bag in bags) for bags in atomic_groups.values())
+            row['atomic_token_inventory_groups_match'] = bool(atomic_groups)
             baseline_bag = Counter(row['variants']['normal']['input_ids'])
             for value in row['variants'].values():
                 bag = Counter(value['input_ids'])
@@ -228,6 +268,10 @@ def main():
                                     for partition in sorted({r['partition'] for r in result['pairs']})}
     result['summary']['all_control_token_sequences_preserved'] = True
     result['summary']['atomic_token_multisets_identical'] = args.phase == 'calibration' and not args.joint_remap_only
+    if args.positional_instructions:
+        result['summary'].pop('atomic_token_multisets_identical')
+        result['summary']['atomic_inventories_match_within_identical_instruction_groups'] = all(
+            r['atomic_token_inventory_groups_match'] for r in result['pairs'] if r['partition'] == 'calibration')
     result['status'] = 'completed'
     save(args.output, result)
     print(json.dumps(result['summary'], indent=2), flush=True)
