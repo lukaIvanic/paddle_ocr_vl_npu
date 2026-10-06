@@ -222,69 +222,12 @@ python3 11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py --cpu-self
 
 ## Self-contained 310P handoff
 
-Run only after the 910B ladder has been reviewed. The work-server agent must
-pull source and report; it must not edit tracked files, commit, push, or create
-branches. Resolve the checkout rather than hardcoding the work-server path:
-
-```bash
-WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
-cd "$WORK_SERVER_REPO"
-git status --short
-git fetch origin codex/mineru-kv-cache-layout-probe
-git checkout --detach FETCH_HEAD
-git rev-parse HEAD
-```
-
-Use the existing working CANN/ATB/torch-npu environment. Select an available
-310P according to the server's existing device policy, and set `PYTHON` to its
-working torch-npu interpreter. There is no CPU fallback and no BF16 path here.
-Do not install packages or modify vLLM. First run only the portable operations:
-
-```bash
-CHIP=310P OPERATORS=increfa,fia RUN_NAME=portable \
-  BATCHES=1,16 CONTEXTS=768 \
-  bash 11_mineru_2_5_pro_inference/kv_cache_probe/run_probe.sh
-```
-
-After reviewing statuses/correctness, run `OPERATORS=paged RUN_NAME=paged` on
-the same B1/B16 S768 matrix. Preserve unsupported variants instead of changing
-their contract until they run. For the private operation, the important case is
-`blocked4`, format 29, `fill=writer`; its controls are the same shape/format with
-synthetic filling, and the same shape with descriptor 2. If a control rejects
-ND on 310P, an ND-versus-NZ speed ratio for that operation is unavailable.
-
-The reviewed 910B control with CPU lengths establishes that the installed
-private operation works for ordinary native pages, but its 310P blocked
-contract cannot be validated on that chip. Run the default NPU-length contract
-on 310P first, preserving all results. Provided it finishes without a timeout
-or device error, also run the documented CPU-length control separately:
-
-```bash
-CHIP=310P OPERATORS=paged PAGED_LENGTH_DEVICE=cpu RUN_NAME=paged_cpu_lengths \
-  BATCHES=1,16 CONTEXTS=768 \
-  bash 11_mineru_2_5_pro_inference/kv_cache_probe/run_probe.sh
-```
-
-This resolves the mismatch between the audited vLLM source's NPU lengths and
-ATB's published CPU-length requirement without hiding it in a fallback. Record
-the installed vLLM-Ascend/torch-npu revisions and inspect that installation's
-310P call site before identifying either variant as its production contract.
-The writer-filled blocked format-29 case is essential: a logical roundtrip
-alone does not prove attention reads those bytes correctly. If ND is unsupported,
-compare the validated NZ private operation against the validated native
-IncreFA control using the same fixture; label this an operator comparison,
-not an isolated cache-format speedup.
-
-Only if the controls pass, expand `CONTEXTS=768,1408,2816,4096` and
-`PATTERNS=uniform,ragged`. If a change is needed, report the failing command,
-case JSON/log and minimal proposed source change to Luka; do not apply it.
-
-Return the entire run directory and these fields: commit, hostname, observed
-device name, CANN home, torch and torch-npu versions, exact command, every case
-status, requested/observed formats, correctness errors, wall/device medians,
-and `FORMAT_COMPARISONS`. Explain any writer-logical-roundtrip mismatch
-separately from attention correctness. No page/s or end-to-end performance
-claim can be derived from this probe.
+Give the receiving agent [HANDOFF_310P.md](HANDOFF_310P.md) and access to the
+published code. That file contains the objective, prior findings, pull-only
+constraints, environment discovery and preflight, exact commands, compatibility
+branches, stop conditions, correctness/timing gates, and return-report format.
+It assumes no conversation history or matching 910B installation. No model
+weights, datasets, vLLM engine startup, or TorchAir are required.
 
 ## 910B evidence
 
