@@ -221,11 +221,25 @@ The inspected MTEB 1.38.60 path calls the released wrapper's default **B32**
 (outer chunks 128), padding each group to its maximum before retaining the last
 2,048 tokens. Our B2 run matches the padding rule, not those batch boundaries.
 Next compare NanoSCIDOCS with upstream logical B32 input preparation; device
-execution can split prepared rows without changing their IDs. Any extra static
-bucket padding must freeze both recurrent matrices and previous-token vectors.
-Removing all upstream padding would instead change the benchmark protocol.
+execution can split prepared rows without changing their IDs. Extra static
+padding can now be placed on the right and excluded through endpoint-state capture
+(validated below). Removing upstream left padding would change the benchmark protocol.
 [`Diagnosis and retained failure/controls`](../tmp/26_rwkv_inference/reranker_padding_summary_1315ecc7.json);
 [`pinned upstream source findings`](data/reranker_padding_sources.json).
+
+**Right-padding endpoint capture passed**, sources `d7348673` / `8a64221a`,
+910B2 NPU 7. Independent `RwkvEndpointWkv7` reads int32 device lengths, stops
+recurrence at the valid endpoint and retains fixed output shapes; token-shift
+vectors are gathered there. CPU FP64 parity passed **72 eager / 18 TorchAir**
+recurrence cases (maximum error **1.49e-8**). Eight real B1 pairs, T257–2046,
+passed at buckets **512/2048**: separately compiled backbone/head states and
+scores are **bitwise equal to padded eager**, including changed lengths and
+A/B/A replay in the same graph shapes. Maximum endpoint/unpadded score difference
+was **0.0078125 FP16**; T512 FP32 control **0.00000858**. Both sampled pair
+orders are preserved. The first full compile failed on a missing reference-head
+converter; its evidence is retained and the harness correction passed. No new
+accuracy or throughput result; upstream logical B32 preparation remains next.
+[`Endpoint test summary, inputs, sources and package/graph hashes`](../tmp/26_rwkv_inference/reranker_endpoint_summary_8a64221a.json).
 
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,

@@ -1,0 +1,97 @@
+{
+  "device": "Ascend 910B2 physical NPU 7",
+  "source_commits": [
+    "d7348673",
+    "8a64221a"
+  ],
+  "independent_operator": "rwkv_endpoint::wkv7 / RwkvEndpointWkv7",
+  "package_gate": "One independently named AIV binary, no intercore synchronization, object hash equals generated metadata",
+  "run_paths": [
+    "wkv7_endpoint_eager_d7348673",
+    "wkv7_endpoint_torchair_d7348673",
+    "reranker_endpoint_eager_t512_d7348673",
+    "reranker_endpoint_eager_t2048_d7348673",
+    "reranker_endpoint_fp32_t512_d7348673",
+    "reranker_endpoint_torchair_t512_8a64221a",
+    "reranker_endpoint_torchair_t2048_8a64221a"
+  ],
+  "run_sha256": {
+    "wkv7_endpoint_eager_d7348673": "4e1478e41c381f26914fdef598f20ba90ad6b176391dc5c58a61410ee5d6fb8a",
+    "wkv7_endpoint_torchair_d7348673": "0da2ae9e8411c787bc1c99e04678a26242a6e9e63da1d651dbdfd42292fc522c",
+    "reranker_endpoint_eager_t512_d7348673": "6a4938d2b2beded30997fbbc63c5fb29e5112125512799d021acff538965a57b",
+    "reranker_endpoint_eager_t2048_d7348673": "a4211a6a6f1523b4e1b36192b514f13d4dfc20c3f3a8b863ed5d872f173b9c4b",
+    "reranker_endpoint_fp32_t512_d7348673": "ddff807cb3a6d880b7b49890893762a0f30e298ece326cb7b43fbf28a9602947",
+    "reranker_endpoint_torchair_t512_8a64221a": "e79ae385d7c67bffc7b3ce4e3601bb8d547d9e52d7c2ab37e95210a853ac733d",
+    "reranker_endpoint_torchair_t2048_8a64221a": "7929e0e235556f35ebe53e4d108cdabd297fb076d343b69afa06f40a2e1970ca"
+  },
+  "isolated_eager_cases": 72,
+  "isolated_torchair_cases": 18,
+  "isolated_max_abs": 1.4901161193847656e-08,
+  "real_model_unique_pairs": 8,
+  "real_model_valid_tokens": [
+    257,
+    510,
+    341,
+    306,
+    1038,
+    2046,
+    1039,
+    2035
+  ],
+  "real_model_bucket_shapes": [
+    512,
+    2048
+  ],
+  "full_model_batch": 1,
+  "max_fp16_logit_difference_from_unpadded": 0.0078125,
+  "fp32_t512_max_logit_difference_from_unpadded": 8.58306884765625e-06,
+  "separate_compiled_backbone_and_head_bitwise_equal_to_eager": true,
+  "same_fixed_shapes_changed_device_lengths_and_A_B_A_replay_passed": true,
+  "pair_order": [
+    {
+      "bucket": 512,
+      "documents": [
+        [
+          "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "075bc988728788aa033b04dee1753ded711180ee"
+        ],
+        [
+          "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "a6f1dfcc44277d4cfd8507284d994c9283dc3a2f"
+        ]
+      ],
+      "raw_logit_difference": -0.0078125,
+      "endpoint_logit_difference": -0.015625,
+      "order_preserved": true
+    },
+    {
+      "bucket": 2048,
+      "documents": [
+        [
+          "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+          "2532d0567c8334e4cadf282a73ffe399c1c32476"
+        ],
+        [
+          "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+          "18b534c7207a1376fa92e87fe0d2cfb358d98c51"
+        ]
+      ],
+      "raw_logit_difference": -0.125,
+      "endpoint_logit_difference": -0.12890625,
+      "order_preserved": true
+    }
+  ],
+  "all_required_checks_passed": true,
+  "retained_failure": {
+    "path": "tmp/26_rwkv_inference/reranker_endpoint_torchair_t512_d7348673",
+    "exit_code": 1,
+    "cause": "Probe omitted existing rwkv_reference converter for separately compiled head; no kernel change needed; fixed in 8a64221a"
+  },
+  "limits": [
+    "No full benchmark accuracy or throughput measured in this probe.",
+    "Full-model parity exercised B1 only; B2 validated at recurrence level.",
+    "Persistent cache artifacts are recorded; new endpoint path fresh-process cache reload not tested.",
+    "Extra right padding is excluded. Preserve upstream logical left-padding separately for benchmark reproduction."
+  ],
+  "semantics": "Device length includes terminal EOS and any intentional leading padding. Kernel stops recurrence updates after that endpoint, returns fixed-size matrices; backbone gathers previous-token vectors there. Python hands returned matrices to separate fixed-shape compiled head."
+}

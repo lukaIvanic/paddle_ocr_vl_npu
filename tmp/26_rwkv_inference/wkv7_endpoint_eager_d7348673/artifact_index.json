@@ -1,0 +1,18 @@
+{
+  "all_artifacts_readback_verified": true,
+  "graphs_and_compile_caches_remain_on_server": true,
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/wkv7_endpoint_eager_d7348673/probe/inputs.json",
+      "bytes": 9941,
+      "sha256": "90fe4f93014c4aeaf49f1263500e2269bd9c696b16ae05aa4b2d3bdf0b95943d",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/wkv7_endpoint_eager_d7348673/probe/result.json",
+      "bytes": 53337,
+      "sha256": "4e1478e41c381f26914fdef598f20ba90ad6b176391dc5c58a61410ee5d6fb8a",
+      "collected": true
+    }
+  ]
+}

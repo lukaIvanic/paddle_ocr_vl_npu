@@ -1,0 +1,182 @@
+[
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      0,
+      128
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      1,
+      127
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      47,
+      81
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      48,
+      80
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      49,
+      79
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      127,
+      1
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      128,
+      0
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      1,
+      127
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      128,
+      0
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      0,
+      128
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      1,
+      127
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      47,
+      81
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      48,
+      80
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      49,
+      79
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      127,
+      1
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      128,
+      0
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      1,
+      127
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      128,
+      0
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  }
+]

@@ -1,0 +1,48 @@
+{
+  "all_artifacts_readback_verified": true,
+  "graphs_and_compile_caches_remain_on_server": true,
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_torchair_t512_d7348673/probe/inputs.json",
+      "bytes": 18241,
+      "sha256": "0a5e139202b3386e0dae793cda12c2a0803cf05dbd5b060a3cca084bd17d8dbe",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_torchair_t512_d7348673/probe/result.json",
+      "bytes": 4427,
+      "sha256": "76ef440b74fe0e74207622b6a38f1fe60fc87f4a3b052ad31e5f28b29fcb9393",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_torchair_t512_d7348673/probe/graphs/dynamo_original_graph_1_rank_0_pid_27897_ts_20261006134101608979.pbtxt",
+      "bytes": 3068372,
+      "sha256": "75696eb3f713b3c4d2a139cc47d47ba4a1500a2da5b5ab8e7d36736777145e3d",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_torchair_t512_d7348673/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_torchair_t512_d7348673/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1_20261006134103.om",
+      "bytes": 5581565,
+      "sha256": "7555f269221ef74ad5cfa5a8fd8cd7e4278379bbb66165bd11873975f3dabc81",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_torchair_t512_d7348673/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.idx",
+      "bytes": 149,
+      "sha256": "7ac6054b3305c359f929b2a65f66dfdcac8471f061879a6727d84ddafbfb3dea",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_torchair_t512_d7348673/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/compiled_module",
+      "bytes": 2922532,
+      "sha256": "fc779a3bf1629c7a299d3689f2b5b63168bb2189014841a4d1b552dcfbf1147b",
+      "collected": false
+    }
+  ]
+}

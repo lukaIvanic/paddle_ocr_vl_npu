@@ -1,0 +1,678 @@
+[
+  {
+    "batch": 1,
+    "T": 1,
+    "valid_lengths": [
+      0
+    ],
+    "seed": 20261007,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 1,
+    "valid_lengths": [
+      1
+    ],
+    "seed": 20261007,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 1,
+    "valid_lengths": [
+      0
+    ],
+    "seed": 20261007,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 1,
+    "valid_lengths": [
+      1
+    ],
+    "seed": 20261007,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 47,
+    "valid_lengths": [
+      0
+    ],
+    "seed": 20261053,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 47,
+    "valid_lengths": [
+      1
+    ],
+    "seed": 20261053,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 47,
+    "valid_lengths": [
+      46
+    ],
+    "seed": 20261053,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 47,
+    "valid_lengths": [
+      47
+    ],
+    "seed": 20261053,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 47,
+    "valid_lengths": [
+      0
+    ],
+    "seed": 20261053,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 47,
+    "valid_lengths": [
+      1
+    ],
+    "seed": 20261053,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 47,
+    "valid_lengths": [
+      46
+    ],
+    "seed": 20261053,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 47,
+    "valid_lengths": [
+      47
+    ],
+    "seed": 20261053,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 48,
+    "valid_lengths": [
+      0
+    ],
+    "seed": 20261054,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 48,
+    "valid_lengths": [
+      1
+    ],
+    "seed": 20261054,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 48,
+    "valid_lengths": [
+      47
+    ],
+    "seed": 20261054,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 48,
+    "valid_lengths": [
+      48
+    ],
+    "seed": 20261054,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 48,
+    "valid_lengths": [
+      0
+    ],
+    "seed": 20261054,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 48,
+    "valid_lengths": [
+      1
+    ],
+    "seed": 20261054,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 48,
+    "valid_lengths": [
+      47
+    ],
+    "seed": 20261054,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 48,
+    "valid_lengths": [
+      48
+    ],
+    "seed": 20261054,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 49,
+    "valid_lengths": [
+      0
+    ],
+    "seed": 20261055,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 49,
+    "valid_lengths": [
+      1
+    ],
+    "seed": 20261055,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 49,
+    "valid_lengths": [
+      47
+    ],
+    "seed": 20261055,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 49,
+    "valid_lengths": [
+      48
+    ],
+    "seed": 20261055,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 49,
+    "valid_lengths": [
+      49
+    ],
+    "seed": 20261055,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 49,
+    "valid_lengths": [
+      0
+    ],
+    "seed": 20261055,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 49,
+    "valid_lengths": [
+      1
+    ],
+    "seed": 20261055,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 49,
+    "valid_lengths": [
+      47
+    ],
+    "seed": 20261055,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 49,
+    "valid_lengths": [
+      48
+    ],
+    "seed": 20261055,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 49,
+    "valid_lengths": [
+      49
+    ],
+    "seed": 20261055,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      0,
+      128
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      1,
+      127
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      47,
+      81
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      48,
+      80
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      49,
+      79
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      127,
+      1
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      128,
+      0
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      0,
+      128
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      1,
+      127
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      47,
+      81
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      48,
+      80
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      49,
+      79
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      127,
+      1
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 128,
+    "valid_lengths": [
+      128,
+      0
+    ],
+    "seed": 20261134,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      0,
+      512
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      1,
+      511
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      47,
+      465
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      48,
+      464
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      49,
+      463
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      511,
+      1
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      512,
+      0
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      0,
+      512
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      1,
+      511
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      47,
+      465
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      48,
+      464
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      49,
+      463
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      511,
+      1
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 2,
+    "T": 512,
+    "valid_lengths": [
+      512,
+      0
+    ],
+    "seed": 20261518,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      0
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      1
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      47
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      48
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      49
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      2047
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      2048
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": false
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      0
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      1
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      47
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      48
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      49
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      2047
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": true
+  },
+  {
+    "batch": 1,
+    "T": 2048,
+    "valid_lengths": [
+      2048
+    ],
+    "seed": 20263054,
+    "nonzero_initial_state": true
+  }
+]

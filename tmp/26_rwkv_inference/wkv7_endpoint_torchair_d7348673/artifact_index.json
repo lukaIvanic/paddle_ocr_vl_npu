@@ -1,0 +1,48 @@
+{
+  "all_artifacts_readback_verified": true,
+  "graphs_and_compile_caches_remain_on_server": true,
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/wkv7_endpoint_torchair_d7348673/probe/inputs.json",
+      "bytes": 2604,
+      "sha256": "aa41442766368ee66bbdd87ffa86781fa0d4a03cb4d42759a63c875cc09e571e",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/wkv7_endpoint_torchair_d7348673/probe/result.json",
+      "bytes": 17294,
+      "sha256": "0da2ae9e8411c787bc1c99e04678a26242a6e9e63da1d651dbdfd42292fc522c",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/wkv7_endpoint_torchair_d7348673/probe/graphs/dynamo_original_graph_1_rank_0_pid_26712_ts_20261006133903450411.pbtxt",
+      "bytes": 9903,
+      "sha256": "6c70d4340679047f21bdb82d56772f030c856d0db29a00c5196eb0c44e788add",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/wkv7_endpoint_torchair_d7348673/probe/recurrence_cache/Recurrence_static_gecache_a6c4416a0fb9c9d968e3924e1e33875a/forward/graph_1.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/wkv7_endpoint_torchair_d7348673/probe/recurrence_cache/Recurrence_static_gecache_a6c4416a0fb9c9d968e3924e1e33875a/forward/graph_1_20261006133903.om",
+      "bytes": 38262,
+      "sha256": "8351cd4f281369946d4d916194b62f1861fa8121913b3fbde903fdb5bd3b43ed",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/wkv7_endpoint_torchair_d7348673/probe/recurrence_cache/Recurrence_static_gecache_a6c4416a0fb9c9d968e3924e1e33875a/forward/graph_1.idx",
+      "bytes": 149,
+      "sha256": "23fb0f886b1189025d71b0ecb66d3a711bba752081b8ce063c5f50140159399c",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/wkv7_endpoint_torchair_d7348673/probe/recurrence_cache/Recurrence_static_gecache_a6c4416a0fb9c9d968e3924e1e33875a/forward/compiled_module",
+      "bytes": 14210,
+      "sha256": "c31a038bfadada81b8c24462b1eff6679fb347ec4ade8fd9d2e0a149ab7e2afa",
+      "collected": false
+    }
+  ]
+}
