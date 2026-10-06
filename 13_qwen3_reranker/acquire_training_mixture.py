@@ -24,6 +24,7 @@ def main():
     p.add_argument("--val-queries", type=int, default=384)
     p.add_argument("--seed", type=int, default=731)
     p.add_argument("--cache", type=Path, default=Path("/tmp/qwen-mixture-http-cache"))
+    p.add_argument("--prefer-parquet", action="store_true")
     args = p.parse_args()
     started = time.monotonic()
     info = json.loads(args.metadata.read_text())
@@ -115,6 +116,12 @@ def main():
                 elif whole_cached.exists():
                     raw = gzip.decompress(whole_cached.read_bytes())
                     source_url = whole_url
+                elif args.prefer_parquet:
+                    print("PARQUET_READ", json.dumps({"config": config, "offset": offset, "rows": length}), flush=True)
+                    data, parquet_url = parquet_rows(config, offset, length)
+                    data["acquisition_parquet_url"] = parquet_url
+                    raw = json.dumps(data, ensure_ascii=False).encode()
+                    cached.write_bytes(gzip.compress(raw))
                 else:
                     with request_lock:
                         time.sleep(max(0, 1.2 - (time.monotonic() - last_request[0])))
@@ -166,6 +173,7 @@ def main():
         "filter_scope": "whole dataset-family exclusion plus exact normalized Touché text exclusion; not exhaustive cross-benchmark corpus-text decontamination",
         "sampling": "proportional released-row source and length quotas; source floors 4 train/2 validation; random blocks without replacement with uniform circular windows inside partial blocks; quota caps reflect eligible unique rows",
         "acquisition_script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "prefer_parquet": args.prefer_parquet,
         "counts_by_config": counts, "responses": responses, "seed": args.seed,
         "seconds": time.monotonic() - started,
     }
