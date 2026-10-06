@@ -198,6 +198,13 @@ Peak reserved HBM **0.93 GiB**.
 include verified readback of the server-resident CPU anchor. Next: full NanoBEIR
 with the 90M reranker, keeping batch/padding differences explicit.
 
+B1 optimization probe `run_reranker_buckets.py` is implemented at `1e65a6b1`:
+real-pair padding checks, combined static scorer buckets 256/512/1024/2048,
+persistent TorchAir GE cache, warm timings and short eager/compiled CPU+NPU
+profiles. Fresh-process cache reuse is a separate check. **Not run:** the server
+SSH endpoint was unreachable on 2026-10-06; no compiled reranker or profile
+results are claimed. Resume with T256, then the remaining buckets and cache reuse.
+
 For each released pair:
 
 1. Check a few query/document pairs against the reference computation, including
