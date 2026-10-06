@@ -1,0 +1,5662 @@
+{
+  "status": "completed",
+  "scope": "query-first experimental training curve",
+  "environment": {
+    "host": "liteserver-c001-4",
+    "chip": "Ascend 910B2",
+    "physical_npu": "7",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0.post2",
+    "transformers": "5.5.4"
+  },
+  "commit": "b8b53be79359940153008ab8638a63756a928b3c",
+  "config": {
+    "model": "/workspace/models/Qwen3-Reranker-0.6B",
+    "dataset": "/tmp/qwen-bge-runtime-pilot.json.gz",
+    "fixture": "/workspace/results/clef_touche_full/fixture.json",
+    "output": "tmp/13_qwen3_reranker/query_first_pilot_b8b53be7_20261006",
+    "mode": "pilot",
+    "steps": 3,
+    "eval_steps": "0,10,50,100,250",
+    "validation_queries": 48,
+    "touche_queries": 8,
+    "pairs_per_update": 32,
+    "microbatch": 4,
+    "train_batch_tokens": 8192,
+    "eval_batch_tokens": 16384,
+    "max_length": 8192,
+    "learning_rate": 1e-05,
+    "seed": 731,
+    "wall_time_limit": 600.0
+  },
+  "source_sha256": {
+    "run_query_first_training_curve.py": "a95b9aa0bf1df1dd2f69cee9a2ca427352a129c019efa632dea67fd3936c62c0",
+    "mixture_data.py": "65b141d1df7a61461b15102a2465a011bac554fe58cf5431f4a05915fccc620c",
+    "curve_metrics.py": "e176bcd17b39d197b341b3a67ef07f15087f07392cdb1d65e435e8d43192bfcf",
+    "local_modeling_qwen3_reranker.py": "4148017f0d012e018424844f45a6b83b97cfc3d6d514138553f32d5e3e90c417",
+    "training_smoke_data.py": "4c54d494c67590c344487d6712a257bd20b1e65dbaaae273d3b57055bb0a9972"
+  },
+  "dataset_sha256": "751525f833de7ddc2c7ebd5402e42166d53126752262f71e6d1c78b786f2f333",
+  "fixture_sha256": "8f0e908ce694b0e3d4d90d1977e02b195b94020458638361c5ee813dbecd2ef2",
+  "lengths": {
+    "train": {
+      "pairs": 512,
+      "truncated_pairs": 0,
+      "original_length_percentiles": {
+        "0": 80,
+        "0.5": 99,
+        "0.9": 338,
+        "0.99": 1925,
+        "1": 4118
+      },
+      "actual_tokens": 102853
+    },
+    "validation": {
+      "pairs": 383,
+      "truncated_pairs": 0,
+      "original_length_percentiles": {
+        "0": 81,
+        "0.5": 97,
+        "0.9": 310,
+        "0.99": 1209,
+        "1": 2946
+      },
+      "actual_tokens": 68676
+    },
+    "touche": {
+      "pairs": 800,
+      "truncated_pairs": 0,
+      "original_length_percentiles": {
+        "0": 100,
+        "0.5": 450,
+        "0.9": 1565,
+        "0.99": 2178,
+        "1": 2432
+      },
+      "actual_tokens": 516774
+    },
+    "pilot_validation": {
+      "pairs": 383,
+      "truncated_pairs": 0,
+      "original_length_percentiles": {
+        "0": 81,
+        "0.5": 97,
+        "0.9": 310,
+        "0.99": 1209,
+        "1": 2946
+      },
+      "actual_tokens": 68676
+    },
+    "pilot_touche": {
+      "pairs": 800,
+      "truncated_pairs": 0,
+      "original_length_percentiles": {
+        "0": 100,
+        "0.5": 450,
+        "0.9": 1565,
+        "0.99": 2178,
+        "1": 2432
+      },
+      "actual_tokens": 516774
+    }
+  },
+  "distribution": {
+    "ATEC": {
+      "released_rows": 11325,
+      "train_queries": 32,
+      "validation_queries": 7
+    },
+    "BQ": {
+      "released_rows": 12599,
+      "train_queries": 35,
+      "validation_queries": 7
+    },
+    "LCQMC": {
+      "released_rows": 10000,
+      "train_queries": 29,
+      "validation_queries": 5
+    },
+    "PAWSX": {
+      "released_rows": 10000,
+      "train_queries": 28,
+      "validation_queries": 5
+    },
+    "QBQTC_v2": {
+      "released_rows": 10000,
+      "train_queries": 28,
+      "validation_queries": 5
+    },
+    "afqmc": {
+      "released_rows": 10534,
+      "train_queries": 30,
+      "validation_queries": 5
+    },
+    "miracl_ar": {
+      "released_rows": 3495,
+      "train_queries": 12,
+      "validation_queries": 2
+    },
+    "miracl_en": {
+      "released_rows": 2863,
+      "train_queries": 10,
+      "validation_queries": 2
+    },
+    "miracl_id": {
+      "released_rows": 4071,
+      "train_queries": 13,
+      "validation_queries": 3
+    },
+    "miracl_ja": {
+      "released_rows": 3477,
+      "train_queries": 12,
+      "validation_queries": 2
+    },
+    "miracl_ru": {
+      "released_rows": 4683,
+      "train_queries": 15,
+      "validation_queries": 3
+    },
+    "miracl_te": {
+      "released_rows": 3452,
+      "train_queries": 12,
+      "validation_queries": 2
+    }
+  },
+  "split_checks": {
+    "normalized_queries_disjoint": true,
+    "normalized_documents_disjoint": true
+  },
+  "validation_ids": [
+    "BQ_len-0-500/11228",
+    "ATEC_len-0-500/306",
+    "miracl_ar_len-500-1000/99",
+    "QBQTC_v2_len-0-500/1959",
+    "afqmc_len-0-500/10429",
+    "miracl_id_len-500-1000/239",
+    "miracl_ru_len-500-1000/2508",
+    "BQ_len-0-500/2551",
+    "BQ_len-0-500/5242",
+    "BQ_len-0-500/5201",
+    "PAWSX_len-0-500/2079",
+    "LCQMC_len-0-500/357",
+    "afqmc_len-0-500/3223",
+    "miracl_ja_len-500-1000/704",
+    "PAWSX_len-0-500/2072",
+    "afqmc_len-0-500/3259",
+    "LCQMC_len-0-500/107",
+    "PAWSX_len-0-500/2039",
+    "afqmc_len-0-500/3218",
+    "ATEC_len-0-500/9673",
+    "PAWSX_len-0-500/2061",
+    "miracl_te_len-1000-2000/1294",
+    "miracl_te_len-1000-2000/1269",
+    "ATEC_len-0-500/9631",
+    "afqmc_len-0-500/10458",
+    "BQ_len-0-500/5208",
+    "LCQMC_len-0-500/389",
+    "ATEC_len-0-500/9689",
+    "QBQTC_v2_len-0-500/1920",
+    "miracl_ru_len-500-1000/2592",
+    "PAWSX_len-0-500/2091",
+    "QBQTC_v2_len-0-500/2401",
+    "miracl_ru_len-500-1000/2500",
+    "LCQMC_len-0-500/194",
+    "BQ_len-0-500/5243",
+    "BQ_len-0-500/5223",
+    "miracl_id_len-0-500/213",
+    "ATEC_len-0-500/9616",
+    "miracl_en_len-500-1000/921",
+    "miracl_ja_len-500-1000/711",
+    "ATEC_len-0-500/9620",
+    "LCQMC_len-0-500/354",
+    "ATEC_len-0-500/9625",
+    "miracl_id_len-0-500/210",
+    "QBQTC_v2_len-0-500/1955",
+    "miracl_ar_len-500-1000/21",
+    "QBQTC_v2_len-0-500/1972",
+    "miracl_en_len-500-1000/949"
+  ],
+  "touche_query_ids": [
+    "39",
+    "38",
+    "23",
+    "32",
+    "21",
+    "19",
+    "35",
+    "9"
+  ],
+  "frozen_qwen4b_reference": {
+    "ndcg10": 0.617334527972233,
+    "per_query": {
+      "39": 0.44510108735750964,
+      "38": 0.7273298443105218,
+      "23": 0.622816720683864,
+      "32": 0.7398603910975363,
+      "21": 0.5559026721867443,
+      "19": 0.218676239575155,
+      "35": 0.8626400768096387,
+      "9": 0.7663491917568945
+    }
+  },
+  "training": {
+    "prompt_order": "query_first",
+    "attention": "npu_fusion_attention",
+    "optimizer": "NpuFusedAdamW",
+    "master_weights": "float32",
+    "autocast": "bfloat16",
+    "weight_decay": 0.0,
+    "gradient_clip": 1.0,
+    "loss": "pointwise no/yes cross entropy",
+    "checkpoints_saved": false,
+    "truncation": "right-truncate body at 8192 total, preserve prefix/suffix",
+    "scoring": "yes-minus-no logit margin, monotonic with binary yes probability",
+    "optimizer_state_dtypes": [
+      "torch.float32"
+    ]
+  },
+  "training_order_ids": [
+    "miracl_id_len-500-1000/253",
+    "LCQMC_len-0-500/135",
+    "miracl_ar_len-500-1000/1",
+    "miracl_ru_len-0-500/650",
+    "afqmc_len-0-500/3265",
+    "QBQTC_v2_len-0-500/1958",
+    "PAWSX_len-0-500/7591",
+    "ATEC_len-0-500/9604",
+    "miracl_ja_len-0-500/853",
+    "LCQMC_len-0-500/360",
+    "afqmc_len-0-500/10400",
+    "LCQMC_len-0-500/368",
+    "miracl_te_len-500-1000/405",
+    "miracl_te_len-1000-2000/1287",
+    "afqmc_len-0-500/3249",
+    "ATEC_len-0-500/374",
+    "ATEC_len-0-500/9666",
+    "ATEC_len-0-500/380",
+    "LCQMC_len-0-500/198",
+    "BQ_len-0-500/11288",
+    "QBQTC_v2_len-0-500/2408",
+    "BQ_len-0-500/5248",
+    "ATEC_len-0-500/351",
+    "BQ_len-0-500/2553",
+    "afqmc_len-0-500/10497",
+    "BQ_len-0-500/5279",
+    "ATEC_len-0-500/9606",
+    "BQ_len-0-500/5217",
+    "afqmc_len-0-500/3230",
+    "miracl_id_len-500-1000/251",
+    "afqmc_len-0-500/3216",
+    "ATEC_len-0-500/366",
+    "ATEC_len-0-500/9674",
+    "miracl_te_len-1000-2000/1262",
+    "miracl_id_len-0-500/290",
+    "miracl_id_len-0-500/224",
+    "BQ_len-0-500/11209",
+    "PAWSX_len-0-500/7504",
+    "miracl_ru_len-500-1000/2594",
+    "LCQMC_len-0-500/136",
+    "PAWSX_len-0-500/7586",
+    "afqmc_len-0-500/3271",
+    "afqmc_len-0-500/10413",
+    "LCQMC_len-0-500/113",
+    "miracl_ru_len-0-500/648",
+    "miracl_ru_len-500-1000/2506",
+    "PAWSX_len-0-500/2017",
+    "afqmc_len-0-500/3247",
+    "BQ_len-0-500/2550",
+    "miracl_en_len-500-1000/932",
+    "miracl_te_len-1000-2000/1271",
+    "PAWSX_len-0-500/2082",
+    "LCQMC_len-0-500/304",
+    "miracl_ar_len-500-1000/97",
+    "miracl_te_len-1000-2000/1207",
+    "ATEC_len-0-500/344",
+    "PAWSX_len-0-500/2010",
+    "LCQMC_len-0-500/309",
+    "miracl_ja_len-500-1000/722",
+    "LCQMC_len-0-500/362",
+    "miracl_id_len-0-500/223",
+    "afqmc_len-0-500/3298",
+    "BQ_len-0-500/5269",
+    "BQ_len-0-500/5225",
+    "LCQMC_len-0-500/120",
+    "BQ_len-0-500/2578",
+    "LCQMC_len-0-500/162",
+    "LCQMC_len-0-500/386",
+    "afqmc_len-0-500/3266",
+    "miracl_ja_len-0-500/840",
+    "BQ_len-0-500/11235",
+    "PAWSX_len-0-500/7565",
+    "BQ_len-0-500/2567",
+    "afqmc_len-0-500/3273",
+    "miracl_id_len-0-500/293",
+    "miracl_ja_len-500-1000/700",
+    "afqmc_len-0-500/10477",
+    "QBQTC_v2_len-0-500/1910",
+    "LCQMC_len-0-500/176",
+    "BQ_len-0-500/11236",
+    "QBQTC_v2_len-0-500/2412",
+    "miracl_ru_len-0-500/651",
+    "miracl_ru_len-500-1000/2574",
+    "PAWSX_len-0-500/7509",
+    "afqmc_len-0-500/10435",
+    "miracl_ar_len-500-1000/28",
+    "afqmc_len-0-500/3208",
+    "ATEC_len-0-500/371",
+    "miracl_id_len-500-1000/240",
+    "miracl_ru_len-500-1000/2502",
+    "BQ_len-0-500/2561",
+    "miracl_ar_len-1000-2000/271",
+    "afqmc_len-0-500/10486",
+    "PAWSX_len-0-500/2081",
+    "miracl_ar_len-500-1000/17",
+    "LCQMC_len-0-500/347",
+    "afqmc_len-0-500/3269",
+    "LCQMC_len-0-500/122",
+    "miracl_ar_len-500-1000/3",
+    "ATEC_len-0-500/309",
+    "miracl_te_len-1000-2000/1201",
+    "miracl_ar_len-500-1000/7",
+    "miracl_ja_len-0-500/844",
+    "miracl_en_len-0-500/959",
+    "BQ_len-0-500/11225",
+    "miracl_id_len-0-500/284",
+    "QBQTC_v2_len-0-500/1906",
+    "afqmc_len-0-500/3229",
+    "miracl_ja_len-500-1000/786",
+    "afqmc_len-0-500/3281",
+    "miracl_ar_len-1000-2000/272",
+    "LCQMC_len-0-500/316",
+    "miracl_en_len-0-500/938",
+    "PAWSX_len-0-500/7583",
+    "ATEC_len-0-500/359",
+    "BQ_len-0-500/11297",
+    "ATEC_len-0-500/383",
+    "QBQTC_v2_len-0-500/2491",
+    "ATEC_len-0-500/9678",
+    "QBQTC_v2_len-0-500/2431",
+    "miracl_en_len-500-1000/931",
+    "PAWSX_len-0-500/2092",
+    "BQ_len-0-500/11294",
+    "QBQTC_v2_len-0-500/1915",
+    "miracl_ru_len-500-1000/2503",
+    "miracl_id_len-500-1000/249",
+    "miracl_id_len-0-500/212",
+    "miracl_id_len-0-500/219",
+    "ATEC_len-0-500/9648",
+    "miracl_en_len-500-1000/943",
+    "miracl_ar_len-0-500/152",
+    "QBQTC_v2_len-0-500/1914",
+    "LCQMC_len-0-500/145",
+    "miracl_te_len-1000-2000/1266",
+    "PAWSX_len-0-500/2003",
+    "BQ_len-0-500/11253",
+    "PAWSX_len-0-500/2009",
+    "LCQMC_len-0-500/149",
+    "BQ_len-0-500/5299",
+    "BQ_len-0-500/11260",
+    "miracl_ja_len-0-500/862",
+    "QBQTC_v2_len-0-500/1967",
+    "ATEC_len-0-500/9684",
+    "PAWSX_len-0-500/2097",
+    "ATEC_len-0-500/9612",
+    "PAWSX_len-0-500/2090",
+    "PAWSX_len-0-500/2037",
+    "QBQTC_v2_len-0-500/2485",
+    "QBQTC_v2_len-0-500/2461",
+    "miracl_ja_len-0-500/846",
+    "ATEC_len-0-500/311",
+    "QBQTC_v2_len-0-500/2402",
+    "QBQTC_v2_len-0-500/1949",
+    "LCQMC_len-0-500/108",
+    "ATEC_len-0-500/9618",
+    "ATEC_len-0-500/9626",
+    "miracl_ru_len-0-500/658",
+    "afqmc_len-0-500/10411",
+    "QBQTC_v2_len-0-500/2479",
+    "afqmc_len-0-500/3212",
+    "BQ_len-0-500/11214",
+    "PAWSX_len-0-500/2032",
+    "afqmc_len-0-500/10440",
+    "miracl_ja_len-500-1000/708",
+    "miracl_te_len-1000-2000/1299",
+    "QBQTC_v2_len-0-500/2488",
+    "BQ_len-0-500/5209",
+    "miracl_id_len-500-1000/250",
+    "miracl_ru_len-500-1000/2518",
+    "PAWSX_len-0-500/2077",
+    "BQ_len-0-500/11273",
+    "afqmc_len-0-500/3236",
+    "BQ_len-0-500/11232",
+    "QBQTC_v2_len-0-500/1994",
+    "BQ_len-0-500/5249",
+    "PAWSX_len-0-500/2006",
+    "miracl_ar_len-500-1000/34",
+    "miracl_id_len-0-500/209",
+    "PAWSX_len-0-500/2044",
+    "afqmc_len-0-500/10455",
+    "miracl_en_len-0-500/953",
+    "ATEC_len-0-500/315",
+    "ATEC_len-0-500/376",
+    "miracl_en_len-0-500/952",
+    "miracl_ru_len-1000-2000/310",
+    "BQ_len-0-500/5222",
+    "miracl_te_len-1000-2000/1208",
+    "BQ_len-0-500/5235",
+    "LCQMC_len-0-500/110",
+    "PAWSX_len-0-500/2000",
+    "miracl_ru_len-500-1000/2576",
+    "miracl_ru_len-500-1000/2581",
+    "afqmc_len-0-500/3289",
+    "QBQTC_v2_len-0-500/2483",
+    "BQ_len-0-500/5282",
+    "LCQMC_len-0-500/333",
+    "BQ_len-0-500/5273",
+    "afqmc_len-0-500/3211",
+    "miracl_ar_len-500-1000/29",
+    "QBQTC_v2_len-0-500/2427",
+    "ATEC_len-0-500/381",
+    "miracl_ar_len-1000-2000/282",
+    "LCQMC_len-0-500/367",
+    "BQ_len-0-500/5255",
+    "ATEC_len-0-500/2172",
+    "BQ_len-0-500/11240",
+    "PAWSX_len-0-500/7596",
+    "QBQTC_v2_len-0-500/2494",
+    "LCQMC_len-0-500/114",
+    "ATEC_len-0-500/370",
+    "QBQTC_v2_len-0-500/1981",
+    "miracl_ja_len-500-1000/701",
+    "PAWSX_len-0-500/2055",
+    "LCQMC_len-0-500/375",
+    "miracl_ja_len-500-1000/705",
+    "afqmc_len-0-500/10452",
+    "afqmc_len-0-500/10467",
+    "PAWSX_len-0-500/7569",
+    "BQ_len-0-500/11247",
+    "LCQMC_len-0-500/363",
+    "PAWSX_len-0-500/2027",
+    "PAWSX_len-0-500/2015",
+    "miracl_en_len-500-1000/923",
+    "QBQTC_v2_len-0-500/1936",
+    "LCQMC_len-0-500/315",
+    "QBQTC_v2_len-0-500/2495",
+    "miracl_te_len-500-1000/404",
+    "miracl_te_len-1000-2000/1298",
+    "ATEC_len-0-500/9627",
+    "QBQTC_v2_len-0-500/2449",
+    "QBQTC_v2_len-0-500/1923",
+    "afqmc_len-0-500/3261",
+    "PAWSX_len-0-500/2089",
+    "ATEC_len-0-500/9660",
+    "miracl_ru_len-500-1000/2529",
+    "ATEC_len-0-500/316",
+    "PAWSX_len-0-500/2056",
+    "QBQTC_v2_len-0-500/1901",
+    "miracl_te_len-500-1000/401",
+    "ATEC_len-0-500/394",
+    "QBQTC_v2_len-0-500/2465",
+    "LCQMC_len-0-500/335",
+    "BQ_len-0-500/11217",
+    "miracl_en_len-500-1000/920",
+    "miracl_ja_len-500-1000/799",
+    "ATEC_len-0-500/392",
+    "BQ_len-0-500/11201",
+    "ATEC_len-0-500/9681",
+    "afqmc_len-0-500/10410",
+    "ATEC_len-0-500/395",
+    "LCQMC_len-0-500/302",
+    "LCQMC_len-0-500/174",
+    "miracl_ru_len-500-1000/2507",
+    "miracl_en_len-500-1000/954",
+    "QBQTC_v2_len-0-500/1900",
+    "BQ_len-0-500/11262"
+  ],
+  "updates": [
+    {
+      "step": 1,
+      "seconds": 4.025823850000961,
+      "loss": 0.4158702492713928,
+      "gradient_norm": 36.67396545410156,
+      "pairs": 32,
+      "microbatches": 8,
+      "real_tokens": 7107,
+      "padded_tokens": 10752,
+      "peak_allocated_gib": 18.924878120422363,
+      "peak_reserved_gib": 33.302734375,
+      "parameter_changed": true,
+      "pairs_by_source": {
+        "miracl_ar": 2,
+        "ATEC": 4,
+        "miracl_id": 2,
+        "QBQTC_v2": 2,
+        "LCQMC": 6,
+        "miracl_ja": 2,
+        "miracl_te": 4,
+        "miracl_ru": 2,
+        "afqmc": 6,
+        "PAWSX": 2
+      }
+    },
+    {
+      "step": 2,
+      "seconds": 1.586050410000098,
+      "loss": 0.09728263318538666,
+      "gradient_norm": 36.40391159057617,
+      "pairs": 32,
+      "microbatches": 8,
+      "real_tokens": 3422,
+      "padded_tokens": 5120,
+      "peak_allocated_gib": 18.924878120422363,
+      "peak_reserved_gib": 33.302734375,
+      "parameter_changed": true,
+      "pairs_by_source": {
+        "ATEC": 10,
+        "miracl_id": 2,
+        "LCQMC": 2,
+        "QBQTC_v2": 2,
+        "afqmc": 6,
+        "BQ": 10
+      }
+    },
+    {
+      "step": 3,
+      "seconds": 1.6391573300006712,
+      "loss": 0.8187016248703003,
+      "gradient_norm": 84.7818603515625,
+      "pairs": 32,
+      "microbatches": 8,
+      "real_tokens": 5985,
+      "padded_tokens": 8192,
+      "peak_allocated_gib": 18.924878120422363,
+      "peak_reserved_gib": 33.302734375,
+      "parameter_changed": true,
+      "pairs_by_source": {
+        "ATEC": 2,
+        "miracl_id": 4,
+        "LCQMC": 4,
+        "BQ": 2,
+        "miracl_te": 2,
+        "miracl_ru": 6,
+        "afqmc": 6,
+        "PAWSX": 6
+      }
+    }
+  ],
+  "evaluations": {
+    "0": {
+      "validation": {
+        "overall": {
+          "queries": 48,
+          "pairs": 383,
+          "correct_orderings": 324,
+          "total_orderings": 335,
+          "ties": 0,
+          "ordering_accuracy": 0.9671641791044776,
+          "top1_accuracy": 0.7916666666666666,
+          "mrr": 0.8923611111111112,
+          "ndcg": 0.9203826621279817,
+          "tie_policy": "negative_before_positive"
+        },
+        "per_source": {
+          "BQ": {
+            "queries": 7,
+            "pairs": 56,
+            "correct_orderings": 46,
+            "total_orderings": 49,
+            "ties": 0,
+            "ordering_accuracy": 0.9387755102040817,
+            "top1_accuracy": 0.5714285714285714,
+            "mrr": 0.7857142857142857,
+            "ndcg": 0.8418270372449105,
+            "tie_policy": "negative_before_positive"
+          },
+          "ATEC": {
+            "queries": 7,
+            "pairs": 56,
+            "correct_orderings": 48,
+            "total_orderings": 49,
+            "ties": 0,
+            "ordering_accuracy": 0.9795918367346939,
+            "top1_accuracy": 0.8571428571428571,
+            "mrr": 0.9285714285714286,
+            "ndcg": 0.9472756790816368,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_ar": {
+            "queries": 2,
+            "pairs": 16,
+            "correct_orderings": 14,
+            "total_orderings": 14,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          },
+          "QBQTC_v2": {
+            "queries": 5,
+            "pairs": 40,
+            "correct_orderings": 35,
+            "total_orderings": 35,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          },
+          "afqmc": {
+            "queries": 5,
+            "pairs": 40,
+            "correct_orderings": 34,
+            "total_orderings": 35,
+            "ties": 0,
+            "ordering_accuracy": 0.9714285714285714,
+            "top1_accuracy": 0.8,
+            "mrr": 0.9,
+            "ndcg": 0.9261859507142916,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_id": {
+            "queries": 3,
+            "pairs": 24,
+            "correct_orderings": 20,
+            "total_orderings": 21,
+            "ties": 0,
+            "ordering_accuracy": 0.9523809523809523,
+            "top1_accuracy": 0.6666666666666666,
+            "mrr": 0.8333333333333334,
+            "ndcg": 0.8769765845238192,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_ru": {
+            "queries": 3,
+            "pairs": 24,
+            "correct_orderings": 20,
+            "total_orderings": 21,
+            "ties": 0,
+            "ordering_accuracy": 0.9523809523809523,
+            "top1_accuracy": 0.6666666666666666,
+            "mrr": 0.8333333333333334,
+            "ndcg": 0.8769765845238192,
+            "tie_policy": "negative_before_positive"
+          },
+          "PAWSX": {
+            "queries": 5,
+            "pairs": 39,
+            "correct_orderings": 32,
+            "total_orderings": 34,
+            "ties": 0,
+            "ordering_accuracy": 0.9411764705882353,
+            "top1_accuracy": 0.8,
+            "mrr": 0.8666666666666666,
+            "ndcg": 0.9,
+            "tie_policy": "negative_before_positive"
+          },
+          "LCQMC": {
+            "queries": 5,
+            "pairs": 40,
+            "correct_orderings": 35,
+            "total_orderings": 35,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_ja": {
+            "queries": 2,
+            "pairs": 16,
+            "correct_orderings": 13,
+            "total_orderings": 14,
+            "ties": 0,
+            "ordering_accuracy": 0.9285714285714286,
+            "top1_accuracy": 0.5,
+            "mrr": 0.75,
+            "ndcg": 0.8154648767857288,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_te": {
+            "queries": 2,
+            "pairs": 16,
+            "correct_orderings": 14,
+            "total_orderings": 14,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_en": {
+            "queries": 2,
+            "pairs": 16,
+            "correct_orderings": 13,
+            "total_orderings": 14,
+            "ties": 0,
+            "ordering_accuracy": 0.9285714285714286,
+            "top1_accuracy": 0.5,
+            "mrr": 0.75,
+            "ndcg": 0.8154648767857288,
+            "tie_policy": "negative_before_positive"
+          }
+        },
+        "pointwise_cross_entropy": 0.4436286182724883,
+        "source_macro_ordering_accuracy": 0.9660730959050287
+      },
+      "validation_logits": [
+        [
+          13.4375,
+          17.625
+        ],
+        [
+          14.9375,
+          13.25
+        ],
+        [
+          11.375,
+          4.4375
+        ],
+        [
+          12.3125,
+          7.5
+        ],
+        [
+          12.75,
+          6.03125
+        ],
+        [
+          12.0,
+          5.375
+        ],
+        [
+          13.125,
+          8.4375
+        ],
+        [
+          12.5625,
+          6.15625
+        ],
+        [
+          13.8125,
+          18.25
+        ],
+        [
+          11.3125,
+          4.40625
+        ],
+        [
+          12.0,
+          6.96875
+        ],
+        [
+          11.625,
+          4.8125
+        ],
+        [
+          13.1875,
+          8.6875
+        ],
+        [
+          11.8125,
+          5.0625
+        ],
+        [
+          13.875,
+          10.6875
+        ],
+        [
+          12.125,
+          6.78125
+        ],
+        [
+          13.3125,
+          21.5
+        ],
+        [
+          16.0,
+          15.75
+        ],
+        [
+          15.8125,
+          10.6875
+        ],
+        [
+          16.875,
+          13.375
+        ],
+        [
+          12.9375,
+          7.15625
+        ],
+        [
+          15.375,
+          18.75
+        ],
+        [
+          16.5,
+          14.3125
+        ],
+        [
+          12.25,
+          4.0
+        ],
+        [
+          15.4375,
+          12.5
+        ],
+        [
+          12.625,
+          5.40625
+        ],
+        [
+          12.25,
+          4.4375
+        ],
+        [
+          11.875,
+          2.953125
+        ],
+        [
+          12.0,
+          3.453125
+        ],
+        [
+          11.625,
+          2.953125
+        ],
+        [
+          11.5625,
+          3.890625
+        ],
+        [
+          11.375,
+          1.8125
+        ],
+        [
+          13.25,
+          18.75
+        ],
+        [
+          12.5625,
+          6.9375
+        ],
+        [
+          10.0,
+          2.25
+        ],
+        [
+          13.0,
+          9.3125
+        ],
+        [
+          15.375,
+          15.1875
+        ],
+        [
+          11.5,
+          3.546875
+        ],
+        [
+          10.5625,
+          1.953125
+        ],
+        [
+          11.0,
+          4.5
+        ],
+        [
+          13.625,
+          22.125
+        ],
+        [
+          15.125,
+          10.8125
+        ],
+        [
+          12.9375,
+          4.0625
+        ],
+        [
+          13.3125,
+          5.4375
+        ],
+        [
+          13.125,
+          5.75
+        ],
+        [
+          12.8125,
+          3.96875
+        ],
+        [
+          14.375,
+          7.21875
+        ],
+        [
+          10.625,
+          2.28125
+        ],
+        [
+          11.6875,
+          21.125
+        ],
+        [
+          14.8125,
+          19.0
+        ],
+        [
+          14.3125,
+          20.625
+        ],
+        [
+          13.8125,
+          7.8125
+        ],
+        [
+          15.3125,
+          19.625
+        ],
+        [
+          14.125,
+          20.375
+        ],
+        [
+          10.4375,
+          -1.203125
+        ],
+        [
+          14.875,
+          20.25
+        ],
+        [
+          14.625,
+          12.375
+        ],
+        [
+          14.375,
+          13.5
+        ],
+        [
+          14.875,
+          11.6875
+        ],
+        [
+          12.125,
+          5.625
+        ],
+        [
+          11.6875,
+          4.9375
+        ],
+        [
+          12.875,
+          6.625
+        ],
+        [
+          11.8125,
+          4.5
+        ],
+        [
+          12.5,
+          5.78125
+        ],
+        [
+          14.9375,
+          13.875
+        ],
+        [
+          12.625,
+          7.03125
+        ],
+        [
+          11.4375,
+          2.9375
+        ],
+        [
+          11.0625,
+          3.34375
+        ],
+        [
+          10.3125,
+          2.046875
+        ],
+        [
+          10.125,
+          0.97265625
+        ],
+        [
+          11.375,
+          4.21875
+        ],
+        [
+          11.8125,
+          4.125
+        ],
+        [
+          13.75,
+          17.375
+        ],
+        [
+          11.4375,
+          4.15625
+        ],
+        [
+          11.5625,
+          2.3125
+        ],
+        [
+          11.75,
+          3.359375
+        ],
+        [
+          11.9375,
+          3.25
+        ],
+        [
+          11.375,
+          2.546875
+        ],
+        [
+          9.8125,
+          1.7578125
+        ],
+        [
+          11.625,
+          2.8125
+        ],
+        [
+          10.3125,
+          19.625
+        ],
+        [
+          11.1875,
+          0.59375
+        ],
+        [
+          10.8125,
+          -0.578125
+        ],
+        [
+          10.5,
+          -0.2236328125
+        ],
+        [
+          10.4375,
+          -0.74609375
+        ],
+        [
+          9.25,
+          -1.40625
+        ],
+        [
+          10.375,
+          -1.1171875
+        ],
+        [
+          10.5625,
+          1.65625
+        ],
+        [
+          9.9375,
+          20.125
+        ],
+        [
+          11.0,
+          1.5
+        ],
+        [
+          11.9375,
+          2.078125
+        ],
+        [
+          12.3125,
+          2.875
+        ],
+        [
+          11.4375,
+          3.140625
+        ],
+        [
+          10.25,
+          0.6484375
+        ],
+        [
+          11.75,
+          1.7109375
+        ],
+        [
+          11.1875,
+          2.734375
+        ],
+        [
+          12.5,
+          19.375
+        ],
+        [
+          12.4375,
+          6.875
+        ],
+        [
+          11.6875,
+          6.21875
+        ],
+        [
+          15.0625,
+          13.9375
+        ],
+        [
+          12.125,
+          7.46875
+        ],
+        [
+          11.75,
+          4.65625
+        ],
+        [
+          11.4375,
+          5.3125
+        ],
+        [
+          12.1875,
+          5.125
+        ],
+        [
+          13.3125,
+          19.5
+        ],
+        [
+          11.5,
+          4.28125
+        ],
+        [
+          11.5625,
+          5.75
+        ],
+        [
+          11.9375,
+          4.59375
+        ],
+        [
+          12.6875,
+          6.71875
+        ],
+        [
+          13.4375,
+          9.625
+        ],
+        [
+          14.5,
+          11.375
+        ],
+        [
+          15.1875,
+          11.8125
+        ],
+        [
+          10.0625,
+          19.75
+        ],
+        [
+          9.8125,
+          20.375
+        ],
+        [
+          10.375,
+          20.5
+        ],
+        [
+          11.6875,
+          0.34765625
+        ],
+        [
+          11.625,
+          1.1484375
+        ],
+        [
+          11.8125,
+          0.640625
+        ],
+        [
+          11.5625,
+          -1.0
+        ],
+        [
+          11.0625,
+          0.04296875
+        ],
+        [
+          11.5625,
+          18.125
+        ],
+        [
+          11.0,
+          3.359375
+        ],
+        [
+          14.375,
+          17.5
+        ],
+        [
+          12.1875,
+          6.71875
+        ],
+        [
+          11.375,
+          4.5
+        ],
+        [
+          10.75,
+          2.015625
+        ],
+        [
+          14.875,
+          13.25
+        ],
+        [
+          11.625,
+          2.609375
+        ],
+        [
+          13.1875,
+          19.5
+        ],
+        [
+          11.375,
+          1.1328125
+        ],
+        [
+          13.75,
+          9.75
+        ],
+        [
+          11.9375,
+          4.875
+        ],
+        [
+          13.0,
+          7.125
+        ],
+        [
+          10.8125,
+          1.2109375
+        ],
+        [
+          11.4375,
+          2.359375
+        ],
+        [
+          12.4375,
+          5.84375
+        ],
+        [
+          9.125,
+          19.75
+        ],
+        [
+          10.8125,
+          0.6640625
+        ],
+        [
+          12.375,
+          2.109375
+        ],
+        [
+          10.1875,
+          -0.89453125
+        ],
+        [
+          12.125,
+          1.1796875
+        ],
+        [
+          11.5,
+          -0.0830078125
+        ],
+        [
+          11.25,
+          -0.08154296875
+        ],
+        [
+          11.9375,
+          2.046875
+        ],
+        [
+          12.3125,
+          19.5
+        ],
+        [
+          12.1875,
+          19.625
+        ],
+        [
+          10.3125,
+          1.3203125
+        ],
+        [
+          10.875,
+          2.328125
+        ],
+        [
+          14.4375,
+          15.125
+        ],
+        [
+          15.3125,
+          15.0625
+        ],
+        [
+          10.6875,
+          1.609375
+        ],
+        [
+          10.8125,
+          2.1875
+        ],
+        [
+          12.875,
+          19.0
+        ],
+        [
+          11.8125,
+          4.65625
+        ],
+        [
+          14.1875,
+          17.625
+        ],
+        [
+          11.375,
+          2.734375
+        ],
+        [
+          11.25,
+          3.0
+        ],
+        [
+          14.4375,
+          11.875
+        ],
+        [
+          11.3125,
+          3.921875
+        ],
+        [
+          10.9375,
+          3.4375
+        ],
+        [
+          9.625,
+          20.125
+        ],
+        [
+          13.0,
+          2.921875
+        ],
+        [
+          12.25,
+          0.5625
+        ],
+        [
+          11.6875,
+          1.546875
+        ],
+        [
+          12.0625,
+          2.71875
+        ],
+        [
+          12.625,
+          1.6640625
+        ],
+        [
+          12.5,
+          1.578125
+        ],
+        [
+          11.375,
+          0.9453125
+        ],
+        [
+          12.0625,
+          18.75
+        ],
+        [
+          15.0625,
+          7.46875
+        ],
+        [
+          13.9375,
+          15.5625
+        ],
+        [
+          13.1875,
+          4.59375
+        ],
+        [
+          12.75,
+          4.34375
+        ],
+        [
+          13.625,
+          5.875
+        ],
+        [
+          14.125,
+          5.25
+        ],
+        [
+          13.3125,
+          4.40625
+        ],
+        [
+          14.0625,
+          20.125
+        ],
+        [
+          14.75,
+          14.625
+        ],
+        [
+          15.125,
+          8.125
+        ],
+        [
+          12.5625,
+          4.40625
+        ],
+        [
+          12.5,
+          1.6953125
+        ],
+        [
+          12.4375,
+          2.796875
+        ],
+        [
+          16.125,
+          16.875
+        ],
+        [
+          15.5625,
+          12.1875
+        ],
+        [
+          12.3125,
+          19.125
+        ],
+        [
+          11.3125,
+          2.421875
+        ],
+        [
+          11.0,
+          2.90625
+        ],
+        [
+          10.9375,
+          2.96875
+        ],
+        [
+          10.5,
+          3.125
+        ],
+        [
+          10.75,
+          2.09375
+        ],
+        [
+          13.8125,
+          8.375
+        ],
+        [
+          14.6875,
+          11.9375
+        ],
+        [
+          12.1875,
+          18.5
+        ],
+        [
+          13.1875,
+          8.4375
+        ],
+        [
+          13.1875,
+          9.0625
+        ],
+        [
+          11.5,
+          5.15625
+        ],
+        [
+          12.875,
+          8.9375
+        ],
+        [
+          13.5,
+          9.375
+        ],
+        [
+          13.125,
+          8.3125
+        ],
+        [
+          14.6875,
+          12.25
+        ],
+        [
+          13.9375,
+          11.0
+        ],
+        [
+          13.1875,
+          9.25
+        ],
+        [
+          14.8125,
+          17.25
+        ],
+        [
+          12.8125,
+          3.28125
+        ],
+        [
+          11.9375,
+          3.203125
+        ],
+        [
+          11.25,
+          3.78125
+        ],
+        [
+          12.75,
+          2.59375
+        ],
+        [
+          13.1875,
+          8.625
+        ],
+        [
+          11.6875,
+          20.375
+        ],
+        [
+          12.1875,
+          2.90625
+        ],
+        [
+          10.9375,
+          0.1337890625
+        ],
+        [
+          11.8125,
+          1.765625
+        ],
+        [
+          12.0,
+          2.546875
+        ],
+        [
+          10.625,
+          0.279296875
+        ],
+        [
+          11.9375,
+          1.859375
+        ],
+        [
+          11.5,
+          2.25
+        ],
+        [
+          14.4375,
+          17.875
+        ],
+        [
+          12.3125,
+          4.5625
+        ],
+        [
+          11.3125,
+          2.296875
+        ],
+        [
+          12.3125,
+          3.890625
+        ],
+        [
+          11.875,
+          4.125
+        ],
+        [
+          10.9375,
+          2.28125
+        ],
+        [
+          11.5625,
+          4.125
+        ],
+        [
+          12.125,
+          2.890625
+        ],
+        [
+          11.75,
+          19.5
+        ],
+        [
+          12.5,
+          1.9921875
+        ],
+        [
+          11.125,
+          1.1015625
+        ],
+        [
+          12.1875,
+          2.8125
+        ],
+        [
+          11.375,
+          0.2080078125
+        ],
+        [
+          10.125,
+          -0.61328125
+        ],
+        [
+          11.1875,
+          2.375
+        ],
+        [
+          12.1875,
+          2.640625
+        ],
+        [
+          14.3125,
+          20.75
+        ],
+        [
+          14.75,
+          18.875
+        ],
+        [
+          15.125,
+          18.75
+        ],
+        [
+          15.8125,
+          16.125
+        ],
+        [
+          14.875,
+          9.125
+        ],
+        [
+          15.8125,
+          17.25
+        ],
+        [
+          15.75,
+          17.5
+        ],
+        [
+          15.75,
+          17.25
+        ],
+        [
+          8.8125,
+          19.875
+        ],
+        [
+          8.875,
+          19.375
+        ],
+        [
+          10.25,
+          20.0
+        ],
+        [
+          11.0,
+          0.765625
+        ],
+        [
+          12.6875,
+          1.703125
+        ],
+        [
+          11.1875,
+          -0.75390625
+        ],
+        [
+          12.0,
+          1.4140625
+        ],
+        [
+          10.9375,
+          20.25
+        ],
+        [
+          11.875,
+          1.7265625
+        ],
+        [
+          11.4375,
+          0.3046875
+        ],
+        [
+          11.1875,
+          0.87109375
+        ],
+        [
+          11.375,
+          0.10009765625
+        ],
+        [
+          11.5625,
+          1.0625
+        ],
+        [
+          12.125,
+          1.53125
+        ],
+        [
+          12.1875,
+          4.75
+        ],
+        [
+          14.9375,
+          16.875
+        ],
+        [
+          13.0625,
+          7.0
+        ],
+        [
+          14.6875,
+          9.5625
+        ],
+        [
+          11.4375,
+          4.0625
+        ],
+        [
+          13.375,
+          7.65625
+        ],
+        [
+          15.6875,
+          12.1875
+        ],
+        [
+          14.875,
+          19.25
+        ],
+        [
+          15.375,
+          13.75
+        ],
+        [
+          12.375,
+          19.75
+        ],
+        [
+          11.3125,
+          1.0390625
+        ],
+        [
+          12.375,
+          2.921875
+        ],
+        [
+          11.375,
+          1.5078125
+        ],
+        [
+          10.9375,
+          0.9375
+        ],
+        [
+          12.3125,
+          2.25
+        ],
+        [
+          11.6875,
+          1.3515625
+        ],
+        [
+          11.75,
+          1.609375
+        ],
+        [
+          13.75,
+          10.375
+        ],
+        [
+          14.8125,
+          10.8125
+        ],
+        [
+          12.4375,
+          5.28125
+        ],
+        [
+          12.3125,
+          5.9375
+        ],
+        [
+          11.0,
+          1.375
+        ],
+        [
+          11.4375,
+          2.53125
+        ],
+        [
+          11.0625,
+          2.421875
+        ],
+        [
+          11.4375,
+          2.734375
+        ],
+        [
+          13.8125,
+          16.875
+        ],
+        [
+          13.6875,
+          18.375
+        ],
+        [
+          14.625,
+          14.25
+        ],
+        [
+          14.5625,
+          14.0625
+        ],
+        [
+          12.9375,
+          8.3125
+        ],
+        [
+          14.625,
+          13.5625
+        ],
+        [
+          13.125,
+          8.8125
+        ],
+        [
+          12.6875,
+          6.71875
+        ],
+        [
+          14.9375,
+          19.5
+        ],
+        [
+          13.9375,
+          9.875
+        ],
+        [
+          13.75,
+          9.1875
+        ],
+        [
+          15.4375,
+          14.9375
+        ],
+        [
+          11.6875,
+          5.375
+        ],
+        [
+          10.5625,
+          -0.16796875
+        ],
+        [
+          15.1875,
+          21.0
+        ],
+        [
+          11.9375,
+          5.375
+        ],
+        [
+          11.6875,
+          19.875
+        ],
+        [
+          12.375,
+          7.53125
+        ],
+        [
+          11.625,
+          5.8125
+        ],
+        [
+          11.0625,
+          3.203125
+        ],
+        [
+          10.5,
+          3.3125
+        ],
+        [
+          11.8125,
+          6.5
+        ],
+        [
+          11.6875,
+          5.0625
+        ],
+        [
+          11.875,
+          6.3125
+        ],
+        [
+          16.375,
+          14.5625
+        ],
+        [
+          13.0625,
+          6.375
+        ],
+        [
+          14.875,
+          9.9375
+        ],
+        [
+          13.875,
+          6.875
+        ],
+        [
+          16.125,
+          12.1875
+        ],
+        [
+          16.625,
+          14.9375
+        ],
+        [
+          14.3125,
+          7.40625
+        ],
+        [
+          16.375,
+          14.125
+        ],
+        [
+          14.5625,
+          16.75
+        ],
+        [
+          15.4375,
+          13.6875
+        ],
+        [
+          12.25,
+          6.21875
+        ],
+        [
+          13.75,
+          19.0
+        ],
+        [
+          15.5625,
+          14.1875
+        ],
+        [
+          13.125,
+          8.125
+        ],
+        [
+          15.625,
+          13.5625
+        ],
+        [
+          13.0625,
+          7.40625
+        ],
+        [
+          11.75,
+          19.625
+        ],
+        [
+          12.0625,
+          5.875
+        ],
+        [
+          10.875,
+          3.390625
+        ],
+        [
+          12.125,
+          5.90625
+        ],
+        [
+          10.5,
+          2.328125
+        ],
+        [
+          15.25,
+          12.375
+        ],
+        [
+          11.625,
+          5.0625
+        ],
+        [
+          14.5625,
+          17.125
+        ],
+        [
+          12.875,
+          18.75
+        ],
+        [
+          11.4375,
+          1.984375
+        ],
+        [
+          11.6875,
+          2.703125
+        ],
+        [
+          12.125,
+          4.875
+        ],
+        [
+          12.3125,
+          4.5
+        ],
+        [
+          11.25,
+          2.375
+        ],
+        [
+          10.75,
+          1.4921875
+        ],
+        [
+          11.9375,
+          3.109375
+        ],
+        [
+          12.75,
+          18.25
+        ],
+        [
+          10.75,
+          0.734375
+        ],
+        [
+          12.4375,
+          6.8125
+        ],
+        [
+          11.5,
+          4.96875
+        ],
+        [
+          10.8125,
+          0.341796875
+        ],
+        [
+          11.8125,
+          5.90625
+        ],
+        [
+          10.9375,
+          3.21875
+        ],
+        [
+          13.625,
+          19.25
+        ],
+        [
+          13.6875,
+          21.0
+        ],
+        [
+          12.6875,
+          5.34375
+        ],
+        [
+          16.125,
+          11.6875
+        ],
+        [
+          13.625,
+          8.0
+        ],
+        [
+          13.625,
+          8.3125
+        ],
+        [
+          16.375,
+          17.625
+        ],
+        [
+          15.0,
+          19.0
+        ],
+        [
+          13.5,
+          7.78125
+        ],
+        [
+          11.75,
+          20.0
+        ],
+        [
+          11.875,
+          2.203125
+        ],
+        [
+          10.4375,
+          0.470703125
+        ],
+        [
+          13.625,
+          4.625
+        ],
+        [
+          11.0,
+          0.3125
+        ],
+        [
+          11.9375,
+          1.5859375
+        ],
+        [
+          12.5625,
+          2.4375
+        ],
+        [
+          10.0625,
+          -0.019775390625
+        ],
+        [
+          13.1875,
+          21.0
+        ],
+        [
+          13.4375,
+          5.5
+        ],
+        [
+          13.5,
+          3.375
+        ],
+        [
+          14.75,
+          7.0
+        ],
+        [
+          13.3125,
+          5.09375
+        ],
+        [
+          15.625,
+          8.9375
+        ],
+        [
+          15.9375,
+          9.5
+        ],
+        [
+          15.1875,
+          7.78125
+        ],
+        [
+          13.0625,
+          19.0
+        ],
+        [
+          11.8125,
+          3.546875
+        ],
+        [
+          11.4375,
+          2.6875
+        ],
+        [
+          10.5,
+          1.0703125
+        ],
+        [
+          11.9375,
+          2.71875
+        ],
+        [
+          11.125,
+          2.109375
+        ],
+        [
+          12.0625,
+          4.40625
+        ],
+        [
+          10.6875,
+          0.50390625
+        ],
+        [
+          13.875,
+          20.375
+        ],
+        [
+          14.6875,
+          20.375
+        ],
+        [
+          16.5,
+          14.625
+        ],
+        [
+          16.5,
+          14.9375
+        ],
+        [
+          16.25,
+          16.75
+        ],
+        [
+          16.625,
+          14.375
+        ],
+        [
+          16.75,
+          16.125
+        ],
+        [
+          16.125,
+          15.25
+        ]
+      ],
+      "touche": {
+        "ndcg10": 0.6703201102634384,
+        "per_query": {
+          "39": 0.6620158551732016,
+          "38": 0.7818048722226499,
+          "23": 0.6532353118098306,
+          "32": 0.7021191841405937,
+          "21": 0.6791432776009704,
+          "19": 0.4170606134915054,
+          "35": 0.8813562702265281,
+          "9": 0.5858254974422273
+        }
+      },
+      "touche_margins": {
+        "39": {
+          "b6f6e654-2019-04-18T17:09:58Z-00003-000": 3.25,
+          "4d04459a-2019-04-18T14:01:20Z-00002-000": 0.875,
+          "51c34db5-2019-04-18T13:22:25Z-00005-000": -0.25,
+          "4d04459a-2019-04-18T14:01:20Z-00004-000": 3.0625,
+          "5194bbe-2019-04-18T17:30:08Z-00005-000": 0.5,
+          "4d04459a-2019-04-18T14:01:20Z-00000-000": 1.6875,
+          "7a99c7cf-2019-04-18T16:20:28Z-00005-000": 1.375,
+          "b6f6e654-2019-04-18T17:09:58Z-00000-000": 0.625,
+          "51c34db5-2019-04-18T13:22:25Z-00001-000": -0.5,
+          "fb307db5-2019-04-18T12:46:41Z-00002-000": 0.625,
+          "7a99c7b0-2019-04-18T16:23:13Z-00007-000": -0.9375,
+          "5194bbe-2019-04-18T17:30:08Z-00006-000": 1.5,
+          "b6f6e654-2019-04-18T17:09:58Z-00002-000": 0.25,
+          "5194bbe-2019-04-18T17:30:08Z-00003-000": 0.5,
+          "a3568bcf-2019-04-18T12:53:07Z-00001-000": 1.875,
+          "7a99c7cf-2019-04-18T16:20:28Z-00007-000": -0.5625,
+          "7a99c7b0-2019-04-18T16:23:13Z-00005-000": 0.875,
+          "bf184b88-2019-04-18T14:33:20Z-00000-000": -0.3125,
+          "5194bbe-2019-04-18T17:30:08Z-00000-000": 1.375,
+          "4d04459a-2019-04-18T14:01:20Z-00003-000": 0.25,
+          "4d04459a-2019-04-18T14:01:20Z-00001-000": -0.8125,
+          "51c34db5-2019-04-18T13:22:25Z-00004-000": 0.375,
+          "ddb9f050-2019-04-18T11:59:07Z-00001-000": 1.0625,
+          "8c866652-2019-04-18T18:27:57Z-00003-000": -0.5,
+          "7a5dcb0b-2019-04-18T12:33:14Z-00000-000": -0.25,
+          "b3c6f9b8-2019-04-18T12:20:53Z-00004-000": 0.5625,
+          "be617355-2019-04-18T14:49:38Z-00002-000": 0.9375,
+          "7245daba-2019-04-18T15:27:44Z-00006-000": -2.3125,
+          "a071780f-2019-04-18T14:46:37Z-00004-000": -0.5,
+          "ce0a06a9-2019-04-18T13:25:18Z-00002-000": -0.5625,
+          "93fbabb6-2019-04-18T12:38:32Z-00002-000": 0.625,
+          "1d5f1558-2019-04-18T15:25:13Z-00001-000": -1.25,
+          "d449ee59-2019-04-18T19:02:44Z-00008-000": -3.125,
+          "6ac98ba6-2019-04-18T15:12:23Z-00005-000": 0.375,
+          "630f7c6f-2019-04-18T12:52:49Z-00002-000": -1.125,
+          "3774807f-2019-04-18T13:57:28Z-00003-000": -1.0,
+          "7a5dcb0b-2019-04-18T12:33:14Z-00003-000": -0.1875,
+          "51c34db5-2019-04-18T13:22:25Z-00006-000": -2.9375,
+          "7a99c7b0-2019-04-18T16:23:13Z-00003-000": 0.1875,
+          "ddb9f050-2019-04-18T11:59:07Z-00004-000": 0.8125,
+          "6ac98ba6-2019-04-18T15:12:23Z-00000-000": -1.0625,
+          "3774807f-2019-04-18T13:57:28Z-00005-000": -1.875,
+          "3774807f-2019-04-18T13:57:28Z-00009-000": -3.125,
+          "7245daba-2019-04-18T15:27:44Z-00004-000": 0.0,
+          "bf184b88-2019-04-18T14:33:20Z-00005-000": -1.5,
+          "bf184b88-2019-04-18T14:33:20Z-00004-000": -2.4375,
+          "7245daba-2019-04-18T15:27:44Z-00003-000": -1.5625,
+          "40f0bed0-2019-04-18T14:11:38Z-00002-000": -1.0625,
+          "9329eedd-2019-04-18T14:04:54Z-00004-000": -0.1875,
+          "7a99c7b0-2019-04-18T16:23:13Z-00001-000": -0.3125,
+          "bd8467d7-2019-04-18T12:53:07Z-00001-000": -2.8125,
+          "bf184b88-2019-04-18T14:33:20Z-00003-000": -0.6875,
+          "7a99c7cf-2019-04-18T16:20:28Z-00001-000": -1.6875,
+          "47041c36-2019-04-18T14:16:28Z-00004-000": 0.0,
+          "40f0bed0-2019-04-18T14:11:38Z-00000-000": -0.875,
+          "855ce88e-2019-04-18T16:30:33Z-00004-000": -1.375,
+          "7a99c7cf-2019-04-18T16:20:28Z-00003-000": -0.375,
+          "d93e6b4a-2019-04-18T14:23:03Z-00002-000": -0.625,
+          "db76a53d-2019-04-18T16:19:38Z-00001-000": -1.375,
+          "3e34e0d7-2019-04-18T14:14:34Z-00003-000": -3.3125,
+          "51c34db5-2019-04-18T13:22:25Z-00003-000": -0.3125,
+          "fe453fc6-2019-04-18T15:15:51Z-00003-000": -1.375,
+          "bd8467d7-2019-04-18T12:53:07Z-00002-000": -1.0625,
+          "9329eedd-2019-04-18T14:04:54Z-00005-000": 0.0,
+          "6ac98ba6-2019-04-18T15:12:23Z-00002-000": -1.0625,
+          "ce0a06c8-2019-04-18T13:05:11Z-00003-000": -0.3125,
+          "9443a255-2019-04-18T19:43:34Z-00004-000": -2.5,
+          "b6f6e654-2019-04-18T17:09:58Z-00001-000": -1.0625,
+          "5194bbe-2019-04-18T17:30:08Z-00004-000": -2.25,
+          "6c6b40ff-2019-04-18T12:26:42Z-00001-000": -1.375,
+          "bf184b88-2019-04-18T14:33:20Z-00002-000": -0.25,
+          "1374527e-2019-04-18T17:17:19Z-00005-000": -1.9375,
+          "835f3e1b-2019-04-18T19:00:25Z-00005-000": -1.5,
+          "1374527e-2019-04-18T17:17:19Z-00002-000": -0.5625,
+          "d13faac7-2019-04-18T14:24:38Z-00007-000": -1.75,
+          "148740e7-2019-04-18T16:49:23Z-00005-000": -1.0,
+          "342cf7b6-2019-04-18T16:32:02Z-00005-000": 0.125,
+          "bd8467d7-2019-04-18T12:53:07Z-00005-000": -0.25,
+          "1d5f1558-2019-04-18T15:25:13Z-00006-000": -3.125,
+          "171eb76-2019-04-18T13:31:47Z-00001-000": -1.375,
+          "6ac98ba6-2019-04-18T15:12:23Z-00001-000": -0.875,
+          "1d5f1558-2019-04-18T15:25:13Z-00005-000": -1.0625,
+          "4505ff06-2019-04-18T13:43:08Z-00004-000": -3.9375,
+          "4505ff06-2019-04-18T13:43:08Z-00002-000": -0.125,
+          "342cf7b6-2019-04-18T16:32:02Z-00006-000": -2.25,
+          "84bee0b1-2019-04-18T13:28:44Z-00006-000": -1.625,
+          "baa5c71f-2019-04-18T16:44:24Z-00006-000": -0.375,
+          "5c3ed70-2019-04-18T20:04:06Z-00005-000": -3.3125,
+          "d93e6b4a-2019-04-18T14:23:03Z-00004-000": -2.8125,
+          "a3568b53-2019-04-18T17:13:51Z-00002-000": 0.0,
+          "8c9c7325-2019-04-18T13:31:47Z-00000-000": -2.4375,
+          "3774807f-2019-04-18T13:57:28Z-00004-000": -1.75,
+          "e3b9f8b-2019-04-18T16:33:58Z-00003-000": -0.6875,
+          "855ce88e-2019-04-18T16:30:33Z-00001-000": -2.3125,
+          "7a5dcb0b-2019-04-18T12:33:14Z-00001-000": -0.625,
+          "cb14344f-2019-04-18T14:29:50Z-00002-000": -1.0625,
+          "bf424eaa-2019-04-18T17:50:08Z-00003-000": -1.4375,
+          "1f0e65df-2019-04-18T15:25:46Z-00006-000": -1.125,
+          "7a5dcb0b-2019-04-18T12:33:14Z-00005-000": -1.75,
+          "47041c36-2019-04-18T14:16:28Z-00006-000": -2.375
+        },
+        "38": {
+          "d7c339a6-2019-04-18T11:47:37Z-00001-000": 0.75,
+          "82c12bae-2019-04-18T18:49:36Z-00004-000": -1.375,
+          "d267a913-2019-04-18T16:17:41Z-00005-000": -0.75,
+          "6231ab47-2019-04-18T16:20:48Z-00008-000": 0.0,
+          "9821cb64-2019-04-18T15:54:34Z-00002-000": -0.1875,
+          "d0a9155a-2019-04-18T19:00:24Z-00002-000": 0.75,
+          "174daa99-2019-04-18T19:27:29Z-00003-000": -0.875,
+          "c6aab7ec-2019-04-18T19:30:19Z-00004-000": 1.375,
+          "4d3852ce-2019-04-18T18:53:13Z-00009-000": 1.25,
+          "421114c2-2019-04-18T19:01:07Z-00005-000": -0.375,
+          "174daa99-2019-04-18T19:27:29Z-00001-000": -0.875,
+          "d267acf3-2019-04-18T11:47:51Z-00001-000": -0.125,
+          "d267acd4-2019-04-18T12:17:49Z-00001-000": -0.9375,
+          "e1d1a698-2019-04-18T15:18:36Z-00004-000": -0.5625,
+          "8c493086-2019-04-18T19:25:29Z-00001-000": -2.9375,
+          "c6aab7ec-2019-04-18T19:30:19Z-00003-000": 0.25,
+          "174daab8-2019-04-18T19:00:10Z-00002-000": -2.3125,
+          "111ea869-2019-04-18T15:43:17Z-00005-000": -0.75,
+          "174dab53-2019-04-18T18:33:55Z-00005-000": 0.1875,
+          "8e815158-2019-04-18T20:01:50Z-00002-000": -1.8125,
+          "421114c2-2019-04-18T19:01:07Z-00006-000": -2.375,
+          "174daab8-2019-04-18T19:00:10Z-00005-000": -2.0625,
+          "d267a913-2019-04-18T16:17:41Z-00002-000": -3.0,
+          "84f999d5-2019-04-18T18:09:59Z-00004-000": -1.3125,
+          "87b8c230-2019-04-17T11:47:26Z-00118-000": -2.6875,
+          "d267ad12-2019-04-18T11:40:03Z-00000-000": 2.5625,
+          "174daad7-2019-04-18T18:53:23Z-00006-000": -0.5625,
+          "d6ea1958-2019-04-18T18:02:20Z-00004-000": -1.375,
+          "6231ab28-2019-04-18T16:19:10Z-00004-000": -2.625,
+          "b0a1297b-2019-04-18T17:56:41Z-00004-000": -2.1875,
+          "82c12bae-2019-04-18T18:49:36Z-00002-000": -2.5625,
+          "89fd39b5-2019-04-18T18:04:03Z-00004-000": -0.625,
+          "35e725d0-2019-04-18T18:13:42Z-00003-000": -0.25,
+          "c6aab7ec-2019-04-18T19:30:19Z-00001-000": -2.75,
+          "174daab8-2019-04-18T19:00:10Z-00003-000": -0.625,
+          "aaec8cf8-2019-04-18T19:28:10Z-00002-000": -2.1875,
+          "87b8c230-2019-04-17T11:47:26Z-00152-000": -0.0625,
+          "d3a6203-2019-04-18T17:51:05Z-00000-000": -0.875,
+          "ffcf93d6-2019-04-18T18:36:12Z-00003-000": -1.375,
+          "35e725d0-2019-04-18T18:13:42Z-00001-000": -2.5,
+          "d3a6203-2019-04-18T17:51:05Z-00006-000": -1.25,
+          "bc00ee1b-2019-04-18T13:20:24Z-00001-000": -0.25,
+          "d267a913-2019-04-18T16:17:41Z-00003-000": -1.25,
+          "c0881ce0-2019-04-18T18:17:23Z-00003-000": -3.875,
+          "b0a1297b-2019-04-18T17:56:41Z-00007-000": 0.125,
+          "82c12bae-2019-04-18T18:49:36Z-00003-000": 0.75,
+          "d267a970-2019-04-18T15:26:34Z-00003-000": -0.25,
+          "b0a1297b-2019-04-18T17:56:41Z-00003-000": 0.0625,
+          "87b8c230-2019-04-17T11:47:26Z-00168-000": -1.5625,
+          "d267a8f4-2019-04-18T17:01:16Z-00001-000": -0.625,
+          "fa1a69b6-2019-04-18T16:31:37Z-00001-000": -0.8125,
+          "174daad7-2019-04-18T18:53:23Z-00004-000": -2.125,
+          "14b9fbe0-2019-04-18T17:06:27Z-00005-000": -1.625,
+          "174daad7-2019-04-18T18:53:23Z-00003-000": -2.0,
+          "421114c2-2019-04-18T19:01:07Z-00003-000": -2.375,
+          "fc44452e-2019-04-15T20:22:42Z-00012-000": -1.75,
+          "bc00ee1b-2019-04-18T13:20:24Z-00003-000": -2.875,
+          "4d3852ce-2019-04-18T18:53:13Z-00007-000": -1.9375,
+          "c6aab7ec-2019-04-18T19:30:19Z-00000-000": -2.875,
+          "34ee1a0c-2019-04-18T13:59:19Z-00001-000": -1.6875,
+          "c0ff09ad-2019-04-18T20:00:02Z-00003-000": -2.0625,
+          "87b8c230-2019-04-17T11:47:26Z-00122-000": -1.9375,
+          "86fcaef8-2019-04-18T12:12:08Z-00003-000": -2.3125,
+          "174daad7-2019-04-18T18:53:23Z-00001-000": -2.25,
+          "d0a91598-2019-04-18T18:36:17Z-00005-000": -1.875,
+          "d267a8d5-2019-04-18T16:58:41Z-00005-000": -0.4375,
+          "d267a8f4-2019-04-18T17:01:16Z-00009-000": -0.4375,
+          "d3a6203-2019-04-18T17:51:05Z-00005-000": -0.3125,
+          "d267a533-2019-04-18T18:20:55Z-00004-000": -1.375,
+          "d42a9277-2019-04-18T16:35:12Z-00002-000": -3.25,
+          "d267a533-2019-04-18T18:20:55Z-00000-000": -1.9375,
+          "59d1f83c-2019-04-18T18:35:46Z-00007-000": -2.125,
+          "d267a533-2019-04-18T18:20:55Z-00005-000": -0.1875,
+          "87b8c230-2019-04-17T11:47:26Z-00149-000": -1.25,
+          "342a26ba-2019-04-18T19:28:06Z-00002-000": -2.6875,
+          "d267a5af-2019-04-18T18:07:23Z-00004-000": -2.6875,
+          "174dab53-2019-04-18T18:33:55Z-00001-000": -1.6875,
+          "fa1a69b6-2019-04-18T16:31:37Z-00002-000": -1.0,
+          "4d3852ce-2019-04-18T18:53:13Z-00001-000": -3.625,
+          "174daad7-2019-04-18T18:53:23Z-00000-000": -2.625,
+          "111ea869-2019-04-18T15:43:17Z-00000-000": -1.3125,
+          "8f3513ba-2019-04-18T19:40:40Z-00001-000": -3.0,
+          "174daa99-2019-04-18T19:27:29Z-00004-000": -0.6875,
+          "a03c1e89-2019-04-18T19:02:20Z-00005-000": -0.5625,
+          "678a1efc-2019-04-18T17:01:06Z-00001-000": -2.875,
+          "d3a6203-2019-04-18T17:51:05Z-00001-000": -2.0625,
+          "8e815158-2019-04-18T20:01:50Z-00004-000": -2.1875,
+          "b0a1297b-2019-04-18T17:56:41Z-00000-000": -1.0625,
+          "ffcf93d6-2019-04-18T18:36:12Z-00005-000": -0.8125,
+          "174dab53-2019-04-18T18:33:55Z-00007-000": -1.8125,
+          "711b9599-2019-04-18T13:44:23Z-00005-000": 0.25,
+          "de9f97e-2019-04-18T15:11:49Z-00002-000": -2.8125,
+          "86da9e6a-2019-04-18T18:38:11Z-00005-000": -1.9375,
+          "87b8c230-2019-04-17T11:47:26Z-00130-000": -2.375,
+          "174dab53-2019-04-18T18:33:55Z-00003-000": -2.1875,
+          "3f13792b-2019-04-18T16:30:49Z-00002-000": -1.5625,
+          "2bdac55a-2019-04-18T13:14:01Z-00004-000": -1.0,
+          "59d1fcb7-2019-04-18T17:16:51Z-00004-000": -1.0625,
+          "b0a1297b-2019-04-18T17:56:41Z-00009-000": -3.5,
+          "5811e631-2019-04-18T19:03:05Z-00003-000": -0.5
+        },
+        "23": {
+          "7dba56a5-2019-04-18T12:15:17Z-00003-000": 3.4375,
+          "dccf7263-2019-04-18T16:52:37Z-00004-000": 2.1875,
+          "25dc8ac6-2019-04-18T19:24:09Z-00004-000": 0.625,
+          "c8f72601-2019-04-18T15:27:47Z-00004-000": 1.875,
+          "fd123096-2019-04-18T17:20:32Z-00002-000": -1.25,
+          "84a6fafa-2019-04-18T14:47:38Z-00003-000": 0.0625,
+          "2a7a3797-2019-04-18T18:16:06Z-00003-000": 0.3125,
+          "668509e3-2019-04-18T19:24:49Z-00006-000": -1.1875,
+          "294713ae-2019-04-18T15:54:26Z-00005-000": -0.4375,
+          "3fcde3d5-2019-04-18T19:24:36Z-00009-000": -0.3125,
+          "d1a9845d-2019-04-18T16:38:29Z-00004-000": -0.5,
+          "41ed75c9-2019-04-18T13:41:02Z-00002-000": 0.3125,
+          "114892b1-2019-04-18T11:52:47Z-00006-000": 0.375,
+          "88e3525b-2019-04-18T18:52:58Z-00009-000": -0.0625,
+          "41ed75c9-2019-04-18T13:41:02Z-00003-000": -0.5,
+          "c8970382-2019-04-18T12:54:41Z-00005-000": 0.1875,
+          "f1f121d0-2019-04-18T19:45:26Z-00003-000": -1.125,
+          "294713ae-2019-04-18T15:54:26Z-00001-000": -2.0625,
+          "950a295-2019-04-18T15:44:41Z-00007-000": -0.4375,
+          "bbce1e09-2019-04-18T15:28:32Z-00001-000": -0.8125,
+          "9386e729-2019-04-18T16:05:14Z-00003-000": -0.6875,
+          "fbc5207f-2019-04-18T17:32:39Z-00004-000": 1.375,
+          "9386f592-2019-04-18T12:46:22Z-00000-000": -0.8125,
+          "a2c85c65-2019-04-18T16:57:45Z-00002-000": 0.5625,
+          "9386e729-2019-04-18T16:05:14Z-00001-000": -0.5625,
+          "4f51142c-2019-04-18T15:23:59Z-00006-000": 0.4375,
+          "a7b24794-2019-04-18T14:18:31Z-00003-000": -1.25,
+          "d80382e8-2019-04-18T15:28:06Z-00003-000": 1.8125,
+          "b280a10e-2019-04-18T11:35:31Z-00004-000": -0.1875,
+          "c44ef8ac-2019-04-18T15:25:35Z-00005-000": -1.4375,
+          "e2437a3f-2019-04-18T19:37:50Z-00004-000": -1.8125,
+          "294713ae-2019-04-18T15:54:26Z-00000-000": -1.9375,
+          "32c18ac6-2019-04-18T12:19:10Z-00005-000": -0.25,
+          "9386e729-2019-04-18T16:05:14Z-00002-000": -0.4375,
+          "e21a50a3-2019-04-18T12:16:45Z-00003-000": -1.375,
+          "9386f26c-2019-04-18T13:35:08Z-00003-000": -0.1875,
+          "8fd1156e-2019-04-18T19:09:00Z-00003-000": -1.0,
+          "64b2721c-2019-04-18T15:14:15Z-00004-000": -3.25,
+          "2a7a3832-2019-04-18T14:51:38Z-00007-000": -0.5,
+          "7d51d9aa-2019-04-18T16:21:24Z-00006-000": -1.1875,
+          "2a7a37f4-2019-04-18T16:54:34Z-00004-000": 0.0625,
+          "3fcde3d5-2019-04-18T19:24:36Z-00008-000": -0.8125,
+          "7301ab1c-2019-04-18T14:05:34Z-00004-000": -2.1875,
+          "1cecaf86-2019-04-18T18:16:46Z-00003-000": -1.25,
+          "25dc8ac6-2019-04-18T19:24:09Z-00002-000": -2.1875,
+          "64e91157-2019-04-15T20:22:54Z-00014-000": -0.625,
+          "64e91157-2019-04-15T20:22:54Z-00013-000": -2.4375,
+          "9386e70a-2019-04-18T16:09:37Z-00004-000": -1.3125,
+          "847d06a3-2019-04-18T13:26:11Z-00002-000": -0.5,
+          "49cd40b7-2019-04-18T11:56:34Z-00001-000": -0.4375,
+          "9386f9ee-2019-04-18T11:08:36Z-00001-000": -1.25,
+          "d1c59b91-2019-04-18T16:00:42Z-00003-000": -1.1875,
+          "64b2721c-2019-04-18T15:14:15Z-00000-000": -1.25,
+          "2a7a37f4-2019-04-18T16:54:34Z-00002-000": 0.875,
+          "9386dfc6-2019-04-18T17:05:50Z-00004-000": -1.1875,
+          "b0114b5-2019-04-18T15:15:16Z-00003-000": -0.8125,
+          "6dbd1f79-2019-04-18T16:49:50Z-00005-000": -2.0625,
+          "1cecaf86-2019-04-18T18:16:46Z-00001-000": -0.625,
+          "6626ac2e-2019-04-18T13:30:40Z-00005-000": -1.375,
+          "84a6fafa-2019-04-18T14:47:38Z-00004-000": -0.1875,
+          "9fa39f2d-2019-04-18T16:43:29Z-00008-000": -0.375,
+          "a7b24794-2019-04-18T14:18:31Z-00002-000": -0.1875,
+          "cf4017a5-2019-04-18T16:44:54Z-00004-000": -1.4375,
+          "2f93939-2019-04-18T15:13:37Z-00000-000": -2.3125,
+          "c281abf3-2019-04-18T12:48:01Z-00001-000": 1.375,
+          "7301aafd-2019-04-18T14:11:51Z-00005-000": -2.1875,
+          "2d207525-2019-04-18T19:36:31Z-00005-000": -2.25,
+          "9386ea4f-2019-04-18T15:47:46Z-00005-000": -1.5,
+          "9386e729-2019-04-18T16:05:14Z-00005-000": 0.5,
+          "83a06a6-2019-04-18T15:41:35Z-00001-000": -1.0,
+          "e1261232-2019-04-18T14:14:56Z-00005-000": -1.9375,
+          "46de25-2019-04-18T20:03:40Z-00003-000": -4.125,
+          "668509e3-2019-04-18T19:24:49Z-00003-000": -3.0,
+          "c44ef8ac-2019-04-18T15:25:35Z-00006-000": -1.6875,
+          "443158c1-2019-04-18T18:43:38Z-00007-000": -0.8125,
+          "2a7a3832-2019-04-18T14:51:38Z-00004-000": -2.125,
+          "1cecaf86-2019-04-18T18:16:46Z-00000-000": -1.1875,
+          "c54d13cd-2019-04-19T12:44:35Z-00033-000": -2.25,
+          "4f51142c-2019-04-18T15:23:59Z-00004-000": 0.3125,
+          "e1261232-2019-04-18T14:14:56Z-00002-000": -0.125,
+          "9386e349-2019-04-18T16:54:59Z-00004-000": -0.75,
+          "847d06a3-2019-04-18T13:26:11Z-00000-000": -3.0625,
+          "d7df728a-2019-04-18T12:39:33Z-00000-000": -2.125,
+          "cf4017a5-2019-04-18T16:44:54Z-00000-000": -1.0,
+          "d8891c6f-2019-04-18T14:17:11Z-00000-000": -1.9375,
+          "9fa39f2d-2019-04-18T16:43:29Z-00006-000": -3.6875,
+          "4487af89-2019-04-18T17:22:01Z-00000-000": -2.0625,
+          "6626ac2e-2019-04-18T13:30:40Z-00007-000": -3.25,
+          "25dc8ac6-2019-04-18T19:24:09Z-00003-000": -1.8125,
+          "c54d13cd-2019-04-19T12:44:35Z-00027-000": -2.875,
+          "668509e3-2019-04-18T19:24:49Z-00000-000": -2.125,
+          "9f12f501-2019-04-18T19:55:28Z-00005-000": 0.1875,
+          "9386f5b1-2019-04-18T12:36:57Z-00000-000": -2.9375,
+          "4487af89-2019-04-18T17:22:01Z-00003-000": -3.0,
+          "6626ac2e-2019-04-18T13:30:40Z-00006-000": -0.6875,
+          "4f51142c-2019-04-18T15:23:59Z-00005-000": -0.875,
+          "2a7a3832-2019-04-18T14:51:38Z-00005-000": 1.125,
+          "2782977f-2019-04-18T13:34:32Z-00003-000": -2.875,
+          "9386eaac-2019-04-18T15:44:33Z-00002-000": -2.125,
+          "d9807bbe-2019-04-18T15:13:35Z-00001-000": -3.3125
+        },
+        "32": {
+          "2c05e9fb-2019-04-15T20:23:05Z-00015-000": 2.5,
+          "2c05e9fb-2019-04-15T20:23:05Z-00014-000": 2.125,
+          "2c05e9fb-2019-04-15T20:23:05Z-00016-000": 3.1875,
+          "2c05e9fb-2019-04-15T20:23:05Z-00017-000": 2.9375,
+          "2c05e9fb-2019-04-15T20:23:05Z-00029-000": 2.5,
+          "f2c72c91-2019-04-18T19:54:40Z-00000-000": 0.75,
+          "2c05e9fb-2019-04-15T20:23:05Z-00023-000": 2.625,
+          "e6af11b5-2019-04-15T20:22:52Z-00012-000": -0.25,
+          "b9c7eff8-2019-04-18T12:18:17Z-00002-000": -0.125,
+          "93844764-2019-04-18T19:10:04Z-00004-000": -0.9375,
+          "2c05e9fb-2019-04-15T20:23:05Z-00011-000": 2.75,
+          "2c05e9fb-2019-04-15T20:23:05Z-00019-000": -0.5,
+          "538dd198-2019-04-18T18:14:33Z-00006-000": -1.8125,
+          "2c05e9fb-2019-04-15T20:23:05Z-00020-000": -0.5,
+          "e0860e7e-2019-04-18T15:28:49Z-00002-000": -0.6875,
+          "c2f7570e-2019-04-18T18:35:39Z-00002-000": -2.8125,
+          "2d2c209d-2019-04-18T16:00:51Z-00005-000": -3.625,
+          "bdcf90af-2019-04-15T20:24:22Z-00024-000": 0.3125,
+          "93844764-2019-04-18T19:10:04Z-00003-000": -0.5625,
+          "b76ec089-2019-04-19T12:45:35Z-00014-000": 0.125,
+          "36e04c93-2019-04-18T16:54:17Z-00003-000": -3.25,
+          "70d26bcf-2019-04-18T15:47:32Z-00005-000": -3.8125,
+          "816da028-2019-04-18T18:24:51Z-00002-000": -4.8125,
+          "538dd198-2019-04-18T18:14:33Z-00002-000": -0.375,
+          "b6d2bbc8-2019-04-18T17:33:43Z-00001-000": -4.125,
+          "d0766dd3-2019-04-18T14:43:55Z-00006-000": -5.4375,
+          "b6d2bbc8-2019-04-18T17:33:43Z-00003-000": -5.4375,
+          "e0860e7e-2019-04-18T15:28:49Z-00005-000": -3.0,
+          "bb920a73-2019-04-18T17:15:02Z-00004-000": -3.875,
+          "b9c7eff8-2019-04-18T12:18:17Z-00000-000": -3.625,
+          "e6a1ee5e-2019-04-18T19:39:52Z-00003-000": -3.1875,
+          "370a7f9a-2019-04-18T18:03:12Z-00002-000": -4.75,
+          "538dd198-2019-04-18T18:14:33Z-00008-000": -4.5,
+          "93844764-2019-04-18T19:10:04Z-00000-000": -4.0625,
+          "538dd198-2019-04-18T18:14:33Z-00001-000": -3.3125,
+          "538dd198-2019-04-18T18:14:33Z-00004-000": -0.4375,
+          "c2f7570e-2019-04-18T18:35:39Z-00003-000": -2.25,
+          "51355556-2019-04-17T11:47:44Z-00052-000": -4.5625,
+          "29758b9-2019-04-18T17:06:05Z-00004-000": -4.8125,
+          "f2c72c91-2019-04-18T19:54:40Z-00004-000": -1.75,
+          "2154ca86-2019-04-18T12:39:34Z-00000-000": -7.21875,
+          "5dd7d039-2019-04-18T12:44:08Z-00002-000": -3.3125,
+          "2c05e9fb-2019-04-15T20:23:05Z-00027-000": -2.4375,
+          "7399741b-2019-04-18T14:34:55Z-00002-000": -3.125,
+          "816da028-2019-04-18T18:24:51Z-00004-000": -6.28125,
+          "2c05e9fb-2019-04-15T20:23:05Z-00021-000": -1.0,
+          "4cf1a131-2019-04-18T16:17:38Z-00000-000": -5.5625,
+          "648217ec-2019-04-18T19:48:00Z-00002-000": -3.8125,
+          "e0860e7e-2019-04-18T15:28:49Z-00004-000": -3.6875,
+          "615e029c-2019-04-18T19:03:24Z-00001-000": -3.4375,
+          "816da028-2019-04-18T18:24:51Z-00000-000": -5.9375,
+          "fcff81a7-2019-04-18T17:19:43Z-00004-000": -4.4375,
+          "b33077f-2019-04-18T15:26:00Z-00006-000": -5.0625,
+          "af208634-2019-04-18T12:57:35Z-00005-000": -5.375,
+          "54bd63d7-2019-04-17T11:47:45Z-00038-000": -3.0625,
+          "f2c72c91-2019-04-18T19:54:40Z-00005-000": -4.6875,
+          "bb920a73-2019-04-18T17:15:02Z-00002-000": -4.3125,
+          "bdcf90af-2019-04-15T20:24:22Z-00023-000": -2.8125,
+          "395632a5-2019-04-18T17:33:21Z-00003-000": -5.125,
+          "1a2ffdd3-2019-04-18T15:08:28Z-00004-000": -3.3125,
+          "55c05f7c-2019-04-18T15:19:28Z-00002-000": -3.5625,
+          "7e8cbef7-2019-04-18T18:37:20Z-00002-000": -5.0625,
+          "cbfd88a8-2019-04-18T13:14:17Z-00002-000": -4.875,
+          "b33077f-2019-04-18T15:26:00Z-00005-000": -4.3125,
+          "d0766dd3-2019-04-18T14:43:55Z-00007-000": -5.1875,
+          "83256f78-2019-04-18T12:49:03Z-00003-000": -6.1875,
+          "81c83377-2019-04-18T13:30:56Z-00005-000": -5.0625,
+          "f9133f8b-2019-04-18T19:16:23Z-00005-000": -5.125,
+          "d03ec158-2019-04-18T19:56:59Z-00003-000": -5.0,
+          "e10d3563-2019-04-17T11:47:44Z-00067-000": -4.75,
+          "55c05f7c-2019-04-18T15:19:28Z-00000-000": -3.0,
+          "a83c80fd-2019-04-18T14:13:58Z-00005-000": -5.0625,
+          "33d6b29e-2019-04-18T17:32:30Z-00004-000": -4.8125,
+          "d0766dd3-2019-04-18T14:43:55Z-00005-000": -5.125,
+          "ca54c9e4-2019-04-18T19:32:05Z-00000-000": -5.8125,
+          "f9847a21-2019-04-18T16:39:50Z-00002-000": -3.5625,
+          "d07a0a9e-2019-04-18T18:11:24Z-00000-000": -4.5,
+          "615e029c-2019-04-18T19:03:24Z-00005-000": -3.4375,
+          "7371560d-2019-04-18T18:37:18Z-00002-000": -4.125,
+          "7b7584cd-2019-04-18T13:10:25Z-00006-000": -4.875,
+          "65e2a29a-2019-04-18T19:23:06Z-00000-000": -4.3125,
+          "70d26bcf-2019-04-18T15:47:32Z-00001-000": -4.75,
+          "c2f75af9-2019-04-18T18:14:10Z-00003-000": -4.125,
+          "3a2444f6-2019-04-18T15:27:55Z-00001-000": -4.6875,
+          "99e950f0-2019-04-18T18:54:10Z-00004-000": -5.625,
+          "3e2e5609-2019-04-18T15:55:20Z-00003-000": -4.3125,
+          "62525e5c-2019-04-18T18:06:16Z-00000-000": -4.0625,
+          "c301704b-2019-04-18T20:03:50Z-00002-000": -2.0,
+          "65e2a29a-2019-04-18T19:23:06Z-00002-000": -6.375,
+          "d4b3ab9e-2019-04-18T19:57:37Z-00001-000": -5.6875,
+          "20f2b03f-2019-04-18T12:17:49Z-00001-000": -6.125,
+          "15a2bd73-2019-04-19T12:44:11Z-00014-000": -3.75,
+          "80c84bd9-2019-04-18T13:19:52Z-00004-000": -3.4375,
+          "c2f75af9-2019-04-18T18:14:10Z-00001-000": -4.6875,
+          "1901e650-2019-04-18T17:54:35Z-00009-000": -6.0625,
+          "c2f7570e-2019-04-18T18:35:39Z-00001-000": -5.8125,
+          "6c53db9d-2019-04-18T18:00:25Z-00002-000": -5.875,
+          "eb160461-2019-04-17T11:47:31Z-00074-000": -5.625,
+          "2d2c209d-2019-04-18T16:00:51Z-00003-000": -2.3125,
+          "d0766dd3-2019-04-18T14:43:55Z-00003-000": -4.9375
+        },
+        "21": {
+          "f7800a2b-2019-04-18T20:02:41Z-00003-000": 0.375,
+          "9c07825d-2019-04-18T13:31:03Z-00000-000": 0.375,
+          "9c07825d-2019-04-18T13:31:03Z-00004-000": -0.8125,
+          "9c07825d-2019-04-18T13:31:03Z-00005-000": 1.125,
+          "c09112b2-2019-04-18T14:00:47Z-00002-000": 0.8125,
+          "c09112b2-2019-04-18T14:00:47Z-00004-000": 1.0,
+          "7852a724-2019-04-18T14:16:39Z-00002-000": -0.1875,
+          "9c07825d-2019-04-18T13:31:03Z-00003-000": 0.5,
+          "212f2296-2019-04-19T12:47:07Z-00008-000": 0.25,
+          "5d920354-2019-04-18T16:11:42Z-00001-000": 2.625,
+          "71f54413-2019-04-18T19:36:05Z-00004-000": -0.5625,
+          "80500e82-2019-04-18T16:59:01Z-00002-000": 0.625,
+          "842a72e0-2019-04-18T16:56:47Z-00004-000": 0.625,
+          "fb47c4dc-2019-04-18T18:05:44Z-00003-000": -1.375,
+          "aac88cec-2019-04-19T12:45:13Z-00029-000": -0.3125,
+          "c09112b2-2019-04-18T14:00:47Z-00005-000": 0.3125,
+          "70cb061-2019-04-18T16:39:12Z-00007-000": 1.875,
+          "c09112b2-2019-04-18T14:00:47Z-00003-000": -2.625,
+          "7852a724-2019-04-18T14:16:39Z-00003-000": -1.3125,
+          "ab411006-2019-04-18T19:20:25Z-00009-000": -0.625,
+          "a5cb0429-2019-04-18T19:47:04Z-00002-000": -0.625,
+          "4aed909f-2019-04-18T17:04:08Z-00000-000": -0.25,
+          "dbed694f-2019-04-18T19:38:35Z-00002-000": -0.25,
+          "dc9f0311-2019-04-18T19:41:29Z-00004-000": -0.8125,
+          "de2ef8ea-2019-04-18T18:59:44Z-00000-000": 1.1875,
+          "dbed694f-2019-04-18T19:38:35Z-00007-000": -3.625,
+          "f6a4061a-2019-04-18T11:21:34Z-00000-000": -2.8125,
+          "fb47c4dc-2019-04-18T18:05:44Z-00005-000": -0.9375,
+          "bde3d11-2019-04-18T12:39:28Z-00002-000": -2.625,
+          "7852a724-2019-04-18T14:16:39Z-00001-000": 0.0625,
+          "e505d905-2019-04-18T16:03:11Z-00005-000": 1.9375,
+          "842a72c1-2019-04-18T16:57:36Z-00005-000": -0.375,
+          "603ee756-2019-04-18T11:22:47Z-00006-000": -0.75,
+          "fb9b0a88-2019-04-18T19:39:04Z-00004-000": -0.0625,
+          "ad1940fe-2019-04-18T13:29:29Z-00006-000": -1.3125,
+          "75c17c1b-2019-04-18T19:42:09Z-00002-000": -0.375,
+          "ab411006-2019-04-18T19:20:25Z-00007-000": 0.375,
+          "c09112b2-2019-04-18T14:00:47Z-00006-000": 0.3125,
+          "bde3d11-2019-04-18T12:39:28Z-00000-000": -3.5625,
+          "8ff43ff3-2019-04-19T12:45:46Z-00010-000": -2.375,
+          "356ae6f2-2019-04-18T14:14:18Z-00003-000": -1.75,
+          "9416a94c-2019-04-18T19:03:34Z-00005-000": -1.9375,
+          "f16410ab-2019-04-18T18:01:25Z-00004-000": 0.0,
+          "b235f67a-2019-04-18T15:13:16Z-00003-000": -1.8125,
+          "17fbbe0e-2019-04-18T18:04:40Z-00006-000": -0.5625,
+          "2555089b-2019-04-18T18:17:33Z-00002-000": -3.25,
+          "cf5179a4-2019-04-18T14:23:26Z-00004-000": 1.625,
+          "723ea482-2019-04-18T15:56:13Z-00005-000": -4.0625,
+          "7ae7b591-2019-04-15T20:22:23Z-00014-000": -2.75,
+          "b235f67a-2019-04-18T15:13:16Z-00002-000": -0.4375,
+          "bb913bfc-2019-04-18T17:06:16Z-00003-000": -2.6875,
+          "c09112b2-2019-04-18T14:00:47Z-00000-000": 0.8125,
+          "ad1940fe-2019-04-18T13:29:29Z-00005-000": 0.1875,
+          "fde913a8-2019-04-18T19:39:14Z-00003-000": -1.0,
+          "4b594354-2019-04-18T15:15:42Z-00004-000": -1.5625,
+          "4733bf42-2019-04-18T15:17:57Z-00003-000": -0.3125,
+          "70f488e3-2019-04-18T14:43:55Z-00003-000": -1.125,
+          "4733bf42-2019-04-18T15:17:57Z-00002-000": -2.3125,
+          "10d1d2f8-2019-04-18T12:21:35Z-00001-000": -1.5625,
+          "ed4d7d2f-2019-04-18T19:22:03Z-00003-000": -0.625,
+          "10e1b055-2019-04-19T12:46:09Z-00010-000": -1.5625,
+          "3793e2aa-2019-04-18T19:11:21Z-00003-000": -2.125,
+          "29d685d9-2019-04-18T13:29:32Z-00004-000": -0.375,
+          "430c0344-2019-04-18T19:39:35Z-00004-000": 0.375,
+          "b58ff37e-2019-04-17T11:47:36Z-00071-000": -0.4375,
+          "7f6c271b-2019-04-18T13:55:07Z-00007-000": -1.625,
+          "90bfc2ae-2019-04-18T19:38:40Z-00003-000": -3.6875,
+          "66212ba4-2019-04-18T19:44:16Z-00003-000": -1.3125,
+          "3793e2aa-2019-04-18T19:11:21Z-00000-000": -4.375,
+          "422c0992-2019-04-18T18:12:13Z-00005-000": 1.0625,
+          "588c0e26-2019-04-18T12:41:36Z-00004-000": 0.0,
+          "aac88cec-2019-04-19T12:45:13Z-00031-000": -2.25,
+          "48a4a93c-2019-04-18T17:17:16Z-00002-000": -2.4375,
+          "9c07825d-2019-04-18T13:31:03Z-00002-000": -1.9375,
+          "51251a80-2019-04-18T13:27:57Z-00005-000": -4.25,
+          "64eed48-2019-04-18T12:48:06Z-00003-000": -2.0,
+          "fde913a8-2019-04-18T19:39:14Z-00002-000": -2.25,
+          "ab411006-2019-04-18T19:20:25Z-00008-000": -2.375,
+          "748b035a-2019-04-18T19:08:30Z-00000-000": -2.4375,
+          "f7800a88-2019-04-18T17:34:23Z-00005-000": -2.3125,
+          "12ea8fac-2019-04-18T18:53:37Z-00004-000": -1.0,
+          "66212ba4-2019-04-18T19:44:16Z-00002-000": -2.1875,
+          "f600de9a-2019-04-18T20:00:34Z-00000-000": -3.8125,
+          "49d51a26-2019-04-18T19:59:43Z-00002-000": -2.1875,
+          "53b84112-2019-04-18T14:06:51Z-00000-000": 0.75,
+          "e505d905-2019-04-18T16:03:11Z-00003-000": -3.1875,
+          "fb47c4dc-2019-04-18T18:05:44Z-00001-000": -1.5,
+          "603ee756-2019-04-18T11:22:47Z-00005-000": -0.4375,
+          "ae945b47-2019-04-19T12:43:59Z-00001-000": 0.125,
+          "4b594354-2019-04-18T15:15:42Z-00000-000": -3.75,
+          "7a9613b5-2019-04-18T17:05:12Z-00001-000": -0.625,
+          "70f488e3-2019-04-18T14:43:55Z-00004-000": -0.75,
+          "797b35ea-2019-04-18T14:50:47Z-00004-000": -2.75,
+          "4733bf42-2019-04-18T15:17:57Z-00005-000": -2.0,
+          "f6a4061a-2019-04-18T11:21:34Z-00002-000": -2.5625,
+          "603ee756-2019-04-18T11:22:47Z-00003-000": -3.4375,
+          "f1e6a226-2019-04-18T18:53:21Z-00002-000": -2.0625,
+          "67552c63-2019-04-18T19:53:59Z-00001-000": -2.5625,
+          "61b46571-2019-04-18T12:27:50Z-00005-000": -1.3125,
+          "b1e2894b-2019-04-18T16:02:34Z-00003-000": -1.625
+        },
+        "19": {
+          "7141563a-2019-04-18T18:43:57Z-00000-000": 1.625,
+          "d9e8f6e2-2019-04-18T19:03:35Z-00005-000": -0.625,
+          "b91f04f4-2019-04-18T15:09:43Z-00003-000": -0.125,
+          "f54ab53a-2019-04-18T12:48:18Z-00004-000": 1.4375,
+          "14339aee-2019-04-18T19:27:46Z-00005-000": -2.9375,
+          "96274e4d-2019-04-18T17:24:22Z-00005-000": 1.0,
+          "5b953289-2019-04-18T13:58:30Z-00001-000": 0.5,
+          "933d85b9-2019-04-18T16:11:47Z-00005-000": -0.125,
+          "5d03cab1-2019-04-18T18:06:19Z-00004-000": -1.5,
+          "9c4cd4ca-2019-04-18T17:42:19Z-00004-000": -0.125,
+          "6335cba3-2019-04-18T12:35:45Z-00001-000": -2.8125,
+          "eaf2d2ed-2019-04-18T17:08:20Z-00003-000": 1.25,
+          "c40a309f-2019-04-18T15:49:49Z-00001-000": -0.4375,
+          "63356341-2019-04-18T14:26:12Z-00009-000": -0.875,
+          "ea2e9abe-2019-04-18T17:35:59Z-00004-000": 0.375,
+          "6335541e-2019-04-18T14:59:13Z-00002-000": -0.5,
+          "d01db0ce-2019-04-18T18:38:16Z-00005-000": -0.1875,
+          "de756082-2019-04-18T19:21:02Z-00005-000": 0.1875,
+          "369e4f3a-2019-04-18T19:20:56Z-00007-000": -0.625,
+          "369e4f59-2019-04-18T19:20:37Z-00006-000": -0.625,
+          "429c4751-2019-04-18T15:12:55Z-00004-000": 0.125,
+          "ea2e1abf-2019-04-18T18:45:35Z-00005-000": -0.1875,
+          "924aa0b2-2019-04-18T17:07:36Z-00004-000": -1.375,
+          "c6b95312-2019-04-18T18:29:26Z-00005-000": -2.0,
+          "fe5e045a-2019-04-18T15:15:22Z-00005-000": -0.9375,
+          "ea2e99e5-2019-04-18T18:31:36Z-00000-000": -0.75,
+          "3893e6a5-2019-04-18T20:03:55Z-00001-000": -2.75,
+          "5b95326a-2019-04-18T16:00:23Z-00005-000": 0.25,
+          "369e4f1b-2019-04-18T19:30:47Z-00007-000": -1.4375,
+          "4d91b1df-2019-04-18T15:29:29Z-00009-000": -2.1875,
+          "d9e8fd8b-2019-04-18T18:54:39Z-00004-000": -1.125,
+          "d9e8fdaa-2019-04-18T18:54:22Z-00005-000": -1.1875,
+          "d00d2f7a-2019-04-18T17:48:12Z-00004-000": -1.875,
+          "630bca14-2019-04-18T16:30:59Z-00003-000": -0.0625,
+          "48d177bf-2019-04-18T16:12:00Z-00005-000": 0.375,
+          "339558ed-2019-04-18T16:55:04Z-00000-000": 0.625,
+          "339558ed-2019-04-18T16:55:04Z-00002-000": 0.625,
+          "63355ec6-2019-04-18T14:37:19Z-00005-000": 0.75,
+          "59ad85bc-2019-04-18T18:09:07Z-00005-000": -1.75,
+          "eb6bf7d5-2019-04-18T18:38:16Z-00006-000": -2.1875,
+          "8c147dd1-2019-04-18T15:53:15Z-00005-000": -0.4375,
+          "63357264-2019-04-18T13:13:26Z-00002-000": 0.0,
+          "744a509e-2019-04-18T15:14:27Z-00003-000": -2.25,
+          "b561ef57-2019-04-18T16:28:46Z-00003-000": -1.875,
+          "659e55fe-2019-04-18T15:05:30Z-00007-000": -0.125,
+          "1aa165a9-2019-04-18T19:19:46Z-00005-000": -2.9375,
+          "452c0de8-2019-04-18T19:19:05Z-00005-000": -2.9375,
+          "6334db63-2019-04-18T16:47:41Z-00005-000": 0.375,
+          "5d03ca92-2019-04-18T18:09:51Z-00004-000": -1.4375,
+          "ea2e99e5-2019-04-18T18:31:36Z-00001-000": 0.4375,
+          "6335cbc2-2019-04-18T12:35:24Z-00001-000": 0.0,
+          "33c918a7-2019-04-18T18:43:20Z-00006-000": -3.1875,
+          "63347646-2019-04-18T17:41:45Z-00005-000": -1.75,
+          "6335cb84-2019-04-18T12:35:52Z-00000-000": -2.3125,
+          "26750601-2019-04-18T16:40:17Z-00003-000": -1.4375,
+          "9bfee71c-2019-04-18T18:31:58Z-00007-000": -1.6875,
+          "66e10725-2019-04-18T16:34:47Z-00005-000": -0.875,
+          "fe5e045a-2019-04-18T15:15:22Z-00003-000": -2.0625,
+          "e2b2a86-2019-04-18T11:52:03Z-00001-000": -1.3125,
+          "48d16fc1-2019-04-18T16:34:07Z-00002-000": -1.6875,
+          "ea2e9624-2019-04-18T19:16:55Z-00007-000": -1.625,
+          "33962bdf-2019-04-18T14:40:51Z-00006-000": -0.5625,
+          "d1cb4750-2019-04-18T15:40:38Z-00003-000": -2.0625,
+          "374a31d9-2019-04-18T16:09:06Z-00004-000": -1.4375,
+          "63355f61-2019-04-18T14:37:00Z-00004-000": -2.5,
+          "63346ee3-2019-04-18T18:10:40Z-00002-000": -2.4375,
+          "ce8a18b4-2019-04-18T17:09:26Z-00002-000": -1.0,
+          "ea2e99e5-2019-04-18T18:31:36Z-00004-000": -2.625,
+          "8ca2faee-2019-04-18T17:27:45Z-00004-000": -1.0625,
+          "457e9be7-2019-04-18T19:57:30Z-00003-000": -3.8125,
+          "6335cb65-2019-04-18T12:40:14Z-00007-000": -0.75,
+          "14339acf-2019-04-18T19:31:22Z-00005-000": -3.125,
+          "8d358e35-2019-04-18T14:45:58Z-00002-000": -2.875,
+          "ae4571c-2019-04-18T18:03:25Z-00001-000": -3.75,
+          "3a16b1cf-2019-04-18T19:45:23Z-00005-000": -2.3125,
+          "2a544b57-2019-04-18T17:16:10Z-00004-000": -2.875,
+          "b56be777-2019-04-18T16:58:39Z-00002-000": -3.875,
+          "2131c62d-2019-04-18T19:45:08Z-00003-000": -1.8125,
+          "6334eb40-2019-04-18T16:07:52Z-00004-000": -2.3125,
+          "d9e8fdaa-2019-04-18T18:54:22Z-00004-000": -2.0,
+          "ea01fdc2-2019-04-18T17:12:16Z-00006-000": -2.8125,
+          "48d17f22-2019-04-18T16:00:01Z-00003-000": -0.25,
+          "fb3c024a-2019-04-18T14:45:20Z-00004-000": 0.0,
+          "1b1fbdc-2019-04-18T17:19:48Z-00003-000": -2.0,
+          "ea2ea202-2019-04-18T15:17:45Z-00007-000": 0.5,
+          "63356268-2019-04-18T14:33:59Z-00003-000": -2.125,
+          "48d1e765-2019-04-18T14:56:54Z-00002-000": -0.5625,
+          "75545f39-2019-04-18T14:11:17Z-00006-000": -1.875,
+          "63356303-2019-04-18T14:28:44Z-00003-000": -1.9375,
+          "63346b22-2019-04-18T18:21:12Z-00005-000": -1.6875,
+          "c91960a0-2019-04-18T17:21:23Z-00002-000": -4.625,
+          "368a6ce4-2019-04-18T19:54:59Z-00001-000": -2.25,
+          "63355f61-2019-04-18T14:37:00Z-00003-000": -4.0,
+          "d0508d4b-2019-04-18T14:33:52Z-00002-000": -1.625,
+          "92aeb788-2019-04-18T12:09:19Z-00003-000": -2.75,
+          "6335cfc1-2019-04-18T11:44:27Z-00003-000": -0.6875,
+          "63f4a530-2019-04-18T17:04:57Z-00002-000": 0.4375,
+          "173a3fe5-2019-04-18T19:55:19Z-00004-000": -1.375,
+          "ea2e9abe-2019-04-18T17:35:59Z-00001-000": -0.5,
+          "d01da664-2019-04-18T18:55:30Z-00004-000": -2.8125
+        },
+        "35": {
+          "50c55103-2019-04-18T16:52:42Z-00003-000": 3.0,
+          "d0e5c093-2019-04-18T18:40:47Z-00005-000": 0.0625,
+          "5b6b25e-2019-04-18T18:46:35Z-00001-000": -0.125,
+          "3e67d226-2019-04-18T17:47:14Z-00001-000": 0.6875,
+          "1ac69d5c-2019-04-18T13:30:47Z-00002-000": 0.6875,
+          "7f95546c-2019-04-18T14:36:44Z-00002-000": 1.375,
+          "758ea5f9-2019-04-18T16:05:18Z-00004-000": 3.8125,
+          "92fc546a-2019-04-15T20:22:34Z-00010-000": 0.8125,
+          "f47d4ad1-2019-04-18T16:02:36Z-00005-000": -0.1875,
+          "b1a6f17a-2019-04-18T15:54:21Z-00005-000": -0.0625,
+          "30a5cf73-2019-04-18T18:52:16Z-00003-000": 0.625,
+          "d94ca2d5-2019-04-18T18:35:58Z-00007-000": 1.5,
+          "30a5cf73-2019-04-18T18:52:16Z-00002-000": 0.875,
+          "758ea5f9-2019-04-18T16:05:18Z-00000-000": -0.8125,
+          "f47d4ad1-2019-04-18T16:02:36Z-00004-000": -0.125,
+          "3466ccde-2019-04-18T15:56:31Z-00006-000": 0.1875,
+          "30a5cf73-2019-04-18T18:52:16Z-00001-000": -0.6875,
+          "b4849efd-2019-04-18T17:56:23Z-00001-000": 0.5,
+          "1ff4635e-2019-04-18T18:36:23Z-00005-000": 0.4375,
+          "c827393f-2019-04-18T17:49:30Z-00001-000": -0.5,
+          "6da2e494-2019-04-15T20:22:30Z-00010-000": 0.25,
+          "92fc546a-2019-04-15T20:22:34Z-00008-000": 0.875,
+          "758ea5f9-2019-04-18T16:05:18Z-00003-000": -1.5625,
+          "46745944-2019-04-18T12:08:45Z-00000-000": 1.25,
+          "8a9f614c-2019-04-18T17:34:39Z-00001-000": -2.625,
+          "e42653aa-2019-04-18T16:41:40Z-00002-000": 0.8125,
+          "e81dfba3-2019-04-18T17:00:44Z-00004-000": 0.0625,
+          "456d6b1b-2019-04-18T16:18:57Z-00002-000": -0.375,
+          "d48f37bf-2019-04-17T11:47:20Z-00043-000": -1.8125,
+          "d94ca2d5-2019-04-18T18:35:58Z-00006-000": 1.625,
+          "74558456-2019-04-18T17:04:25Z-00003-000": 0.0625,
+          "a5ca39dc-2019-04-18T11:43:36Z-00005-000": -1.4375,
+          "4381b332-2019-04-19T12:47:35Z-00023-000": -0.25,
+          "d0e5c093-2019-04-18T18:40:47Z-00006-000": 0.875,
+          "e6270ff-2019-04-18T16:35:46Z-00003-000": 0.4375,
+          "7f95546c-2019-04-18T14:36:44Z-00003-000": -1.6875,
+          "4f2fe78e-2019-04-18T11:10:15Z-00002-000": 0.3125,
+          "456d6b3a-2019-04-18T16:19:18Z-00004-000": 0.75,
+          "ce4d7cce-2019-04-18T17:03:30Z-00002-000": -0.625,
+          "5b6b2f9-2019-04-18T15:28:19Z-00001-000": 0.6875,
+          "ccecc0ad-2019-04-18T15:37:21Z-00001-000": -0.125,
+          "739f2cb1-2019-04-18T16:12:34Z-00007-000": -1.6875,
+          "c4f2dab6-2019-04-18T17:04:26Z-00003-000": 0.625,
+          "45462ad0-2019-04-18T13:17:49Z-00005-000": 0.5625,
+          "456d6b3a-2019-04-18T16:19:18Z-00005-000": -0.5,
+          "45462ad0-2019-04-18T13:17:49Z-00000-000": 1.1875,
+          "7f95546c-2019-04-18T14:36:44Z-00004-000": -0.5,
+          "1dd4cde4-2019-04-18T16:08:31Z-00002-000": 0.5,
+          "6a618e4b-2019-04-18T16:23:33Z-00004-000": 0.875,
+          "d5fac21c-2019-04-18T15:06:25Z-00001-000": -0.625,
+          "30a5cf73-2019-04-18T18:52:16Z-00000-000": -2.125,
+          "c51b1af2-2019-04-18T12:20:30Z-00005-000": -2.4375,
+          "4381b332-2019-04-19T12:47:35Z-00031-000": -3.5,
+          "7d79edc5-2019-04-18T17:46:39Z-00002-000": -0.75,
+          "f3750c50-2019-04-18T11:57:33Z-00005-000": -1.0,
+          "63308ee0-2019-04-18T16:43:34Z-00002-000": -1.5625,
+          "19ca43bb-2019-04-18T18:35:19Z-00006-000": -0.375,
+          "5b6b2f9-2019-04-18T15:28:19Z-00000-000": 0.0,
+          "d46bff47-2019-04-18T17:09:05Z-00003-000": -0.75,
+          "6da2e494-2019-04-15T20:22:30Z-00015-000": -0.0625,
+          "ac22b87e-2019-04-18T11:38:36Z-00002-000": -2.1875,
+          "75fbfa8d-2019-04-18T14:39:09Z-00008-000": -2.0625,
+          "e42653aa-2019-04-18T16:41:40Z-00001-000": -0.9375,
+          "6714f378-2019-04-18T20:03:11Z-00004-000": -0.625,
+          "6a618e4b-2019-04-18T16:23:33Z-00001-000": -1.1875,
+          "c958dc5a-2019-04-18T17:51:05Z-00003-000": 0.25,
+          "ce330406-2019-04-18T15:51:12Z-00004-000": -1.8125,
+          "e6d00db4-2019-04-18T16:41:52Z-00001-000": -0.6875,
+          "7f02efbf-2019-04-18T17:47:09Z-00003-000": -1.1875,
+          "e81dfba3-2019-04-18T17:00:44Z-00000-000": -2.0625,
+          "7b564465-2019-04-18T13:46:22Z-00003-000": -0.625,
+          "2fba671-2019-04-18T12:51:48Z-00000-000": -1.5,
+          "1ff4635e-2019-04-18T18:36:23Z-00004-000": -0.25,
+          "456d6b3a-2019-04-18T16:19:18Z-00002-000": 0.8125,
+          "3307f209-2019-04-18T15:40:14Z-00003-000": -2.1875,
+          "a5ca39dc-2019-04-18T11:43:36Z-00004-000": -2.25,
+          "e6270ff-2019-04-18T16:35:46Z-00004-000": -1.25,
+          "8db68a9b-2019-04-18T16:56:06Z-00000-000": -2.75,
+          "1f98e1f8-2019-04-18T18:59:42Z-00001-000": -1.25,
+          "1ff4635e-2019-04-18T18:36:23Z-00001-000": -0.625,
+          "7bb5fe56-2019-04-18T17:45:28Z-00004-000": -0.5625,
+          "7a99f4c0-2019-04-18T16:50:24Z-00003-000": -1.3125,
+          "d48f37bf-2019-04-17T11:47:20Z-00038-000": -1.4375,
+          "90b2f503-2019-04-18T19:34:49Z-00001-000": -1.4375,
+          "456d6b3a-2019-04-18T16:19:18Z-00001-000": -3.125,
+          "5b6b25e-2019-04-18T18:46:35Z-00002-000": -2.0,
+          "7f95546c-2019-04-18T14:36:44Z-00005-000": -2.125,
+          "d94ca2d5-2019-04-18T18:35:58Z-00002-000": -0.375,
+          "baa6345c-2019-04-18T13:44:43Z-00002-000": -1.125,
+          "7f02efbf-2019-04-18T17:47:09Z-00004-000": -0.6875,
+          "3307f209-2019-04-18T15:40:14Z-00004-000": -2.3125,
+          "6a618e4b-2019-04-18T16:23:33Z-00002-000": -2.8125,
+          "a41abadd-2019-04-18T15:37:06Z-00001-000": -3.25,
+          "6ba1043a-2019-04-18T14:56:00Z-00006-000": -0.375,
+          "a1ac5625-2019-04-18T12:11:35Z-00003-000": -1.625,
+          "5dce2de2-2019-04-18T15:41:55Z-00001-000": 1.1875,
+          "d5c9fd7c-2019-04-18T13:00:26Z-00002-000": -1.3125,
+          "5547489c-2019-04-18T17:05:01Z-00002-000": -2.75,
+          "8db68a9b-2019-04-18T16:56:06Z-00003-000": -1.6875,
+          "4381b332-2019-04-19T12:47:35Z-00033-000": -2.6875
+        },
+        "9": {
+          "6a52a7de-2019-04-18T13:44:47Z-00003-000": 0.1875,
+          "d75a0ed1-2019-04-18T16:35:33Z-00003-000": -0.25,
+          "109aed09-2019-04-18T16:36:24Z-00001-000": -0.1875,
+          "f0896680-2019-04-18T18:00:05Z-00000-000": -1.625,
+          "96158d24-2019-04-18T11:23:27Z-00001-000": 0.75,
+          "f84713e2-2019-04-18T18:06:56Z-00003-000": -0.3125,
+          "df002939-2019-04-18T11:10:56Z-00004-000": -0.125,
+          "a7f5e454-2019-04-18T13:43:30Z-00003-000": 1.125,
+          "cf842d4b-2019-04-18T17:29:27Z-00002-000": -0.6875,
+          "a7f5e454-2019-04-18T13:43:30Z-00002-000": 0.375,
+          "f0896680-2019-04-18T18:00:05Z-00003-000": 0.875,
+          "4430de8b-2019-04-18T15:28:56Z-00006-000": -0.6875,
+          "f6f33da9-2019-04-18T17:06:27Z-00002-000": -0.5,
+          "24035966-2019-04-18T12:50:42Z-00003-000": -0.5625,
+          "24035fd1-2019-04-18T12:22:39Z-00005-000": -2.0625,
+          "94533937-2019-04-18T17:03:17Z-00005-000": -1.75,
+          "8be8fac1-2019-04-18T12:09:17Z-00001-000": -1.625,
+          "9389d854-2019-04-18T18:50:20Z-00005-000": 0.5,
+          "5417872f-2019-04-18T18:41:53Z-00003-000": -1.75,
+          "23c2cf2-2019-04-18T17:39:06Z-00002-000": -1.0,
+          "4430de8b-2019-04-18T15:28:56Z-00000-000": -0.75,
+          "2403606c-2019-04-18T11:14:56Z-00005-000": 0.5,
+          "4b51d325-2019-04-19T12:44:49Z-00046-000": 0.125,
+          "eb9a4d4d-2019-04-18T18:18:05Z-00002-000": -1.1875,
+          "e185ae98-2019-04-18T14:38:46Z-00002-000": -0.75,
+          "c618f3a4-2019-04-18T14:31:04Z-00005-000": -0.5,
+          "54b181c-2019-04-18T15:21:56Z-00004-000": -0.875,
+          "e185aed6-2019-04-18T12:33:18Z-00004-000": -0.5,
+          "38c6731a-2019-04-18T19:33:25Z-00005-000": -1.0,
+          "eb9a4d4d-2019-04-18T18:18:05Z-00001-000": -1.625,
+          "cf842d6a-2019-04-18T17:28:15Z-00006-000": 0.75,
+          "df002939-2019-04-18T11:10:56Z-00005-000": -0.4375,
+          "debd317e-2019-04-18T16:46:28Z-00005-000": -1.0,
+          "f6f33da9-2019-04-18T17:06:27Z-00003-000": -0.125,
+          "38c6731a-2019-04-18T19:33:25Z-00003-000": -0.9375,
+          "eb9a4d4d-2019-04-18T18:18:05Z-00000-000": 0.9375,
+          "2403550a-2019-04-18T14:02:10Z-00006-000": -1.0,
+          "6f5c7d0-2019-04-18T15:43:46Z-00003-000": -0.625,
+          "7ba06a9e-2019-04-18T13:30:49Z-00003-000": -1.0,
+          "4c9720fc-2019-04-18T17:42:44Z-00002-000": -2.0,
+          "ca9c6b9f-2019-04-18T11:12:56Z-00004-000": -2.5,
+          "e2027ef-2019-04-18T11:51:30Z-00005-000": -0.8125,
+          "b5339025-2019-04-18T18:30:27Z-00003-000": -0.25,
+          "7a462d3c-2019-04-18T16:52:05Z-00004-000": -0.6875,
+          "2ee9faf4-2019-04-18T15:42:59Z-00002-000": -1.1875,
+          "720383e6-2019-04-18T14:09:06Z-00003-000": 0.625,
+          "1a3800cb-2019-04-18T14:31:44Z-00000-000": -2.75,
+          "240350ec-2019-04-18T15:27:05Z-00003-000": -0.3125,
+          "c7f51e34-2019-04-18T16:26:03Z-00005-000": -1.5,
+          "28f316b1-2019-04-18T18:27:06Z-00004-000": -0.875,
+          "375bf80d-2019-04-18T18:30:46Z-00005-000": -0.3125,
+          "cf843223-2019-04-18T15:49:10Z-00003-000": -2.3125,
+          "c7f51e34-2019-04-18T16:26:03Z-00006-000": 0.1875,
+          "c5bfbdb9-2019-04-18T17:32:59Z-00006-000": -1.1875,
+          "f380cbdd-2019-04-18T12:44:24Z-00001-000": -1.6875,
+          "6a52a7bf-2019-04-18T13:59:25Z-00003-000": -2.1875,
+          "4b51d325-2019-04-19T12:44:49Z-00039-000": -0.3125,
+          "46c53f41-2019-04-18T16:27:17Z-00003-000": 0.125,
+          "40c16f39-2019-04-18T16:15:15Z-00004-000": -0.5625,
+          "89208796-2019-04-18T17:01:01Z-00004-000": -0.8125,
+          "720383e6-2019-04-18T14:09:06Z-00004-000": -1.8125,
+          "8156d8db-2019-04-18T13:53:21Z-00005-000": -0.9375,
+          "b959db22-2019-04-18T18:05:43Z-00005-000": -0.125,
+          "fa922cd8-2019-04-18T16:13:55Z-00004-000": 0.4375,
+          "563c9db1-2019-04-18T16:20:05Z-00006-000": 0.4375,
+          "720383e6-2019-04-18T14:09:06Z-00000-000": -2.125,
+          "2403510b-2019-04-18T15:27:22Z-00002-000": -0.25,
+          "6ae58551-2019-04-18T15:35:40Z-00006-000": -0.1875,
+          "1f6b2834-2019-04-18T14:19:41Z-00003-000": -1.625,
+          "ca9c6b9f-2019-04-18T11:12:56Z-00006-000": -0.6875,
+          "f6f33da9-2019-04-18T17:06:27Z-00004-000": -3.5625,
+          "6a52a743-2019-04-18T19:19:33Z-00003-000": -1.8125,
+          "e6f906f4-2019-04-18T15:32:03Z-00006-000": -1.1875,
+          "f0deef6e-2019-04-18T18:22:25Z-00008-000": -1.3125,
+          "f380cbdd-2019-04-18T12:44:24Z-00000-000": -1.6875,
+          "c617f5ab-2019-04-18T14:18:24Z-00003-000": -0.8125,
+          "637bf47b-2019-04-18T15:09:25Z-00005-000": -1.0,
+          "99da1031-2019-04-18T11:12:29Z-00005-000": -0.75,
+          "c7f51eb0-2019-04-18T16:19:34Z-00003-000": 0.3125,
+          "6ae58551-2019-04-18T15:35:40Z-00005-000": -2.375,
+          "4430de8b-2019-04-18T15:28:56Z-00007-000": -0.5,
+          "e9900875-2019-04-18T17:39:28Z-00002-000": -0.5625,
+          "f0deef6e-2019-04-18T18:22:25Z-00007-000": -1.8125,
+          "5c0d9fa0-2019-04-18T11:11:55Z-00003-000": -1.4375,
+          "e2027ef-2019-04-18T11:51:30Z-00001-000": -1.9375,
+          "5177bde4-2019-04-18T13:40:21Z-00003-000": -1.8125,
+          "17e66c01-2019-04-18T14:35:26Z-00000-000": -0.3125,
+          "6f5c7d0-2019-04-18T15:43:46Z-00005-000": 0.25,
+          "ddb0b6b8-2019-04-18T14:08:45Z-00000-000": -0.5,
+          "1f6b2834-2019-04-18T14:19:41Z-00004-000": -0.6875,
+          "4eed3412-2019-04-18T12:57:55Z-00000-000": -1.3125,
+          "8156d8db-2019-04-18T13:53:21Z-00004-000": -1.125,
+          "f8471401-2019-04-18T17:54:46Z-00002-000": -1.125,
+          "8be8fac1-2019-04-18T12:09:17Z-00003-000": -2.4375,
+          "92695cf-2019-04-18T12:23:34Z-00000-000": -0.3125,
+          "480a719a-2019-04-18T14:11:26Z-00001-000": -1.0625,
+          "46c53f41-2019-04-18T16:27:17Z-00001-000": -1.0625,
+          "7ba06a9e-2019-04-18T13:30:49Z-00002-000": -0.375,
+          "20ee21b1-2019-04-18T17:38:39Z-00003-000": -2.375,
+          "f4a3ee69-2019-04-18T15:32:25Z-00000-000": -0.8125
+        }
+      },
+      "seconds": {
+        "validation": 2.7473425299995142,
+        "touche": 8.969098830000803,
+        "round": 13.779218850000689
+      },
+      "validation_queries": 48,
+      "touche_queries": 8
+    },
+    "3": {
+      "validation": {
+        "overall": {
+          "queries": 48,
+          "pairs": 383,
+          "correct_orderings": 329,
+          "total_orderings": 335,
+          "ties": 0,
+          "ordering_accuracy": 0.982089552238806,
+          "top1_accuracy": 0.875,
+          "mrr": 0.9375,
+          "ndcg": 0.9538662191964322,
+          "tie_policy": "negative_before_positive"
+        },
+        "per_source": {
+          "BQ": {
+            "queries": 7,
+            "pairs": 56,
+            "correct_orderings": 46,
+            "total_orderings": 49,
+            "ties": 0,
+            "ordering_accuracy": 0.9387755102040817,
+            "top1_accuracy": 0.5714285714285714,
+            "mrr": 0.7857142857142857,
+            "ndcg": 0.8418270372449105,
+            "tie_policy": "negative_before_positive"
+          },
+          "ATEC": {
+            "queries": 7,
+            "pairs": 56,
+            "correct_orderings": 49,
+            "total_orderings": 49,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_ar": {
+            "queries": 2,
+            "pairs": 16,
+            "correct_orderings": 14,
+            "total_orderings": 14,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          },
+          "QBQTC_v2": {
+            "queries": 5,
+            "pairs": 40,
+            "correct_orderings": 35,
+            "total_orderings": 35,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          },
+          "afqmc": {
+            "queries": 5,
+            "pairs": 40,
+            "correct_orderings": 35,
+            "total_orderings": 35,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_id": {
+            "queries": 3,
+            "pairs": 24,
+            "correct_orderings": 20,
+            "total_orderings": 21,
+            "ties": 0,
+            "ordering_accuracy": 0.9523809523809523,
+            "top1_accuracy": 0.6666666666666666,
+            "mrr": 0.8333333333333334,
+            "ndcg": 0.8769765845238192,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_ru": {
+            "queries": 3,
+            "pairs": 24,
+            "correct_orderings": 20,
+            "total_orderings": 21,
+            "ties": 0,
+            "ordering_accuracy": 0.9523809523809523,
+            "top1_accuracy": 0.6666666666666666,
+            "mrr": 0.8333333333333334,
+            "ndcg": 0.8769765845238192,
+            "tie_policy": "negative_before_positive"
+          },
+          "PAWSX": {
+            "queries": 5,
+            "pairs": 39,
+            "correct_orderings": 34,
+            "total_orderings": 34,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          },
+          "LCQMC": {
+            "queries": 5,
+            "pairs": 40,
+            "correct_orderings": 35,
+            "total_orderings": 35,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_ja": {
+            "queries": 2,
+            "pairs": 16,
+            "correct_orderings": 13,
+            "total_orderings": 14,
+            "ties": 0,
+            "ordering_accuracy": 0.9285714285714286,
+            "top1_accuracy": 0.5,
+            "mrr": 0.75,
+            "ndcg": 0.8154648767857288,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_te": {
+            "queries": 2,
+            "pairs": 16,
+            "correct_orderings": 14,
+            "total_orderings": 14,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          },
+          "miracl_en": {
+            "queries": 2,
+            "pairs": 16,
+            "correct_orderings": 14,
+            "total_orderings": 14,
+            "ties": 0,
+            "ordering_accuracy": 1.0,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "ndcg": 1.0,
+            "tie_policy": "negative_before_positive"
+          }
+        },
+        "pointwise_cross_entropy": 0.23073223584502456,
+        "source_macro_ordering_accuracy": 0.9810090702947846
+      },
+      "validation_logits": [
+        [
+          14.0,
+          17.875
+        ],
+        [
+          14.9375,
+          15.25
+        ],
+        [
+          13.125,
+          9.0625
+        ],
+        [
+          14.125,
+          12.0
+        ],
+        [
+          12.625,
+          8.5
+        ],
+        [
+          13.375,
+          9.4375
+        ],
+        [
+          14.0,
+          11.375
+        ],
+        [
+          12.9375,
+          8.875
+        ],
+        [
+          14.4375,
+          17.5
+        ],
+        [
+          10.75,
+          5.78125
+        ],
+        [
+          12.1875,
+          8.625
+        ],
+        [
+          10.9375,
+          5.65625
+        ],
+        [
+          12.8125,
+          9.4375
+        ],
+        [
+          11.375,
+          6.625
+        ],
+        [
+          14.0,
+          12.0
+        ],
+        [
+          12.1875,
+          8.25
+        ],
+        [
+          15.1875,
+          19.625
+        ],
+        [
+          15.875,
+          16.125
+        ],
+        [
+          16.125,
+          12.6875
+        ],
+        [
+          16.375,
+          13.375
+        ],
+        [
+          15.375,
+          12.4375
+        ],
+        [
+          15.875,
+          17.875
+        ],
+        [
+          16.125,
+          14.875
+        ],
+        [
+          13.75,
+          8.75
+        ],
+        [
+          15.375,
+          13.9375
+        ],
+        [
+          13.4375,
+          9.375
+        ],
+        [
+          12.25,
+          7.65625
+        ],
+        [
+          12.0,
+          6.78125
+        ],
+        [
+          11.8125,
+          6.03125
+        ],
+        [
+          11.5625,
+          5.875
+        ],
+        [
+          12.125,
+          7.59375
+        ],
+        [
+          11.125,
+          4.59375
+        ],
+        [
+          14.3125,
+          17.625
+        ],
+        [
+          12.0,
+          7.75
+        ],
+        [
+          9.625,
+          3.984375
+        ],
+        [
+          12.75,
+          9.9375
+        ],
+        [
+          15.1875,
+          15.5
+        ],
+        [
+          10.75,
+          5.125
+        ],
+        [
+          10.25,
+          4.0625
+        ],
+        [
+          10.875,
+          5.84375
+        ],
+        [
+          15.9375,
+          19.75
+        ],
+        [
+          15.625,
+          13.6875
+        ],
+        [
+          14.8125,
+          8.9375
+        ],
+        [
+          15.3125,
+          11.0
+        ],
+        [
+          13.9375,
+          9.25
+        ],
+        [
+          14.6875,
+          9.625
+        ],
+        [
+          15.5625,
+          11.6875
+        ],
+        [
+          11.375,
+          5.625
+        ],
+        [
+          14.875,
+          18.875
+        ],
+        [
+          15.5625,
+          17.0
+        ],
+        [
+          15.6875,
+          17.875
+        ],
+        [
+          14.6875,
+          11.3125
+        ],
+        [
+          15.875,
+          16.875
+        ],
+        [
+          15.5625,
+          18.0
+        ],
+        [
+          11.875,
+          4.0625
+        ],
+        [
+          15.75,
+          18.0
+        ],
+        [
+          14.4375,
+          14.0625
+        ],
+        [
+          14.5,
+          15.375
+        ],
+        [
+          15.0,
+          13.9375
+        ],
+        [
+          13.125,
+          9.125
+        ],
+        [
+          12.625,
+          8.3125
+        ],
+        [
+          13.375,
+          9.375
+        ],
+        [
+          12.3125,
+          7.375
+        ],
+        [
+          12.8125,
+          8.5
+        ],
+        [
+          15.0625,
+          14.8125
+        ],
+        [
+          14.0625,
+          11.3125
+        ],
+        [
+          12.625,
+          7.875
+        ],
+        [
+          11.4375,
+          6.1875
+        ],
+        [
+          11.1875,
+          6.15625
+        ],
+        [
+          10.25,
+          4.625
+        ],
+        [
+          12.4375,
+          8.25
+        ],
+        [
+          12.0,
+          6.84375
+        ],
+        [
+          14.4375,
+          17.75
+        ],
+        [
+          10.75,
+          5.75
+        ],
+        [
+          10.25,
+          2.828125
+        ],
+        [
+          10.75,
+          4.46875
+        ],
+        [
+          11.75,
+          6.71875
+        ],
+        [
+          10.8125,
+          4.6875
+        ],
+        [
+          9.6875,
+          3.5625
+        ],
+        [
+          11.5625,
+          6.34375
+        ],
+        [
+          15.75,
+          16.75
+        ],
+        [
+          11.625,
+          3.21875
+        ],
+        [
+          11.75,
+          2.421875
+        ],
+        [
+          11.8125,
+          2.859375
+        ],
+        [
+          11.125,
+          2.546875
+        ],
+        [
+          10.6875,
+          0.91796875
+        ],
+        [
+          10.875,
+          2.3125
+        ],
+        [
+          12.625,
+          7.34375
+        ],
+        [
+          13.8125,
+          18.0
+        ],
+        [
+          10.9375,
+          4.15625
+        ],
+        [
+          11.75,
+          4.40625
+        ],
+        [
+          12.25,
+          6.625
+        ],
+        [
+          11.1875,
+          6.21875
+        ],
+        [
+          10.8125,
+          3.953125
+        ],
+        [
+          11.8125,
+          4.0
+        ],
+        [
+          12.125,
+          6.46875
+        ],
+        [
+          14.3125,
+          18.0
+        ],
+        [
+          12.625,
+          8.4375
+        ],
+        [
+          12.25,
+          8.625
+        ],
+        [
+          15.125,
+          15.125
+        ],
+        [
+          12.4375,
+          9.0625
+        ],
+        [
+          11.3125,
+          6.125
+        ],
+        [
+          11.25,
+          6.625
+        ],
+        [
+          11.9375,
+          7.3125
+        ],
+        [
+          15.0,
+          17.25
+        ],
+        [
+          11.4375,
+          5.65625
+        ],
+        [
+          12.0625,
+          7.53125
+        ],
+        [
+          12.625,
+          7.5625
+        ],
+        [
+          14.625,
+          11.0625
+        ],
+        [
+          14.0,
+          11.375
+        ],
+        [
+          14.6875,
+          12.625
+        ],
+        [
+          15.6875,
+          13.375
+        ],
+        [
+          15.25,
+          16.5
+        ],
+        [
+          15.4375,
+          16.5
+        ],
+        [
+          15.625,
+          16.75
+        ],
+        [
+          12.75,
+          4.28125
+        ],
+        [
+          11.75,
+          3.296875
+        ],
+        [
+          12.875,
+          4.71875
+        ],
+        [
+          11.375,
+          3.0
+        ],
+        [
+          11.0625,
+          3.0
+        ],
+        [
+          13.1875,
+          16.625
+        ],
+        [
+          10.8125,
+          5.09375
+        ],
+        [
+          14.8125,
+          17.125
+        ],
+        [
+          13.0,
+          9.4375
+        ],
+        [
+          11.3125,
+          6.21875
+        ],
+        [
+          10.1875,
+          3.359375
+        ],
+        [
+          15.0625,
+          14.5
+        ],
+        [
+          10.5625,
+          3.203125
+        ],
+        [
+          14.5,
+          17.5
+        ],
+        [
+          11.5,
+          4.53125
+        ],
+        [
+          14.4375,
+          12.3125
+        ],
+        [
+          12.8125,
+          8.5625
+        ],
+        [
+          13.0625,
+          9.4375
+        ],
+        [
+          11.0,
+          4.40625
+        ],
+        [
+          11.5,
+          5.125
+        ],
+        [
+          12.625,
+          8.25
+        ],
+        [
+          14.5625,
+          16.625
+        ],
+        [
+          10.75,
+          3.53125
+        ],
+        [
+          12.0,
+          5.5625
+        ],
+        [
+          10.0,
+          1.53125
+        ],
+        [
+          12.875,
+          4.28125
+        ],
+        [
+          11.6875,
+          3.46875
+        ],
+        [
+          12.0625,
+          4.09375
+        ],
+        [
+          11.3125,
+          4.625
+        ],
+        [
+          14.25,
+          18.125
+        ],
+        [
+          14.5625,
+          18.0
+        ],
+        [
+          10.0625,
+          2.9375
+        ],
+        [
+          10.375,
+          3.640625
+        ],
+        [
+          14.625,
+          15.1875
+        ],
+        [
+          15.1875,
+          13.3125
+        ],
+        [
+          10.125,
+          2.859375
+        ],
+        [
+          10.375,
+          3.53125
+        ],
+        [
+          14.0,
+          17.5
+        ],
+        [
+          11.4375,
+          6.15625
+        ],
+        [
+          14.625,
+          17.5
+        ],
+        [
+          10.4375,
+          4.3125
+        ],
+        [
+          10.4375,
+          4.03125
+        ],
+        [
+          14.5625,
+          13.1875
+        ],
+        [
+          10.8125,
+          5.34375
+        ],
+        [
+          10.5,
+          4.8125
+        ],
+        [
+          15.0625,
+          17.0
+        ],
+        [
+          13.3125,
+          7.46875
+        ],
+        [
+          11.8125,
+          3.28125
+        ],
+        [
+          12.1875,
+          5.1875
+        ],
+        [
+          11.375,
+          3.25
+        ],
+        [
+          12.125,
+          4.75
+        ],
+        [
+          12.0,
+          4.1875
+        ],
+        [
+          12.125,
+          3.6875
+        ],
+        [
+          14.125,
+          17.375
+        ],
+        [
+          15.125,
+          11.125
+        ],
+        [
+          14.625,
+          13.875
+        ],
+        [
+          13.8125,
+          9.4375
+        ],
+        [
+          13.875,
+          9.5
+        ],
+        [
+          13.8125,
+          9.5625
+        ],
+        [
+          14.5,
+          9.8125
+        ],
+        [
+          13.4375,
+          9.25
+        ],
+        [
+          15.3125,
+          18.75
+        ],
+        [
+          14.4375,
+          13.5
+        ],
+        [
+          15.8125,
+          12.3125
+        ],
+        [
+          14.1875,
+          10.4375
+        ],
+        [
+          12.875,
+          8.5625
+        ],
+        [
+          13.625,
+          9.0
+        ],
+        [
+          16.0,
+          14.375
+        ],
+        [
+          15.5625,
+          14.3125
+        ],
+        [
+          13.9375,
+          17.75
+        ],
+        [
+          10.4375,
+          3.46875
+        ],
+        [
+          10.5625,
+          4.5625
+        ],
+        [
+          10.625,
+          4.53125
+        ],
+        [
+          10.125,
+          4.5625
+        ],
+        [
+          9.625,
+          3.234375
+        ],
+        [
+          13.4375,
+          9.75
+        ],
+        [
+          14.625,
+          13.3125
+        ],
+        [
+          13.4375,
+          17.5
+        ],
+        [
+          13.375,
+          10.0625
+        ],
+        [
+          13.25,
+          10.375
+        ],
+        [
+          11.375,
+          6.71875
+        ],
+        [
+          12.875,
+          9.875
+        ],
+        [
+          13.375,
+          10.5625
+        ],
+        [
+          13.25,
+          9.9375
+        ],
+        [
+          14.625,
+          12.8125
+        ],
+        [
+          14.625,
+          13.6875
+        ],
+        [
+          13.875,
+          11.5625
+        ],
+        [
+          14.9375,
+          16.75
+        ],
+        [
+          11.6875,
+          5.4375
+        ],
+        [
+          12.4375,
+          7.5625
+        ],
+        [
+          11.875,
+          7.6875
+        ],
+        [
+          12.5625,
+          5.0625
+        ],
+        [
+          13.8125,
+          10.9375
+        ],
+        [
+          13.9375,
+          18.25
+        ],
+        [
+          11.75,
+          4.625
+        ],
+        [
+          10.75,
+          2.96875
+        ],
+        [
+          11.4375,
+          3.765625
+        ],
+        [
+          12.0,
+          6.1875
+        ],
+        [
+          10.4375,
+          2.859375
+        ],
+        [
+          11.25,
+          3.9375
+        ],
+        [
+          11.0,
+          4.0
+        ],
+        [
+          14.9375,
+          17.625
+        ],
+        [
+          11.875,
+          6.65625
+        ],
+        [
+          10.5625,
+          4.125
+        ],
+        [
+          11.75,
+          5.84375
+        ],
+        [
+          11.1875,
+          5.28125
+        ],
+        [
+          10.4375,
+          4.28125
+        ],
+        [
+          11.375,
+          6.34375
+        ],
+        [
+          10.875,
+          4.71875
+        ],
+        [
+          13.6875,
+          17.5
+        ],
+        [
+          11.9375,
+          4.71875
+        ],
+        [
+          11.1875,
+          4.78125
+        ],
+        [
+          12.4375,
+          7.3125
+        ],
+        [
+          11.4375,
+          3.15625
+        ],
+        [
+          10.25,
+          2.78125
+        ],
+        [
+          11.375,
+          5.625
+        ],
+        [
+          12.875,
+          7.40625
+        ],
+        [
+          15.6875,
+          18.25
+        ],
+        [
+          15.6875,
+          17.25
+        ],
+        [
+          15.4375,
+          16.875
+        ],
+        [
+          15.625,
+          15.4375
+        ],
+        [
+          15.375,
+          11.8125
+        ],
+        [
+          15.8125,
+          16.0
+        ],
+        [
+          15.5625,
+          15.6875
+        ],
+        [
+          15.875,
+          16.25
+        ],
+        [
+          15.4375,
+          18.0
+        ],
+        [
+          15.125,
+          17.25
+        ],
+        [
+          15.9375,
+          15.6875
+        ],
+        [
+          12.0,
+          5.1875
+        ],
+        [
+          13.5,
+          8.5
+        ],
+        [
+          11.125,
+          1.890625
+        ],
+        [
+          12.1875,
+          5.15625
+        ],
+        [
+          13.875,
+          18.25
+        ],
+        [
+          11.9375,
+          5.28125
+        ],
+        [
+          11.5625,
+          3.53125
+        ],
+        [
+          11.3125,
+          4.40625
+        ],
+        [
+          11.375,
+          3.390625
+        ],
+        [
+          11.1875,
+          3.515625
+        ],
+        [
+          12.25,
+          4.96875
+        ],
+        [
+          13.4375,
+          9.5625
+        ],
+        [
+          15.5625,
+          16.25
+        ],
+        [
+          14.75,
+          11.6875
+        ],
+        [
+          15.8125,
+          13.625
+        ],
+        [
+          13.875,
+          10.0625
+        ],
+        [
+          14.375,
+          11.1875
+        ],
+        [
+          15.75,
+          14.375
+        ],
+        [
+          15.5625,
+          17.5
+        ],
+        [
+          15.375,
+          15.0
+        ],
+        [
+          14.25,
+          18.125
+        ],
+        [
+          11.4375,
+          4.0625
+        ],
+        [
+          12.1875,
+          5.46875
+        ],
+        [
+          11.9375,
+          4.75
+        ],
+        [
+          10.875,
+          3.625
+        ],
+        [
+          12.4375,
+          5.0
+        ],
+        [
+          11.375,
+          3.453125
+        ],
+        [
+          11.0625,
+          3.53125
+        ],
+        [
+          14.5,
+          12.9375
+        ],
+        [
+          15.375,
+          13.375
+        ],
+        [
+          13.75,
+          9.5
+        ],
+        [
+          13.8125,
+          10.1875
+        ],
+        [
+          11.25,
+          4.75
+        ],
+        [
+          11.6875,
+          5.5
+        ],
+        [
+          11.0,
+          5.53125
+        ],
+        [
+          12.125,
+          6.5
+        ],
+        [
+          14.5625,
+          16.5
+        ],
+        [
+          14.625,
+          17.125
+        ],
+        [
+          14.625,
+          15.5
+        ],
+        [
+          14.5625,
+          15.6875
+        ],
+        [
+          14.25,
+          12.3125
+        ],
+        [
+          14.5625,
+          15.5625
+        ],
+        [
+          14.1875,
+          12.1875
+        ],
+        [
+          13.8125,
+          10.4375
+        ],
+        [
+          16.125,
+          17.75
+        ],
+        [
+          14.875,
+          12.5625
+        ],
+        [
+          14.875,
+          12.1875
+        ],
+        [
+          15.0625,
+          13.3125
+        ],
+        [
+          13.6875,
+          10.125
+        ],
+        [
+          10.6875,
+          2.71875
+        ],
+        [
+          16.5,
+          18.875
+        ],
+        [
+          13.5625,
+          9.875
+        ],
+        [
+          14.5625,
+          18.5
+        ],
+        [
+          13.375,
+          10.5
+        ],
+        [
+          12.1875,
+          8.5
+        ],
+        [
+          11.0625,
+          4.9375
+        ],
+        [
+          10.625,
+          6.21875
+        ],
+        [
+          12.375,
+          8.8125
+        ],
+        [
+          11.8125,
+          6.8125
+        ],
+        [
+          12.5,
+          8.8125
+        ],
+        [
+          16.0,
+          14.875
+        ],
+        [
+          14.25,
+          10.4375
+        ],
+        [
+          15.4375,
+          12.9375
+        ],
+        [
+          14.375,
+          10.375
+        ],
+        [
+          15.8125,
+          13.125
+        ],
+        [
+          16.375,
+          15.0
+        ],
+        [
+          15.625,
+          12.875
+        ],
+        [
+          16.25,
+          14.625
+        ],
+        [
+          15.0625,
+          16.625
+        ],
+        [
+          14.8125,
+          13.5625
+        ],
+        [
+          12.5,
+          8.4375
+        ],
+        [
+          14.8125,
+          17.75
+        ],
+        [
+          15.3125,
+          15.0625
+        ],
+        [
+          14.0625,
+          11.3125
+        ],
+        [
+          15.625,
+          16.0
+        ],
+        [
+          13.5,
+          10.3125
+        ],
+        [
+          13.875,
+          18.25
+        ],
+        [
+          11.5,
+          6.53125
+        ],
+        [
+          10.125,
+          3.875
+        ],
+        [
+          11.1875,
+          5.59375
+        ],
+        [
+          10.125,
+          3.8125
+        ],
+        [
+          14.0,
+          11.25
+        ],
+        [
+          11.1875,
+          5.9375
+        ],
+        [
+          15.3125,
+          16.5
+        ],
+        [
+          14.0,
+          17.5
+        ],
+        [
+          10.6875,
+          4.46875
+        ],
+        [
+          10.8125,
+          4.375
+        ],
+        [
+          12.75,
+          8.375
+        ],
+        [
+          12.5625,
+          7.875
+        ],
+        [
+          11.4375,
+          4.5
+        ],
+        [
+          10.3125,
+          3.578125
+        ],
+        [
+          11.375,
+          5.96875
+        ],
+        [
+          13.8125,
+          17.25
+        ],
+        [
+          9.75,
+          2.140625
+        ],
+        [
+          13.0625,
+          8.875
+        ],
+        [
+          11.5625,
+          7.0
+        ],
+        [
+          10.0625,
+          2.46875
+        ],
+        [
+          12.375,
+          8.4375
+        ],
+        [
+          10.375,
+          4.46875
+        ],
+        [
+          14.875,
+          17.875
+        ],
+        [
+          15.4375,
+          19.125
+        ],
+        [
+          13.625,
+          9.5625
+        ],
+        [
+          15.9375,
+          13.0625
+        ],
+        [
+          14.8125,
+          11.6875
+        ],
+        [
+          14.9375,
+          12.125
+        ],
+        [
+          16.25,
+          17.0
+        ],
+        [
+          15.875,
+          17.625
+        ],
+        [
+          14.375,
+          10.75
+        ],
+        [
+          14.0,
+          18.125
+        ],
+        [
+          12.125,
+          6.125
+        ],
+        [
+          10.1875,
+          2.921875
+        ],
+        [
+          13.3125,
+          8.375
+        ],
+        [
+          11.125,
+          3.5625
+        ],
+        [
+          11.625,
+          4.1875
+        ],
+        [
+          12.625,
+          6.09375
+        ],
+        [
+          10.5,
+          3.0
+        ],
+        [
+          15.0,
+          19.0
+        ],
+        [
+          14.75,
+          9.9375
+        ],
+        [
+          13.8125,
+          6.4375
+        ],
+        [
+          14.8125,
+          9.5
+        ],
+        [
+          14.375,
+          8.6875
+        ],
+        [
+          15.625,
+          11.5625
+        ],
+        [
+          15.1875,
+          10.625
+        ],
+        [
+          14.8125,
+          9.625
+        ],
+        [
+          14.0,
+          17.125
+        ],
+        [
+          12.6875,
+          7.71875
+        ],
+        [
+          11.9375,
+          7.25
+        ],
+        [
+          10.75,
+          4.625
+        ],
+        [
+          12.375,
+          7.09375
+        ],
+        [
+          11.1875,
+          5.0
+        ],
+        [
+          13.875,
+          10.0
+        ],
+        [
+          10.4375,
+          3.046875
+        ],
+        [
+          16.0,
+          19.5
+        ],
+        [
+          15.9375,
+          18.875
+        ],
+        [
+          16.25,
+          15.125
+        ],
+        [
+          16.25,
+          15.3125
+        ],
+        [
+          16.125,
+          15.5625
+        ],
+        [
+          16.625,
+          15.125
+        ],
+        [
+          16.5,
+          16.125
+        ],
+        [
+          16.0,
+          15.3125
+        ]
+      ],
+      "touche": {
+        "ndcg10": 0.672384853199159,
+        "per_query": {
+          "39": 0.6464018466408363,
+          "38": 0.7721596254947202,
+          "23": 0.6753070238713994,
+          "32": 0.6990185414225962,
+          "21": 0.6084055306256324,
+          "19": 0.46270962158308354,
+          "35": 0.8889850296162729,
+          "9": 0.6260916063387306
+        }
+      },
+      "touche_margins": {
+        "39": {
+          "b6f6e654-2019-04-18T17:09:58Z-00003-000": 2.0,
+          "4d04459a-2019-04-18T14:01:20Z-00002-000": 0.5625,
+          "51c34db5-2019-04-18T13:22:25Z-00005-000": -0.1875,
+          "4d04459a-2019-04-18T14:01:20Z-00004-000": 2.0,
+          "5194bbe-2019-04-18T17:30:08Z-00005-000": 0.375,
+          "4d04459a-2019-04-18T14:01:20Z-00000-000": 1.0,
+          "7a99c7cf-2019-04-18T16:20:28Z-00005-000": 0.9375,
+          "b6f6e654-2019-04-18T17:09:58Z-00000-000": 0.375,
+          "51c34db5-2019-04-18T13:22:25Z-00001-000": -0.125,
+          "fb307db5-2019-04-18T12:46:41Z-00002-000": 0.375,
+          "7a99c7b0-2019-04-18T16:23:13Z-00007-000": -0.75,
+          "5194bbe-2019-04-18T17:30:08Z-00006-000": 1.0625,
+          "b6f6e654-2019-04-18T17:09:58Z-00002-000": 0.125,
+          "5194bbe-2019-04-18T17:30:08Z-00003-000": 0.125,
+          "a3568bcf-2019-04-18T12:53:07Z-00001-000": 1.3125,
+          "7a99c7cf-2019-04-18T16:20:28Z-00007-000": -0.5,
+          "7a99c7b0-2019-04-18T16:23:13Z-00005-000": 0.6875,
+          "bf184b88-2019-04-18T14:33:20Z-00000-000": -0.3125,
+          "5194bbe-2019-04-18T17:30:08Z-00000-000": 1.0,
+          "4d04459a-2019-04-18T14:01:20Z-00003-000": 0.25,
+          "4d04459a-2019-04-18T14:01:20Z-00001-000": -0.625,
+          "51c34db5-2019-04-18T13:22:25Z-00004-000": 0.3125,
+          "ddb9f050-2019-04-18T11:59:07Z-00001-000": 0.625,
+          "8c866652-2019-04-18T18:27:57Z-00003-000": -0.3125,
+          "7a5dcb0b-2019-04-18T12:33:14Z-00000-000": -0.0625,
+          "b3c6f9b8-2019-04-18T12:20:53Z-00004-000": 0.4375,
+          "be617355-2019-04-18T14:49:38Z-00002-000": 0.6875,
+          "7245daba-2019-04-18T15:27:44Z-00006-000": -1.5625,
+          "a071780f-2019-04-18T14:46:37Z-00004-000": -0.3125,
+          "ce0a06a9-2019-04-18T13:25:18Z-00002-000": -0.3125,
+          "93fbabb6-2019-04-18T12:38:32Z-00002-000": 0.625,
+          "1d5f1558-2019-04-18T15:25:13Z-00001-000": -1.0625,
+          "d449ee59-2019-04-18T19:02:44Z-00008-000": -2.25,
+          "6ac98ba6-2019-04-18T15:12:23Z-00005-000": 0.3125,
+          "630f7c6f-2019-04-18T12:52:49Z-00002-000": -0.5625,
+          "3774807f-2019-04-18T13:57:28Z-00003-000": -0.6875,
+          "7a5dcb0b-2019-04-18T12:33:14Z-00003-000": -0.0625,
+          "51c34db5-2019-04-18T13:22:25Z-00006-000": -2.125,
+          "7a99c7b0-2019-04-18T16:23:13Z-00003-000": 0.0,
+          "ddb9f050-2019-04-18T11:59:07Z-00004-000": 0.5625,
+          "6ac98ba6-2019-04-18T15:12:23Z-00000-000": -0.75,
+          "3774807f-2019-04-18T13:57:28Z-00005-000": -1.3125,
+          "3774807f-2019-04-18T13:57:28Z-00009-000": -2.3125,
+          "7245daba-2019-04-18T15:27:44Z-00004-000": -0.125,
+          "bf184b88-2019-04-18T14:33:20Z-00005-000": -0.8125,
+          "bf184b88-2019-04-18T14:33:20Z-00004-000": -1.6875,
+          "7245daba-2019-04-18T15:27:44Z-00003-000": -1.1875,
+          "40f0bed0-2019-04-18T14:11:38Z-00002-000": -0.8125,
+          "9329eedd-2019-04-18T14:04:54Z-00004-000": -0.25,
+          "7a99c7b0-2019-04-18T16:23:13Z-00001-000": -0.25,
+          "bd8467d7-2019-04-18T12:53:07Z-00001-000": -2.125,
+          "bf184b88-2019-04-18T14:33:20Z-00003-000": -0.625,
+          "7a99c7cf-2019-04-18T16:20:28Z-00001-000": -1.375,
+          "47041c36-2019-04-18T14:16:28Z-00004-000": -0.0625,
+          "40f0bed0-2019-04-18T14:11:38Z-00000-000": -0.75,
+          "855ce88e-2019-04-18T16:30:33Z-00004-000": -0.8125,
+          "7a99c7cf-2019-04-18T16:20:28Z-00003-000": -0.375,
+          "d93e6b4a-2019-04-18T14:23:03Z-00002-000": -0.4375,
+          "db76a53d-2019-04-18T16:19:38Z-00001-000": -0.875,
+          "3e34e0d7-2019-04-18T14:14:34Z-00003-000": -2.375,
+          "51c34db5-2019-04-18T13:22:25Z-00003-000": -0.0625,
+          "fe453fc6-2019-04-18T15:15:51Z-00003-000": -1.0,
+          "bd8467d7-2019-04-18T12:53:07Z-00002-000": -0.75,
+          "9329eedd-2019-04-18T14:04:54Z-00005-000": 0.0625,
+          "6ac98ba6-2019-04-18T15:12:23Z-00002-000": -0.8125,
+          "ce0a06c8-2019-04-18T13:05:11Z-00003-000": 0.0,
+          "9443a255-2019-04-18T19:43:34Z-00004-000": -1.6875,
+          "b6f6e654-2019-04-18T17:09:58Z-00001-000": -0.8125,
+          "5194bbe-2019-04-18T17:30:08Z-00004-000": -1.5,
+          "6c6b40ff-2019-04-18T12:26:42Z-00001-000": -1.0625,
+          "bf184b88-2019-04-18T14:33:20Z-00002-000": -0.3125,
+          "1374527e-2019-04-18T17:17:19Z-00005-000": -1.375,
+          "835f3e1b-2019-04-18T19:00:25Z-00005-000": -0.9375,
+          "1374527e-2019-04-18T17:17:19Z-00002-000": -0.375,
+          "d13faac7-2019-04-18T14:24:38Z-00007-000": -1.125,
+          "148740e7-2019-04-18T16:49:23Z-00005-000": -0.8125,
+          "342cf7b6-2019-04-18T16:32:02Z-00005-000": 0.0625,
+          "bd8467d7-2019-04-18T12:53:07Z-00005-000": -0.3125,
+          "1d5f1558-2019-04-18T15:25:13Z-00006-000": -2.125,
+          "171eb76-2019-04-18T13:31:47Z-00001-000": -1.0625,
+          "6ac98ba6-2019-04-18T15:12:23Z-00001-000": -0.6875,
+          "1d5f1558-2019-04-18T15:25:13Z-00005-000": -0.875,
+          "4505ff06-2019-04-18T13:43:08Z-00004-000": -2.875,
+          "4505ff06-2019-04-18T13:43:08Z-00002-000": 0.0,
+          "342cf7b6-2019-04-18T16:32:02Z-00006-000": -1.375,
+          "84bee0b1-2019-04-18T13:28:44Z-00006-000": -1.0,
+          "baa5c71f-2019-04-18T16:44:24Z-00006-000": -0.1875,
+          "5c3ed70-2019-04-18T20:04:06Z-00005-000": -2.25,
+          "d93e6b4a-2019-04-18T14:23:03Z-00004-000": -2.125,
+          "a3568b53-2019-04-18T17:13:51Z-00002-000": 0.0625,
+          "8c9c7325-2019-04-18T13:31:47Z-00000-000": -1.625,
+          "3774807f-2019-04-18T13:57:28Z-00004-000": -1.0625,
+          "e3b9f8b-2019-04-18T16:33:58Z-00003-000": -0.5,
+          "855ce88e-2019-04-18T16:30:33Z-00001-000": -1.6875,
+          "7a5dcb0b-2019-04-18T12:33:14Z-00001-000": -0.25,
+          "cb14344f-2019-04-18T14:29:50Z-00002-000": -0.6875,
+          "bf424eaa-2019-04-18T17:50:08Z-00003-000": -0.8125,
+          "1f0e65df-2019-04-18T15:25:46Z-00006-000": -0.6875,
+          "7a5dcb0b-2019-04-18T12:33:14Z-00005-000": -1.3125,
+          "47041c36-2019-04-18T14:16:28Z-00006-000": -1.5
+        },
+        "38": {
+          "d7c339a6-2019-04-18T11:47:37Z-00001-000": 0.625,
+          "82c12bae-2019-04-18T18:49:36Z-00004-000": -1.0625,
+          "d267a913-2019-04-18T16:17:41Z-00005-000": -0.5,
+          "6231ab47-2019-04-18T16:20:48Z-00008-000": 0.125,
+          "9821cb64-2019-04-18T15:54:34Z-00002-000": -0.0625,
+          "d0a9155a-2019-04-18T19:00:24Z-00002-000": 0.75,
+          "174daa99-2019-04-18T19:27:29Z-00003-000": -0.625,
+          "c6aab7ec-2019-04-18T19:30:19Z-00004-000": 1.125,
+          "4d3852ce-2019-04-18T18:53:13Z-00009-000": 0.9375,
+          "421114c2-2019-04-18T19:01:07Z-00005-000": -0.25,
+          "174daa99-2019-04-18T19:27:29Z-00001-000": -0.625,
+          "d267acf3-2019-04-18T11:47:51Z-00001-000": -0.0625,
+          "d267acd4-2019-04-18T12:17:49Z-00001-000": -0.625,
+          "e1d1a698-2019-04-18T15:18:36Z-00004-000": -0.25,
+          "8c493086-2019-04-18T19:25:29Z-00001-000": -2.1875,
+          "c6aab7ec-2019-04-18T19:30:19Z-00003-000": 0.25,
+          "174daab8-2019-04-18T19:00:10Z-00002-000": -1.75,
+          "111ea869-2019-04-18T15:43:17Z-00005-000": -0.4375,
+          "174dab53-2019-04-18T18:33:55Z-00005-000": 0.1875,
+          "8e815158-2019-04-18T20:01:50Z-00002-000": -1.4375,
+          "421114c2-2019-04-18T19:01:07Z-00006-000": -1.75,
+          "174daab8-2019-04-18T19:00:10Z-00005-000": -1.5625,
+          "d267a913-2019-04-18T16:17:41Z-00002-000": -2.3125,
+          "84f999d5-2019-04-18T18:09:59Z-00004-000": -0.75,
+          "87b8c230-2019-04-17T11:47:26Z-00118-000": -1.9375,
+          "d267ad12-2019-04-18T11:40:03Z-00000-000": 1.875,
+          "174daad7-2019-04-18T18:53:23Z-00006-000": -0.375,
+          "d6ea1958-2019-04-18T18:02:20Z-00004-000": -0.75,
+          "6231ab28-2019-04-18T16:19:10Z-00004-000": -1.9375,
+          "b0a1297b-2019-04-18T17:56:41Z-00004-000": -1.5625,
+          "82c12bae-2019-04-18T18:49:36Z-00002-000": -1.8125,
+          "89fd39b5-2019-04-18T18:04:03Z-00004-000": -0.1875,
+          "35e725d0-2019-04-18T18:13:42Z-00003-000": 0.0,
+          "c6aab7ec-2019-04-18T19:30:19Z-00001-000": -2.0625,
+          "174daab8-2019-04-18T19:00:10Z-00003-000": -0.5625,
+          "aaec8cf8-2019-04-18T19:28:10Z-00002-000": -1.5,
+          "87b8c230-2019-04-17T11:47:26Z-00152-000": 0.3125,
+          "d3a6203-2019-04-18T17:51:05Z-00000-000": -0.75,
+          "ffcf93d6-2019-04-18T18:36:12Z-00003-000": -1.0625,
+          "35e725d0-2019-04-18T18:13:42Z-00001-000": -1.6875,
+          "d3a6203-2019-04-18T17:51:05Z-00006-000": -0.875,
+          "bc00ee1b-2019-04-18T13:20:24Z-00001-000": -0.1875,
+          "d267a913-2019-04-18T16:17:41Z-00003-000": -0.9375,
+          "c0881ce0-2019-04-18T18:17:23Z-00003-000": -3.0,
+          "b0a1297b-2019-04-18T17:56:41Z-00007-000": 0.125,
+          "82c12bae-2019-04-18T18:49:36Z-00003-000": 0.625,
+          "d267a970-2019-04-18T15:26:34Z-00003-000": -0.1875,
+          "b0a1297b-2019-04-18T17:56:41Z-00003-000": 0.125,
+          "87b8c230-2019-04-17T11:47:26Z-00168-000": -1.0625,
+          "d267a8f4-2019-04-18T17:01:16Z-00001-000": -0.4375,
+          "fa1a69b6-2019-04-18T16:31:37Z-00001-000": -0.375,
+          "174daad7-2019-04-18T18:53:23Z-00004-000": -1.625,
+          "14b9fbe0-2019-04-18T17:06:27Z-00005-000": -1.1875,
+          "174daad7-2019-04-18T18:53:23Z-00003-000": -1.4375,
+          "421114c2-2019-04-18T19:01:07Z-00003-000": -1.6875,
+          "fc44452e-2019-04-15T20:22:42Z-00012-000": -1.125,
+          "bc00ee1b-2019-04-18T13:20:24Z-00003-000": -2.125,
+          "4d3852ce-2019-04-18T18:53:13Z-00007-000": -1.375,
+          "c6aab7ec-2019-04-18T19:30:19Z-00000-000": -2.0625,
+          "34ee1a0c-2019-04-18T13:59:19Z-00001-000": -1.1875,
+          "c0ff09ad-2019-04-18T20:00:02Z-00003-000": -1.5,
+          "87b8c230-2019-04-17T11:47:26Z-00122-000": -1.25,
+          "86fcaef8-2019-04-18T12:12:08Z-00003-000": -1.625,
+          "174daad7-2019-04-18T18:53:23Z-00001-000": -1.625,
+          "d0a91598-2019-04-18T18:36:17Z-00005-000": -1.375,
+          "d267a8d5-2019-04-18T16:58:41Z-00005-000": -0.125,
+          "d267a8f4-2019-04-18T17:01:16Z-00009-000": -0.125,
+          "d3a6203-2019-04-18T17:51:05Z-00005-000": -0.3125,
+          "d267a533-2019-04-18T18:20:55Z-00004-000": -0.8125,
+          "d42a9277-2019-04-18T16:35:12Z-00002-000": -2.4375,
+          "d267a533-2019-04-18T18:20:55Z-00000-000": -1.3125,
+          "59d1f83c-2019-04-18T18:35:46Z-00007-000": -1.5,
+          "d267a533-2019-04-18T18:20:55Z-00005-000": -0.125,
+          "87b8c230-2019-04-17T11:47:26Z-00149-000": -0.5,
+          "342a26ba-2019-04-18T19:28:06Z-00002-000": -1.6875,
+          "d267a5af-2019-04-18T18:07:23Z-00004-000": -2.125,
+          "174dab53-2019-04-18T18:33:55Z-00001-000": -1.1875,
+          "fa1a69b6-2019-04-18T16:31:37Z-00002-000": -0.6875,
+          "4d3852ce-2019-04-18T18:53:13Z-00001-000": -2.75,
+          "174daad7-2019-04-18T18:53:23Z-00000-000": -2.0,
+          "111ea869-2019-04-18T15:43:17Z-00000-000": -0.875,
+          "8f3513ba-2019-04-18T19:40:40Z-00001-000": -2.125,
+          "174daa99-2019-04-18T19:27:29Z-00004-000": -0.25,
+          "a03c1e89-2019-04-18T19:02:20Z-00005-000": -0.25,
+          "678a1efc-2019-04-18T17:01:06Z-00001-000": -2.0625,
+          "d3a6203-2019-04-18T17:51:05Z-00001-000": -1.5,
+          "8e815158-2019-04-18T20:01:50Z-00004-000": -1.5625,
+          "b0a1297b-2019-04-18T17:56:41Z-00000-000": -0.8125,
+          "ffcf93d6-2019-04-18T18:36:12Z-00005-000": -0.5,
+          "174dab53-2019-04-18T18:33:55Z-00007-000": -1.3125,
+          "711b9599-2019-04-18T13:44:23Z-00005-000": 0.0625,
+          "de9f97e-2019-04-18T15:11:49Z-00002-000": -2.0,
+          "86da9e6a-2019-04-18T18:38:11Z-00005-000": -1.3125,
+          "87b8c230-2019-04-17T11:47:26Z-00130-000": -1.5625,
+          "174dab53-2019-04-18T18:33:55Z-00003-000": -1.375,
+          "3f13792b-2019-04-18T16:30:49Z-00002-000": -1.125,
+          "2bdac55a-2019-04-18T13:14:01Z-00004-000": -0.625,
+          "59d1fcb7-2019-04-18T17:16:51Z-00004-000": -0.75,
+          "b0a1297b-2019-04-18T17:56:41Z-00009-000": -2.5,
+          "5811e631-2019-04-18T19:03:05Z-00003-000": -0.375
+        },
+        "23": {
+          "7dba56a5-2019-04-18T12:15:17Z-00003-000": 2.25,
+          "dccf7263-2019-04-18T16:52:37Z-00004-000": 1.1875,
+          "25dc8ac6-2019-04-18T19:24:09Z-00004-000": 0.5,
+          "c8f72601-2019-04-18T15:27:47Z-00004-000": 1.25,
+          "fd123096-2019-04-18T17:20:32Z-00002-000": -0.8125,
+          "84a6fafa-2019-04-18T14:47:38Z-00003-000": 0.125,
+          "2a7a3797-2019-04-18T18:16:06Z-00003-000": 0.375,
+          "668509e3-2019-04-18T19:24:49Z-00006-000": -0.875,
+          "294713ae-2019-04-18T15:54:26Z-00005-000": -0.25,
+          "3fcde3d5-2019-04-18T19:24:36Z-00009-000": -0.25,
+          "d1a9845d-2019-04-18T16:38:29Z-00004-000": -0.25,
+          "41ed75c9-2019-04-18T13:41:02Z-00002-000": 0.375,
+          "114892b1-2019-04-18T11:52:47Z-00006-000": 0.375,
+          "88e3525b-2019-04-18T18:52:58Z-00009-000": 0.25,
+          "41ed75c9-2019-04-18T13:41:02Z-00003-000": -0.3125,
+          "c8970382-2019-04-18T12:54:41Z-00005-000": 0.125,
+          "f1f121d0-2019-04-18T19:45:26Z-00003-000": -0.75,
+          "294713ae-2019-04-18T15:54:26Z-00001-000": -1.4375,
+          "950a295-2019-04-18T15:44:41Z-00007-000": -0.3125,
+          "bbce1e09-2019-04-18T15:28:32Z-00001-000": -0.375,
+          "9386e729-2019-04-18T16:05:14Z-00003-000": -0.4375,
+          "fbc5207f-2019-04-18T17:32:39Z-00004-000": 1.0625,
+          "9386f592-2019-04-18T12:46:22Z-00000-000": -0.625,
+          "a2c85c65-2019-04-18T16:57:45Z-00002-000": 0.375,
+          "9386e729-2019-04-18T16:05:14Z-00001-000": -0.3125,
+          "4f51142c-2019-04-18T15:23:59Z-00006-000": 0.3125,
+          "a7b24794-2019-04-18T14:18:31Z-00003-000": -0.875,
+          "d80382e8-2019-04-18T15:28:06Z-00003-000": 1.1875,
+          "b280a10e-2019-04-18T11:35:31Z-00004-000": 0.0,
+          "c44ef8ac-2019-04-18T15:25:35Z-00005-000": -1.0,
+          "e2437a3f-2019-04-18T19:37:50Z-00004-000": -1.0,
+          "294713ae-2019-04-18T15:54:26Z-00000-000": -1.3125,
+          "32c18ac6-2019-04-18T12:19:10Z-00005-000": -0.125,
+          "9386e729-2019-04-18T16:05:14Z-00002-000": -0.25,
+          "e21a50a3-2019-04-18T12:16:45Z-00003-000": -0.8125,
+          "9386f26c-2019-04-18T13:35:08Z-00003-000": 0.0,
+          "8fd1156e-2019-04-18T19:09:00Z-00003-000": -0.625,
+          "64b2721c-2019-04-18T15:14:15Z-00004-000": -2.3125,
+          "2a7a3832-2019-04-18T14:51:38Z-00007-000": -0.375,
+          "7d51d9aa-2019-04-18T16:21:24Z-00006-000": -0.5625,
+          "2a7a37f4-2019-04-18T16:54:34Z-00004-000": 0.0,
+          "3fcde3d5-2019-04-18T19:24:36Z-00008-000": -0.6875,
+          "7301ab1c-2019-04-18T14:05:34Z-00004-000": -1.5625,
+          "1cecaf86-2019-04-18T18:16:46Z-00003-000": -0.75,
+          "25dc8ac6-2019-04-18T19:24:09Z-00002-000": -1.625,
+          "64e91157-2019-04-15T20:22:54Z-00014-000": -0.3125,
+          "64e91157-2019-04-15T20:22:54Z-00013-000": -1.6875,
+          "9386e70a-2019-04-18T16:09:37Z-00004-000": -0.5625,
+          "847d06a3-2019-04-18T13:26:11Z-00002-000": -0.25,
+          "49cd40b7-2019-04-18T11:56:34Z-00001-000": -0.4375,
+          "9386f9ee-2019-04-18T11:08:36Z-00001-000": -0.625,
+          "d1c59b91-2019-04-18T16:00:42Z-00003-000": -0.5625,
+          "64b2721c-2019-04-18T15:14:15Z-00000-000": -0.9375,
+          "2a7a37f4-2019-04-18T16:54:34Z-00002-000": 0.5625,
+          "9386dfc6-2019-04-18T17:05:50Z-00004-000": -0.875,
+          "b0114b5-2019-04-18T15:15:16Z-00003-000": -0.4375,
+          "6dbd1f79-2019-04-18T16:49:50Z-00005-000": -1.25,
+          "1cecaf86-2019-04-18T18:16:46Z-00001-000": -0.375,
+          "6626ac2e-2019-04-18T13:30:40Z-00005-000": -0.9375,
+          "84a6fafa-2019-04-18T14:47:38Z-00004-000": 0.125,
+          "9fa39f2d-2019-04-18T16:43:29Z-00008-000": -0.25,
+          "a7b24794-2019-04-18T14:18:31Z-00002-000": -0.0625,
+          "cf4017a5-2019-04-18T16:44:54Z-00004-000": -0.8125,
+          "2f93939-2019-04-18T15:13:37Z-00000-000": -1.5625,
+          "c281abf3-2019-04-18T12:48:01Z-00001-000": 1.25,
+          "7301aafd-2019-04-18T14:11:51Z-00005-000": -1.5625,
+          "2d207525-2019-04-18T19:36:31Z-00005-000": -1.5,
+          "9386ea4f-2019-04-18T15:47:46Z-00005-000": -0.9375,
+          "9386e729-2019-04-18T16:05:14Z-00005-000": 0.25,
+          "83a06a6-2019-04-18T15:41:35Z-00001-000": -0.75,
+          "e1261232-2019-04-18T14:14:56Z-00005-000": -1.4375,
+          "46de25-2019-04-18T20:03:40Z-00003-000": -2.9375,
+          "668509e3-2019-04-18T19:24:49Z-00003-000": -2.25,
+          "c44ef8ac-2019-04-18T15:25:35Z-00006-000": -1.125,
+          "443158c1-2019-04-18T18:43:38Z-00007-000": -0.5625,
+          "2a7a3832-2019-04-18T14:51:38Z-00004-000": -1.3125,
+          "1cecaf86-2019-04-18T18:16:46Z-00000-000": -0.75,
+          "c54d13cd-2019-04-19T12:44:35Z-00033-000": -1.4375,
+          "4f51142c-2019-04-18T15:23:59Z-00004-000": 0.125,
+          "e1261232-2019-04-18T14:14:56Z-00002-000": -0.125,
+          "9386e349-2019-04-18T16:54:59Z-00004-000": -0.5,
+          "847d06a3-2019-04-18T13:26:11Z-00000-000": -2.125,
+          "d7df728a-2019-04-18T12:39:33Z-00000-000": -1.375,
+          "cf4017a5-2019-04-18T16:44:54Z-00000-000": -0.75,
+          "d8891c6f-2019-04-18T14:17:11Z-00000-000": -1.375,
+          "9fa39f2d-2019-04-18T16:43:29Z-00006-000": -2.625,
+          "4487af89-2019-04-18T17:22:01Z-00000-000": -1.375,
+          "6626ac2e-2019-04-18T13:30:40Z-00007-000": -2.25,
+          "25dc8ac6-2019-04-18T19:24:09Z-00003-000": -1.3125,
+          "c54d13cd-2019-04-19T12:44:35Z-00027-000": -2.125,
+          "668509e3-2019-04-18T19:24:49Z-00000-000": -1.25,
+          "9f12f501-2019-04-18T19:55:28Z-00005-000": 0.25,
+          "9386f5b1-2019-04-18T12:36:57Z-00000-000": -2.0,
+          "4487af89-2019-04-18T17:22:01Z-00003-000": -2.1875,
+          "6626ac2e-2019-04-18T13:30:40Z-00006-000": -0.3125,
+          "4f51142c-2019-04-18T15:23:59Z-00005-000": -0.5,
+          "2a7a3832-2019-04-18T14:51:38Z-00005-000": 0.9375,
+          "2782977f-2019-04-18T13:34:32Z-00003-000": -1.9375,
+          "9386eaac-2019-04-18T15:44:33Z-00002-000": -1.4375,
+          "d9807bbe-2019-04-18T15:13:35Z-00001-000": -2.3125
+        },
+        "32": {
+          "2c05e9fb-2019-04-15T20:23:05Z-00015-000": 2.0,
+          "2c05e9fb-2019-04-15T20:23:05Z-00014-000": 1.5625,
+          "2c05e9fb-2019-04-15T20:23:05Z-00016-000": 2.25,
+          "2c05e9fb-2019-04-15T20:23:05Z-00017-000": 2.125,
+          "2c05e9fb-2019-04-15T20:23:05Z-00029-000": 1.875,
+          "f2c72c91-2019-04-18T19:54:40Z-00000-000": 0.5625,
+          "2c05e9fb-2019-04-15T20:23:05Z-00023-000": 1.9375,
+          "e6af11b5-2019-04-15T20:22:52Z-00012-000": 0.125,
+          "b9c7eff8-2019-04-18T12:18:17Z-00002-000": 0.0,
+          "93844764-2019-04-18T19:10:04Z-00004-000": -0.3125,
+          "2c05e9fb-2019-04-15T20:23:05Z-00011-000": 2.125,
+          "2c05e9fb-2019-04-15T20:23:05Z-00019-000": -0.0625,
+          "538dd198-2019-04-18T18:14:33Z-00006-000": -1.0,
+          "2c05e9fb-2019-04-15T20:23:05Z-00020-000": -0.0625,
+          "e0860e7e-2019-04-18T15:28:49Z-00002-000": -0.125,
+          "c2f7570e-2019-04-18T18:35:39Z-00002-000": -1.9375,
+          "2d2c209d-2019-04-18T16:00:51Z-00005-000": -2.5625,
+          "bdcf90af-2019-04-15T20:24:22Z-00024-000": 0.5,
+          "93844764-2019-04-18T19:10:04Z-00003-000": -0.375,
+          "b76ec089-2019-04-19T12:45:35Z-00014-000": 0.625,
+          "36e04c93-2019-04-18T16:54:17Z-00003-000": -2.0625,
+          "70d26bcf-2019-04-18T15:47:32Z-00005-000": -2.5,
+          "816da028-2019-04-18T18:24:51Z-00002-000": -3.375,
+          "538dd198-2019-04-18T18:14:33Z-00002-000": 0.0,
+          "b6d2bbc8-2019-04-18T17:33:43Z-00001-000": -2.6875,
+          "d0766dd3-2019-04-18T14:43:55Z-00006-000": -3.75,
+          "b6d2bbc8-2019-04-18T17:33:43Z-00003-000": -3.8125,
+          "e0860e7e-2019-04-18T15:28:49Z-00005-000": -1.75,
+          "bb920a73-2019-04-18T17:15:02Z-00004-000": -2.6875,
+          "b9c7eff8-2019-04-18T12:18:17Z-00000-000": -2.4375,
+          "e6a1ee5e-2019-04-18T19:39:52Z-00003-000": -2.125,
+          "370a7f9a-2019-04-18T18:03:12Z-00002-000": -3.25,
+          "538dd198-2019-04-18T18:14:33Z-00008-000": -3.25,
+          "93844764-2019-04-18T19:10:04Z-00000-000": -3.0,
+          "538dd198-2019-04-18T18:14:33Z-00001-000": -2.125,
+          "538dd198-2019-04-18T18:14:33Z-00004-000": -0.125,
+          "c2f7570e-2019-04-18T18:35:39Z-00003-000": -1.375,
+          "51355556-2019-04-17T11:47:44Z-00052-000": -3.25,
+          "29758b9-2019-04-18T17:06:05Z-00004-000": -3.4375,
+          "f2c72c91-2019-04-18T19:54:40Z-00004-000": -1.3125,
+          "2154ca86-2019-04-18T12:39:34Z-00000-000": -5.0625,
+          "5dd7d039-2019-04-18T12:44:08Z-00002-000": -2.3125,
+          "2c05e9fb-2019-04-15T20:23:05Z-00027-000": -1.375,
+          "7399741b-2019-04-18T14:34:55Z-00002-000": -1.875,
+          "816da028-2019-04-18T18:24:51Z-00004-000": -4.25,
+          "2c05e9fb-2019-04-15T20:23:05Z-00021-000": -0.75,
+          "4cf1a131-2019-04-18T16:17:38Z-00000-000": -3.5,
+          "648217ec-2019-04-18T19:48:00Z-00002-000": -2.375,
+          "e0860e7e-2019-04-18T15:28:49Z-00004-000": -2.4375,
+          "615e029c-2019-04-18T19:03:24Z-00001-000": -2.25,
+          "816da028-2019-04-18T18:24:51Z-00000-000": -4.125,
+          "fcff81a7-2019-04-18T17:19:43Z-00004-000": -3.0625,
+          "b33077f-2019-04-18T15:26:00Z-00006-000": -3.5,
+          "af208634-2019-04-18T12:57:35Z-00005-000": -3.6875,
+          "54bd63d7-2019-04-17T11:47:45Z-00038-000": -1.75,
+          "f2c72c91-2019-04-18T19:54:40Z-00005-000": -3.375,
+          "bb920a73-2019-04-18T17:15:02Z-00002-000": -3.0,
+          "bdcf90af-2019-04-15T20:24:22Z-00023-000": -1.75,
+          "395632a5-2019-04-18T17:33:21Z-00003-000": -3.625,
+          "1a2ffdd3-2019-04-18T15:08:28Z-00004-000": -2.125,
+          "55c05f7c-2019-04-18T15:19:28Z-00002-000": -1.9375,
+          "7e8cbef7-2019-04-18T18:37:20Z-00002-000": -3.3125,
+          "cbfd88a8-2019-04-18T13:14:17Z-00002-000": -3.5,
+          "b33077f-2019-04-18T15:26:00Z-00005-000": -2.875,
+          "d0766dd3-2019-04-18T14:43:55Z-00007-000": -3.5625,
+          "83256f78-2019-04-18T12:49:03Z-00003-000": -4.5625,
+          "81c83377-2019-04-18T13:30:56Z-00005-000": -3.125,
+          "f9133f8b-2019-04-18T19:16:23Z-00005-000": -3.6875,
+          "d03ec158-2019-04-18T19:56:59Z-00003-000": -3.4375,
+          "e10d3563-2019-04-17T11:47:44Z-00067-000": -3.3125,
+          "55c05f7c-2019-04-18T15:19:28Z-00000-000": -2.0,
+          "a83c80fd-2019-04-18T14:13:58Z-00005-000": -3.625,
+          "33d6b29e-2019-04-18T17:32:30Z-00004-000": -3.4375,
+          "d0766dd3-2019-04-18T14:43:55Z-00005-000": -3.375,
+          "ca54c9e4-2019-04-18T19:32:05Z-00000-000": -4.0625,
+          "f9847a21-2019-04-18T16:39:50Z-00002-000": -2.4375,
+          "d07a0a9e-2019-04-18T18:11:24Z-00000-000": -2.9375,
+          "615e029c-2019-04-18T19:03:24Z-00005-000": -2.375,
+          "7371560d-2019-04-18T18:37:18Z-00002-000": -2.6875,
+          "7b7584cd-2019-04-18T13:10:25Z-00006-000": -3.25,
+          "65e2a29a-2019-04-18T19:23:06Z-00000-000": -2.875,
+          "70d26bcf-2019-04-18T15:47:32Z-00001-000": -3.1875,
+          "c2f75af9-2019-04-18T18:14:10Z-00003-000": -2.75,
+          "3a2444f6-2019-04-18T15:27:55Z-00001-000": -3.375,
+          "99e950f0-2019-04-18T18:54:10Z-00004-000": -3.5625,
+          "3e2e5609-2019-04-18T15:55:20Z-00003-000": -3.125,
+          "62525e5c-2019-04-18T18:06:16Z-00000-000": -2.75,
+          "c301704b-2019-04-18T20:03:50Z-00002-000": -1.3125,
+          "65e2a29a-2019-04-18T19:23:06Z-00002-000": -4.375,
+          "d4b3ab9e-2019-04-18T19:57:37Z-00001-000": -3.75,
+          "20f2b03f-2019-04-18T12:17:49Z-00001-000": -4.25,
+          "15a2bd73-2019-04-19T12:44:11Z-00014-000": -2.625,
+          "80c84bd9-2019-04-18T13:19:52Z-00004-000": -2.4375,
+          "c2f75af9-2019-04-18T18:14:10Z-00001-000": -3.375,
+          "1901e650-2019-04-18T17:54:35Z-00009-000": -4.375,
+          "c2f7570e-2019-04-18T18:35:39Z-00001-000": -4.0625,
+          "6c53db9d-2019-04-18T18:00:25Z-00002-000": -4.0625,
+          "eb160461-2019-04-17T11:47:31Z-00074-000": -3.9375,
+          "2d2c209d-2019-04-18T16:00:51Z-00003-000": -1.125,
+          "d0766dd3-2019-04-18T14:43:55Z-00003-000": -3.1875
+        },
+        "21": {
+          "f7800a2b-2019-04-18T20:02:41Z-00003-000": 0.4375,
+          "9c07825d-2019-04-18T13:31:03Z-00000-000": 0.375,
+          "9c07825d-2019-04-18T13:31:03Z-00004-000": -0.375,
+          "9c07825d-2019-04-18T13:31:03Z-00005-000": 0.9375,
+          "c09112b2-2019-04-18T14:00:47Z-00002-000": 0.5625,
+          "c09112b2-2019-04-18T14:00:47Z-00004-000": 0.9375,
+          "7852a724-2019-04-18T14:16:39Z-00002-000": 0.0,
+          "9c07825d-2019-04-18T13:31:03Z-00003-000": 0.6875,
+          "212f2296-2019-04-19T12:47:07Z-00008-000": 0.75,
+          "5d920354-2019-04-18T16:11:42Z-00001-000": 1.875,
+          "71f54413-2019-04-18T19:36:05Z-00004-000": -0.3125,
+          "80500e82-2019-04-18T16:59:01Z-00002-000": 0.5,
+          "842a72e0-2019-04-18T16:56:47Z-00004-000": 0.5,
+          "fb47c4dc-2019-04-18T18:05:44Z-00003-000": -1.0,
+          "aac88cec-2019-04-19T12:45:13Z-00029-000": 0.125,
+          "c09112b2-2019-04-18T14:00:47Z-00005-000": 0.375,
+          "70cb061-2019-04-18T16:39:12Z-00007-000": 1.125,
+          "c09112b2-2019-04-18T14:00:47Z-00003-000": -1.875,
+          "7852a724-2019-04-18T14:16:39Z-00003-000": -0.8125,
+          "ab411006-2019-04-18T19:20:25Z-00009-000": -0.25,
+          "a5cb0429-2019-04-18T19:47:04Z-00002-000": -0.3125,
+          "4aed909f-2019-04-18T17:04:08Z-00000-000": -0.125,
+          "dbed694f-2019-04-18T19:38:35Z-00002-000": 0.0,
+          "dc9f0311-2019-04-18T19:41:29Z-00004-000": -0.5625,
+          "de2ef8ea-2019-04-18T18:59:44Z-00000-000": 1.0625,
+          "dbed694f-2019-04-18T19:38:35Z-00007-000": -2.5625,
+          "f6a4061a-2019-04-18T11:21:34Z-00000-000": -1.875,
+          "fb47c4dc-2019-04-18T18:05:44Z-00005-000": -0.625,
+          "bde3d11-2019-04-18T12:39:28Z-00002-000": -1.8125,
+          "7852a724-2019-04-18T14:16:39Z-00001-000": 0.125,
+          "e505d905-2019-04-18T16:03:11Z-00005-000": 1.25,
+          "842a72c1-2019-04-18T16:57:36Z-00005-000": -0.1875,
+          "603ee756-2019-04-18T11:22:47Z-00006-000": -0.4375,
+          "fb9b0a88-2019-04-18T19:39:04Z-00004-000": -0.125,
+          "ad1940fe-2019-04-18T13:29:29Z-00006-000": -0.6875,
+          "75c17c1b-2019-04-18T19:42:09Z-00002-000": -0.125,
+          "ab411006-2019-04-18T19:20:25Z-00007-000": 0.5,
+          "c09112b2-2019-04-18T14:00:47Z-00006-000": 0.625,
+          "bde3d11-2019-04-18T12:39:28Z-00000-000": -2.4375,
+          "8ff43ff3-2019-04-19T12:45:46Z-00010-000": -1.4375,
+          "356ae6f2-2019-04-18T14:14:18Z-00003-000": -1.125,
+          "9416a94c-2019-04-18T19:03:34Z-00005-000": -1.1875,
+          "f16410ab-2019-04-18T18:01:25Z-00004-000": 0.1875,
+          "b235f67a-2019-04-18T15:13:16Z-00003-000": -1.1875,
+          "17fbbe0e-2019-04-18T18:04:40Z-00006-000": -0.125,
+          "2555089b-2019-04-18T18:17:33Z-00002-000": -2.0625,
+          "cf5179a4-2019-04-18T14:23:26Z-00004-000": 1.25,
+          "723ea482-2019-04-18T15:56:13Z-00005-000": -3.125,
+          "7ae7b591-2019-04-15T20:22:23Z-00014-000": -1.875,
+          "b235f67a-2019-04-18T15:13:16Z-00002-000": -0.25,
+          "bb913bfc-2019-04-18T17:06:16Z-00003-000": -1.875,
+          "c09112b2-2019-04-18T14:00:47Z-00000-000": 0.8125,
+          "ad1940fe-2019-04-18T13:29:29Z-00005-000": 0.25,
+          "fde913a8-2019-04-18T19:39:14Z-00003-000": -0.375,
+          "4b594354-2019-04-18T15:15:42Z-00004-000": -1.125,
+          "4733bf42-2019-04-18T15:17:57Z-00003-000": -0.0625,
+          "70f488e3-2019-04-18T14:43:55Z-00003-000": -0.625,
+          "4733bf42-2019-04-18T15:17:57Z-00002-000": -1.375,
+          "10d1d2f8-2019-04-18T12:21:35Z-00001-000": -0.75,
+          "ed4d7d2f-2019-04-18T19:22:03Z-00003-000": -0.375,
+          "10e1b055-2019-04-19T12:46:09Z-00010-000": -1.0,
+          "3793e2aa-2019-04-18T19:11:21Z-00003-000": -1.4375,
+          "29d685d9-2019-04-18T13:29:32Z-00004-000": -0.125,
+          "430c0344-2019-04-18T19:39:35Z-00004-000": 0.375,
+          "b58ff37e-2019-04-17T11:47:36Z-00071-000": 0.125,
+          "7f6c271b-2019-04-18T13:55:07Z-00007-000": -1.0625,
+          "90bfc2ae-2019-04-18T19:38:40Z-00003-000": -2.5625,
+          "66212ba4-2019-04-18T19:44:16Z-00003-000": -0.6875,
+          "3793e2aa-2019-04-18T19:11:21Z-00000-000": -3.3125,
+          "422c0992-2019-04-18T18:12:13Z-00005-000": 0.9375,
+          "588c0e26-2019-04-18T12:41:36Z-00004-000": 0.0625,
+          "aac88cec-2019-04-19T12:45:13Z-00031-000": -1.4375,
+          "48a4a93c-2019-04-18T17:17:16Z-00002-000": -1.75,
+          "9c07825d-2019-04-18T13:31:03Z-00002-000": -1.1875,
+          "51251a80-2019-04-18T13:27:57Z-00005-000": -3.0,
+          "64eed48-2019-04-18T12:48:06Z-00003-000": -1.375,
+          "fde913a8-2019-04-18T19:39:14Z-00002-000": -1.625,
+          "ab411006-2019-04-18T19:20:25Z-00008-000": -1.75,
+          "748b035a-2019-04-18T19:08:30Z-00000-000": -1.625,
+          "f7800a88-2019-04-18T17:34:23Z-00005-000": -1.625,
+          "12ea8fac-2019-04-18T18:53:37Z-00004-000": -0.6875,
+          "66212ba4-2019-04-18T19:44:16Z-00002-000": -1.3125,
+          "f600de9a-2019-04-18T20:00:34Z-00000-000": -2.8125,
+          "49d51a26-2019-04-18T19:59:43Z-00002-000": -1.5,
+          "53b84112-2019-04-18T14:06:51Z-00000-000": 1.0625,
+          "e505d905-2019-04-18T16:03:11Z-00003-000": -2.0,
+          "fb47c4dc-2019-04-18T18:05:44Z-00001-000": -0.875,
+          "603ee756-2019-04-18T11:22:47Z-00005-000": -0.1875,
+          "ae945b47-2019-04-19T12:43:59Z-00001-000": 0.25,
+          "4b594354-2019-04-18T15:15:42Z-00000-000": -2.75,
+          "7a9613b5-2019-04-18T17:05:12Z-00001-000": -0.3125,
+          "70f488e3-2019-04-18T14:43:55Z-00004-000": -0.3125,
+          "797b35ea-2019-04-18T14:50:47Z-00004-000": -1.9375,
+          "4733bf42-2019-04-18T15:17:57Z-00005-000": -1.4375,
+          "f6a4061a-2019-04-18T11:21:34Z-00002-000": -2.0,
+          "603ee756-2019-04-18T11:22:47Z-00003-000": -2.375,
+          "f1e6a226-2019-04-18T18:53:21Z-00002-000": -1.25,
+          "67552c63-2019-04-18T19:53:59Z-00001-000": -1.875,
+          "61b46571-2019-04-18T12:27:50Z-00005-000": -0.75,
+          "b1e2894b-2019-04-18T16:02:34Z-00003-000": -1.125
+        },
+        "19": {
+          "7141563a-2019-04-18T18:43:57Z-00000-000": 1.125,
+          "d9e8f6e2-2019-04-18T19:03:35Z-00005-000": -0.5,
+          "b91f04f4-2019-04-18T15:09:43Z-00003-000": 0.125,
+          "f54ab53a-2019-04-18T12:48:18Z-00004-000": 1.25,
+          "14339aee-2019-04-18T19:27:46Z-00005-000": -2.1875,
+          "96274e4d-2019-04-18T17:24:22Z-00005-000": 0.875,
+          "5b953289-2019-04-18T13:58:30Z-00001-000": 0.375,
+          "933d85b9-2019-04-18T16:11:47Z-00005-000": -0.125,
+          "5d03cab1-2019-04-18T18:06:19Z-00004-000": -1.1875,
+          "9c4cd4ca-2019-04-18T17:42:19Z-00004-000": 0.0625,
+          "6335cba3-2019-04-18T12:35:45Z-00001-000": -2.0625,
+          "eaf2d2ed-2019-04-18T17:08:20Z-00003-000": 1.0,
+          "c40a309f-2019-04-18T15:49:49Z-00001-000": -0.375,
+          "63356341-2019-04-18T14:26:12Z-00009-000": -0.375,
+          "ea2e9abe-2019-04-18T17:35:59Z-00004-000": 0.3125,
+          "6335541e-2019-04-18T14:59:13Z-00002-000": -0.4375,
+          "d01db0ce-2019-04-18T18:38:16Z-00005-000": 0.0,
+          "de756082-2019-04-18T19:21:02Z-00005-000": 0.1875,
+          "369e4f3a-2019-04-18T19:20:56Z-00007-000": -0.25,
+          "369e4f59-2019-04-18T19:20:37Z-00006-000": -0.25,
+          "429c4751-2019-04-18T15:12:55Z-00004-000": 0.0625,
+          "ea2e1abf-2019-04-18T18:45:35Z-00005-000": -0.1875,
+          "924aa0b2-2019-04-18T17:07:36Z-00004-000": -1.0625,
+          "c6b95312-2019-04-18T18:29:26Z-00005-000": -1.5,
+          "fe5e045a-2019-04-18T15:15:22Z-00005-000": -0.625,
+          "ea2e99e5-2019-04-18T18:31:36Z-00000-000": -0.625,
+          "3893e6a5-2019-04-18T20:03:55Z-00001-000": -1.875,
+          "5b95326a-2019-04-18T16:00:23Z-00005-000": 0.125,
+          "369e4f1b-2019-04-18T19:30:47Z-00007-000": -1.0,
+          "4d91b1df-2019-04-18T15:29:29Z-00009-000": -1.5,
+          "d9e8fd8b-2019-04-18T18:54:39Z-00004-000": -0.8125,
+          "d9e8fdaa-2019-04-18T18:54:22Z-00005-000": -0.8125,
+          "d00d2f7a-2019-04-18T17:48:12Z-00004-000": -1.4375,
+          "630bca14-2019-04-18T16:30:59Z-00003-000": 0.0625,
+          "48d177bf-2019-04-18T16:12:00Z-00005-000": 0.375,
+          "339558ed-2019-04-18T16:55:04Z-00000-000": 0.875,
+          "339558ed-2019-04-18T16:55:04Z-00002-000": 0.875,
+          "63355ec6-2019-04-18T14:37:19Z-00005-000": 0.6875,
+          "59ad85bc-2019-04-18T18:09:07Z-00005-000": -1.375,
+          "eb6bf7d5-2019-04-18T18:38:16Z-00006-000": -1.5625,
+          "8c147dd1-2019-04-18T15:53:15Z-00005-000": -0.25,
+          "63357264-2019-04-18T13:13:26Z-00002-000": 0.3125,
+          "744a509e-2019-04-18T15:14:27Z-00003-000": -1.4375,
+          "b561ef57-2019-04-18T16:28:46Z-00003-000": -1.4375,
+          "659e55fe-2019-04-18T15:05:30Z-00007-000": -0.0625,
+          "1aa165a9-2019-04-18T19:19:46Z-00005-000": -2.125,
+          "452c0de8-2019-04-18T19:19:05Z-00005-000": -2.125,
+          "6334db63-2019-04-18T16:47:41Z-00005-000": 0.25,
+          "5d03ca92-2019-04-18T18:09:51Z-00004-000": -1.125,
+          "ea2e99e5-2019-04-18T18:31:36Z-00001-000": 0.25,
+          "6335cbc2-2019-04-18T12:35:24Z-00001-000": 0.125,
+          "33c918a7-2019-04-18T18:43:20Z-00006-000": -2.375,
+          "63347646-2019-04-18T17:41:45Z-00005-000": -1.25,
+          "6335cb84-2019-04-18T12:35:52Z-00000-000": -1.75,
+          "26750601-2019-04-18T16:40:17Z-00003-000": -1.0625,
+          "9bfee71c-2019-04-18T18:31:58Z-00007-000": -1.25,
+          "66e10725-2019-04-18T16:34:47Z-00005-000": -0.3125,
+          "fe5e045a-2019-04-18T15:15:22Z-00003-000": -1.5,
+          "e2b2a86-2019-04-18T11:52:03Z-00001-000": -1.0,
+          "48d16fc1-2019-04-18T16:34:07Z-00002-000": -1.3125,
+          "ea2e9624-2019-04-18T19:16:55Z-00007-000": -1.1875,
+          "33962bdf-2019-04-18T14:40:51Z-00006-000": -0.4375,
+          "d1cb4750-2019-04-18T15:40:38Z-00003-000": -1.4375,
+          "374a31d9-2019-04-18T16:09:06Z-00004-000": -1.0,
+          "63355f61-2019-04-18T14:37:00Z-00004-000": -1.75,
+          "63346ee3-2019-04-18T18:10:40Z-00002-000": -1.6875,
+          "ce8a18b4-2019-04-18T17:09:26Z-00002-000": -0.6875,
+          "ea2e99e5-2019-04-18T18:31:36Z-00004-000": -2.0,
+          "8ca2faee-2019-04-18T17:27:45Z-00004-000": -0.5625,
+          "457e9be7-2019-04-18T19:57:30Z-00003-000": -2.8125,
+          "6335cb65-2019-04-18T12:40:14Z-00007-000": -0.375,
+          "14339acf-2019-04-18T19:31:22Z-00005-000": -2.375,
+          "8d358e35-2019-04-18T14:45:58Z-00002-000": -2.25,
+          "ae4571c-2019-04-18T18:03:25Z-00001-000": -2.9375,
+          "3a16b1cf-2019-04-18T19:45:23Z-00005-000": -1.625,
+          "2a544b57-2019-04-18T17:16:10Z-00004-000": -2.3125,
+          "b56be777-2019-04-18T16:58:39Z-00002-000": -2.875,
+          "2131c62d-2019-04-18T19:45:08Z-00003-000": -1.25,
+          "6334eb40-2019-04-18T16:07:52Z-00004-000": -1.875,
+          "d9e8fdaa-2019-04-18T18:54:22Z-00004-000": -1.375,
+          "ea01fdc2-2019-04-18T17:12:16Z-00006-000": -2.125,
+          "48d17f22-2019-04-18T16:00:01Z-00003-000": -0.0625,
+          "fb3c024a-2019-04-18T14:45:20Z-00004-000": 0.125,
+          "1b1fbdc-2019-04-18T17:19:48Z-00003-000": -1.5625,
+          "ea2ea202-2019-04-18T15:17:45Z-00007-000": 0.75,
+          "63356268-2019-04-18T14:33:59Z-00003-000": -1.375,
+          "48d1e765-2019-04-18T14:56:54Z-00002-000": -0.375,
+          "75545f39-2019-04-18T14:11:17Z-00006-000": -1.4375,
+          "63356303-2019-04-18T14:28:44Z-00003-000": -1.1875,
+          "63346b22-2019-04-18T18:21:12Z-00005-000": -1.25,
+          "c91960a0-2019-04-18T17:21:23Z-00002-000": -3.5,
+          "368a6ce4-2019-04-18T19:54:59Z-00001-000": -1.6875,
+          "63355f61-2019-04-18T14:37:00Z-00003-000": -3.0,
+          "d0508d4b-2019-04-18T14:33:52Z-00002-000": -1.0625,
+          "92aeb788-2019-04-18T12:09:19Z-00003-000": -2.0625,
+          "6335cfc1-2019-04-18T11:44:27Z-00003-000": -0.375,
+          "63f4a530-2019-04-18T17:04:57Z-00002-000": 0.375,
+          "173a3fe5-2019-04-18T19:55:19Z-00004-000": -1.0625,
+          "ea2e9abe-2019-04-18T17:35:59Z-00001-000": -0.25,
+          "d01da664-2019-04-18T18:55:30Z-00004-000": -2.0
+        },
+        "35": {
+          "50c55103-2019-04-18T16:52:42Z-00003-000": 2.0625,
+          "d0e5c093-2019-04-18T18:40:47Z-00005-000": 0.125,
+          "5b6b25e-2019-04-18T18:46:35Z-00001-000": -0.0625,
+          "3e67d226-2019-04-18T17:47:14Z-00001-000": 0.4375,
+          "1ac69d5c-2019-04-18T13:30:47Z-00002-000": 0.8125,
+          "7f95546c-2019-04-18T14:36:44Z-00002-000": 0.9375,
+          "758ea5f9-2019-04-18T16:05:18Z-00004-000": 2.75,
+          "92fc546a-2019-04-15T20:22:34Z-00010-000": 0.6875,
+          "f47d4ad1-2019-04-18T16:02:36Z-00005-000": 0.0,
+          "b1a6f17a-2019-04-18T15:54:21Z-00005-000": 0.0,
+          "30a5cf73-2019-04-18T18:52:16Z-00003-000": 0.5,
+          "d94ca2d5-2019-04-18T18:35:58Z-00007-000": 1.375,
+          "30a5cf73-2019-04-18T18:52:16Z-00002-000": 0.5,
+          "758ea5f9-2019-04-18T16:05:18Z-00000-000": -0.5,
+          "f47d4ad1-2019-04-18T16:02:36Z-00004-000": 0.0625,
+          "3466ccde-2019-04-18T15:56:31Z-00006-000": 0.125,
+          "30a5cf73-2019-04-18T18:52:16Z-00001-000": -0.3125,
+          "b4849efd-2019-04-18T17:56:23Z-00001-000": 0.6875,
+          "1ff4635e-2019-04-18T18:36:23Z-00005-000": 0.5625,
+          "c827393f-2019-04-18T17:49:30Z-00001-000": -0.25,
+          "6da2e494-2019-04-15T20:22:30Z-00010-000": 0.4375,
+          "92fc546a-2019-04-15T20:22:34Z-00008-000": 0.875,
+          "758ea5f9-2019-04-18T16:05:18Z-00003-000": -0.8125,
+          "46745944-2019-04-18T12:08:45Z-00000-000": 1.125,
+          "8a9f614c-2019-04-18T17:34:39Z-00001-000": -1.8125,
+          "e42653aa-2019-04-18T16:41:40Z-00002-000": 0.5625,
+          "e81dfba3-2019-04-18T17:00:44Z-00004-000": 0.25,
+          "456d6b1b-2019-04-18T16:18:57Z-00002-000": 0.0,
+          "d48f37bf-2019-04-17T11:47:20Z-00043-000": -1.3125,
+          "d94ca2d5-2019-04-18T18:35:58Z-00006-000": 1.125,
+          "74558456-2019-04-18T17:04:25Z-00003-000": 0.3125,
+          "a5ca39dc-2019-04-18T11:43:36Z-00005-000": -0.75,
+          "4381b332-2019-04-19T12:47:35Z-00023-000": 0.25,
+          "d0e5c093-2019-04-18T18:40:47Z-00006-000": 0.9375,
+          "e6270ff-2019-04-18T16:35:46Z-00003-000": 0.5,
+          "7f95546c-2019-04-18T14:36:44Z-00003-000": -1.0,
+          "4f2fe78e-2019-04-18T11:10:15Z-00002-000": 0.4375,
+          "456d6b3a-2019-04-18T16:19:18Z-00004-000": 0.625,
+          "ce4d7cce-2019-04-18T17:03:30Z-00002-000": -0.1875,
+          "5b6b2f9-2019-04-18T15:28:19Z-00001-000": 0.5,
+          "ccecc0ad-2019-04-18T15:37:21Z-00001-000": 0.0625,
+          "739f2cb1-2019-04-18T16:12:34Z-00007-000": -1.0625,
+          "c4f2dab6-2019-04-18T17:04:26Z-00003-000": 0.5,
+          "45462ad0-2019-04-18T13:17:49Z-00005-000": 0.5,
+          "456d6b3a-2019-04-18T16:19:18Z-00005-000": -0.1875,
+          "45462ad0-2019-04-18T13:17:49Z-00000-000": 1.0625,
+          "7f95546c-2019-04-18T14:36:44Z-00004-000": -0.25,
+          "1dd4cde4-2019-04-18T16:08:31Z-00002-000": 0.4375,
+          "6a618e4b-2019-04-18T16:23:33Z-00004-000": 0.75,
+          "d5fac21c-2019-04-18T15:06:25Z-00001-000": -0.25,
+          "30a5cf73-2019-04-18T18:52:16Z-00000-000": -1.625,
+          "c51b1af2-2019-04-18T12:20:30Z-00005-000": -1.625,
+          "4381b332-2019-04-19T12:47:35Z-00031-000": -2.4375,
+          "7d79edc5-2019-04-18T17:46:39Z-00002-000": -0.3125,
+          "f3750c50-2019-04-18T11:57:33Z-00005-000": -0.5,
+          "63308ee0-2019-04-18T16:43:34Z-00002-000": -0.9375,
+          "19ca43bb-2019-04-18T18:35:19Z-00006-000": -0.125,
+          "5b6b2f9-2019-04-18T15:28:19Z-00000-000": 0.125,
+          "d46bff47-2019-04-18T17:09:05Z-00003-000": -0.375,
+          "6da2e494-2019-04-15T20:22:30Z-00015-000": 0.1875,
+          "ac22b87e-2019-04-18T11:38:36Z-00002-000": -1.5,
+          "75fbfa8d-2019-04-18T14:39:09Z-00008-000": -1.4375,
+          "e42653aa-2019-04-18T16:41:40Z-00001-000": -0.4375,
+          "6714f378-2019-04-18T20:03:11Z-00004-000": -0.125,
+          "6a618e4b-2019-04-18T16:23:33Z-00001-000": -0.625,
+          "c958dc5a-2019-04-18T17:51:05Z-00003-000": 0.1875,
+          "ce330406-2019-04-18T15:51:12Z-00004-000": -1.0625,
+          "e6d00db4-2019-04-18T16:41:52Z-00001-000": -0.25,
+          "7f02efbf-2019-04-18T17:47:09Z-00003-000": -0.5,
+          "e81dfba3-2019-04-18T17:00:44Z-00000-000": -1.4375,
+          "7b564465-2019-04-18T13:46:22Z-00003-000": -0.1875,
+          "2fba671-2019-04-18T12:51:48Z-00000-000": -0.9375,
+          "1ff4635e-2019-04-18T18:36:23Z-00004-000": 0.0,
+          "456d6b3a-2019-04-18T16:19:18Z-00002-000": 0.75,
+          "3307f209-2019-04-18T15:40:14Z-00003-000": -1.5,
+          "a5ca39dc-2019-04-18T11:43:36Z-00004-000": -1.6875,
+          "e6270ff-2019-04-18T16:35:46Z-00004-000": -0.5625,
+          "8db68a9b-2019-04-18T16:56:06Z-00000-000": -2.0,
+          "1f98e1f8-2019-04-18T18:59:42Z-00001-000": -0.6875,
+          "1ff4635e-2019-04-18T18:36:23Z-00001-000": -0.1875,
+          "7bb5fe56-2019-04-18T17:45:28Z-00004-000": -0.0625,
+          "7a99f4c0-2019-04-18T16:50:24Z-00003-000": -0.8125,
+          "d48f37bf-2019-04-17T11:47:20Z-00038-000": -0.875,
+          "90b2f503-2019-04-18T19:34:49Z-00001-000": -0.9375,
+          "456d6b3a-2019-04-18T16:19:18Z-00001-000": -2.1875,
+          "5b6b25e-2019-04-18T18:46:35Z-00002-000": -1.3125,
+          "7f95546c-2019-04-18T14:36:44Z-00005-000": -1.3125,
+          "d94ca2d5-2019-04-18T18:35:58Z-00002-000": 0.0,
+          "baa6345c-2019-04-18T13:44:43Z-00002-000": -0.5625,
+          "7f02efbf-2019-04-18T17:47:09Z-00004-000": -0.25,
+          "3307f209-2019-04-18T15:40:14Z-00004-000": -1.625,
+          "6a618e4b-2019-04-18T16:23:33Z-00002-000": -1.9375,
+          "a41abadd-2019-04-18T15:37:06Z-00001-000": -2.25,
+          "6ba1043a-2019-04-18T14:56:00Z-00006-000": -0.125,
+          "a1ac5625-2019-04-18T12:11:35Z-00003-000": -0.875,
+          "5dce2de2-2019-04-18T15:41:55Z-00001-000": 0.9375,
+          "d5c9fd7c-2019-04-18T13:00:26Z-00002-000": -0.75,
+          "5547489c-2019-04-18T17:05:01Z-00002-000": -1.875,
+          "8db68a9b-2019-04-18T16:56:06Z-00003-000": -1.125,
+          "4381b332-2019-04-19T12:47:35Z-00033-000": -1.8125
+        },
+        "9": {
+          "6a52a7de-2019-04-18T13:44:47Z-00003-000": 0.25,
+          "d75a0ed1-2019-04-18T16:35:33Z-00003-000": -0.1875,
+          "109aed09-2019-04-18T16:36:24Z-00001-000": 0.0625,
+          "f0896680-2019-04-18T18:00:05Z-00000-000": -1.1875,
+          "96158d24-2019-04-18T11:23:27Z-00001-000": 0.625,
+          "f84713e2-2019-04-18T18:06:56Z-00003-000": -0.25,
+          "df002939-2019-04-18T11:10:56Z-00004-000": -0.0625,
+          "a7f5e454-2019-04-18T13:43:30Z-00003-000": 1.125,
+          "cf842d4b-2019-04-18T17:29:27Z-00002-000": -0.3125,
+          "a7f5e454-2019-04-18T13:43:30Z-00002-000": 0.375,
+          "f0896680-2019-04-18T18:00:05Z-00003-000": 0.6875,
+          "4430de8b-2019-04-18T15:28:56Z-00006-000": -0.375,
+          "f6f33da9-2019-04-18T17:06:27Z-00002-000": -0.375,
+          "24035966-2019-04-18T12:50:42Z-00003-000": -0.3125,
+          "24035fd1-2019-04-18T12:22:39Z-00005-000": -1.5,
+          "94533937-2019-04-18T17:03:17Z-00005-000": -1.1875,
+          "8be8fac1-2019-04-18T12:09:17Z-00001-000": -1.125,
+          "9389d854-2019-04-18T18:50:20Z-00005-000": 0.375,
+          "5417872f-2019-04-18T18:41:53Z-00003-000": -1.1875,
+          "23c2cf2-2019-04-18T17:39:06Z-00002-000": -0.625,
+          "4430de8b-2019-04-18T15:28:56Z-00000-000": -0.25,
+          "2403606c-2019-04-18T11:14:56Z-00005-000": 0.5,
+          "4b51d325-2019-04-19T12:44:49Z-00046-000": 0.375,
+          "eb9a4d4d-2019-04-18T18:18:05Z-00002-000": -0.75,
+          "e185ae98-2019-04-18T14:38:46Z-00002-000": -0.375,
+          "c618f3a4-2019-04-18T14:31:04Z-00005-000": -0.3125,
+          "54b181c-2019-04-18T15:21:56Z-00004-000": -0.5625,
+          "e185aed6-2019-04-18T12:33:18Z-00004-000": -0.3125,
+          "38c6731a-2019-04-18T19:33:25Z-00005-000": -0.5625,
+          "eb9a4d4d-2019-04-18T18:18:05Z-00001-000": -0.9375,
+          "cf842d6a-2019-04-18T17:28:15Z-00006-000": 0.5,
+          "df002939-2019-04-18T11:10:56Z-00005-000": -0.25,
+          "debd317e-2019-04-18T16:46:28Z-00005-000": -0.75,
+          "f6f33da9-2019-04-18T17:06:27Z-00003-000": 0.125,
+          "38c6731a-2019-04-18T19:33:25Z-00003-000": -0.6875,
+          "eb9a4d4d-2019-04-18T18:18:05Z-00000-000": 0.5625,
+          "2403550a-2019-04-18T14:02:10Z-00006-000": -0.625,
+          "6f5c7d0-2019-04-18T15:43:46Z-00003-000": -0.4375,
+          "7ba06a9e-2019-04-18T13:30:49Z-00003-000": -0.375,
+          "4c9720fc-2019-04-18T17:42:44Z-00002-000": -1.3125,
+          "ca9c6b9f-2019-04-18T11:12:56Z-00004-000": -1.8125,
+          "e2027ef-2019-04-18T11:51:30Z-00005-000": -0.5625,
+          "b5339025-2019-04-18T18:30:27Z-00003-000": -0.1875,
+          "7a462d3c-2019-04-18T16:52:05Z-00004-000": -0.375,
+          "2ee9faf4-2019-04-18T15:42:59Z-00002-000": -1.0,
+          "720383e6-2019-04-18T14:09:06Z-00003-000": 0.625,
+          "1a3800cb-2019-04-18T14:31:44Z-00000-000": -2.125,
+          "240350ec-2019-04-18T15:27:05Z-00003-000": -0.0625,
+          "c7f51e34-2019-04-18T16:26:03Z-00005-000": -1.0625,
+          "28f316b1-2019-04-18T18:27:06Z-00004-000": -0.1875,
+          "375bf80d-2019-04-18T18:30:46Z-00005-000": -0.125,
+          "cf843223-2019-04-18T15:49:10Z-00003-000": -1.625,
+          "c7f51e34-2019-04-18T16:26:03Z-00006-000": 0.3125,
+          "c5bfbdb9-2019-04-18T17:32:59Z-00006-000": -0.9375,
+          "f380cbdd-2019-04-18T12:44:24Z-00001-000": -1.0625,
+          "6a52a7bf-2019-04-18T13:59:25Z-00003-000": -1.5,
+          "4b51d325-2019-04-19T12:44:49Z-00039-000": -0.1875,
+          "46c53f41-2019-04-18T16:27:17Z-00003-000": 0.25,
+          "40c16f39-2019-04-18T16:15:15Z-00004-000": -0.4375,
+          "89208796-2019-04-18T17:01:01Z-00004-000": -0.375,
+          "720383e6-2019-04-18T14:09:06Z-00004-000": -1.375,
+          "8156d8db-2019-04-18T13:53:21Z-00005-000": -0.625,
+          "b959db22-2019-04-18T18:05:43Z-00005-000": 0.0,
+          "fa922cd8-2019-04-18T16:13:55Z-00004-000": 0.3125,
+          "563c9db1-2019-04-18T16:20:05Z-00006-000": 0.3125,
+          "720383e6-2019-04-18T14:09:06Z-00000-000": -1.5,
+          "2403510b-2019-04-18T15:27:22Z-00002-000": -0.0625,
+          "6ae58551-2019-04-18T15:35:40Z-00006-000": -0.0625,
+          "1f6b2834-2019-04-18T14:19:41Z-00003-000": -1.1875,
+          "ca9c6b9f-2019-04-18T11:12:56Z-00006-000": -0.3125,
+          "f6f33da9-2019-04-18T17:06:27Z-00004-000": -2.75,
+          "6a52a743-2019-04-18T19:19:33Z-00003-000": -1.3125,
+          "e6f906f4-2019-04-18T15:32:03Z-00006-000": -0.8125,
+          "f0deef6e-2019-04-18T18:22:25Z-00008-000": -0.875,
+          "f380cbdd-2019-04-18T12:44:24Z-00000-000": -1.1875,
+          "c617f5ab-2019-04-18T14:18:24Z-00003-000": -0.5,
+          "637bf47b-2019-04-18T15:09:25Z-00005-000": -0.75,
+          "99da1031-2019-04-18T11:12:29Z-00005-000": -0.5,
+          "c7f51eb0-2019-04-18T16:19:34Z-00003-000": 0.25,
+          "6ae58551-2019-04-18T15:35:40Z-00005-000": -1.625,
+          "4430de8b-2019-04-18T15:28:56Z-00007-000": -0.3125,
+          "e9900875-2019-04-18T17:39:28Z-00002-000": -0.3125,
+          "f0deef6e-2019-04-18T18:22:25Z-00007-000": -1.1875,
+          "5c0d9fa0-2019-04-18T11:11:55Z-00003-000": -0.9375,
+          "e2027ef-2019-04-18T11:51:30Z-00001-000": -1.375,
+          "5177bde4-2019-04-18T13:40:21Z-00003-000": -1.375,
+          "17e66c01-2019-04-18T14:35:26Z-00000-000": -0.3125,
+          "6f5c7d0-2019-04-18T15:43:46Z-00005-000": 0.375,
+          "ddb0b6b8-2019-04-18T14:08:45Z-00000-000": -0.125,
+          "1f6b2834-2019-04-18T14:19:41Z-00004-000": -0.375,
+          "4eed3412-2019-04-18T12:57:55Z-00000-000": -0.875,
+          "8156d8db-2019-04-18T13:53:21Z-00004-000": -0.625,
+          "f8471401-2019-04-18T17:54:46Z-00002-000": -0.625,
+          "8be8fac1-2019-04-18T12:09:17Z-00003-000": -1.8125,
+          "92695cf-2019-04-18T12:23:34Z-00000-000": -0.0625,
+          "480a719a-2019-04-18T14:11:26Z-00001-000": -0.5625,
+          "46c53f41-2019-04-18T16:27:17Z-00001-000": -0.8125,
+          "7ba06a9e-2019-04-18T13:30:49Z-00002-000": -0.25,
+          "20ee21b1-2019-04-18T17:38:39Z-00003-000": -1.5625,
+          "f4a3ee69-2019-04-18T15:32:25Z-00000-000": -0.5
+        }
+      },
+      "seconds": {
+        "validation": 2.143154110000978,
+        "touche": 8.972674919999918,
+        "round": 13.080275450000045
+      },
+      "validation_queries": 48,
+      "touche_queries": 8
+    }
+  },
+  "total_seconds": 50.67495319000045
+}
