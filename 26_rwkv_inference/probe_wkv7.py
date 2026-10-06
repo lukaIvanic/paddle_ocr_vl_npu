@@ -71,6 +71,8 @@ def main():
     p.add_argument("--build-root", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--build-only", action="store_true")
+    p.add_argument("--allow-shared-device", action="store_true",
+                   help="Explicitly authorized shared-device correctness run; skip timing")
     p.add_argument("--lengths", default="1,47,48,49,64,128,512,976")
     p.add_argument("--repeats", type=int, default=20)
     args = p.parse_args()
@@ -85,7 +87,8 @@ def main():
               "source_commit": subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip(),
               "script_sha256": digest(__file__), "physical_npu": os.environ.get("ASCEND_RT_VISIBLE_DEVICES"),
               "backend": "raw_eager", "torchair_used": False, "python_stock_fallback": False,
-              "same_name_override": False, "atol": 2e-5, "rtol": 2e-4, "cases": [],
+              "same_name_override": False, "shared_device": args.allow_shared_device,
+              "atol": 2e-5, "rtol": 2e-4, "cases": [],
               "all_checks_passed": False, "inference_executed": False}
     try:
         os.environ["TORCH_DEVICE_BACKEND_AUTOLOAD"] = "0"
@@ -106,9 +109,17 @@ def main():
             raise RuntimeError("source npu-setup first; no physical NPU was selected")
         status = subprocess.check_output(["/usr/local/bin/npu-status"], text=True)
         report["device_status_before_inference"] = status
-        if f"NPU {report['physical_npu']}: free " not in status:
+        selected = next((line for line in status.splitlines()
+                         if line.startswith(f"NPU {report['physical_npu']}: ")), "")
+        if "Health=OK" not in selected:
+            raise RuntimeError("Selected NPU does not report OK health")
+        if not args.allow_shared_device and ": free " not in selected:
             raise RuntimeError("Selected device is no longer healthy and free; rerun npu-setup")
         torch.npu.set_device(0)
+        free, total = torch.npu.mem_get_info()
+        report["hbm_before_inference"] = {"free_bytes": free, "total_bytes": total}
+        if free < 1024 ** 3:
+            raise RuntimeError("Less than 1 GiB free HBM for the recurrence probe")
         torch.npu.set_compile_mode(jit_compile=False)
         torch.npu.config.allow_internal_format = False
         report["device"] = torch.npu.get_device_name(0)
@@ -142,14 +153,17 @@ def main():
                         ro, rs = op(*right)
                         assert compare(torch.cat([lo, ro], dim=2).cpu(), got[0])["allclose"], "Split output"
                         assert compare(rs.cpu(), got[1])["allclose"], "Split final state"
-                    torch.npu.synchronize()
-                    start = time.perf_counter()
-                    for _ in range(args.repeats):
-                        op(*device)
-                    torch.npu.synchronize()
-                    steady = (time.perf_counter() - start) / args.repeats
+                    steady = None
+                    if not args.allow_shared_device:
+                        torch.npu.synchronize()
+                        start = time.perf_counter()
+                        for _ in range(args.repeats):
+                            op(*device)
+                        torch.npu.synchronize()
+                        steady = (time.perf_counter() - start) / args.repeats
                     row = {"batch": batch, "heads": 12, "length": length, "nonzero_initial_state": nonzero,
-                           "output": comparisons[0], "state": comparisons[1], "first_call_seconds": first_seconds,
+                           "output": comparisons[0], "state": comparisons[1],
+                           "first_call_seconds": None if args.allow_shared_device else first_seconds,
                            "steady_host_seconds": steady, "repeat_bitwise_equal": True,
                            "split_continuation_passed": True if length > 1 else None, "inputs_unchanged": True}
                     report["cases"].append(row)
