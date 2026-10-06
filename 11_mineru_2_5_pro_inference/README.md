@@ -1,5 +1,9 @@
 # Experiment 11: MinerU2.5-Pro Local Inference
 
+The [KV-cache layout probe](kv_cache_probe/README.md) audits the vLLM-Ascend
+310P cache contract and provides standalone ND-versus-NZ attention comparisons
+for 910B and 310P. CPU packing checks passed; NPU validation is pending.
+
 This experiment is the current custom MinerU2.5-Pro implementation transferred
 from the standalone `mineru_25_pro_npu` repository at commit `b08ae14`. The
 custom implementation does not import vLLM or vLLM-Ascend. Separate official
