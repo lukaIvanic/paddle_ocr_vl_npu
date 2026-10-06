@@ -1,0 +1,146 @@
+{
+  "bytes": 11558555,
+  "chunks": 23,
+  "sha256": "153f4fc8e8297d057563ef87fc0add7e094f63aa644b25490951ff9a58103efd",
+  "seconds": 159.28057600800093,
+  "parts": [
+    {
+      "chunk": 0,
+      "bytes": 524288,
+      "seconds": 46.83837541799585,
+      "sha256": "e6a71c03cd64d7936595e10325e03f6d07322b4d4a18a9c04c43c359f657e812"
+    },
+    {
+      "chunk": 1,
+      "bytes": 524288,
+      "seconds": 52.845217828995374,
+      "sha256": "ad195d4ba43ef4bba84aae6c8b96fee79e6ac51acd825cbca4543754c59a3e88"
+    },
+    {
+      "chunk": 2,
+      "bytes": 524288,
+      "seconds": 56.85654319199966,
+      "sha256": "e0c014386abaf1b5cdf8607c08b2ee88bf36250609203eb652cc9281e3658f2e"
+    },
+    {
+      "chunk": 3,
+      "bytes": 524288,
+      "seconds": 45.62100073900365,
+      "sha256": "2cea4c36c6a22cf3498fd7b77fb4b2f56ed5937373ca25d4cedd83aaf76562e0"
+    },
+    {
+      "chunk": 4,
+      "bytes": 524288,
+      "seconds": 48.06587703299738,
+      "sha256": "677cc48447d6c3db813f1f0d5fc8d5edc0a25e49eeeb2a617b2a4138e0331345"
+    },
+    {
+      "chunk": 5,
+      "bytes": 524288,
+      "seconds": 55.536982655998145,
+      "sha256": "b3a68bba59d8552bbb06ed497d2fbef15c6402046db26706a603c6fbf522e023"
+    },
+    {
+      "chunk": 6,
+      "bytes": 524288,
+      "seconds": 19.00572759300121,
+      "sha256": "bf9b7d4f2fbe5494c28e9cbfa5fe4db2d29fe64fdf68009cbf950fe7c285dcda"
+    },
+    {
+      "chunk": 7,
+      "bytes": 524288,
+      "seconds": 46.92063681699801,
+      "sha256": "347395345e05bf9b9ab7028c8e3583f618671c055e66ab6bc13eac6f35498162"
+    },
+    {
+      "chunk": 8,
+      "bytes": 524288,
+      "seconds": 60.559933851000096,
+      "sha256": "094292192bf39b748a00adce3ef938bda4e400257ad56651f8b854304ab55737"
+    },
+    {
+      "chunk": 9,
+      "bytes": 524288,
+      "seconds": 44.09003605900216,
+      "sha256": "09903d9fe12ee9cd7e4ced7d970fa0dfed8043e2658c91522633e4b4dfe6308e"
+    },
+    {
+      "chunk": 10,
+      "bytes": 524288,
+      "seconds": 48.55727795299754,
+      "sha256": "793ea0eef20624b6a983268a585408a50d1cccc64d925c355c2efae7888c1934"
+    },
+    {
+      "chunk": 11,
+      "bytes": 524288,
+      "seconds": 48.90069142800348,
+      "sha256": "05d47d9781f4c435e680d137b97772d81c4780eb35949b489a59890877ab5e3f"
+    },
+    {
+      "chunk": 12,
+      "bytes": 524288,
+      "seconds": 48.6560801960004,
+      "sha256": "402aae9828c83cb5ad07a1e87546e6fc79da20e2b671ef73c14683cd1b73b89f"
+    },
+    {
+      "chunk": 13,
+      "bytes": 524288,
+      "seconds": 57.92695653199917,
+      "sha256": "2e37c5dd0e5b2e69d8abcce41b0c1f00ef4a4be8915caeee2276b4f91934c2a3"
+    },
+    {
+      "chunk": 14,
+      "bytes": 524288,
+      "seconds": 59.460757180000655,
+      "sha256": "b7b8929ec12df851ff7d552d7e9e647dfdeafdd9ced695145c01431487fe833d"
+    },
+    {
+      "chunk": 15,
+      "bytes": 524288,
+      "seconds": 48.16514828000072,
+      "sha256": "32fa7720594920e8d8da1214a53168ac3b3da499a9dce548da6730531185f012"
+    },
+    {
+      "chunk": 16,
+      "bytes": 524288,
+      "seconds": 47.087579052000365,
+      "sha256": "0ad4528b3cbc3e2903e9f824c44d1b08999a0fb69a4086144f9828ea310cd353"
+    },
+    {
+      "chunk": 17,
+      "bytes": 524288,
+      "seconds": 42.25285753799835,
+      "sha256": "97a6d99ab4e578d708f669682a262186f6ad6c5acd30766777743c6882e2019a"
+    },
+    {
+      "chunk": 18,
+      "bytes": 524288,
+      "seconds": 57.32029851900006,
+      "sha256": "bc80ee0296a151c5ba56a96784f9c6c09d606b9adeb3e292f18b01a40cb61cd9"
+    },
+    {
+      "chunk": 19,
+      "bytes": 524288,
+      "seconds": 49.90432663200045,
+      "sha256": "f1e06d1ec76710aadfbe41ded26a21fb545c87ddb2ee009d0600129987749aa3"
+    },
+    {
+      "chunk": 20,
+      "bytes": 524288,
+      "seconds": 48.69135579500289,
+      "sha256": "07fc5f572489b96869554f31ee3e9e02250bc90aba13dfeea493661c5b28fa69"
+    },
+    {
+      "chunk": 21,
+      "bytes": 524288,
+      "seconds": 47.34843380199891,
+      "sha256": "6c0cc825ffd6493b29c990bdc7e396205c7a58a588de328283080ebba381daa9"
+    },
+    {
+      "chunk": 22,
+      "bytes": 24219,
+      "seconds": 5.950165674003074,
+      "sha256": "3c76be3bd23544865a73745b8346a879eb4f59347f6ce0e5b4f96b72e8238ab7"
+    }
+  ]
+}

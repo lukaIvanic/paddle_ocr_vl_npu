@@ -1,0 +1,291 @@
+{
+  "train_queries": 6000,
+  "validation_queries": 384,
+  "sources": 55,
+  "absent_sources": [],
+  "checks": {
+    "normalized_queries_disjoint": true,
+    "normalized_documents_disjoint": true
+  },
+  "compressed_bytes": 11558555,
+  "sha256": "153f4fc8e8297d057563ef87fc0add7e094f63aa644b25490951ff9a58103efd",
+  "endpoint": "https://huggingface.co",
+  "seconds": 74.25370235499577,
+  "distribution": {
+    "ATEC": {
+      "released_rows": 11325,
+      "train_queries": 100,
+      "validation_queries": 6
+    },
+    "BQ": {
+      "released_rows": 12599,
+      "train_queries": 111,
+      "validation_queries": 7
+    },
+    "LCQMC": {
+      "released_rows": 10000,
+      "train_queries": 89,
+      "validation_queries": 6
+    },
+    "PAWSX": {
+      "released_rows": 10000,
+      "train_queries": 89,
+      "validation_queries": 6
+    },
+    "QBQTC_v2": {
+      "released_rows": 10000,
+      "train_queries": 89,
+      "validation_queries": 6
+    },
+    "STS-B": {
+      "released_rows": 249,
+      "train_queries": 6,
+      "validation_queries": 2
+    },
+    "afqmc": {
+      "released_rows": 10534,
+      "train_queries": 93,
+      "validation_queries": 6
+    },
+    "colliee": {
+      "released_rows": 463,
+      "train_queries": 7,
+      "validation_queries": 2
+    },
+    "law_gpt": {
+      "released_rows": 500,
+      "train_queries": 8,
+      "validation_queries": 2
+    },
+    "lecardv2": {
+      "released_rows": 591,
+      "train_queries": 9,
+      "validation_queries": 2
+    },
+    "miracl_ar": {
+      "released_rows": 3495,
+      "train_queries": 33,
+      "validation_queries": 3
+    },
+    "miracl_bn": {
+      "released_rows": 1631,
+      "train_queries": 17,
+      "validation_queries": 2
+    },
+    "miracl_en": {
+      "released_rows": 2863,
+      "train_queries": 28,
+      "validation_queries": 3
+    },
+    "miracl_es": {
+      "released_rows": 2162,
+      "train_queries": 22,
+      "validation_queries": 2
+    },
+    "miracl_fa": {
+      "released_rows": 2107,
+      "train_queries": 21,
+      "validation_queries": 2
+    },
+    "miracl_fi": {
+      "released_rows": 2897,
+      "train_queries": 28,
+      "validation_queries": 3
+    },
+    "miracl_fr": {
+      "released_rows": 1143,
+      "train_queries": 13,
+      "validation_queries": 2
+    },
+    "miracl_hi": {
+      "released_rows": 1169,
+      "train_queries": 13,
+      "validation_queries": 2
+    },
+    "miracl_id": {
+      "released_rows": 4071,
+      "train_queries": 38,
+      "validation_queries": 3
+    },
+    "miracl_ja": {
+      "released_rows": 3477,
+      "train_queries": 33,
+      "validation_queries": 3
+    },
+    "miracl_ko": {
+      "released_rows": 868,
+      "train_queries": 11,
+      "validation_queries": 2
+    },
+    "miracl_ru": {
+      "released_rows": 4683,
+      "train_queries": 43,
+      "validation_queries": 3
+    },
+    "miracl_sw": {
+      "released_rows": 1901,
+      "train_queries": 20,
+      "validation_queries": 2
+    },
+    "miracl_te": {
+      "released_rows": 3452,
+      "train_queries": 33,
+      "validation_queries": 3
+    },
+    "miracl_th": {
+      "released_rows": 2972,
+      "train_queries": 29,
+      "validation_queries": 3
+    },
+    "miracl_zh": {
+      "released_rows": 1312,
+      "train_queries": 15,
+      "validation_queries": 2
+    },
+    "mldr_ar": {
+      "released_rows": 1817,
+      "train_queries": 19,
+      "validation_queries": 2
+    },
+    "mldr_de": {
+      "released_rows": 1847,
+      "train_queries": 19,
+      "validation_queries": 2
+    },
+    "mldr_en": {
+      "released_rows": 10000,
+      "train_queries": 89,
+      "validation_queries": 6
+    },
+    "mldr_es": {
+      "released_rows": 2254,
+      "train_queries": 23,
+      "validation_queries": 2
+    },
+    "mldr_fr": {
+      "released_rows": 1608,
+      "train_queries": 17,
+      "validation_queries": 2
+    },
+    "mldr_hi": {
+      "released_rows": 1618,
+      "train_queries": 17,
+      "validation_queries": 2
+    },
+    "mldr_it": {
+      "released_rows": 2151,
+      "train_queries": 22,
+      "validation_queries": 2
+    },
+    "mldr_ja": {
+      "released_rows": 2262,
+      "train_queries": 23,
+      "validation_queries": 2
+    },
+    "mldr_ko": {
+      "released_rows": 2198,
+      "train_queries": 22,
+      "validation_queries": 2
+    },
+    "mldr_pt": {
+      "released_rows": 1845,
+      "train_queries": 19,
+      "validation_queries": 2
+    },
+    "mldr_ru": {
+      "released_rows": 1864,
+      "train_queries": 19,
+      "validation_queries": 2
+    },
+    "mldr_th": {
+      "released_rows": 1970,
+      "train_queries": 20,
+      "validation_queries": 2
+    },
+    "mldr_zh": {
+      "released_rows": 10000,
+      "train_queries": 89,
+      "validation_queries": 6
+    },
+    "mr-tydi_arabic": {
+      "released_rows": 12377,
+      "train_queries": 109,
+      "validation_queries": 6
+    },
+    "mr-tydi_bengali": {
+      "released_rows": 1713,
+      "train_queries": 18,
+      "validation_queries": 2
+    },
+    "mr-tydi_english": {
+      "released_rows": 3547,
+      "train_queries": 34,
+      "validation_queries": 3
+    },
+    "mr-tydi_finnish": {
+      "released_rows": 6561,
+      "train_queries": 59,
+      "validation_queries": 4
+    },
+    "mr-tydi_indonesian": {
+      "released_rows": 4902,
+      "train_queries": 45,
+      "validation_queries": 3
+    },
+    "mr-tydi_japanese": {
+      "released_rows": 3697,
+      "train_queries": 35,
+      "validation_queries": 3
+    },
+    "mr-tydi_korean": {
+      "released_rows": 1295,
+      "train_queries": 15,
+      "validation_queries": 2
+    },
+    "mr-tydi_russian": {
+      "released_rows": 5366,
+      "train_queries": 49,
+      "validation_queries": 4
+    },
+    "mr-tydi_swahili": {
+      "released_rows": 2072,
+      "train_queries": 21,
+      "validation_queries": 2
+    },
+    "mr-tydi_telugu": {
+      "released_rows": 3880,
+      "train_queries": 37,
+      "validation_queries": 3
+    },
+    "mr-tydi_thai": {
+      "released_rows": 3319,
+      "train_queries": 32,
+      "validation_queries": 3
+    },
+    "nli_for_simcse": {
+      "released_rows": 274951,
+      "train_queries": 2364,
+      "validation_queries": 131
+    },
+    "nq": {
+      "released_rows": 58568,
+      "train_queries": 504,
+      "validation_queries": 27
+    },
+    "pubmed_qa_labeled": {
+      "released_rows": 500,
+      "train_queries": 8,
+      "validation_queries": 2
+    },
+    "squad": {
+      "released_rows": 87599,
+      "train_queries": 755,
+      "validation_queries": 42
+    },
+    "trivia": {
+      "released_rows": 60315,
+      "train_queries": 519,
+      "validation_queries": 28
+    }
+  }
+}

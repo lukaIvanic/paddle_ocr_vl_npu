@@ -1,0 +1,28 @@
+ACQUISITION_PLAN {"requests": 255, "configs": 255, "source_rows": 678560, "excluded": {"hotpotqa": "HotpotQAHardNegatives, pinned MTEB English v2", "msmarco": "Parent source of CMTEB MMarcoRetrieval", "mmarco_chinese": "CMTEB MMarcoRetrieval", "dureader": "CMTEB DuRetrieval", "t2ranking": "CMTEB T2Retrieval", "cMedQAv2": "CMTEB CmedqaRetrieval/MedicalRetrieval family"}}
+FETCH_PROGRESS {"requests": 10, "of": 255, "eligible_rows": 741, "seconds": 0.058112156999413855}
+FETCH_PROGRESS {"requests": 20, "of": 255, "eligible_rows": 1291, "seconds": 0.6207551819970831}
+FETCH_PROGRESS {"requests": 30, "of": 255, "eligible_rows": 1434, "seconds": 5.271475099994859}
+FETCH_PROGRESS {"requests": 40, "of": 255, "eligible_rows": 1576, "seconds": 5.273231808998389}
+FETCH_PROGRESS {"requests": 50, "of": 255, "eligible_rows": 1747, "seconds": 5.319172867995803}
+FETCH_PROGRESS {"requests": 60, "of": 255, "eligible_rows": 1920, "seconds": 5.319243851998181}
+FETCH_PROGRESS {"requests": 70, "of": 255, "eligible_rows": 2143, "seconds": 7.182148637999489}
+FETCH_PROGRESS {"requests": 80, "of": 255, "eligible_rows": 2270, "seconds": 7.567312482999114}
+FETCH_PROGRESS {"requests": 90, "of": 255, "eligible_rows": 2490, "seconds": 23.683849093999015}
+FETCH_PROGRESS {"requests": 100, "of": 255, "eligible_rows": 2754, "seconds": 29.13520094499836}
+FETCH_PROGRESS {"requests": 110, "of": 255, "eligible_rows": 3007, "seconds": 35.94060863299819}
+FETCH_PROGRESS {"requests": 120, "of": 255, "eligible_rows": 3277, "seconds": 38.521313875993656}
+FETCH_PROGRESS {"requests": 130, "of": 255, "eligible_rows": 3535, "seconds": 38.52141452599608}
+FETCH_PROGRESS {"requests": 140, "of": 255, "eligible_rows": 3722, "seconds": 38.52145189699513}
+FETCH_PROGRESS {"requests": 150, "of": 255, "eligible_rows": 3907, "seconds": 38.52148321599816}
+FETCH_PROGRESS {"requests": 160, "of": 255, "eligible_rows": 4129, "seconds": 38.52151574699383}
+FETCH_PROGRESS {"requests": 170, "of": 255, "eligible_rows": 4703, "seconds": 38.52155351900001}
+FETCH_PROGRESS {"requests": 180, "of": 255, "eligible_rows": 5703, "seconds": 38.52160213099705}
+FETCH_PROGRESS {"requests": 190, "of": 255, "eligible_rows": 6703, "seconds": 38.52164584300044}
+FETCH_PROGRESS {"requests": 200, "of": 255, "eligible_rows": 7703, "seconds": 38.52168507699389}
+FETCH_PROGRESS {"requests": 210, "of": 255, "eligible_rows": 8703, "seconds": 38.521726685998146}
+FETCH_PROGRESS {"requests": 220, "of": 255, "eligible_rows": 9552, "seconds": 38.52177627999481}
+FETCH_PROGRESS {"requests": 230, "of": 255, "eligible_rows": 10420, "seconds": 38.521820472997206}
+FETCH_PROGRESS {"requests": 240, "of": 255, "eligible_rows": 11420, "seconds": 39.745784072998504}
+FETCH_PROGRESS {"requests": 250, "of": 255, "eligible_rows": 12275, "seconds": 54.45197639699472}
+FETCH_PROGRESS {"requests": 255, "of": 255, "eligible_rows": 12749, "seconds": 59.38036766499863}
+ACQUIRED {"train_queries": 6000, "validation_queries": 384, "sources": 55, "absent_sources": [], "bytes": 11558555, "sha256": "153f4fc8e8297d057563ef87fc0add7e094f63aa644b25490951ff9a58103efd", "seconds": 76.68339598999592}
