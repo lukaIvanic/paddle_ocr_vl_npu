@@ -1,0 +1,32 @@
+{
+  "library_dependencies": {
+    "command": [
+      "ldd",
+      "/workspace/rwkv_reference/runtime/librwkv_emb.so"
+    ],
+    "exit_code": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x0000ffffbc4aa000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffffbc3b0000)\n\tlibgomp.so.1 => /lib/aarch64-linux-gnu/libgomp.so.1 (0x0000ffffbc350000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffffbc1a0000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffffbc471000)\n",
+    "stderr": ""
+  },
+  "exported_symbols": {
+    "command": [
+      "nm",
+      "-D",
+      "--defined-only",
+      "/workspace/rwkv_reference/runtime/librwkv_emb.so"
+    ],
+    "exit_code": 0,
+    "stdout": "00000000000052e0 T rwkv_channels\n00000000000075e0 T rwkv_encode_texts\n0000000000005530 T rwkv_encode_tokens\n0000000000005260 T rwkv_free\n00000000000052f4 T rwkv_layers\n0000000000004654 T rwkv_load\n0000000000006ac4 T rwkv_load_tokenizer\n0000000000005310 T rwkv_matmul\n0000000000006f24 T rwkv_prepare\n0000000000005474 T rwkv_recurrence\n00000000000075d4 T rwkv_release\n0000000000004620 T rwkv_threads\n0000000000006e20 T rwkv_tokenize\n",
+    "stderr": ""
+  },
+  "cli_help": {
+    "command": [
+      "/workspace/venvs/rwkv_cpu_py312/bin/python",
+      "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_cpu_reference.py",
+      "--help"
+    ],
+    "exit_code": 0,
+    "stdout": "usage: run_cpu_reference.py [-h] {prepare,smoke} ...\n\nPrepare the pinned C FP32 embedding runtime, or save a small CPU smoke anchor.\nAll inference, tokenization and preprocessing run in upstream C. PyTorch is\nused only by `prepare` to read/export the checkpoint. No CUDA/NPU runtime is\nimported by `smoke`. Upstream: howard-hou/EmbeddingRWKV, Apache-2.0.\n\npositional arguments:\n  {prepare,smoke}\n    prepare        Export weights and build the C library; no inference\n    smoke          Save CPU FP32 comparison artifacts for fixed cases\n\noptions:\n  -h, --help       show this help message and exit\n",
+    "stderr": ""
+  }
+}

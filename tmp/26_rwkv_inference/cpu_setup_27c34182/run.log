@@ -1,0 +1,5 @@
+{
+  "runtime": "/workspace/rwkv_reference/runtime",
+  "exported_tensors": 410,
+  "inference_executed": false
+}

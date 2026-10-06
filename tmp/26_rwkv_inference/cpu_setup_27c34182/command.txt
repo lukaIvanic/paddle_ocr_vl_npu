@@ -1,0 +1,8 @@
+Source commit: 27c34182b4c39f1195637fdd9cd674618ea86f4a
+Hostname: liteserver-c001-4
+Container: research_vllm_ascend_023_external_workspace
+Device: CPU only; no accelerator selected
+ASCEND_RT_VISIBLE_DEVICES: not set by this CPU setup
+TORCH_DEVICE_BACKEND_AUTOLOAD=0
+Exact command: /workspace/venvs/rwkv_cpu_py312/bin/python /workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_cpu_reference.py prepare --upstream /workspace/rwkv_reference/upstream --checkpoint /workspace/rwkv_reference/models/rwkv0b1-emb-curriculum.pth --runtime /workspace/rwkv_reference/runtime
+Inference executed: false

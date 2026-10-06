@@ -3,8 +3,9 @@
 Agreed sequence, 2026-10-06. Start with correctness and accuracy on Ascend 910B2,
 then decide whether larger evaluations need faster inference. This document is
 the experiment's single working document, including research findings, source
-provenance and reference scores. No weights have been loaded and no model runs
-have been completed yet; all reference measurements below are upstream reports.
+provenance and reference scores. The server CPU environment and C runtime have
+been prepared; weights were loaded for export only. No inference or benchmarks
+have run yet; all reference measurements below are upstream reports.
 
 ## 0. Establish a server CPU reference
 
@@ -123,8 +124,9 @@ reporting full-suite macro NDCG@10 and its difference from the saved Qwen result
 
 ## Boundaries and evidence
 
-Proceed one verified step at a time. This planning request does not start model
-downloads, installations, ports or benchmark runs. There is no training or
+Proceed one verified step at a time. Luka subsequently authorized the single
+CPU-reference script, cases, commits/pushes, model download and server setup.
+The first inference run waits for his code review. There is no training or
 distillation in this plan. Luka considers training a last resort and requires
 explicit approval from his higher-ups before it can be considered. Qwen
 prompt-order testing remains Luka's separate work.
@@ -185,7 +187,7 @@ directories must be new; the script refuses overwrites. Hidden-output traces
 are labeled separately from recurrent matrices. MTEB and Transformers are not
 needed for this small C-backed smoke.
 
-Proposed server paths (preparation status will be recorded below after setup):
+Verified server paths (prepared on 2026-10-06):
 
 - Source: `/workspace/repos/rwkv-cpu-reference`, branch `codex/rwkv-cpu-reference`.
 - Venv: `/workspace/venvs/rwkv_cpu_py312` (inherits torch and NumPy from the
@@ -195,10 +197,33 @@ Proposed server paths (preparation status will be recorded below after setup):
 - Prepared runtime: `/workspace/rwkv_reference/runtime`.
 
 The container's `/workspace/models` mount is read-only, so RWKV assets use its
-writable `/workspace` mount. Downloads are staged locally and transferred through
-the multiplexed SSH connection. Project source arrives through Git.
+writable `/workspace` mount. The checkpoint was downloaded directly on the
+server from `hf-mirror.com` at the pinned Hugging Face revision, in 115.11 seconds;
+its complete byte count and SHA256 matched the Hugging Face metadata. Direct
+`huggingface.co` access failed with network-unreachable errors. An initial local
+download was made, but its attempted transfer was stopped; it is not the source
+of the final server checkpoint. C source, license and vocabulary were downloaded
+directly inside the container from `raw.githubusercontent.com` at the pinned
+upstream commit; source and vocabulary hashes were verified.
 
-Preparation command inside the selected container:
+Project source arrives through Git. The server's unauthenticated request to the
+private GitHub repository returned HTTP 401, so source was delivered as an
+approximately 20 KB incremental Git bundle against the server's existing
+`97890f8384c04e57f0307174e01b61f1a7bd2ce7` commit. The isolated server checkout
+fetched that bundle and checked out `codex/rwkv-cpu-reference` at
+`27c34182b4c39f1195637fdd9cd674618ea86f4a`. No tracked source was edited there.
+
+Preparation exited **0**: all 410 text tensors were exported, the tokenizer was
+built and the unchanged C source compiled successfully on the server with GCC
+11.4.0, `-O3`, OpenMP and FP32 weights. This is setup evidence, not numerical
+validation. Library dependency resolution, exported-symbol inspection and CLI
+help also succeeded without running a forward pass. The runtime manifest records compiler arguments, source/checkpoint
+identity, tensor shapes and artifact hashes. Command, logs, manifest and download
+provenance are preserved under
+[`tmp/26_rwkv_inference/cpu_setup_27c34182/`](../tmp/26_rwkv_inference/cpu_setup_27c34182/).
+
+Equivalent preparation command inside the selected container (already completed;
+the existing runtime directory cannot be overwritten):
 
 ```bash
 cd /workspace/repos/rwkv-cpu-reference
@@ -271,8 +296,11 @@ Selected container: **`research_vllm_ascend_023_external_workspace`** on
 - Installed package metadata: torch `2.10.0+cpu`, torch-npu `2.10.0.post2`,
   vLLM `0.23.0+empty`, vLLM-Ascend `0.23.0rc1`.
 - Project checkout: `/workspace/repos/paddle_ocr_vl_npu`.
-- A separate RWKV environment has not been created yet. Package metadata alone
-  does not validate CPU or NPU execution.
+- The separate `/workspace/venvs/rwkv_cpu_py312` environment was created with
+  `--system-site-packages`, inheriting torch `2.10.0+cpu` and NumPy `1.26.4`.
+  Both imports were checked with backend autoload disabled. No base packages
+  were changed. Checkpoint export and the C build succeeded; no CPU or NPU
+  inference has been validated.
 
 The current local session reaches the server through the existing task-specific
 SSH configuration, not the default `~/.ssh/config`:
