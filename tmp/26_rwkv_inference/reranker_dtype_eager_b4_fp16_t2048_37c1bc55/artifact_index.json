@@ -1,0 +1,45 @@
+{
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_eager_b4_fp16_t2048_37c1bc55/command.txt",
+      "relative_path": "command.txt",
+      "bytes": 1367,
+      "sha256": "2c042128618ea1ef00dda832e38f1ff5e36c81e7f442445bacdff6ad1a2e783b",
+      "collected": true,
+      "stored_path": "command.txt"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_eager_b4_fp16_t2048_37c1bc55/run.log",
+      "relative_path": "run.log",
+      "bytes": 7778,
+      "sha256": "d89e52803f37c7fbfbea065db0320336a1d941586324c3da0c4c1afa04340254",
+      "collected": true,
+      "stored_path": "run.log.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_eager_b4_fp16_t2048_37c1bc55/exit_code.txt",
+      "relative_path": "exit_code.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "collected": true,
+      "stored_path": "exit_code.txt"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_eager_b4_fp16_t2048_37c1bc55/probe/inputs.json",
+      "relative_path": "probe/inputs.json",
+      "bytes": 330966,
+      "sha256": "f4fd78d97db69b92143c52ef0a99e479e2887152ef5c953c8ec3ef394ad80891",
+      "collected": true,
+      "stored_path": "probe/inputs.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_eager_b4_fp16_t2048_37c1bc55/probe/result.json",
+      "relative_path": "probe/result.json",
+      "bytes": 15586,
+      "sha256": "0fbbbd4e46d57e3edc21b44e52937dd9d1123805e392c1f175e0a4119c86aa88",
+      "collected": true,
+      "stored_path": "probe/result.json"
+    }
+  ],
+  "graph_caches_remain_on_server": true
+}

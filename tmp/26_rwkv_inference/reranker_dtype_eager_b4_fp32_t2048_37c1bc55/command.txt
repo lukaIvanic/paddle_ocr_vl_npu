@@ -1,0 +1,6 @@
+Source commit: 37c1bc55fd6ecb1c00d3c2f26dd91fe24f4f65c5
+Host: liteserver-c001-4
+Container: research_vllm_ascend_023_external_workspace
+Physical NPU: 7; checked free and healthy
+Authorization: Luka requested FP32/FP16 speed measurement
+Exact command argv: ['bash', '--noprofile', '--norc', '-c', 'source /usr/local/bin/npu-setup && export ASCEND_RT_VISIBLE_DEVICES=7 TORCH_DEVICE_BACKEND_AUTOLOAD=0 OMP_NUM_THREADS=1 && source /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/bin/set_env.bash && source /workspace/rwkv_reference/wkv7_endpoint_d7348673/install/vendors/rwkv_endpoint/bin/set_env.bash && export PATH=/usr/local/python3.12.13/bin:$PATH && cd /workspace/repos/rwkv-cpu-reference && /workspace/venvs/rwkv_cpu_py312/bin/python -u 26_rwkv_inference/probe_reranker_endpoint.py --phase model --backend raw_eager --batch-size 4 --benchmark --repeats 20 --dtype fp32 --bucket 2048 --build-root /workspace/rwkv_reference/wkv7_endpoint_d7348673 --reference-build /workspace/rwkv_reference/wkv7_build_178d16e6 --cases-root /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference --checkpoint /workspace/rwkv_reference/models/rwkv0b1-emb-curriculum.pth --reranker /workspace/rwkv_reference/models/rwkv0b1-reranker.pth --output /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_eager_b4_fp32_t2048_37c1bc55/probe']

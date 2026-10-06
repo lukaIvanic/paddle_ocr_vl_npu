@@ -1,0 +1,528 @@
+{
+  "source_commit": "9958409622f2c049bfcb52f124120def3a53462f",
+  "source_sha256": {
+    "probe_reranker_endpoint.py": "68b1758b65c734070c5daa80af3cedce3b0d5477820be515c6a7891d0b82f684",
+    "wkv7_endpoint.py": "73b1b8f8b7ac791c60efdadba6fae8e81bff2b850b14904ea3628f7e54160647",
+    "local_modeling_rwkv_embedding.py": "1070af432dd7ca522f21320abb87743eeea0c92103a36060f03d9997a674cb96",
+    "local_modeling_rwkv_reranker.py": "8d264e6600f7ad397929d9760f805cfb8b05a5675811205c2de634243c1979ac",
+    "data/wkv7_endpoint_sources.json": "227b9bff5007246def0e1cfc3599156e9d71b40e79810c7c0ce638e29f0c849f"
+  },
+  "phase": "model",
+  "backend": "torchair",
+  "bucket": 512,
+  "dtype": "fp32",
+  "batch_size": 4,
+  "physical_npu": "7",
+  "shared_device": true,
+  "contract": "Right-padded fixed shape; int32 device valid length includes EOS; extra right padding excluded from recurrent state",
+  "recurrence_tolerance": {
+    "atol": 2e-05,
+    "rtol": 0.0002
+  },
+  "model_state_tolerance": {
+    "atol": 0.02,
+    "rtol": 0.005
+  },
+  "model_logit_tolerance": {
+    "atol": 0.02,
+    "rtol": 0.005
+  },
+  "cases": [
+    {
+      "case_ids": [
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "b31f0085b7dd24bdde1e5cec003589ce4bf4238c"
+        },
+        {
+          "query_id": "546b3592f59b3445ef12fba506b729c832198c33",
+          "document_id": "6513888c5ef473bdbb3167c7b52f0985be071f7a"
+        },
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "075bc988728788aa033b04dee1753ded711180ee"
+        },
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "a6f1dfcc44277d4cfd8507284d994c9283dc3a2f"
+        }
+      ],
+      "batch_size": 4,
+      "T": 512,
+      "valid_tokens": [
+        257,
+        510,
+        341,
+        306
+      ],
+      "raw_logits": [
+        -5.521215438842773,
+        -5.90493106842041,
+        -8.075579643249512,
+        -8.061543464660645
+      ],
+      "single_endpoint_logits": [
+        -5.521214962005615,
+        -5.904931545257568,
+        -8.075586318969727,
+        -8.061552047729492
+      ],
+      "endpoint_logits": [
+        -5.521212100982666,
+        -5.9049201011657715,
+        -8.075586318969727,
+        -8.061555862426758
+      ],
+      "max_logit_delta_vs_single": 1.1444091796875e-05,
+      "max_logit_delta_vs_raw": 1.239776611328125e-05,
+      "state_parity": [
+        {
+          "max_abs": 7.62939453125e-06,
+          "normalized_rmse": 6.363961233546434e-07,
+          "finite": true
+        },
+        {
+          "max_abs": 1.33514404296875e-05,
+          "normalized_rmse": 4.322949678225996e-07,
+          "finite": true
+        }
+      ],
+      "logit_parity": {
+        "max_abs": 1.1444091796875e-05,
+        "normalized_rmse": 8.865600307217392e-07,
+        "finite": true
+      },
+      "call_seconds": 63.652955690000454,
+      "compiled_vs_eager_bitwise_equal": true,
+      "row_permutation_check": false,
+      "repeat_first_case": false,
+      "timing": {
+        "compiled_total": {
+          "repeats": 20,
+          "warmups": 3,
+          "host_samples_seconds": [
+            0.03465435999987676,
+            0.03392059999987396,
+            0.03387219999967783,
+            0.03392604999953619,
+            0.03389881000020978,
+            0.033902600000146776,
+            0.03393095999945217,
+            0.033945610000046145,
+            0.03389771000001929,
+            0.033897589999469346,
+            0.03391680000004271,
+            0.03390359999957582,
+            0.03395254000042769,
+            0.03389519000029395,
+            0.033878319999530504,
+            0.03389468000023044,
+            0.033864510000057635,
+            0.03385557000001427,
+            0.03388890000042011,
+            0.033887350000441074
+          ],
+          "device_samples_seconds": [
+            0.03375917816162109,
+            0.03376559829711914,
+            0.0337424201965332,
+            0.03377273941040039,
+            0.03375085830688476,
+            0.03375807952880859,
+            0.03380112075805664,
+            0.03378292083740234,
+            0.033761459350585936,
+            0.03378266143798828,
+            0.033795879364013674,
+            0.03376979827880859,
+            0.033827358245849606,
+            0.033773719787597654,
+            0.03375751876831055,
+            0.03378269958496094,
+            0.03374517822265625,
+            0.03372748184204102,
+            0.03375609970092774,
+            0.03375804138183594
+          ],
+          "host_median_seconds": 0.03389826000011453,
+          "host_max_seconds": 0.03465435999987676,
+          "device_median_seconds": 0.03376352882385254,
+          "pairs_per_second": 118.00015693981004
+        },
+        "eager_total": {
+          "repeats": 20,
+          "warmups": 3,
+          "host_samples_seconds": [
+            0.06976713999938511,
+            0.07196268000006967,
+            0.07022273000075074,
+            0.06981660999917949,
+            0.07000011000036466,
+            0.06992189999982656,
+            0.07009006999942358,
+            0.06982903999960399,
+            0.06983330000002752,
+            0.06976967999980843,
+            0.06947046000004775,
+            0.06955871999980445,
+            0.06962236999970628,
+            0.06949308999992354,
+            0.06944414999998116,
+            0.06960939000055077,
+            0.06961115000012796,
+            0.07202451000011934,
+            0.07102986000063538,
+            0.07087574999968638
+          ],
+          "device_samples_seconds": [
+            0.0695683822631836,
+            0.0718099365234375,
+            0.07006828308105469,
+            0.06967848205566406,
+            0.06985343933105469,
+            0.06978521728515626,
+            0.06994229888916016,
+            0.06968990325927735,
+            0.0696863021850586,
+            0.06963200378417969,
+            0.06932408142089844,
+            0.06942369842529297,
+            0.06948063659667969,
+            0.0693652572631836,
+            0.06930609893798828,
+            0.06947937774658203,
+            0.06946234130859374,
+            0.07187740325927734,
+            0.07089013671875,
+            0.07073613739013672
+          ],
+          "host_median_seconds": 0.06982282499939174,
+          "host_max_seconds": 0.07202451000011934,
+          "device_median_seconds": 0.06968239212036133,
+          "pairs_per_second": 57.28785680090781
+        },
+        "compiled_backbone": {
+          "repeats": 20,
+          "warmups": 3,
+          "host_samples_seconds": [
+            0.03148101999977371,
+            0.031446169999981066,
+            0.03147608000017499,
+            0.03146045999983471,
+            0.03148061000047164,
+            0.031497639999543026,
+            0.031491859999732696,
+            0.03151307000007364,
+            0.03148813000007067,
+            0.031503260000135924,
+            0.03149114000007103,
+            0.03149395999935223,
+            0.03150137000011455,
+            0.03148055000019667,
+            0.031481689999964146,
+            0.03149799999937386,
+            0.0314927199997328,
+            0.03150042000015674,
+            0.0314851399998588,
+            0.03147116999934951
+          ],
+          "device_samples_seconds": [
+            0.03133387947082519,
+            0.031323040008544925,
+            0.031338619232177733,
+            0.03133625984191894,
+            0.03134453964233398,
+            0.031375959396362306,
+            0.031374420166015625,
+            0.03135396003723145,
+            0.031372880935668944,
+            0.0313776798248291,
+            0.031370479583740236,
+            0.031370880126953125,
+            0.031385080337524414,
+            0.031354660034179686,
+            0.03136194038391113,
+            0.031371959686279295,
+            0.03137015914916992,
+            0.031372739791870115,
+            0.03133223915100097,
+            0.031317359924316404
+          ],
+          "host_median_seconds": 0.03148963500007085,
+          "host_max_seconds": 0.03151307000007364,
+          "device_median_seconds": 0.031366049766540526,
+          "pairs_per_second": 127.0259245618757
+        },
+        "compiled_head": {
+          "repeats": 20,
+          "warmups": 3,
+          "host_samples_seconds": [
+            0.0026772399996843887,
+            0.00265633999970305,
+            0.0026608799998939503,
+            0.0026789900002768263,
+            0.0026516899997659493,
+            0.0026799499992193887,
+            0.0026542900004642433,
+            0.0026506200001676916,
+            0.002649099999871396,
+            0.002661140000782325,
+            0.0026463200001671794,
+            0.002666619999217801,
+            0.0026908800000455813,
+            0.0026672800004234887,
+            0.0026605499997458537,
+            0.0026690499998949235,
+            0.002650280000125349,
+            0.0026543199992374866,
+            0.002664859999640612,
+            0.002679600000192295
+          ],
+          "device_samples_seconds": [
+            0.002550580024719238,
+            0.00254938006401062,
+            0.0025456199645996092,
+            0.0025542399883270264,
+            0.002544899940490723,
+            0.0025529999732971194,
+            0.0025511200428009035,
+            0.0025454399585723877,
+            0.002543339967727661,
+            0.0025512800216674803,
+            0.002540879964828491,
+            0.002540260076522827,
+            0.0025821800231933595,
+            0.002545919895172119,
+            0.0025432798862457277,
+            0.002560920000076294,
+            0.0025457000732421876,
+            0.002545259952545166,
+            0.002560499906539917,
+            0.002559720039367676
+          ],
+          "host_median_seconds": 0.0026610100003381376,
+          "host_max_seconds": 0.0026908800000455813,
+          "device_median_seconds": 0.0025476499795913697,
+          "pairs_per_second": 1503.1886387092552
+        }
+      }
+    },
+    {
+      "case_ids": [
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "a6f1dfcc44277d4cfd8507284d994c9283dc3a2f"
+        },
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "075bc988728788aa033b04dee1753ded711180ee"
+        },
+        {
+          "query_id": "546b3592f59b3445ef12fba506b729c832198c33",
+          "document_id": "6513888c5ef473bdbb3167c7b52f0985be071f7a"
+        },
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "b31f0085b7dd24bdde1e5cec003589ce4bf4238c"
+        }
+      ],
+      "batch_size": 4,
+      "T": 512,
+      "valid_tokens": [
+        306,
+        341,
+        510,
+        257
+      ],
+      "raw_logits": [
+        -8.061543464660645,
+        -8.075579643249512,
+        -5.90493106842041,
+        -5.521215438842773
+      ],
+      "single_endpoint_logits": [
+        -8.061552047729492,
+        -8.075586318969727,
+        -5.904931545257568,
+        -5.521214962005615
+      ],
+      "endpoint_logits": [
+        -8.061555862426758,
+        -8.075586318969727,
+        -5.9049201011657715,
+        -5.521212100982666
+      ],
+      "max_logit_delta_vs_single": 1.1444091796875e-05,
+      "max_logit_delta_vs_raw": 1.239776611328125e-05,
+      "state_parity": [
+        {
+          "max_abs": 7.62939453125e-06,
+          "normalized_rmse": 6.363961233546434e-07,
+          "finite": true
+        },
+        {
+          "max_abs": 1.33514404296875e-05,
+          "normalized_rmse": 4.3229493940089014e-07,
+          "finite": true
+        }
+      ],
+      "logit_parity": {
+        "max_abs": 1.1444091796875e-05,
+        "normalized_rmse": 8.86560087565158e-07,
+        "finite": true
+      },
+      "call_seconds": 0.03434693000053812,
+      "compiled_vs_eager_bitwise_equal": true,
+      "row_permutation_check": true,
+      "repeat_first_case": false
+    },
+    {
+      "case_ids": [
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "b31f0085b7dd24bdde1e5cec003589ce4bf4238c"
+        },
+        {
+          "query_id": "546b3592f59b3445ef12fba506b729c832198c33",
+          "document_id": "6513888c5ef473bdbb3167c7b52f0985be071f7a"
+        },
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "075bc988728788aa033b04dee1753ded711180ee"
+        },
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "a6f1dfcc44277d4cfd8507284d994c9283dc3a2f"
+        }
+      ],
+      "batch_size": 4,
+      "T": 512,
+      "valid_tokens": [
+        257,
+        510,
+        341,
+        306
+      ],
+      "raw_logits": [
+        -5.521215438842773,
+        -5.90493106842041,
+        -8.075579643249512,
+        -8.061543464660645
+      ],
+      "single_endpoint_logits": [
+        -5.521214962005615,
+        -5.904931545257568,
+        -8.075586318969727,
+        -8.061552047729492
+      ],
+      "endpoint_logits": [
+        -5.521212100982666,
+        -5.9049201011657715,
+        -8.075586318969727,
+        -8.061555862426758
+      ],
+      "max_logit_delta_vs_single": 1.1444091796875e-05,
+      "max_logit_delta_vs_raw": 1.239776611328125e-05,
+      "state_parity": [
+        {
+          "max_abs": 7.62939453125e-06,
+          "normalized_rmse": 6.363961233546434e-07,
+          "finite": true
+        },
+        {
+          "max_abs": 1.33514404296875e-05,
+          "normalized_rmse": 4.322949678225996e-07,
+          "finite": true
+        }
+      ],
+      "logit_parity": {
+        "max_abs": 1.1444091796875e-05,
+        "normalized_rmse": 8.865600307217392e-07,
+        "finite": true
+      },
+      "call_seconds": 0.03425746999982948,
+      "compiled_vs_eager_bitwise_equal": true,
+      "row_permutation_check": false,
+      "repeat_first_case": true
+    }
+  ],
+  "all_checks_passed": true,
+  "benchmark": {
+    "enabled": true,
+    "repeats": 20,
+    "scope": "Prepared NPU inputs; synchronized fixed-batch forward only. No compile, transfers, tokenization, correctness work or profiling inside timed calls."
+  },
+  "device": "Ascend910B2",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "hbm_before": {
+    "free_bytes": 65097211904,
+    "total_bytes": 65452113920
+  },
+  "package_manifest": {
+    "base": {
+      "base_sources": {
+        "CMakeLists.txt": "5cda934c63a9a15640d308184db571e82f3bf1e90b9a5247d0746c1046c8f6ac",
+        "bridge.cpp": "5271b6f98b63da8e2d790f4154bab9a7d8c156f15ba261ffe6e80e8a591ab987",
+        "LICENSE": "97e7afb9392d7c7f940607b30319a0501d9c2f8429f15c5f87ff944b1bcb73d6",
+        "build.sh": "c220cb882fede343af63ad7ac41153f13d0bc6182c4af8ae4155ef5ba4e47e30",
+        "op_host/CMakeLists.txt": "54aa68b551a22faf57476b414e03643b0a433545239c329bf603ccf9c4d674b6",
+        "op_host/rwkv_reference_wkv7_tiling.h": "5227e65c2b4f1e2067a44d120cfb6746de70ea4684d9d0fa8ccb01350cd4ee40",
+        "op_host/rwkv_reference_wkv7.cpp": "0f88cbf1fa7f96edfad7cd20e5b26be40081f218403c1a11f5a0fcdff3ab5a20",
+        "op_kernel/CMakeLists.txt": "5f228bd04aae822f620be2230fcf2494c325b0ea74e6bf26ae66a1f1390462cd",
+        "op_kernel/rwkv_reference_wkv7.cpp": "543380c5a32b26fc3ef7d5f2fce762e41f9066753dd76503e92508f91b5420ed"
+      },
+      "identities": {
+        "pytorch": "rwkv_endpoint::wkv7",
+        "GE_CANN": "RwkvEndpointWkv7",
+        "aclnn": "aclnnRwkvEndpointWkv7",
+        "kernel": "rwkv_endpoint_wkv7",
+        "vendor": "rwkv_endpoint"
+      },
+      "contract": {
+        "inputs": "Existing contiguous FP32 [B,H,T<=2048,64] tensors and FP32 [B,H,64,64] initial state; int32 NPU lengths[B], caller guarantees 0<=length<=T",
+        "outputs": "FP32 [B,H,T,64], valid prefix matches reference; trailing outputs zero. FP32 [B,H,64,64] state after length updates. No mutation.",
+        "device": "Ascend 910B2",
+        "model": "B1 initially; lengths>=1; terminal EOS included in length",
+        "adaptation": "Skip recurrence updates in each tile at positions >= length; keep original padded strides. Read length on device per head. Original operator remains unchanged."
+      }
+    },
+    "generated_sha256": {
+      "CMakeLists.txt": "5cda934c63a9a15640d308184db571e82f3bf1e90b9a5247d0746c1046c8f6ac",
+      "bridge.cpp": "155cf1612e61f16de9adcf0ff4031346839d36647fde50ebdf0c8886578064d3",
+      "LICENSE": "97e7afb9392d7c7f940607b30319a0501d9c2f8429f15c5f87ff944b1bcb73d6",
+      "build.sh": "6c6d35f6b8ea1270a7a139909dbbc24452fea6c13351fb62117a76292feee328",
+      "op_host/CMakeLists.txt": "54aa68b551a22faf57476b414e03643b0a433545239c329bf603ccf9c4d674b6",
+      "op_host/rwkv_endpoint_wkv7_tiling.h": "75098fdab99bd05e037a6c63f1988c67ee2ab44eec7c2b4f9fef33e34e259c91",
+      "op_host/rwkv_endpoint_wkv7.cpp": "04f9bb1aa4e265f9cab01055648a82f27508d6f49a23b06ca2ec1a67f14ed749",
+      "op_kernel/CMakeLists.txt": "5f228bd04aae822f620be2230fcf2494c325b0ea74e6bf26ae66a1f1390462cd",
+      "op_kernel/rwkv_endpoint_wkv7.cpp": "29eaa0014dddaa238db9771b78c0f3fcb913c9293c2501c8cd56d341deb41626"
+    }
+  },
+  "op_api_sha256": "64f105f5a726e9ff253213f3538df48373be6af6c2c9be0e469815c4217afbd1",
+  "independent_api_symbols_verified": true,
+  "checkpoint_sha256": {
+    "checkpoint": "9033eec92f163d1a710474977fa3fb68b7ee04697e0e961d83434743bd256a15",
+    "reranker": "6b6f36543ad71aa48bca3cca97863c529e9153515fb777184c36475b3badb6be"
+  },
+  "default_path_regression_passed": true,
+  "batched_vs_individual_states_and_scores_passed": true,
+  "row_permutation_and_replay_passed": true,
+  "distinct_GE_op_verified": true,
+  "graph_artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp32_t512_99584096/probe/backbone_cache/graphs/dynamo_original_graph_1_rank_0_pid_55030_ts_20261006145113867645.pbtxt",
+      "sha256": "8340c4310719c92f58f3cf3bb20820f44d7a0b7ea68685f5402abbc312e91809"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp32_t512_99584096/probe/head_cache/graphs/dynamo_original_graph_2_rank_0_pid_55030_ts_20261006145145613667.pbtxt",
+      "sha256": "640c5a479497a4fc1eeaa8c2b19b28123d78e00bdc531645b02750a574d6cf39"
+    }
+  ],
+  "static_shapes_with_device_length_changes_passed": true,
+  "peak_hbm_bytes": {
+    "allocated": 1240780288,
+    "reserved": 1413480448
+  },
+  "total_seconds": 82.41140374999941
+}

@@ -1,0 +1,125 @@
+{
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/command.txt",
+      "relative_path": "command.txt",
+      "bytes": 1358,
+      "sha256": "0a1399e69bf94e7c0117a32fd4e9f9ad167328eedc5291b0d4f0340bb6c5894a",
+      "collected": true,
+      "stored_path": "command.txt"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/run.log",
+      "relative_path": "run.log",
+      "bytes": 8911,
+      "sha256": "254fd7a6d5db2da2de485361dbb7b7afe56c7eb54166b58e279e1989d8a4dfeb",
+      "collected": true,
+      "stored_path": "run.log.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/exit_code.txt",
+      "relative_path": "exit_code.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "collected": true,
+      "stored_path": "exit_code.txt"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/inputs.json",
+      "relative_path": "probe/inputs.json",
+      "bytes": 82614,
+      "sha256": "119dd7afdd940feb6b0fc43be9c7af8be960f40dfd9ee387dc71e5f8975d6afc",
+      "collected": true,
+      "stored_path": "probe/inputs.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/result.json",
+      "relative_path": "probe/result.json",
+      "bytes": 18065,
+      "sha256": "205dd418330d5742ed98f9cee0d8cbae2556fb752116fdcd01e0d61e3c9a7215",
+      "collected": true,
+      "stored_path": "probe/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/backbone_cache/graphs/dynamo_original_graph_1_rank_0_pid_53910_ts_20261006144948350619.pbtxt",
+      "relative_path": "probe/backbone_cache/graphs/dynamo_original_graph_1_rank_0_pid_53910_ts_20261006144948350619.pbtxt",
+      "bytes": 2955932,
+      "sha256": "c6c6b91faa305f77dfa8328384c01b552964ce0c4e6ab51d049804922fb9caf0",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.lock",
+      "relative_path": "probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1_20261006144950.om",
+      "relative_path": "probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1_20261006144950.om",
+      "bytes": 6321937,
+      "sha256": "d03db2556714b47a017d8a7a4a230b935f90366ea212bc8865581af08b858150",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.idx",
+      "relative_path": "probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.idx",
+      "bytes": 149,
+      "sha256": "83508bcd9ea26c90e2d99d21e195b57c3453a56c4f4716330b8ef579972864c5",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/compiled_module",
+      "relative_path": "probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/compiled_module",
+      "bytes": 2830964,
+      "sha256": "215d74ef216ead8ccf9ee2be3f005ca522636fd62832813addb4e8a1f8b249ac",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/head_cache/graphs/dynamo_original_graph_2_rank_0_pid_53910_ts_20261006145015009614.pbtxt",
+      "relative_path": "probe/head_cache/graphs/dynamo_original_graph_2_rank_0_pid_53910_ts_20261006145015009614.pbtxt",
+      "bytes": 2562092,
+      "sha256": "0a16d718b766ae1746fbe56e684e6f24b7ee8d48d3529cd6aa98d1740063fc72",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.lock",
+      "relative_path": "probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2_20261006145016.om",
+      "relative_path": "probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2_20261006145016.om",
+      "bytes": 4601625,
+      "sha256": "5d4ddefa54bc9b56340f099f4e671b9c62119f2236d5dcf8afceecee0e623628",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.idx",
+      "relative_path": "probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.idx",
+      "bytes": 149,
+      "sha256": "20208737a54f60f5f89cbb0756bf46b97dea5e5713ef684e0622d170d9fdc405",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_dtype_b4_fp16_t512_99584096/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/compiled_module",
+      "relative_path": "probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/compiled_module",
+      "bytes": 2472896,
+      "sha256": "ab81d05dd72830f53b87f9c64f6e829e2dd3140d1a8e22eb6e1abd6eb9e5054f",
+      "collected": false,
+      "stored_path": null
+    }
+  ],
+  "graph_caches_remain_on_server": true
+}

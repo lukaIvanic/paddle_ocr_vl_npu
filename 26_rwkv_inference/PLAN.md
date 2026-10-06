@@ -273,6 +273,16 @@ embedding baseline **41.057851**. Peak reserved HBM was **2.09 GiB/worker**.
 The published accuracy is not reproduced; resolve the gap before larger models.
 [`Scores, timings, raw logs and hashed protocol evidence`](../tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_8d237960/).
 
+**FP16/FP32 dense timing**, sources `99584096`/`37c1bc55`, 910B2 NPU 7,
+B4, eight unchanged real pairs, 20 warm synchronized forwards per window:
+T512 compiled **34.27/33.90 ms**, eager **82.06/69.82 ms**; T2048 eager
+**89.88/97.15 ms** (FP32 **8.1% slower**). Recurrence stays FP32 in both;
+matmul HF32 is disabled. Successful runs pass numerical/replay gates, with
+maximum FP32–FP16 logit delta **0.008757**. FP32/T2048 compiled failed the
+exact-equality head check; retained without relaxing it or reporting its speed.
+These are endpoint-padded forward timings, not full-suite FP32 runtime/accuracy.
+[`Timings, inputs, source hashes and retained failure`](../tmp/26_rwkv_inference/reranker_dtype_b4_summary_37c1bc55.json).
+
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,
 followed by casts/normalization. Optimization remains pending the padding policy.
