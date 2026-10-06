@@ -150,7 +150,7 @@ def main():
             actual=embed(torch.tensor(ids,device='npu'),torch.tensor(mask,dtype=torch.float32,device='npu'))
             report['embedding_regression']=require(actual,torch.from_numpy(expected),.002,.01)
             for group in [[x] for x in cases]+[cases[:2]]:
-                tokens=[c.tokenize(PREFIX.format(**x)+SUFFIX.format(**x))+[65535] for x in group]
+                tokens=[c.tokenize(PREFIX.format(**x)+SUFFIX.format(**x)).tolist()+[65535] for x in group]
                 length=max(map(len,tokens))
                 tokens=[[0]*(length-len(x))+x for x in tokens]
                 # Online wrapper left-pads, then retains the last 2048 positions.
