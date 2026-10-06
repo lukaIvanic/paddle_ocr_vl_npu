@@ -1,0 +1,13 @@
+DATA_READY {"train_queries": 256, "eval_queries": 32, "checks": {"query_disjoint": true, "document_disjoint": true, "eligible_source_queries": 500}}
+Traceback (most recent call last):
+  File "/tmp/qwen-document-first-training-smoke-small/13_qwen3_reranker/run_document_first_training_smoke.py", line 219, in <module>
+    main()
+  File "/tmp/qwen-document-first-training-smoke-small/13_qwen3_reranker/run_document_first_training_smoke.py", line 167, in main
+    optimizer.zero_grad(set_to_none=True)
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/optim/npu_fused_optim_base.py", line 130, in zero_grad
+    raise ValueError(
+ValueError: set_to_none is not supported in fused optimizers
+[ERROR] 2026-10-06-13:51:32 (PID:33296, Device:0, RankID:-1) ERR00003 PTA invalid value
