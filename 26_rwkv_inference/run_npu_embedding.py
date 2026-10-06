@@ -242,17 +242,22 @@ def main():
                 metrics = comparison(got, expected)
                 cosine = (got * expected).sum(-1) / (np.linalg.norm(got, axis=-1) * np.linalg.norm(expected, axis=-1))
                 assert np.isfinite(got).all() and metrics['max_abs'] <= embedding_limit and cosine.min() >= .9995, (metrics, cosine)
-                assert np.allclose(got, actual.cpu().numpy(), atol=embedding_limit, rtol=.01)
+                eager_embedding = actual.cpu().numpy()
+                assert np.allclose(got, eager_embedding, atol=embedding_limit, rtol=.01)
                 repeated = forward(ni, nm).cpu().numpy()
                 assert np.array_equal(got, repeated), 'Repeated embedding changed'
                 cpu_time = timings(lambda: cpu.encode(ids, mask, False), lambda: None, args.cpu_repeats, 1)
                 npu_time = timings(lambda: forward(ni, nm), torch.npu.synchronize, args.npu_repeats, 2)
+                eager_time = (timings(lambda: model.forward(ni, nm), torch.npu.synchronize, args.npu_repeats, 2)
+                              if args.backend == 'torchair' else npu_time)
                 row = {'case_ids': [x['id'] for x in batch], 'shape': list(ids.shape),
                        'raw_tokens': [len(cpu.tokenize(x['encoded_text'])) for x in batch],
                        'selected_eos_counts': mask.sum(1).tolist(), 'input_sha256': hashlib.sha256(ids.tobytes()).hexdigest(),
                        'mask_sha256': hashlib.sha256(mask.tobytes()).hexdigest(), 'layers': layer_metrics,
                        'embedding': metrics, 'cosines': cosine.tolist(), 'repeat_bitwise_equal': True,
+                       'forward_vs_traced_eager_bitwise_equal': bool(np.array_equal(got, eager_embedding)),
                        'first_forward_seconds': first_seconds, 'cpu': cpu_time, 'npu': npu_time,
+                       'eager': eager_time,
                        'cpu_to_npu_ratio': cpu_time['median_seconds'] / npu_time['median_seconds']}
                 report['batches'].append(row)
                 print(json.dumps(row), flush=True)
