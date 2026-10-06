@@ -25,6 +25,8 @@ def main():
     for name in ['checkpoint','reranker','upstream','runtime','build-root','cases-root','data','output']:
         p.add_argument('--'+name, type=Path, required=True)
     p.add_argument('--allow-shared-device', action='store_true')
+    p.add_argument('--case-index', type=int, choices=range(4))
+    p.add_argument('--fp32-continuation-check', action='store_true')
     args = p.parse_args(); args.output.mkdir(parents=True, exist_ok=False)
     root = Path(__file__).parent; start = time.perf_counter(); tokenizer = None
     report = {'source_commit': subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
@@ -32,6 +34,7 @@ def main():
               'physical_npu': os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), 'backend': 'raw_eager',
               'cpu_reference': 'Hash-pinned released math, FP32; explicit recurrence replaces CUDA',
               'npu_precision': 'FP16 projections, FP32 state/pointwise', 'cases': [],
+              'selected_case_index': args.case_index, 'fp32_continuation_check': args.fp32_continuation_check,
               'thresholds': {'cpu_npu_atol': .02, 'cpu_npu_rtol': .005,
                              'split_atol': .002, 'split_rtol': .001}, 'all_checks_passed': False}
     try:
@@ -88,8 +91,11 @@ def main():
             e = embed.get('emb.weight')[0]; norm = embed.norm(e, 'blocks.0.ln0')
             report['pad_embedding'] = {'token_id':0, 'raw_l2':float(e.norm().item()),
                                        'after_ln0_l2':float(norm.norm().item()), 'raw_all_zero':bool((e == 0).all().item())}
+            case_index = -1
             for bucket,cases,batch_rows in groups:
                 for case, companion in zip(cases,batch_rows):
+                    case_index += 1
+                    if args.case_index is not None and case_index != args.case_index: continue
                     ids = case['input_ids']; count = bucket-len(ids); padded = [0]*count+ids
                     print('CPU_START',json.dumps({'bucket':bucket,'tokens':len(ids),'padding':count}),flush=True)
                     ca, cs = cpu_score(ids); cb, ps = cpu_score(padded)
@@ -109,7 +115,28 @@ def main():
                     assert row['zero_prefix']['matrix_l2'] > 0, 'Unexpected neutral zero-prefix'
                     _,continued,_ = embed.encode_states(torch.tensor([ids],dtype=torch.long,device='npu'),prefix)
                     row['prefix_continuation_logit'] = float(ranker(continued[1]).item())
-                    row['prefix_continuation_vs_full'] = require(ranker(continued[1]),nb,.002,.001)
+                    split = ranker(continued[1])
+                    row['prefix_continuation_vs_full'] = metrics(split,nb)
+                    row['fp16_continuation_passed'] = bool(torch.allclose(split,nb,atol=.002,rtol=.001))
+                    if not args.fp32_continuation_check:
+                        require(split,nb,.002,.001)
+                    else:
+                        cp = cpu.generate_zero_state(1)
+                        cpu.forward_seq_batch([[0]*count],cp,True)
+                        cpu.forward_seq_batch([ids],cp,True)
+                        csplit = cpu_ranker(torch.stack([cp[1][i] for i in indices])).reshape(-1)
+                        row['cpu_fp32_continuation'] = require(csplit,cb,.002,.001)
+                        e32 = Embedding(args.checkpoint,'npu:0',torch.float32)
+                        r32 = Reranker(args.reranker,'npu:0',torch.float32)
+                        _,whole,_ = e32.encode_states(torch.tensor([padded],dtype=torch.long,device='npu'))
+                        full32 = r32(whole[1])
+                        _,prefix32,_ = e32.encode_states(torch.zeros((1,count),dtype=torch.long,device='npu'))
+                        _,end32,_ = e32.encode_states(torch.tensor([ids],dtype=torch.long,device='npu'),prefix32)
+                        split32 = r32(end32[1])
+                        row['npu_fp32_continuation'] = require(split32,full32,.002,.001)
+                        row['npu_fp32_padded_cpu_parity'] = require(full32,cb,.02,.005)
+                        row['npu_fp32_logits'] = {'full':float(full32.item()),'split':float(split32.item())}
+                        del e32,r32,whole,prefix32,end32
                     row['companion_padding_tokens'] = len(companion)-len(ids)
                     row['companion_logit'] = float(npu_score(companion)[0].item())
                     row['right_padding_logit'] = float(npu_score(ids+[0]*count)[0].item())
@@ -120,7 +147,9 @@ def main():
                                              for n in [0,1,2,8,32,64,128,206]]
             report['pair_order'] = []
             for bucket,_,_ in groups:
-                a,b = [x for x in report['cases'] if x['bucket'] == bucket]
+                selected = [x for x in report['cases'] if x['bucket'] == bucket]
+                if len(selected) != 2: continue
+                a,b = selected
                 report['pair_order'].append({'bucket':bucket, **{k:a[k]-b[k] for k in
                     ['cpu_raw_logit','cpu_padded_logit','npu_raw_logit','npu_padded_logit','companion_logit']}})
             report['all_checks_passed'] = True
