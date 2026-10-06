@@ -87,6 +87,7 @@ def parser():
     p.add_argument("--batches", default="1,16")
     p.add_argument("--contexts", default="768")
     p.add_argument("--patterns", default="ragged")
+    p.add_argument("--formats", default="2,29", help="requested ACL descriptors; select 2 for native-only timing controls")
     p.add_argument("--block-size", type=int, choices=(64, 128), default=128)
     p.add_argument("--cache-length", type=int, default=4096)
     p.add_argument("--warmup", type=int, default=5)
@@ -110,6 +111,9 @@ def case_matrix(args):
     patterns = args.patterns.split(",")
     if any(p not in ("uniform", "ragged") for p in patterns):
         raise ValueError("patterns must be uniform or ragged")
+    formats = list(map(int, args.formats.split(",")))
+    if not formats or len(set(formats)) != len(formats) or any(f not in (2, 29) for f in formats):
+        raise ValueError("formats must be a unique subset of 2,29")
     for op, b, s, pattern in itertools.product(operators,
             map(int, args.batches.split(",")), map(int, args.contexts.split(",")), patterns):
         if min(b, s) < 1:
@@ -117,7 +121,7 @@ def case_matrix(args):
         capacity = args.cache_length
         if capacity % args.block_size or s > capacity:
             raise ValueError("cache length must be block-aligned and at least the largest context")
-        for layout, fmt in itertools.product(LAYOUTS[op], (2, 29)):
+        for layout, fmt in itertools.product(LAYOUTS[op], formats):
             fills = ("packed", "writer") if op == "paged" else ("packed",)
             for fill in fills:
                 yield dict(operator=op, batch=b, context=s, pattern=pattern,
@@ -394,6 +398,7 @@ def main():
             "--calls-per-sample", str(args.calls_per_sample), "--seed", str(args.seed),
             "--atol", str(args.atol), "--rtol", str(args.rtol)]
         with path.with_suffix(".log").open("w") as log:
+            case_started_unix_s = time.time()
             try:
                 completed = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=args.timeout)
                 status = "operation_error" if completed.returncode else "passed"
@@ -403,6 +408,8 @@ def main():
         if status == "timeout":
             result["status"] = status
         result["command"] = command
+        result["case_started_unix_s"] = case_started_unix_s
+        result["case_finished_unix_s"] = time.time()
         result["log"] = str(path.with_suffix(".log"))
         path.write_text(json.dumps(result, indent=2) + "\n")
         results.append(result)

@@ -18,6 +18,7 @@ command=("${PYTHON:-python3}" "$script_dir/probe_attention.py"
   --operators "${OPERATORS:-increfa,fia,fia2}"
   --batches "${BATCHES:-1,16}" --contexts "${CONTEXTS:-768}"
   --patterns "${PATTERNS:-ragged}" --cache-length "${CACHE_LENGTH:-4096}"
+  --formats "${FORMATS:-2,29}"
   --block-size "${BLOCK_SIZE:-128}" --warmup "${WARMUP:-5}"
   --samples "${SAMPLES:-30}" --calls-per-sample "${CALLS_PER_SAMPLE:-10}"
   --timeout "${CASE_TIMEOUT:-180}")
