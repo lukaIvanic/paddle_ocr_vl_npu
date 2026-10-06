@@ -46,6 +46,54 @@ passed its smoke checks; see the CPU smoke evidence below.
 A substantial unexplained numerical or quality discrepancy is investigated
 before expanding the run. Do not select a tolerance after seeing the results.
 
+### NPU port approach investigated on 2026-10-06
+
+This checkpoint uses **RWKV-7**, not Qwen-style softmax attention. The tiny model
+has 12 layers, width 768 and 12 heads of size 64. Each layer has FP32 recurrent
+64-by-64 matrices and previous-token mixing vectors, rather than a growing KV
+cache. There is no RoPE or PromptFA/IncreFA substitution. Normalization is
+LayerNorm plus per-head GroupNorm; ChannelMix uses squared ReLU, not SwiGLU.
+Later layers also mix in first-layer values. Preserve these differences.
+
+Reuse the local-model execution approach: load checkpoint tensors directly into
+an inference-only PyTorch model, use token-batched dense matmuls, keep data on
+device, and compile stable shapes with TorchAir after eager parity. Preserve
+tokenization, EOS masking and RETR pooling from the CPU anchor. Establish a
+short-input FP32 diagnostic comparison before validating reduced-precision
+projections/activations; keep recurrence accumulation/state FP32. A Python loop
+of NPU operations per token is an isolation reference, not the intended serving
+path. Projection inputs use different learned current/previous-token mixtures,
+so ordinary shared-input QKV weight concatenation is not directly valid.
+
+A candidate existing implementation was inspected:
+[RWKV-Vibe/rwkv_Ascend](https://github.com/RWKV-Vibe/rwkv_Ascend/tree/1a6eaeb47358001c4fed6e636ed95545fed1f20b),
+commit `1a6eaeb47358001c4fed6e636ed95545fed1f20b`. Its
+`cann-ops-rwkv/src/rwkv7/wkv7/` operator declares `ascend910b`, FP32 inputs and
+outputs, `[B,H,T,64]` sequence tensors, and initial/final matrices; a PyTorch
+PrivateUse1 bridge is in `register_op_rwkv/CppExtensionInvocation/`. The kernel
+processes time internally. Its matrices use the transposed orientation relative
+to our C reference and it exponentiates its supplied decay argument once;
+the embedding CUDA path applies `exp(-exp(w))`. Adapt these conventions
+explicitly. The inspected operator subtree carries the CANN Open Software
+License Agreement v1.0, not the embedding project's Apache-2.0 license.
+
+This is source inspection only: no build, compatibility, TorchAir conversion,
+speed or numerical correctness has been established on our environment. First
+probe the recurrence alone with deterministic short inputs, zero and nonzero
+initial states, and split-sequence continuation. Compare every output and final
+matrix with independent recurrence math. Reuse/adapt the existing kernel if
+those checks pass; otherwise implement a narrowly scoped operator, following
+the parent custom-operator handbook. Use an independent identity and validate
+direct eager, then TorchAir, then the real embedding forward.
+
+Once the complete eager model matches the eight CPU anchors, compile the dense
+parts and recurrence integration, remove debug traces for timing, and profile
+matmuls, mixing/normalization, recurrence and pooling separately. Precompute
+embedding LayerNorm and introduce further projection fusion only with parity
+checks. Length bucketing must preserve upstream padding and EOS semantics;
+padding tokens are actual recurrent inputs and cannot be freely masked away.
+NanoSCIDOCS remains the next accuracy gate after this numerical comparison.
+
 Start NanoBEIR evaluation on one NPU. If it is not fast enough, use **data
 parallelism**, with a complete model replica on each participating NPU and
 inputs distributed across replicas. Verify identical query/candidate coverage
