@@ -1,0 +1,4 @@
+918ab8629c3152dc7c2e24390f0f7650ad7b5676
+liteserver-c001-4
+physical_npu=7
+/usr/local/python3.12.13/bin/python3 13_qwen3_reranker/run_document_first_training_smoke.py --model /workspace/models/Qwen3-Reranker-0.6B --source /tmp/qwen-smoke-source-chunked.json --output tmp/13_qwen3_reranker/train_918ab862_20261006 --mode train --steps 10

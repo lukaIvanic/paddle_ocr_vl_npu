@@ -1,0 +1,93 @@
+{
+  "status": "completed",
+  "scope": "BGE-M3 subset smoke, not benchmark parity",
+  "environment": {
+    "host": "liteserver-c001-4",
+    "chip": "Ascend 910B2",
+    "physical_npu": "7",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0.post2",
+    "transformers": "5.5.4"
+  },
+  "commit": "918ab8629c3152dc7c2e24390f0f7650ad7b5676",
+  "source_sha256": {
+    "run_document_first_training_smoke.py": "1bd49d4696fd21700990f5a5db0a78d96c0a20f98fb14a4bf18a85feda951cf6",
+    "training_smoke_data.py": "4c54d494c67590c344487d6712a257bd20b1e65dbaaae273d3b57055bb0a9972",
+    "local_modeling_qwen3_reranker.py": "4148017f0d012e018424844f45a6b83b97cfc3d6d514138553f32d5e3e90c417"
+  },
+  "data_sha256": "74450120e5711e69f3c821d66337d73ead8b6176d595b0435f5ba7acb7921049",
+  "config": {
+    "model": "/workspace/models/Qwen3-Reranker-0.6B",
+    "source": "/tmp/qwen-smoke-source-chunked.json",
+    "output": "tmp/13_qwen3_reranker/step_timing_918ab862_20261006",
+    "mode": "step_timing",
+    "steps": 3,
+    "microbatch": 4,
+    "accumulation": 8,
+    "max_length": 1024,
+    "learning_rate": 1e-05,
+    "seed": 731,
+    "wall_time_limit": 2400
+  },
+  "training": {
+    "attention": "npu_fusion_attention",
+    "weights": "float32",
+    "autocast": "bfloat16",
+    "optimizer": "NpuFusedAdamW",
+    "loss": "final-position yes/no cross entropy",
+    "weight_decay": 0.0,
+    "gradient_clip": 1.0,
+    "checkpoints_saved": false,
+    "optimizer_state_dtypes": [
+      "torch.float32"
+    ]
+  },
+  "split_checks": {
+    "query_disjoint": true,
+    "document_disjoint": true,
+    "eligible_source_queries": 500
+  },
+  "evaluations": {},
+  "updates": [
+    {
+      "step": 1,
+      "loss": 2.088000774383545,
+      "gradient_norm": 220.5941162109375,
+      "parameter_changed": true,
+      "forward_backward_seconds": 2.0851425999999265,
+      "optimizer_seconds": 1.8225110599996697,
+      "total_update_seconds": 4.4334462200004054,
+      "pairs": 32,
+      "real_tokens": 4696,
+      "peak_allocated_gib": 16.027836799621582,
+      "peak_reserved_gib": 31.482421875
+    },
+    {
+      "step": 2,
+      "loss": 0.5191718339920044,
+      "gradient_norm": 52.710174560546875,
+      "parameter_changed": true,
+      "forward_backward_seconds": 1.61998573999972,
+      "optimizer_seconds": 0.046463899999253044,
+      "total_update_seconds": 1.6759947299997293,
+      "pairs": 32,
+      "real_tokens": 5210,
+      "peak_allocated_gib": 20.466423988342285,
+      "peak_reserved_gib": 31.482421875
+    },
+    {
+      "step": 3,
+      "loss": 1.676929235458374,
+      "gradient_norm": 172.09706115722656,
+      "parameter_changed": true,
+      "forward_backward_seconds": 1.6558983900004023,
+      "optimizer_seconds": 0.046418119999543705,
+      "total_update_seconds": 1.7095465499996862,
+      "pairs": 32,
+      "real_tokens": 5406,
+      "peak_allocated_gib": 20.466423988342285,
+      "peak_reserved_gib": 31.482421875
+    }
+  ],
+  "total_seconds": 32.88690167999994
+}

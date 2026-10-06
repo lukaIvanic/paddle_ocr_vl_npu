@@ -1,0 +1,49 @@
+{
+  "status": "running",
+  "scope": "BGE-M3 subset smoke, not benchmark parity",
+  "environment": {
+    "host": "liteserver-c001-4",
+    "chip": "Ascend 910B2",
+    "physical_npu": "7",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0.post2",
+    "transformers": "5.5.4"
+  },
+  "commit": "dcbd841c24f07bc853dbd6d4e6149d31e431fdc6",
+  "source_sha256": {
+    "run_document_first_training_smoke.py": "47d684db8ed72c1a1ad6e3dbd5703d459481f22f757fb54614c76ade5284a3a2",
+    "training_smoke_data.py": "e494043ab6bea1d293ba88a2dd02964ed1e225dc41e70a44d6f85230ed2de019",
+    "local_modeling_qwen3_reranker.py": "4148017f0d012e018424844f45a6b83b97cfc3d6d514138553f32d5e3e90c417"
+  },
+  "data_sha256": "74450120e5711e69f3c821d66337d73ead8b6176d595b0435f5ba7acb7921049",
+  "config": {
+    "model": "/workspace/models/Qwen3-Reranker-0.6B",
+    "source": "/tmp/qwen-smoke-source-chunked.json",
+    "output": "/tmp/qwen-document-first-training-smoke-small/tmp/13_qwen3_reranker/step_timing_dcbd841c_20261006",
+    "mode": "step_timing",
+    "steps": 3,
+    "microbatch": 4,
+    "accumulation": 8,
+    "max_length": 1024,
+    "learning_rate": 1e-05,
+    "seed": 731,
+    "wall_time_limit": 2400
+  },
+  "training": {
+    "attention": "npu_fusion_attention",
+    "weights": "float32",
+    "autocast": "bfloat16",
+    "optimizer": "NpuFusedAdamW",
+    "loss": "final-position yes/no cross entropy",
+    "weight_decay": 0.0,
+    "gradient_clip": 1.0,
+    "checkpoints_saved": false
+  },
+  "split_checks": {
+    "query_disjoint": true,
+    "document_disjoint": true,
+    "eligible_source_queries": 500
+  },
+  "evaluations": {},
+  "updates": []
+}
