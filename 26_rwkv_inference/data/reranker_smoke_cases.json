@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "english_relevant",
+      "query": "How do solar panels generate electricity?",
+      "document": "Solar panels contain photovoltaic cells that convert sunlight into electricity."
+    },
+    {
+      "id": "english_other",
+      "query": "How do solar panels generate electricity?",
+      "document": "Bread dough rises when yeast produces carbon dioxide during fermentation."
+    },
+    {
+      "id": "chinese",
+      "query": "太阳能电池板如何产生电能？",
+      "document": "太阳能电池板中的光伏电池将太阳光转换为电能。"
+    },
+    {
+      "id": "empty",
+      "query": "What is solar energy?",
+      "document": ""
+    },
+    {
+      "id": "long_prefix",
+      "query": "What does the document describe?",
+      "document": "The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. The document describes renewable energy research and laboratory measurements. "
+    }
+  ]
+}
