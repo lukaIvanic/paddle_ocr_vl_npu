@@ -1,0 +1,28 @@
+{
+  "source_commit": "ef12ec1fe86f4e8a7e56428e13a7e30f68923500",
+  "script_sha256": "57ffc2b23e43676611aa927c9d0dac67fe97f65eddba6fc964756001a9a19d56",
+  "checkpoint_sha256": "9033eec92f163d1a710474977fa3fb68b7ee04697e0e961d83434743bd256a15",
+  "physical_npu": "7",
+  "backend": "torchair",
+  "dense_dtype": "fp16",
+  "state_and_pointwise_dtype": "float32",
+  "shared_device": true,
+  "timing_scope": "forward only, prepared inputs; no trace or transfers",
+  "cpu_threads": 4,
+  "batches": [],
+  "all_checks_passed": false,
+  "device_status": "NPU 0: busy HBM=56948/65536MB AICore=5% Health=OK\nNPU 1: busy HBM=57076/65536MB AICore=5% Health=OK\nNPU 2: busy HBM=56940/65536MB AICore=5% Health=OK\nNPU 3: busy HBM=56940/65536MB AICore=5% Health=OK\nNPU 4: busy HBM=57042/65536MB AICore=0% Health=Alarm\nNPU 5: busy HBM=57042/65536MB AICore=0% Health=Alarm\nNPU 6: busy HBM=57179/65536MB AICore=0% Health=OK\nNPU 7: busy HBM=57178/65536MB AICore=0% Health=OK\n",
+  "hbm_before_model": {
+    "free_bytes": 8708018176,
+    "total_bytes": 65452113920
+  },
+  "device": "Ascend910B2",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "thresholds": {
+    "layer_normalized_rmse": 0.02,
+    "embedding_max_abs": 0.002,
+    "embedding_min_cosine": 0.9995
+  },
+  "error": "RuntimeError: EZ9999: Inner Error!\nEZ9999[PID: 36795] 2026-10-06-09:58:06.135.473 (EZ9999):  [InferShape] The k-axis of a(96) and b(768) tensors must be the same[FUNC:InferShape][FILE:matrix_calculation_matmul.cc][LINE:473]\n        TraceBack (most recent call last):\n       Failed to infer output shape[FUNC:MatMulInferShape][FILE:matrix_calculation_matmul.cc][LINE:1648]\n       Call InferShapeAndType for node:MatMul(MatMul) failed[FUNC:Infer][FILE:infershape_pass.cc][LINE:121]\n       process pass InferShapePass on node:MatMul failed, ret:4294967295[FUNC:RunPassesOnNode][FILE:base_pass.cc][LINE:572]\n       [Call][PreRun] Failed, graph_id:0, session_id:0.[FUNC:CompileGraph][FILE:graph_manager.cc][LINE:4976]\n       [Compile][Graph]Compile graph failed, error code:1343225857, session_id:0, graph_id:0[FUNC:CompileGraph][FILE:ge_api.cc][LINE:1042]\n\nTraceback (most recent call last):\n  File \"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py\", line 43, in wapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py\", line 130, in compile\n    return super(TorchNpuGraph, self).compile()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: EZ9999: Inner Error!\nEZ9999[PID: 36795] 2026-10-06-09:58:06.135.473 (EZ9999):  [InferShape] The k-axis of a(96) and b(768) tensors must be the same[FUNC:InferShape][FILE:matrix_calculation_matmul.cc][LINE:473]\n        TraceBack (most recent call last):\n       Failed to infer output shape[FUNC:MatMulInferShape][FILE:matrix_calculation_matmul.cc][LINE:1648]\n       Call InferShapeAndType for node:MatMul(MatMul) failed[FUNC:Infer][FILE:infershape_pass.cc][LINE:121]\n       process pass InferShapePass on node:MatMul failed, ret:4294967295[FUNC:RunPassesOnNode][FILE:base_pass.cc][LINE:572]\n       [Call][PreRun] Failed, graph_id:0, session_id:0.[FUNC:CompileGraph][FILE:graph_manager.cc][LINE:4976]\n       [Compile][Graph]Compile graph failed, error code:1343225857, session_id:0, graph_id:0[FUNC:CompileGraph][FILE:ge_api.cc][LINE:1042]\n\n\n\n[ERROR] 2026-10-06-09:58:06 (PID:36795, Device:0, RankID:-1) ERR03005 GRAPH internal error"
+}

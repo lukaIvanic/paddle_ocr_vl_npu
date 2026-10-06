@@ -4,10 +4,10 @@ Agreed sequence, 2026-10-06. Start with correctness and accuracy on Ascend 910B2
 then decide whether larger evaluations need faster inference. This document is
 the experiment's single working document, including research findings, source
 provenance and reference scores. The server CPU environment and C runtime have
-been prepared, and the eight-case CPU FP32 smoke passed on 2026-10-06. Isolated
-NPU WKV-7 recurrence parity now passes in eager and TorchAir execution; full-model
-NPU parity and accuracy benchmarks remain pending. Reference benchmark scores
-below remain upstream reports.
+been prepared, and the eight-case CPU FP32 smoke passed on 2026-10-06. The owned
+full embedding forward now passes real-case NPU parity in eager and TorchAir;
+dataset accuracy benchmarks remain pending. Reference benchmark scores below
+remain upstream reports.
 
 ## 0. Establish a server CPU reference
 
@@ -55,12 +55,11 @@ KV cache, RoPE or softmax attention. LayerNorm/GroupNorm, squared-ReLU ChannelMi
 and first-layer value mixing must be preserved. Qwen's shared-input QKV packing
 and PromptFA/IncreFA do not transfer directly.
 
-Build an owned inference-only PyTorch model with batch/token-wide matmuls and
-stable TorchAir shapes. Preserve the CPU anchor's preprocessing and RETR head;
-keep recurrence state/accumulation FP32 while validating reduced-precision dense
-projections. A per-token Python NPU loop is only a diagnostic reference. Compare
-layer outputs and embeddings first, then time without traces and evaluate
-NanoSCIDOCS/full NanoBEIR. Padding tokens remain real recurrent inputs.
+`run_npu_embedding.py` owns the inference-only PyTorch model, loading the pinned
+checkpoint directly with no Transformers/training framework. Projections use
+explicit 2D B*T matmuls; state, normalization and pointwise math remain FP32.
+FP16 projections and an FP32 diagnostic control are validated. Preserve the CPU
+preprocessing and RETR head; padding tokens remain real recurrent inputs.
 
 Imported candidate: [RWKV-Vibe/rwkv_Ascend](https://github.com/RWKV-Vibe/rwkv_Ascend/tree/1a6eaeb47358001c4fed6e636ed95545fed1f20b),
 commit `1a6eaeb47358001c4fed6e636ed95545fed1f20b`. Only the three relevant host/kernel
@@ -71,23 +70,33 @@ project's Apache-2.0 license. The kernel uses `[value,key]` state orientation an
 `exp(log_decay)`; adapt the C reference's orientation and CUDA's `exp(-exp(w))`
 convention explicitly.
 
-The vector-only package compiled and installed privately using **CANN 9.0.1**;
-API symbols, source hashes, object and metadata checks passed. On physical
-**Ascend 910B2 NPU 7**, `probe_wkv7.py` passed all **32 eager cases**: B1/B2,
-lengths 1/47/48/49/64/128/512/976 and zero/nonzero initial states. Complete outputs
-and final states matched independent CPU FP64 math with maximum absolute error
-**1.49e-8**. Repeat calls were bitwise identical; inputs were unchanged and
-split-sequence continuation passed. **TorchAir B1/T976** passed both initial-state
-cases, including comparison with eager; the saved graph contains the independent
-`RwkvReferenceWkv7` node. Evidence:
+The vector-only package compiled/installed privately with **CANN 9.0.1**; symbols,
+source hashes and binary metadata passed. On **Ascend 910B2 NPU 7**, the isolated
+recurrence passed **32 eager cases** (B1/B2, lengths 1/47/48/49/64/128/512/976,
+zero/nonzero states) and **TorchAir B1/T976**. Maximum output/state error against
+independent CPU FP64 math was **1.49e-8**; repeat, input-mutation and split-state
+continuation checks passed. Saved graphs contain `RwkvReferenceWkv7`. Evidence:
 [`eager`](../tmp/26_rwkv_inference/wkv7_shared_052a9fd4/),
 [`TorchAir`](../tmp/26_rwkv_inference/wkv7_torchair_f79f4fb4/) and
 [`package`](../tmp/26_rwkv_inference/wkv7_eager_a2254ce9/package_manifest.json).
 
-Luka explicitly authorized shared NPU 7 for correctness. Health was OK and free
-HBM was about 8.8 GiB before eager inference. Timing was skipped; this establishes
-isolated recurrence parity, not full-model accuracy or throughput. The next gate
-is the owned model's real forward against the eight saved CPU anchors.
+The **full model** passed all eight CPU-anchor cases, comparing all 14 hidden
+outputs and final embeddings on identical prepared inputs. Worst embedding
+absolute error: **5.74e-7 FP32**, **2.70e-4 FP16**; FP16 minimum cosine **0.9999996**.
+B1 lengths were 16/64/96/128/144/976. B2 passed at T96 and T976, including the
+empty/long pair. Full **static TorchAir B1/T96, B1/T976 and B2/T96** embeddings
+were bitwise identical to eager. Sources and complete logs/results are in
+[`tmp/26_rwkv_inference`](../tmp/26_rwkv_inference/), under `embedding_*` run names.
+
+Luka authorized shared NPU 7 and then requested speed comparisons. Health was OK,
+with about 8.8 GiB free before model loading. Paired FP16 eager/compiled forward
+medians (5 samples) were **42.5/7.25 ms** for English T96, **46.5/24.8 ms** for
+the long T976 case and **46.3/7.54 ms** for B2/T96. Corresponding four-thread C
+CPU measurements were **1.53/10.54/2.53 s**. These shared-device timings exclude
+tokenization, transfers, traces and cold compilation (34–52 s per fresh shape).
+
+Next: NanoSCIDOCS. Audit prepared sequence lengths first: the current bridge
+accepts T≤2048, while upstream preprocessing can produce longer sequences.
 
 Start NanoBEIR evaluation on one NPU. If it is not fast enough, use **data
 parallelism**, with a complete model replica on each participating NPU and

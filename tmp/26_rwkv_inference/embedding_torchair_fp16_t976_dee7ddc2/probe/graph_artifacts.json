@@ -1,0 +1,24 @@
+[
+  {
+    "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/embedding_torchair_fp16_t976_dee7ddc2/probe/graph_cache/Embedding_static_gecache_f2ea77bf29b6423d2747ebfdef7909f1/forward/graph_1.lock",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/embedding_torchair_fp16_t976_dee7ddc2/probe/graph_cache/Embedding_static_gecache_f2ea77bf29b6423d2747ebfdef7909f1/forward/graph_1_20261006100534.om",
+    "bytes": 5450944,
+    "sha256": "66699699f242b3b3ae80eaff8a4bc17f4048f6fc7a59040c2331118836885172"
+  },
+  {
+    "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/embedding_torchair_fp16_t976_dee7ddc2/probe/graph_cache/Embedding_static_gecache_f2ea77bf29b6423d2747ebfdef7909f1/forward/graph_1.idx",
+    "bytes": 149,
+    "sha256": "25be76ebaf53fb7e7efde0860d1b8ed59e8003a4266a92d97846ec6dcf7d3157",
+    "content": "{\n    \"cache_file_list\": [\n        {\n            \"cache_file_name\": \"graph_1_20261006100534.om\",\n            \"graph_key\": \"graph_1\"\n        }\n    ]\n}"
+  },
+  {
+    "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/embedding_torchair_fp16_t976_dee7ddc2/probe/graph_cache/Embedding_static_gecache_f2ea77bf29b6423d2747ebfdef7909f1/forward/compiled_module",
+    "bytes": 2789355,
+    "sha256": "9278b90d0a736b8820967bc50ae8edeec7317fa5923f71f43966184537bf369b",
+    "custom_operator_name_occurrences": 36
+  }
+]

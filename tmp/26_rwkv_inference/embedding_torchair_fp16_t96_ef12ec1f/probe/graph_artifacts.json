@@ -1,0 +1,13 @@
+[
+  {
+    "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/embedding_torchair_fp16_t96_ef12ec1f/probe/graph_cache/Embedding_static_gecache_f2ea77bf29b6423d2747ebfdef7909f1/forward/graph_1.lock",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/embedding_torchair_fp16_t96_ef12ec1f/probe/graph_cache/Embedding_static_gecache_f2ea77bf29b6423d2747ebfdef7909f1/forward/compiled_module",
+    "bytes": 2393655,
+    "sha256": "453002df13cfb42932ac11339daddf251121ed48c96e657bea7156246d25201b",
+    "custom_operator_name_occurrences": 36
+  }
+]
