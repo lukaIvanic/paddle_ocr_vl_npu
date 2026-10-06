@@ -161,7 +161,7 @@ def run_worker(args, case):
                   visible_devices=os.environ.get("ASCEND_RT_VISIBLE_DEVICES"),
                   cann_home=os.environ.get("ASCEND_HOME_PATH"), hostname=os.uname().nodename,
                   lengths=lengths, block_table=mapping, heads=dict(query=hq, kv=hk, dim=d),
-                  allow_internal_format=bool(torch.npu.config.allow_internal_format))
+                  internal_format_requested=True)
     # Save metadata even if an op hangs before returning to Python.
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     actual_chip = result["device_name"].upper()
