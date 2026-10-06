@@ -89,11 +89,17 @@ def main():
             document = f'<Document>: {pair["document"]}'
             bodies = dict(query_first='\n'.join([instruction, query, document]),
                           document_first='\n'.join([instruction, document, query]),
-                          document_then_instruction='\n'.join([document, instruction, query]))
+                          document_then_instruction='\n'.join([document, instruction, query]),
+                          query_first_split_boundaries='\n'.join([instruction, query, document]),
+                          document_first_split_boundaries='\n'.join([instruction, document, query]))
+            boundary = encode('\n')
+            split_ids = dict(query_first_split_boundaries=prefix + encode(instruction) + boundary + encode(query) + boundary + encode(document) + suffix,
+                             document_first_split_boundaries=prefix + encode(instruction) + boundary + encode(document) + boundary + encode(query) + suffix)
+            assert Counter(split_ids['query_first_split_boundaries']) == Counter(split_ids['document_first_split_boundaries'])
             row = {**pair, 'variants': {}}
             baseline_ids = None
             for variant, body in bodies.items():
-                ids = prefix + encode(body) + suffix
+                ids = split_ids.get(variant, prefix + encode(body) + suffix)
                 assert len(ids) <= 8192, 'Probe must not truncate any input'
                 assert tokenizer.decode(ids, skip_special_tokens=False) == PREFIX + body + SUFFIX
                 if baseline_ids is None:
@@ -131,7 +137,10 @@ def main():
         comparisons[variant] = dict(correct=wins, total=total, ties=ties)
     result['summary'] = dict(pairs=len(pairs), graded_pair_orderings=comparisons,
         baseline_max_abs_difference_from_saved=max(abs(r['variants']['query_first']['score']-r['saved_qwen_score'])
-                                                   for r in result['pairs'] if 'saved_qwen_score' in r),
+                  for r in result['pairs'] if 'saved_qwen_score' in r),
+        split_boundary_controls_have_identical_token_multisets=all(
+            Counter(r['variants']['query_first_split_boundaries']['input_ids']) == Counter(r['variants']['document_first_split_boundaries']['input_ids'])
+            for r in result['pairs']),
         all_token_multisets_identical=all(v['token_multiset_matches_baseline'] for r in result['pairs'] for v in r['variants'].values()),
         all_special_token_sequences_identical=all(v['special_token_sequence'] == r['variants']['query_first']['special_token_sequence']
                                                  for r in result['pairs'] for v in r['variants'].values()))
