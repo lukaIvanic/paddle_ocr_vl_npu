@@ -8,8 +8,9 @@ been prepared, and the eight-case CPU FP32 smoke passed on 2026-10-06. The owned
 full embedding forward passes real-case NPU parity in eager and TorchAir, and
 complete NanoBEIR evaluation passed at reference batch 4: macro NDCG@10
 58.897462 versus reported CPU 58.907231. The 90M reranker passed numerical
-smoke and completed NanoSCIDOCS at B2; its score was below the embedding
-baseline. Settle the reranker padding policy before full NanoBEIR reproduction.
+smoke and completed full NanoBEIR at B4 on two data-parallel NPUs in 12m11s.
+Its macro NDCG@10 is 60.657936 versus the published 63.41; the 2.752064-point
+accuracy gap remains unresolved. Investigate it before the next model size.
 Reference scores below remain upstream reports.
 
 ## 0. Establish a server CPU reference
@@ -137,8 +138,8 @@ Peak reserved HBM was **2.44 GiB**. Top-100 candidates for all 649 queries
 scores, timings, candidates and acquisition/protocol provenance:
 [`full NanoBEIR evidence`](../tmp/26_rwkv_inference/nanobeir_eager_b4_fp16_c3166fd1/).
 Large embedding arrays remain on the server with recorded hashes.
-The **90M reranker** numerical anchors and NanoSCIDOCS run are now recorded
-below; full NanoBEIR remains pending.
+The **90M reranker** numerical anchors and full NanoBEIR run are recorded
+below; reproduction of the published reranker accuracy remains pending.
 
 Start NanoBEIR evaluation on one NPU. If it is not fast enough, use **data
 parallelism**, with a complete model replica on each participating NPU and
@@ -259,6 +260,18 @@ T512 compiled **96.4–108.5 pairs/s B2 / 117.1 B4**; T2048 **35.5–35.6 / 37.9
 At B4/T2048 raw eager is faster: **44.2 pairs/s**, 90.4 ms/batch versus compiled
 105.5 ms. Peak PyTorch reserved HBM **1.83 GiB**. Same timing exclusions as above.
 [`Batch comparisons, stage timings and evidence`](../tmp/26_rwkv_inference/reranker_endpoint_batch_summary_df84396b.json).
+
+**Full 90M NanoBEIR run**, source `8d237960`, 910B2 NPUs **7 and 6**, data
+parallel B4/FP16, no document caching: **649 queries / 64,900 pairs / 13 tasks**
+completed in **731.39 s (12m11s)** including preparation, warmup and aggregation.
+Original task-wide logical B32 token preparation precedes query sharding;
+T≤512 uses compiled endpoint extraction, longer inputs use exact-length eager.
+Numerical preflights, disjoint coverage and independent NDCG checks passed.
+Macro **60.657936** versus published **63.41** (gap **−2.752064**), above the
+embedding baseline **58.897462**; NanoSCIDOCS **36.136662** remains below its
+embedding baseline **41.057851**. Peak reserved HBM was **2.09 GiB/worker**.
+The published accuracy is not reproduced; resolve the gap before larger models.
+[`Scores, timings, raw logs and hashed protocol evidence`](../tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_8d237960/).
 
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,

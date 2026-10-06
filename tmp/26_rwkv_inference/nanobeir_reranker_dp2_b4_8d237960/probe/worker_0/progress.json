@@ -1,0 +1,10 @@
+{
+  "done": 32500,
+  "total": 32500,
+  "elapsed_seconds": 668.00221401,
+  "pairs_per_second": 48.65253335749195,
+  "forward_and_transfer_seconds": 665.393375599956,
+  "estimated_remaining_seconds": 1.6160995637260015e-12,
+  "task": "NanoTouche2020Retrieval",
+  "queries": 325
+}

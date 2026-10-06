@@ -1,0 +1,9 @@
+{
+  "task": "NanoQuoraRetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 91.23885211557688,
+  "embedding_ndcg_at_10": 92.62646968477488,
+  "delta_embedding_points": -1.3876175691979995,
+  "metric_crosscheck_passed": true
+}

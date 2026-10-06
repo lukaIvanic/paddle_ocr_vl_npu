@@ -1,0 +1,9 @@
+{
+  "task": "NanoArguAnaRetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 44.42861000086612,
+  "embedding_ndcg_at_10": 55.981713026247334,
+  "delta_embedding_points": -11.553103025381212,
+  "metric_crosscheck_passed": true
+}

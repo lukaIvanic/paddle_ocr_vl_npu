@@ -1,0 +1,9 @@
+{
+  "task": "NanoClimateFeverRetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 30.3821848484138,
+  "embedding_ndcg_at_10": 38.14412471796083,
+  "delta_embedding_points": -7.761939869547028,
+  "metric_crosscheck_passed": true
+}

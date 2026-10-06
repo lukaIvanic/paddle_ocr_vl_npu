@@ -1,0 +1,81 @@
+{
+  "all_checks_passed": true,
+  "physical_npu": "7",
+  "cases": [
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "3713243ded59fd9b0a4428bd101616bad7393311",
+      "offset": 20,
+      "length": 455,
+      "backend": "torchair_t512",
+      "logits": [
+        -6.0546875,
+        -8.4140625,
+        -4.4765625,
+        -10.890625
+      ],
+      "reference_logits": [
+        -6.05859375,
+        -8.4140625,
+        -4.46875,
+        -10.890625
+      ],
+      "batch_vs_single": {
+        "max_abs": 0.015625,
+        "normalized_rmse": 0.0015926621854305267,
+        "finite": true
+      },
+      "backend_vs_exact_eager": {
+        "max_abs": 0.0078125,
+        "normalized_rmse": 0.0005568115739151835,
+        "finite": true
+      }
+    },
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "3713243ded59fd9b0a4428bd101616bad7393311",
+      "offset": 0,
+      "length": 1243,
+      "backend": "raw_eager_exact_length",
+      "logits": [
+        -7.171875,
+        -4.87109375,
+        -9.6484375,
+        -10.3828125
+      ],
+      "reference_logits": [
+        -7.171875,
+        -4.87109375,
+        -9.6484375,
+        -10.3828125
+      ],
+      "batch_vs_single": {
+        "max_abs": 0.0078125,
+        "normalized_rmse": 0.00047007904504425824,
+        "finite": true
+      },
+      "backend_vs_exact_eager": {
+        "max_abs": 0.0,
+        "normalized_rmse": 0.0,
+        "finite": true
+      }
+    }
+  ],
+  "device": "Ascend910B2",
+  "hbm_before": {
+    "free_bytes": 65098018816,
+    "total_bytes": 65452113920
+  },
+  "device_status": "NPU 0: free HBM=3412/65536MB AICore=0% Health=OK\nNPU 1: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 2: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 3: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 4: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 5: excluded HBM=3197/65536MB AICore=0% Health=OK\nNPU 6: free HBM=3196/65536MB AICore=0% Health=OK\nNPU 7: free HBM=3400/65536MB AICore=0% Health=OK\n",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "setup_and_preflight_seconds": 14.002533780000704,
+  "scoring_wall_seconds": 668.0032074599994,
+  "pairs": 32500,
+  "forward_and_transfer_seconds": 665.393375599956,
+  "total_seconds": 682.0058448900008,
+  "peak_hbm_bytes": {
+    "allocated": 1216194048,
+    "reserved": 2231369728
+  }
+}

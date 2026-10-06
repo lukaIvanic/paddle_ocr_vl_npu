@@ -1,0 +1,8 @@
+{
+  "query_count": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 36.13666219614815,
+  "logical_batch_size": 32,
+  "device_batch_size": 4,
+  "snapshot_while_remaining_tasks_running": true
+}

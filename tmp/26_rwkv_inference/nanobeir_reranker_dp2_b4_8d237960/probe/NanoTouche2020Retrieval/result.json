@@ -1,0 +1,9 @@
+{
+  "task": "NanoTouche2020Retrieval",
+  "queries": 49,
+  "pairs": 4900,
+  "ndcg_at_10": 62.01461604132301,
+  "embedding_ndcg_at_10": 54.84485428107513,
+  "delta_embedding_points": 7.16976176024788,
+  "metric_crosscheck_passed": true
+}

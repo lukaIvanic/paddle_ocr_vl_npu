@@ -1,0 +1,9 @@
+{
+  "task": "NanoSCIDOCSRetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 36.13666219614815,
+  "embedding_ndcg_at_10": 41.057851087252104,
+  "delta_embedding_points": -4.921188891103952,
+  "metric_crosscheck_passed": true
+}
