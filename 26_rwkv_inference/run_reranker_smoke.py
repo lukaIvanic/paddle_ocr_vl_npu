@@ -74,7 +74,7 @@ def cpu_models(args):
     ns = reference_namespace(args.upstream / 'model.py',
         ['RWKV7_OP', 'RWKV_Tmix_x070', 'RWKV_CMix_x070', 'Block', 'ReRanker'])
     source = torch.load(args.reranker, map_location='cpu', mmap=True, weights_only=True)
-    values = {k.removeprefix('reranker.'):v for k,v in source.items() if k.startswith('reranker.')}
+    values = {k.removeprefix('reranker.'):v.float() for k,v in source.items() if k.startswith('reranker.')}
     if 'token.weight' in values:
         values['emb.weight'] = values.pop('token.weight')
     depth = max(int(k.split('.')[1]) for k in values if k.startswith('blocks.')) + 1
