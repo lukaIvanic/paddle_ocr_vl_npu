@@ -47,7 +47,7 @@ def main():
     p.add_argument('--build-root', type=Path, required=True)
     p.add_argument('--data', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
-    p.add_argument('--batch-size', type=int, choices=(1, 4), default=1)
+    p.add_argument('--batch-size', type=int, choices=(1, 4, 8, 16), default=1)
     p.add_argument('--dtype', choices=('fp16', 'fp32'), default='fp16')
     p.add_argument('--allow-shared-device', action='store_true')
     p.add_argument('--max-preflight-from', type=Path)
@@ -99,6 +99,7 @@ def main():
         report.update(device=torch.npu.get_device_name(0), torch=torch.__version__, torch_npu=torch_npu.__version__)
         cpu = CReference(args.runtime, 4)
         model = Embedding(args.checkpoint, 'npu:0', {'fp16':torch.float16, 'fp32':torch.float32}[args.dtype])
+        torch.npu.reset_peak_memory_stats()
         report['setup_seconds'] = time.perf_counter()-start
         layer_limit, emb_limit = ((1e-4,1e-5) if args.dtype=='fp32' else (.02,.002))
         report['thresholds'] = dict(layer_normalized_rmse=layer_limit, embedding_max_abs=emb_limit, min_cosine=.9995)
@@ -204,6 +205,8 @@ def main():
             save(args.output/'top100.json',top100)
             report['artifacts'] = {name:dict(sha256=sha256(args.output/name),bytes=(args.output/name).stat().st_size)
                 for name in ['embeddings.npz','ids.json','batch_timings.json','per_query_scores.json','top100.json']}
+            report['peak_hbm_allocated_bytes'] = torch.npu.max_memory_allocated()
+            report['peak_hbm_reserved_bytes'] = torch.npu.max_memory_reserved()
             report['all_checks_passed'] = True
             print('SUMMARY',json.dumps(report),flush=True)
     except Exception as error:
