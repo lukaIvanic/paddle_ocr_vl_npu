@@ -84,6 +84,10 @@ def register_converter():
     import torch
     from torchair._ge_concrete_graph.fx2ge_converter import register_fx_node_ge_converter
     from torchair import ge
+    @register_fx_node_ge_converter(torch.ops.rwkv_reference.wkv7.default)
+    def reference_convert(k,v,w,r,a,b,hi,meta_outputs=None):
+        return ge.custom_op('RwkvReferenceWkv7',inputs=dict(k=k,v=v,w=w,r=r,a=a,b=b,hi=hi),
+                            attrs={},outputs=['o','ho'])
     @register_fx_node_ge_converter(torch.ops.rwkv_endpoint.wkv7.default)
     def convert(k,v,w,r,a,b,hi,lengths,meta_outputs=None):
         return ge.custom_op('RwkvEndpointWkv7',inputs=dict(k=k,v=v,w=w,r=r,a=a,b=b,hi=hi,lengths=lengths),

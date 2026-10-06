@@ -35,7 +35,7 @@ def compiled(call, cache):
     from torchair.configs.compiler_config import CompilerConfig
     config=CompilerConfig()
     config.debug.graph_dump.type='pbtxt'
-    config.debug.graph_dump.path=str(cache.parent/'graphs')
+    config.debug.graph_dump.path=str(cache/'graphs')
     return torchair.inference.cache_compile(call,config=config,dynamic=False,fullgraph=True,
         cache_dir=str(cache),ge_cache=True)
 
@@ -143,7 +143,8 @@ def main():
                     row={'query_id':case['query_id'],'document_id':case['document_id'],'T':args.bucket,'valid_tokens':L,
                         'right_padding_tokens':args.bucket-L,'raw_logit':float(expected_logit.item()),'endpoint_logit':float(logit.item()),
                         'logit_delta':float((logit-expected_logit).item()),'state_parity':state_checks,'logit_parity':score_check,
-                        'compiled_vs_eager_bitwise_equal':True,'call_seconds':time.perf_counter()-before,'repeat_first_case':i==len(cases)}
+                        'compiled_vs_eager_bitwise_equal':True if args.backend=='torchair' else None,
+                        'call_seconds':time.perf_counter()-before,'repeat_first_case':i==len(cases)}
                     report['cases'].append(row);print('MODEL_CASE',json.dumps(row),flush=True)
                 # Raw default path must still agree with the earlier saved unpadded scores.
                 old=json.loads((folder/'result.json').read_text())
@@ -152,7 +153,7 @@ def main():
                     require(torch.tensor(row['raw_logit']),torch.tensor(prev['raw_logit']),.02,.005)
                 report['default_path_regression_passed']=True
             if args.backend=='torchair':
-                graphs=list((args.output/'graphs').rglob('*.pbtxt'))
+                graphs=list(args.output.rglob('*.pbtxt'))
                 assert graphs and any('RwkvEndpointWkv7' in f.read_text() for f in graphs), 'Missing distinct GE operator'
                 report['distinct_GE_op_verified']=True
                 report['graph_artifacts']=[{'path':str(f),'sha256':sha256(f)} for f in graphs]
