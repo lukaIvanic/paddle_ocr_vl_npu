@@ -3,7 +3,7 @@ import argparse
 import json
 import os
 from pathlib import Path
-import subprocess
+import subprocess, statistics, shutil
 import time
 
 os.environ['TORCH_DEVICE_BACKEND_AUTOLOAD']='0'
@@ -40,6 +40,20 @@ def compiled(call, cache):
         cache_dir=str(cache),ge_cache=True)
 
 
+def measure(call, repeats):
+    for _ in range(3): call()
+    torch.npu.synchronize()
+    host,device=[],[]
+    for _ in range(repeats):
+        begin,end=torch.npu.Event(enable_timing=True),torch.npu.Event(enable_timing=True)
+        before=time.perf_counter();begin.record();call();end.record();torch.npu.synchronize()
+        host.append(time.perf_counter()-before);device.append(begin.elapsed_time(end)/1000)
+    return {'repeats':repeats,'warmups':3,'host_samples_seconds':host,'device_samples_seconds':device,
+            'host_median_seconds':statistics.median(host),'host_max_seconds':max(host),
+            'device_median_seconds':statistics.median(device),
+            'pairs_per_second':1/statistics.median(host)}
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     for name in ['build-root','reference-build','cases-root','checkpoint','reranker','output']:
@@ -48,7 +62,13 @@ def main():
     p.add_argument('--backend',choices=['raw_eager','torchair'],default='raw_eager')
     p.add_argument('--bucket',type=int,choices=[256,512,1024,2048],default=512)
     p.add_argument('--dtype',choices=['fp16','fp32'],default='fp16')
+    p.add_argument('--benchmark',action='store_true')
+    p.add_argument('--repeats',type=int,default=20)
+    p.add_argument('--warm-cache-from',type=Path)
     args=p.parse_args();args.output.mkdir(parents=True,exist_ok=False)
+    if not 3<=args.repeats<=100 or ((args.benchmark or args.warm_cache_from) and
+            (args.phase!='model' or args.backend!='torchair')):
+        p.error('Benchmark/cache-copy requires model/TorchAir; use repeats 3..100')
     start=time.perf_counter();root=Path(__file__).parent
     report={'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         'source_sha256':{n:sha256(root/n) for n in ['probe_reranker_endpoint.py','wkv7_endpoint.py',
@@ -60,6 +80,8 @@ def main():
         'model_state_tolerance':{'atol':.02,'rtol':.005},
         'model_logit_tolerance':{'atol':.02,'rtol':.005},
         'cases':[],'all_checks_passed':False}
+    report['benchmark']={'enabled':args.benchmark,'repeats':args.repeats,
+        'scope':'Prepared NPU inputs; synchronized B1 forward only. No compile, transfers, tokenization, correctness work or profiling inside timed calls.'}
     try:
         import torch_npu
         torch.set_num_threads(4)
@@ -120,6 +142,13 @@ def main():
                 report['checkpoint_sha256']={n:sha256(getattr(args,n)) for n in ['checkpoint','reranker']}
                 backbone=Backbone(model).eval(); encode=backbone.forward; head=ranker.forward
                 if args.backend=='torchair':
+                    if args.warm_cache_from:
+                        for name in ['backbone_cache','head_cache']:
+                            source=args.warm_cache_from/name;assert source.is_dir()
+                            shutil.copytree(source,args.output/name)
+                        report['warm_cache_copied_from']=str(args.warm_cache_from)
+                        report['copied_cache_sha256']={str(f.relative_to(args.output)):sha256(f)
+                            for n in ['backbone_cache','head_cache'] for f in (args.output/n).rglob('*') if f.is_file()}
                     encode=compiled(encode,args.output/'backbone_cache')
                     head=compiled(head,args.output/'head_cache')
                 ids=torch.empty((1,args.bucket),dtype=torch.long,device='npu')
@@ -145,6 +174,16 @@ def main():
                         'logit_delta':float((logit-expected_logit).item()),'state_parity':state_checks,'logit_parity':score_check,
                         'compiled_vs_eager_bitwise_equal':True if args.backend=='torchair' else None,
                         'call_seconds':time.perf_counter()-before,'repeat_first_case':i==len(cases)}
+                    if args.benchmark and i<len(cases):
+                        # All parity checks and device preparation above are outside these windows.
+                        fixed=actual[1].clone().contiguous()
+                        calls={'compiled_total':lambda:head(encode(ids,lengths)[1]),
+                               'eager_total':lambda:ranker(backbone(ids,lengths)[1]),
+                               'compiled_backbone':lambda:encode(ids,lengths),
+                               'compiled_head':lambda:head(fixed)}
+                        row['timing']={n:measure(call,args.repeats) for n,call in calls.items()}
+                        row['speedup']=row['timing']['eager_total']['host_median_seconds']/row['timing']['compiled_total']['host_median_seconds']
+                        assert torch.equal(head(encode(ids,lengths)[1]),logit), 'Timing altered output'
                     report['cases'].append(row);print('MODEL_CASE',json.dumps(row),flush=True)
                 # Raw default path must still agree with the earlier saved unpadded scores.
                 old=json.loads((folder/'result.json').read_text())
