@@ -522,7 +522,7 @@ class LocalQwen3RerankerMLP(nn.Module):
 class LocalQwen3RerankerAttention(nn.Module):
     def __init__(self, config: LocalQwen3RerankerConfig, *, attention_impl: str):
         super().__init__()
-        if attention_impl not in {"eager", "prompt_flash_attention"}:
+        if attention_impl not in {"eager", "prompt_flash_attention", "fusion_attention"}:
             raise ValueError(f"unsupported attention_impl={attention_impl!r}")
         self.attention_impl = attention_impl
         self.num_heads = config.num_attention_heads
@@ -674,6 +674,30 @@ class LocalQwen3RerankerAttention(nn.Module):
         )
         return linear_tokenwise(self.o_proj, attn_output)
 
+    def forward_fusion_attention(self, hidden_states, cos, sin, attention_mask):
+        """910B training attention: native GQA with an autograd backward."""
+        if hidden_states.device.type != "npu":
+            raise RuntimeError("fusion_attention requires NPU tensors")
+        import torch_npu
+
+        batch, sequence_length, _ = hidden_states.shape
+        query, key, value = self.project_qkv(hidden_states, cos, sin)
+        # FP32 master RMSNorm weights can promote Q/K under autocast.
+        if torch.is_autocast_enabled("npu"):
+            dtype = torch.get_autocast_dtype("npu")
+            query, key, value = (x.to(dtype) for x in (query, key, value))
+        if query.dtype not in (torch.float16, torch.bfloat16):
+            raise ValueError("fusion_attention needs FP16/BF16 or NPU autocast")
+        output = torch_npu.npu_fusion_attention(
+            query, key, value, self.num_heads, "BNSD",
+            atten_mask=attention_mask, scale=self.scaling, keep_prob=1.0,
+            sparse_mode=0,
+        )[0]
+        output = output.transpose(1, 2).reshape(
+            batch, sequence_length, self.num_heads * self.head_dim
+        )
+        return linear_tokenwise(self.o_proj, output)
+
     def forward_prompt_flash_attention_chunk(
         self,
         hidden_states: torch.Tensor,
@@ -813,6 +837,8 @@ class LocalQwen3RerankerAttention(nn.Module):
     ) -> torch.Tensor:
         if self.attention_impl == "prompt_flash_attention":
             return self.forward_prompt_flash_attention(hidden_states, cos, sin, attention_mask)
+        if self.attention_impl == "fusion_attention":
+            return self.forward_fusion_attention(hidden_states, cos, sin, attention_mask)
         return self.forward_eager(hidden_states, cos, sin, attention_mask)
 
 
@@ -903,7 +929,7 @@ class LocalQwen3RerankerDecoderLayer(nn.Module):
 class LocalQwen3RerankerForCausalLM(nn.Module):
     def __init__(self, config: LocalQwen3RerankerConfig, *, attention_impl: str = "eager"):
         super().__init__()
-        if attention_impl not in {"eager", "prompt_flash_attention"}:
+        if attention_impl not in {"eager", "prompt_flash_attention", "fusion_attention"}:
             raise ValueError(f"unsupported attention_impl={attention_impl!r}")
         self.config = config
         self.attention_impl = attention_impl
@@ -1002,7 +1028,7 @@ class LocalQwen3RerankerForCausalLM(nn.Module):
         position_ids = position_ids.clamp(min=0)
         layer_attention_mask = (
             build_left_padded_causal_bool_mask(attention_mask)
-            if self.attention_impl == "prompt_flash_attention"
+            if self.attention_impl in {"prompt_flash_attention", "fusion_attention"}
             else build_left_padded_causal_mask(attention_mask, self.embed_tokens.weight.dtype)
         )
         return self.forward_hidden_states_prepared(input_ids, position_ids, layer_attention_mask)
