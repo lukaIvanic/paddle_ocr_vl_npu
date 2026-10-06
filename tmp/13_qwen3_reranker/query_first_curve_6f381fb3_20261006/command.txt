@@ -1,0 +1,4 @@
+6f381fb338607c8a2d30fe895cb32b86539321b4
+liteserver-c001-4
+physical_npu=7
+/usr/local/python3.12.13/bin/python3 -u 13_qwen3_reranker/run_query_first_training_curve.py --model /workspace/models/Qwen3-Reranker-0.6B --dataset /tmp/qwen-bge-filtered-mixture.json.gz --fixture /workspace/results/clef_touche_full/fixture.json --output tmp/13_qwen3_reranker/query_first_curve_6f381fb3_20261006 --mode curve --steps 250 --wall-time-limit 2400
