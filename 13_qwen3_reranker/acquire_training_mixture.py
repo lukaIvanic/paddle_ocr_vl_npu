@@ -27,6 +27,7 @@ def main():
     p.add_argument("--cache", type=Path, default=Path("/tmp/qwen-mixture-http-cache"))
     p.add_argument("--prefer-parquet", action="store_true")
     p.add_argument("--hub-endpoint", default="https://huggingface.co")
+    p.add_argument("--workers", type=int, default=2)
     args = p.parse_args()
     started = time.monotonic()
     info = json.loads(args.metadata.read_text())
@@ -78,37 +79,50 @@ def main():
     parquet_lock = threading.Lock()
     parquet_files = {}
     row_groups = OrderedDict()
+    config_locks = {}
 
     def parquet_rows(config, offset, length):
         import fsspec
         import pyarrow.parquet as pq
         with parquet_lock:
-            if config not in parquet_files:
-                files = [s["rfilename"] for s in info["siblings"]
-                         if s["rfilename"].startswith(config + "/") and s["rfilename"].endswith(".parquet")]
-                assert len(files) == 1, "Expected one mirror Parquet shard per config"
-                url = f"{args.hub_endpoint.rstrip('/')}/datasets/{MIRROR}/resolve/{REVISION}/{files[0]}?download=true"
-                stream = fsspec.open(url, mode="rb", block_size=1024**2, client_kwargs={"trust_env": True}).open()
-                parquet_files[config] = (pq.ParquetFile(stream), url)
-            reader, url = parquet_files[config]
-            rows, base = [], 0
-            for rg in range(reader.num_row_groups):
-                n = reader.metadata.row_group(rg).num_rows
-                lo, hi = max(offset, base), min(offset + length, base + n)
-                if lo < hi:
-                    key = (config, rg)
-                    if key not in row_groups:
-                        row_groups[key] = reader.read_row_group(rg)
-                    row_groups.move_to_end(key)
-                    rows.extend(row_groups[key].slice(lo - base, hi - lo).to_pylist())
-                    # Reuse row groups for nearby sampled windows; bound RAM
-                    # while avoiding repeated HTTP reads of the same group.
-                    while len(row_groups) > 1 and sum(x.nbytes for x in row_groups.values()) > 256 * 1024**2:
-                        row_groups.popitem(last=False)
-                base += n
-                if base >= offset + length:
+            lock = config_locks.setdefault(config, threading.Lock())
+        with lock:
+            files = sorted(s["rfilename"] for s in info["siblings"]
+                           if s["rfilename"].startswith(config + "/") and s["rfilename"].endswith(".parquet"))
+            assert files, "No mirror Parquet shards"
+            rows, base, used_urls = [], 0, []
+            for filename in files:
+                if filename not in parquet_files:
+                    url = f"{args.hub_endpoint.rstrip('/')}/datasets/{MIRROR}/resolve/{REVISION}/{filename}?download=true"
+                    stream = fsspec.open(url, mode="rb", block_size=1024**2, client_kwargs={"trust_env": True}).open()
+                    parquet_files[filename] = (pq.ParquetFile(stream), url)
+                reader, url = parquet_files[filename]
+                if base + reader.metadata.num_rows <= offset:
+                    base += reader.metadata.num_rows
+                    continue
+                used_urls.append(url)
+                for rg in range(reader.num_row_groups):
+                    n = reader.metadata.row_group(rg).num_rows
+                    lo, hi = max(offset, base), min(offset + length, base + n)
+                    if lo < hi:
+                        key = (filename, rg)
+                        with parquet_lock:
+                            table = row_groups.get(key)
+                        if table is None:
+                            table = reader.read_row_group(rg)
+                        rows.extend(table.slice(lo - base, hi - lo).to_pylist())
+                        with parquet_lock:
+                            row_groups[key] = table
+                            row_groups.move_to_end(key)
+                            while len(row_groups) > 1 and sum(x.nbytes for x in row_groups.values()) > 256 * 1024**2:
+                                row_groups.popitem(last=False)
+                    base += n
+                    if base >= offset + length:
+                        break
+                if len(rows) == length:
                     break
-        return {"rows": [{"row_idx": offset + i, "row": r} for i, r in enumerate(rows)]}, url
+            assert len(rows) == length, "Incomplete Parquet sample"
+        return {"rows": [{"row_idx": offset + i, "row": r} for i, r in enumerate(rows)]}, used_urls
 
     def fetch(job):
         config, offset, length, base, block_size = job
@@ -164,7 +178,7 @@ def main():
                 "sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw),
                 "seconds": time.monotonic() - t}, [r for r in valid if r]
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
         # Ordered map makes the resulting data independent of response timing.
         for i, (meta, rows) in enumerate(executor.map(fetch, jobs), 1):
             responses.append(meta)
@@ -186,6 +200,7 @@ def main():
         "acquisition_script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "prefer_parquet": args.prefer_parquet,
         "hub_endpoint": args.hub_endpoint,
+        "workers": args.workers,
         "counts_by_config": counts, "responses": responses, "seed": args.seed,
         "seconds": time.monotonic() - started,
     }
