@@ -10,8 +10,9 @@ complete NanoBEIR evaluation passed at reference batch 4: macro NDCG@10
 58.897462 versus reported CPU 58.907231. The 90M reranker passed numerical
 smoke and completed full NanoBEIR at B4 on two data-parallel NPUs: FP16
 60.657936 in 12m11s, FP32 60.659794 in 9m31s. FP32 does not close the gap to
-published 63.41. Investigate the remaining 2.750206-point gap before the next size.
-Reference scores below remain upstream reports.
+published 63.41. The alternate 11-task BM25-plus-positives evaluation gives
+63.233688 in 7m25s, narrowing the gap to 0.176312 points; the published run
+contract remains unconfirmed. Reference scores below remain upstream reports.
 
 ## 0. Establish a server CPU reference
 
@@ -314,9 +315,19 @@ published evaluation contract before another full arithmetic-control run.
 [`Two-entrypoint audit and pinned source links`](../tmp/26_rwkv_inference/reranker_protocol_audit_v2_4fa423a8/evaluation_contract_followup.json).
 [`Audit, source links, independent comparisons and loader failure`](../tmp/26_rwkv_inference/reranker_protocol_audit_v2_4fa423a8/audit_summary.json).
 
+**BM25 plus positives comparison**, source `5f2bc78b`, 910B2 NPUs **6/4**,
+same 90M model and FP32 arithmetic: **63.233688 NDCG@10** versus reported
+**63.41** (gap **−0.176312**), up **1.221497** from the previous 11-task mean.
+All **550 queries / 57,688 pairs** (2,688 added positives), excluding ArguAna
+and Touché, finish in **445.12 s**; BM25 baseline **57.149575**. Preserve the
+pinned ST 5.1.2 positives-first/text-matching order, per-query B32 left padding
+and sklearn tie-averaged NDCG; independent metrics and B4/tail parity pass.
+This tests the alternate evaluator defaults, not a confirmed paper protocol.
+[`Task comparison, scores, input hashes and sources`](../tmp/26_rwkv_inference/nanobeir_reranker_bm25_positives_dp2_fp32_5f2bc78b_retry1/protocol_comparison.json).
+
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,
-followed by casts/normalization. Optimization remains pending the padding policy.
+followed by casts/normalization. These profiles precede the validated B4 benchmark path above.
 [`Summary, evidence paths and hashes`](../tmp/26_rwkv_inference/reranker_b1_bucket_summary_ea9aa394.json);
 raw traces remain on server, with verified local summaries/hash manifests.
 
@@ -616,7 +627,11 @@ prefer retaining the foreground session.
 
 Run workloads inside the selected container;
 preserve the parent source-through-Git lane and use `source npu-setup` for NPU
-execution. Models, environments and prior evidence survived the reboot.
+execution. Models, environments and prior evidence survived the reboot. Keep
+code transfers separate from accumulated benchmark evidence; if intervening
+evidence commits inflate the bundle, use a source-only Git commit/bundle.
+The BM25 evaluator additionally requires scikit-learn `1.7.2` in the RWKV venv
+(installed without changing NumPy `1.26.4` or SciPy `1.13.1`).
 
 The upstream GPU implementation uses custom CUDA kernels; the owned Ascend
 embedding path is validated above. There is currently no CUDA validation lane. The

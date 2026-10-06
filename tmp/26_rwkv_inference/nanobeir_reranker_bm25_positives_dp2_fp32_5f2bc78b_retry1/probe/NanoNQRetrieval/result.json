@@ -1,0 +1,8 @@
+{
+  "task": "NanoNQRetrieval",
+  "queries": 50,
+  "pairs": 5006,
+  "ndcg_at_10": 63.54675520982103,
+  "bm25_ndcg_at_10": 50.06467934630127,
+  "metric_crosscheck_passed": true
+}

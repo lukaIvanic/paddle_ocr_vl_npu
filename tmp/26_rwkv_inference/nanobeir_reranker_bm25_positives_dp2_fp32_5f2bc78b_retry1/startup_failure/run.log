@@ -1,0 +1,22 @@
+Selected physical NPU 7 as logical npu:0 (health/idle check; not a reservation)
+Python: /usr/local/python3.12.13/bin/python3
+SUMMARY {"source_commit": "5f2bc78b00920e11b6044c051f340e0c381186d0", "checkpoint_sha256": "9033eec92f163d1a710474977fa3fb68b7ee04697e0e961d83434743bd256a15", "reranker_sha256": "6b6f36543ad71aa48bca3cca97863c529e9153515fb777184c36475b3badb6be", "devices": [6, 4], "dense_dtype": "fp32", "state_dtype": "fp32", "logical_batch_size": 32, "outer_batch_size": null, "device_batch_size": 4, "preparation": "Per-query positives first followed by BM25 nonpositive texts; B32 padding reset per query; last2048/EOS; sklearn tie-averaged NDCG.", "backend_policy": "TorchAir T512 for prepared length<=512; exact-length raw eager for longer inputs", "protocol": "bm25-positives", "candidate_source": "/workspace/rwkv_reference/nanobeir_bm25_v5_1_2", "document_caching": false, "task_results": [], "all_checks_passed": false, "batch_gate_sha256": "e2da311ac38f6b1765022fd883546492d5c3d7c284bec7a8a79a77f4fa4fddbb", "warm_cache_reference_sha256": "ce5b81e92d5c4543c0d87725911f393e246d4e70f6eb205f5ae58faa6ea5a72c", "historical_batch_probe_sha256": ["68b1758b65c734070c5daa80af3cedce3b0d5477820be515c6a7891d0b82f684"], "error": "ModuleNotFoundError: No module named 'sklearn'", "total_seconds": 1.833390159999908, "under_15_minutes": true}
+Traceback (most recent call last):
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_nanobeir_reranker.py", line 424, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_nanobeir_reranker.py", line 421, in main
+    worker(args) if args.worker_index is not None else coordinate(args)
+                                                       ^^^^^^^^^^^^^^^^
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_nanobeir_reranker.py", line 351, in coordinate
+    prepare(args,report);report['preparation_seconds']=time.perf_counter()-start;save(args.output/'result.json',report)
+    ^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_nanobeir_reranker.py", line 171, in prepare
+    try:prepare_bm25(args,report,wrapper_tokenizer)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_nanobeir_reranker.py", line 84, in prepare_bm25
+    ordered,metric=bm25_reference(args);jobs=[];report['tasks']=[]
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_nanobeir_reranker.py", line 48, in bm25_reference
+    from sklearn.metrics import average_precision_score, ndcg_score
+ModuleNotFoundError: No module named 'sklearn'

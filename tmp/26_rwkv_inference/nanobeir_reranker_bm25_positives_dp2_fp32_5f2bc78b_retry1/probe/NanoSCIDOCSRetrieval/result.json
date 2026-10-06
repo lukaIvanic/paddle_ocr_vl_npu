@@ -1,0 +1,8 @@
+{
+  "task": "NanoSCIDOCSRetrieval",
+  "queries": 50,
+  "pairs": 5089,
+  "ndcg_at_10": 37.25633854042865,
+  "bm25_ndcg_at_10": 33.5123134939094,
+  "metric_crosscheck_passed": true
+}

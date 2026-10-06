@@ -1,0 +1,87 @@
+{
+  "model": "0.1B embedding backbone + 90M state reranker",
+  "dense_dtype": "fp32",
+  "state_dtype": "fp32",
+  "queries": 550,
+  "pairs": 57688,
+  "excluded_tasks": [
+    "NanoArguAnaRetrieval",
+    "NanoTouche2020Retrieval"
+  ],
+  "prior_embedding_top100_11_task_mean_ndcg_at_10": 62.01219058097124,
+  "bm25_positives_11_task_mean_ndcg_at_10": 63.23368779399448,
+  "bm25_baseline_mean_ndcg_at_10": 57.149574997875135,
+  "delta_prior_points": 1.221497213023234,
+  "paper_mean_ndcg_at_10": 63.41,
+  "delta_paper_points": -0.17631220600551956,
+  "same_checkpoints_and_model_arithmetic_verified": true,
+  "paper_exact_protocol_unconfirmed": true,
+  "tasks": [
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "prior_ndcg_at_10": 36.13666219614815,
+      "bm25_ndcg_at_10": 33.5123134939094,
+      "reranker_ndcg_at_10": 37.25633854042865
+    },
+    {
+      "task": "NanoClimateFeverRetrieval",
+      "prior_ndcg_at_10": 30.31712081539214,
+      "bm25_ndcg_at_10": 31.77289951921712,
+      "reranker_ndcg_at_10": 29.939205548674224
+    },
+    {
+      "task": "NanoDBPediaRetrieval",
+      "prior_ndcg_at_10": 60.50984956131418,
+      "bm25_ndcg_at_10": 61.43523354429893,
+      "reranker_ndcg_at_10": 61.60206806670998
+    },
+    {
+      "task": "NanoFEVERRetrieval",
+      "prior_ndcg_at_10": 89.04935395748934,
+      "bm25_ndcg_at_10": 80.94126772085316,
+      "reranker_ndcg_at_10": 89.50819818980061
+    },
+    {
+      "task": "NanoFiQA2018Retrieval",
+      "prior_ndcg_at_10": 50.37749607824553,
+      "bm25_ndcg_at_10": 43.742065651105364,
+      "reranker_ndcg_at_10": 49.98802413838579
+    },
+    {
+      "task": "NanoHotpotQARetrieval",
+      "prior_ndcg_at_10": 85.10273893964427,
+      "bm25_ndcg_at_10": 82.77161322069782,
+      "reranker_ndcg_at_10": 86.81044866250191
+    },
+    {
+      "task": "NanoMSMARCORetrieval",
+      "prior_ndcg_at_10": 64.04328645572147,
+      "bm25_ndcg_at_10": 54.04259879670521,
+      "reranker_ndcg_at_10": 64.55769894537173
+    },
+    {
+      "task": "NanoNFCorpusRetrieval",
+      "prior_ndcg_at_10": 35.10899747951458,
+      "bm25_ndcg_at_10": 32.504049401014555,
+      "reranker_ndcg_at_10": 42.49971106883043
+    },
+    {
+      "task": "NanoNQRetrieval",
+      "prior_ndcg_at_10": 62.77726921674896,
+      "bm25_ndcg_at_10": 50.06467934630127,
+      "reranker_ndcg_at_10": 63.54675520982103
+    },
+    {
+      "task": "NanoQuoraRetrieval",
+      "prior_ndcg_at_10": 91.23885211557688,
+      "bm25_ndcg_at_10": 86.86790666432586,
+      "reranker_ndcg_at_10": 91.74166159952057
+    },
+    {
+      "task": "NanoSciFactRetrieval",
+      "prior_ndcg_at_10": 77.47246957488818,
+      "bm25_ndcg_at_10": 70.9906976181978,
+      "reranker_ndcg_at_10": 78.1204557638943
+    }
+  ]
+}

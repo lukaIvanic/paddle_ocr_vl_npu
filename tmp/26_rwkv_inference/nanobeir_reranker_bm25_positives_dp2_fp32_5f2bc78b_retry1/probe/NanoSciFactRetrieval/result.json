@@ -1,0 +1,8 @@
+{
+  "task": "NanoSciFactRetrieval",
+  "queries": 50,
+  "pairs": 5004,
+  "ndcg_at_10": 78.1204557638943,
+  "bm25_ndcg_at_10": 70.9906976181978,
+  "metric_crosscheck_passed": true
+}

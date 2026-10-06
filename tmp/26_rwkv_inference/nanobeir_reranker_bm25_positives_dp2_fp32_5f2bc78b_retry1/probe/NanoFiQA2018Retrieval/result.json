@@ -1,0 +1,8 @@
+{
+  "task": "NanoFiQA2018Retrieval",
+  "queries": 50,
+  "pairs": 5034,
+  "ndcg_at_10": 49.98802413838579,
+  "bm25_ndcg_at_10": 43.742065651105364,
+  "metric_crosscheck_passed": true
+}

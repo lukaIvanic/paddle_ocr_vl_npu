@@ -1,0 +1,113 @@
+{
+  "all_checks_passed": true,
+  "physical_npu": "6",
+  "dense_dtype": "fp32",
+  "state_dtype": "fp32",
+  "cases": [
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "a352061134daa2c47861b8c4216ee5482a93be1d",
+      "offset": 32,
+      "length": 349,
+      "backend": "torchair_t512",
+      "logits": [
+        -8.081557273864746,
+        -7.982926368713379,
+        -8.866897583007812,
+        -6.874077320098877
+      ],
+      "reference_logits": [
+        -8.081560134887695,
+        -7.982921123504639,
+        -8.866898536682129,
+        -6.874075412750244
+      ],
+      "batch_vs_single": {
+        "max_abs": 4.76837158203125e-06,
+        "normalized_rmse": 4.3073026745332754e-07,
+        "finite": true
+      },
+      "backend_vs_exact_eager": {
+        "max_abs": 5.245208740234375e-06,
+        "normalized_rmse": 3.9733822632115334e-07,
+        "finite": true
+      }
+    },
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "a352061134daa2c47861b8c4216ee5482a93be1d",
+      "offset": 0,
+      "length": 1242,
+      "backend": "raw_eager_exact_length",
+      "logits": [
+        2.04470157623291,
+        -7.735013008117676,
+        1.2726300954818726,
+        -8.75893783569336
+      ],
+      "reference_logits": [
+        2.04470157623291,
+        -7.735013008117676,
+        1.2726300954818726,
+        -8.75893783569336
+      ],
+      "batch_vs_single": {
+        "max_abs": 5.7220458984375e-06,
+        "normalized_rmse": 6.75296632834943e-07,
+        "finite": true
+      },
+      "backend_vs_exact_eager": {
+        "max_abs": 0.0,
+        "normalized_rmse": 0.0,
+        "finite": true
+      }
+    },
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "a352061134daa2c47861b8c4216ee5482a93be1d",
+      "offset": 100,
+      "length": 318,
+      "backend": "torchair_t512",
+      "logits": [
+        -8.670487403869629,
+        -9.295027732849121,
+        -9.295027732849121,
+        -9.295027732849121
+      ],
+      "reference_logits": [
+        -8.670495986938477,
+        -9.295025825500488,
+        -9.295026779174805,
+        -9.295025825500488
+      ],
+      "batch_vs_single": {
+        "max_abs": 1.049041748046875e-05,
+        "normalized_rmse": 5.946454848526628e-07,
+        "finite": true
+      },
+      "backend_vs_exact_eager": {
+        "max_abs": 8.58306884765625e-06,
+        "normalized_rmse": 4.94774894832517e-07,
+        "finite": true
+      }
+    }
+  ],
+  "device": "Ascend910B2",
+  "hbm_before": {
+    "free_bytes": 65103151104,
+    "total_bytes": 65452113920
+  },
+  "device_status": "NPU 0: busy HBM=57278/65536MB AICore=0% Health=OK\nNPU 1: busy HBM=57256/65536MB AICore=4% Health=OK\nNPU 2: busy HBM=57256/65536MB AICore=16% Health=OK\nNPU 3: busy HBM=57256/65536MB AICore=0% Health=OK\nNPU 4: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 5: excluded HBM=3197/65536MB AICore=0% Health=OK\nNPU 6: free HBM=3396/65536MB AICore=0% Health=OK\nNPU 7: free HBM=3401/65536MB AICore=0% Health=OK\n",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "matmul_allow_hf32": false,
+  "setup_and_preflight_seconds": 14.166755929998544,
+  "scoring_wall_seconds": 389.11420241000087,
+  "pairs": 28923,
+  "forward_and_transfer_seconds": 386.8653576498764,
+  "total_seconds": 403.28103027999896,
+  "peak_hbm_bytes": {
+    "allocated": 1569149952,
+    "reserved": 2690646016
+  }
+}
