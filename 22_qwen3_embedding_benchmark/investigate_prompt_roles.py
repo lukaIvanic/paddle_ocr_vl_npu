@@ -55,6 +55,13 @@ def variants(pair, holdout=False):
     return result
 
 
+def joint_remap(pair):
+    """Align both system-role wording and the task's explicit field mapping."""
+    prefix = PREFIX.replace('the Document', 'the __PASSAGE__').replace('the Query', 'the Document').replace('the __PASSAGE__', 'the Query')
+    task = pair['instruction'] + '. The question is in <Document>; the passage is in <Query>.'
+    return prefix, task, [('Query', pair['document']), ('Document', pair['query'])], False
+
+
 def ordering(rows, names, key='score'):
     result = {}
     for name in names:
@@ -99,6 +106,8 @@ def main():
     parser.add_argument('--phase', choices=['calibration', 'holdout'], required=True)
     parser.add_argument('--max-document-tokens', type=int, default=900,
                         help='Holdout selection limit only; documents are never truncated')
+    parser.add_argument('--joint-remap-only', action='store_true',
+                        help='Follow-up: score the normal baseline and joint system/task remap only')
     args = parser.parse_args()
     import torch
     import torch_npu
@@ -160,7 +169,10 @@ def main():
                 torch.npu.empty_cache()
             row = {**pair, 'variants': {}}
             atomic_bags = []
-            for name, (prefix, task, fields, atomic) in variants(pair, args.phase == 'holdout').items():
+            layouts = variants(pair, args.phase == 'holdout')
+            if args.joint_remap_only:
+                layouts = {'normal': layouts['normal'], 'swapped_contents_joint_remap': joint_remap(pair)}
+            for name, (prefix, task, fields, atomic) in layouts.items():
                 body = '<Instruct>: ' + task + '\n' + '\n'.join(f'<{label}>: {content}' for label, content in fields)
                 if atomic:
                     ids = encode(prefix) + encode('<Instruct>:') + encode(' ' + task) + encode('\n')
@@ -210,7 +222,7 @@ def main():
     handle.remove()
     result['summary'] = summarize(result['pairs'])
     result['summary']['all_control_token_sequences_preserved'] = True
-    result['summary']['atomic_token_multisets_identical'] = args.phase == 'calibration'
+    result['summary']['atomic_token_multisets_identical'] = args.phase == 'calibration' and not args.joint_remap_only
     result['status'] = 'completed'
     save(args.output, result)
     print(json.dumps(result['summary'], indent=2), flush=True)
