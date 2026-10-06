@@ -257,6 +257,13 @@ def run_worker(args, case):
         result["writer_logical_roundtrip_exact"] = all(
             torch.equal(a, z) for a, z in zip(restored, (kcpu, vcpu)))
 
+    result["cache_for_attention"] = {"key": tensor_info(kc, torch_npu),
+                                    "value": tensor_info(vc, torch_npu)}
+    if any(int(torch_npu.get_npu_format(t)) not in acceptable_formats for t in caches):
+        result["status"] = "format_unavailable"
+        result["reason"] = "cache writer changed the requested storage descriptor; no timing"
+        return result
+
     if op == "increfa":
         result["operation_binding"] = callable_info(torch_npu.npu_incre_flash_attention)
         mask = torch.arange(capacity, device=device).view(1, 1, 1, -1) >= lens.view(b, 1, 1, 1)
@@ -310,6 +317,8 @@ def run_worker(args, case):
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     observed = call()
     torch.npu.synchronize()
+    result["cache_after_validation_call"] = {"key": tensor_info(kc, torch_npu),
+                                             "value": tensor_info(vc, torch_npu)}
     if op == "increfa":
         observed = observed.cpu().float()
     else:
