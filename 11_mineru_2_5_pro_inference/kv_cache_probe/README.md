@@ -2,11 +2,13 @@
 
 Status, 2026-10-06: CPU packing checks and **910B2 FP16 portable-operation
 correctness checks passed**. Genuine format-29 storage was retained and checked,
-but IncreFA and FIA rejected it on this installed runtime. The private operation
-has only partial setup-error evidence; its 910B CPU-length compatibility control
-is implemented but unrun. **No 310P result or validated ND/NZ speed ratio exists.**
+but IncreFA and FIA rejected it on this installed runtime. The complete private
+operation matrix passes native-cache controls with CPU lengths; its NZ variants
+fail contract or output validation. **No 310P result or validated ND/NZ speed
+ratio exists.**
 Use the verified host-master plus `docker exec` route. Cards 4 and 5 are excluded;
-Luka requested an idle Clef server on 7 and further MinerU work on 6 when free.
+Luka authorized MinerU on 7 alongside an idle Clef server. Clef startup is
+currently blocked by the other Qwen service's memory use; see the evidence below.
 Recheck inventory before every run. See [910B evidence](#910b-evidence).
 
 This probes one-token **text decode attention** with synthetic, identical FP16
@@ -213,6 +215,14 @@ their contract until they run. For the private operation, the important case is
 synthetic filling, and the same shape with descriptor 2. If a control rejects
 ND on 310P, an ND-versus-NZ speed ratio for that operation is unavailable.
 
+The reviewed 910B control with CPU lengths establishes that the installed
+private operation works for ordinary native pages, but its 310P blocked
+contract cannot be validated on that chip. Run the default NPU-length contract
+on 310P first. If it reports the same `tensor.hostData is null` failure, preserve
+that evidence and return it; do not assume a 910B metadata workaround is the
+production 310P contract. The writer-filled blocked format-29 case is essential:
+a logical roundtrip alone does not prove attention reads those bytes correctly.
+
 Only if the controls pass, expand `CONTEXTS=768,1408,2816,4096` and
 `PATTERNS=uniform,ragged`. If a change is needed, report the failing command,
 case JSON/log and minimal proposed source change to Luka; do not apply it.
@@ -249,13 +259,44 @@ S768, B1/B16 with ragged lengths. Results are one-layer synthetic checks.
   The controller recorded two B1 ordinary-page native-storage setup failures;
   a third format-29 packed case also has a worker JSON. ATB logs report missing
   host metadata, not a cache-format rejection. The native writer control had a
-  bit-exact logical roundtrip. The complete private matrix remains unrun.
+  bit-exact logical roundtrip. The subsequent CPU-length matrix is below.
+- [Complete private CPU-length matrix, source c3bbae98](../../tmp/11_mineru_2_5_pro_inference/kv_cache_910B_paged_cpu_lengths_20261006T094514Z_c3bbae98/summary.json):
+  all 16 cases completed; exit 2 correctly flags two wrong-output variants.
+  Four native ordinary-page controls passed (B1/B16, synthetic and private-writer
+  filling). Maximum absolute errors were 0.0000683 / 0.000131; recorded event
+  medians were 0.063–0.072 ms. Both ordinary-page NZ synthetic cases produced
+  wrong attention despite bit-exact KV roundtrips (max errors 13.13 / 15.28), so
+  they have no timing. Ten other variants errored. Blocked-page attention,
+  including writer-filled NZ, reports `headSize of keyCache and query should be
+  same`; the NZ blocked writer itself passed a bit-exact logical roundtrip.
+  [Occupancy snapshots](../../tmp/11_mineru_2_5_pro_inference/occupancy_910B_paged_cpu_20261006T094513Z_c3bbae98/before.txt)
+  show the Qwen service co-resident on card 7; timings are not isolated kernel
+  benchmarks. No validated ND/NZ pair exists.
+- [NZ descriptor audit, source 2f466ee5](../../tmp/11_mineru_2_5_pro_inference/kv_cache_910B_nz_descriptor_audit_20261006T095127Z_2f466ee5/summary.json):
+  four B1 NZ cases; exit 2. The blocked writer retained descriptor 29 after
+  writing and passed bit-exact logical KV roundtrip, then reader setup failed.
+  Ordinary-page synthetic NZ retained descriptor 29 before and after attention
+  but returned the same wrong values. This confirms genuine NZ storage reached
+  attention; no native-storage substitute or writer-induced descriptor change
+  explains the result. Failed or incorrect cases were never timed.
 - [Initial aborted metadata run, source 264ce6e0](../../tmp/11_mineru_2_5_pro_inference/kv_cache_910B_portable_20261006T092003Z_264ce6e0/summary.json):
   exit 143; five cases failed an unsupported configuration getter before any
   attention call. Fixed in 09e2e2c2. This is not inference validation.
 
 Every linked directory preserves the exact command, exit code, run log and
 per-case JSON/logs. No validated same-shape ND/NZ pair was timed, and no NZ
-speedup has been demonstrated. Next: reserve card 7 with the requested idle
-Clef service, use card 6 only when free, run the labeled private-op CPU-length
-control, and repeat native portable timings under documented occupancy.
+speedup has been demonstrated. The 910B compatibility ladder has established
+native controls and concrete NZ failures; further support and speed conclusions
+require the supplied 310P handoff on that actual chip.
+
+Clef was stopped initially as authorized. Its requested card-7 restart was
+attempted with the existing vLLM-Ascend Clef worker and real BF16 checkpoint.
+The ordinary 0.7 memory budget rejected the 8.78 GiB available; a 0.10 budget
+passed that gate but model loading ran out of NPU memory. The checkpoint is
+17.75 GiB on disk (including skipped visual tensors); the actual allocation
+failure proves the available space is insufficient. **Clef is not serving.**
+The other service in `zjy-gpqa-back4` was not stopped. No reservation or working
+Clef server is claimed from these failed launch attempts.
+The [0.7-budget attempt](../../tmp/11_mineru_2_5_pro_inference/clef_idle_card7_verified_env_20261006T093939Z/run.log)
+and [0.10-budget allocation failure](../../tmp/11_mineru_2_5_pro_inference/clef_idle_card7_small_budget_20261006T094202Z/run.log)
+preserve their actual launch commands as adjacent `command.json` files.

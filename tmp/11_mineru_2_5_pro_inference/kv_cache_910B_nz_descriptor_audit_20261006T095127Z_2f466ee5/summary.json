@@ -1,0 +1,784 @@
+{
+  "source_commit": "80610e4438dba05011b05f89fc45d91e96992671",
+  "repo_commit": "2f466ee5e5c1db77df25f4c1bd520eaf46911ea0",
+  "script_sha256": "cbd1cd494c5be8947d6ba77a2d990bc5bc62ec98ff51e68e0cd75faa449fd24e",
+  "requested_chip": "910B",
+  "planned_case_count": 4,
+  "completed_case_count": 4,
+  "command": [
+    "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py",
+    "--chip",
+    "910B",
+    "--output",
+    "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_nz_descriptor_audit_20261006T095127Z_2f466ee5/summary.json",
+    "--operators",
+    "paged",
+    "--batches",
+    "1",
+    "--contexts",
+    "768",
+    "--patterns",
+    "ragged",
+    "--cache-length",
+    "4096",
+    "--formats",
+    "29",
+    "--paged-length-device",
+    "cpu",
+    "--block-size",
+    "128",
+    "--warmup",
+    "5",
+    "--samples",
+    "30",
+    "--calls-per-sample",
+    "10",
+    "--timeout",
+    "180"
+  ],
+  "results": [
+    {
+      "case": {
+        "operator": "paged",
+        "batch": 1,
+        "context": 768,
+        "pattern": "ragged",
+        "capacity": 4096,
+        "layout": "pages4",
+        "format": 29,
+        "fill": "packed",
+        "length_device": "cpu"
+      },
+      "status": "validation_failed",
+      "source_commit": "80610e4438dba05011b05f89fc45d91e96992671",
+      "requested_chip": "910B",
+      "device_name": "Ascend910B2",
+      "torch_version": "2.10.0+cpu",
+      "torch_npu_version": "2.10.0",
+      "visible_devices": "7",
+      "cann_home": "/usr/local/Ascend/cann-9.0.0",
+      "hostname": "liteserver-c001-4",
+      "lengths": [
+        768
+      ],
+      "block_table": [
+        [
+          0,
+          7,
+          14,
+          28,
+          23,
+          12,
+          24,
+          1,
+          19,
+          25,
+          20,
+          17,
+          29,
+          2,
+          3,
+          22,
+          31,
+          26,
+          27,
+          30,
+          13,
+          15,
+          10,
+          11,
+          16,
+          18,
+          9,
+          5,
+          8,
+          21,
+          6,
+          4
+        ]
+      ],
+      "heads": {
+        "query": 14,
+        "kv": 2,
+        "dim": 64
+      },
+      "internal_format_requested": true,
+      "fixture_sha256": {
+        "q": "894b2519e5550b9bb35a7de1e8a624402caa1570395fe4057e0ba090edc90a4a",
+        "k": "a0cbd40b66b2ca8252451ba784303db21729c8f21d0611c268f6ceeda8c1be25",
+        "v": "f732539cc4f9602d49ae24305b9c216975795f03646a2eb28b02f68aa53fb439"
+      },
+      "cache_allocation_and_fill_s": 6.1496095401234925,
+      "cache_before_attention": {
+        "key": {
+          "shape": [
+            32,
+            128,
+            2,
+            64
+          ],
+          "stride": [
+            16384,
+            128,
+            64,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        },
+        "value": {
+          "shape": [
+            32,
+            128,
+            2,
+            64
+          ],
+          "stride": [
+            16384,
+            128,
+            64,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        }
+      },
+      "packed_roundtrip_exact": true,
+      "cache_for_attention": {
+        "key": {
+          "shape": [
+            32,
+            128,
+            2,
+            64
+          ],
+          "stride": [
+            16384,
+            128,
+            64,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        },
+        "value": {
+          "shape": [
+            32,
+            128,
+            2,
+            64
+          ],
+          "stride": [
+            16384,
+            128,
+            64,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        }
+      },
+      "operation_binding": {
+        "module": "torch_npu.op_plugin.atb._atb_ops",
+        "file": "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/op_plugin/atb/_atb_ops.py",
+        "signature": "(*args, **kwargs)"
+      },
+      "context_lens_device": "cpu",
+      "contract": "910B ATB compatibility control: same private op, CPU int32 lengths",
+      "stage": "attention_validation",
+      "cache_after_validation_call": {
+        "key": {
+          "shape": [
+            32,
+            128,
+            2,
+            64
+          ],
+          "stride": [
+            16384,
+            128,
+            64,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        },
+        "value": {
+          "shape": [
+            32,
+            128,
+            2,
+            64
+          ],
+          "stride": [
+            16384,
+            128,
+            64,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        }
+      },
+      "correctness": {
+        "allclose": false,
+        "finite": true,
+        "max_abs": 13.132743835449219,
+        "relative_l2": 70.41387176513672,
+        "atol": 0.003,
+        "rtol": 0.003
+      },
+      "command": [
+        "/usr/local/python3.12.13/bin/python3",
+        "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py",
+        "--worker",
+        "{\"operator\": \"paged\", \"batch\": 1, \"context\": 768, \"pattern\": \"ragged\", \"capacity\": 4096, \"layout\": \"pages4\", \"format\": 29, \"fill\": \"packed\", \"length_device\": \"cpu\"}",
+        "--chip",
+        "910B",
+        "--output",
+        "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_nz_descriptor_audit_20261006T095127Z_2f466ee5/summary_cases/0000.json",
+        "--block-size",
+        "128",
+        "--warmup",
+        "5",
+        "--samples",
+        "30",
+        "--calls-per-sample",
+        "10",
+        "--seed",
+        "310",
+        "--atol",
+        "0.003",
+        "--rtol",
+        "0.003"
+      ],
+      "case_started_unix_s": 1791280287.877554,
+      "case_finished_unix_s": 1791280309.8272054,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_nz_descriptor_audit_20261006T095127Z_2f466ee5/summary_cases/0000.log"
+    },
+    {
+      "case": {
+        "operator": "paged",
+        "batch": 1,
+        "context": 768,
+        "pattern": "ragged",
+        "capacity": 4096,
+        "layout": "pages4",
+        "format": 29,
+        "fill": "writer",
+        "length_device": "cpu"
+      },
+      "status": "operation_error",
+      "source_commit": "80610e4438dba05011b05f89fc45d91e96992671",
+      "requested_chip": "910B",
+      "device_name": "Ascend910B2",
+      "torch_version": "2.10.0+cpu",
+      "torch_npu_version": "2.10.0",
+      "visible_devices": "7",
+      "cann_home": "/usr/local/Ascend/cann-9.0.0",
+      "hostname": "liteserver-c001-4",
+      "lengths": [
+        768
+      ],
+      "block_table": [
+        [
+          0,
+          7,
+          14,
+          28,
+          23,
+          12,
+          24,
+          1,
+          19,
+          25,
+          20,
+          17,
+          29,
+          2,
+          3,
+          22,
+          31,
+          26,
+          27,
+          30,
+          13,
+          15,
+          10,
+          11,
+          16,
+          18,
+          9,
+          5,
+          8,
+          21,
+          6,
+          4
+        ]
+      ],
+      "heads": {
+        "query": 14,
+        "kv": 2,
+        "dim": 64
+      },
+      "internal_format_requested": true,
+      "fixture_sha256": {
+        "q": "894b2519e5550b9bb35a7de1e8a624402caa1570395fe4057e0ba090edc90a4a",
+        "k": "a0cbd40b66b2ca8252451ba784303db21729c8f21d0611c268f6ceeda8c1be25",
+        "v": "f732539cc4f9602d49ae24305b9c216975795f03646a2eb28b02f68aa53fb439"
+      },
+      "cache_allocation_and_fill_s": 0.005378560163080692,
+      "cache_before_attention": {
+        "key": {
+          "shape": [
+            32,
+            128,
+            2,
+            64
+          ],
+          "stride": [
+            16384,
+            128,
+            64,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        },
+        "value": {
+          "shape": [
+            32,
+            128,
+            2,
+            64
+          ],
+          "stride": [
+            16384,
+            128,
+            64,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        }
+      },
+      "writer_binding": {
+        "module": "torch_npu.op_plugin.atb._atb_ops",
+        "file": "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/op_plugin/atb/_atb_ops.py",
+        "signature": "(*args, **kwargs)"
+      },
+      "stage": "cache_writer",
+      "error": "RuntimeError: The Inner error is reported as above. The process exits for this inner error, and the current working operator name is ReshapeCacheOperation.\nSince the operator is called asynchronously, the stacktrace may be inaccurate. If you want to get the accurate stacktrace, please set the environment variable ASCEND_LAUNCH_BLOCKING=1.\nNote: ASCEND_LAUNCH_BLOCKING=1 will force ops to run in synchronous mode, resulting in performance degradation. Please unset ASCEND_LAUNCH_BLOCKING in time after debugging.\n[ERROR] 2026-10-06-09:52:05 (PID:191221, Device:0, RankID:-1) ERR00100 PTA call acl api failed.\n",
+      "traceback": "Traceback (most recent call last):\n  File \"/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py\", line 397, in main\n    result = run_worker(args, case)\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py\", line 251, in run_worker\n    torch.npu.synchronize()\n  File \"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/utils.py\", line 72, in synchronize\n    return torch_npu._C._npu_synchronize()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: The Inner error is reported as above. The process exits for this inner error, and the current working operator name is ReshapeCacheOperation.\nSince the operator is called asynchronously, the stacktrace may be inaccurate. If you want to get the accurate stacktrace, please set the environment variable ASCEND_LAUNCH_BLOCKING=1.\nNote: ASCEND_LAUNCH_BLOCKING=1 will force ops to run in synchronous mode, resulting in performance degradation. Please unset ASCEND_LAUNCH_BLOCKING in time after debugging.\n[ERROR] 2026-10-06-09:52:05 (PID:191221, Device:0, RankID:-1) ERR00100 PTA call acl api failed.\n\n",
+      "command": [
+        "/usr/local/python3.12.13/bin/python3",
+        "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py",
+        "--worker",
+        "{\"operator\": \"paged\", \"batch\": 1, \"context\": 768, \"pattern\": \"ragged\", \"capacity\": 4096, \"layout\": \"pages4\", \"format\": 29, \"fill\": \"writer\", \"length_device\": \"cpu\"}",
+        "--chip",
+        "910B",
+        "--output",
+        "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_nz_descriptor_audit_20261006T095127Z_2f466ee5/summary_cases/0001.json",
+        "--block-size",
+        "128",
+        "--warmup",
+        "5",
+        "--samples",
+        "30",
+        "--calls-per-sample",
+        "10",
+        "--seed",
+        "310",
+        "--atol",
+        "0.003",
+        "--rtol",
+        "0.003"
+      ],
+      "case_started_unix_s": 1791280309.8292227,
+      "case_finished_unix_s": 1791280332.3866935,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_nz_descriptor_audit_20261006T095127Z_2f466ee5/summary_cases/0001.log"
+    },
+    {
+      "case": {
+        "operator": "paged",
+        "batch": 1,
+        "context": 768,
+        "pattern": "ragged",
+        "capacity": 4096,
+        "layout": "blocked4",
+        "format": 29,
+        "fill": "packed",
+        "length_device": "cpu"
+      },
+      "status": "operation_error",
+      "source_commit": "80610e4438dba05011b05f89fc45d91e96992671",
+      "requested_chip": "910B",
+      "device_name": "Ascend910B2",
+      "torch_version": "2.10.0+cpu",
+      "torch_npu_version": "2.10.0",
+      "visible_devices": "7",
+      "cann_home": "/usr/local/Ascend/cann-9.0.0",
+      "hostname": "liteserver-c001-4",
+      "lengths": [
+        768
+      ],
+      "block_table": [
+        [
+          0,
+          7,
+          14,
+          28,
+          23,
+          12,
+          24,
+          1,
+          19,
+          25,
+          20,
+          17,
+          29,
+          2,
+          3,
+          22,
+          31,
+          26,
+          27,
+          30,
+          13,
+          15,
+          10,
+          11,
+          16,
+          18,
+          9,
+          5,
+          8,
+          21,
+          6,
+          4
+        ]
+      ],
+      "heads": {
+        "query": 14,
+        "kv": 2,
+        "dim": 64
+      },
+      "internal_format_requested": true,
+      "fixture_sha256": {
+        "q": "894b2519e5550b9bb35a7de1e8a624402caa1570395fe4057e0ba090edc90a4a",
+        "k": "a0cbd40b66b2ca8252451ba784303db21729c8f21d0611c268f6ceeda8c1be25",
+        "v": "f732539cc4f9602d49ae24305b9c216975795f03646a2eb28b02f68aa53fb439"
+      },
+      "cache_allocation_and_fill_s": 6.214153990149498,
+      "cache_before_attention": {
+        "key": {
+          "shape": [
+            32,
+            8,
+            128,
+            16
+          ],
+          "stride": [
+            16384,
+            2048,
+            16,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        },
+        "value": {
+          "shape": [
+            32,
+            8,
+            128,
+            16
+          ],
+          "stride": [
+            16384,
+            2048,
+            16,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        }
+      },
+      "packed_roundtrip_exact": true,
+      "cache_for_attention": {
+        "key": {
+          "shape": [
+            32,
+            8,
+            128,
+            16
+          ],
+          "stride": [
+            16384,
+            2048,
+            16,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        },
+        "value": {
+          "shape": [
+            32,
+            8,
+            128,
+            16
+          ],
+          "stride": [
+            16384,
+            2048,
+            16,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        }
+      },
+      "operation_binding": {
+        "module": "torch_npu.op_plugin.atb._atb_ops",
+        "file": "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/op_plugin/atb/_atb_ops.py",
+        "signature": "(*args, **kwargs)"
+      },
+      "context_lens_device": "cpu",
+      "contract": "910B ATB compatibility control: same private op, CPU int32 lengths",
+      "stage": "attention_validation",
+      "error": "RuntimeError: The Inner error is reported as above. The process exits for this inner error, and the current working operator name is PagedAttentionOperation.\nSince the operator is called asynchronously, the stacktrace may be inaccurate. If you want to get the accurate stacktrace, please set the environment variable ASCEND_LAUNCH_BLOCKING=1.\nNote: ASCEND_LAUNCH_BLOCKING=1 will force ops to run in synchronous mode, resulting in performance degradation. Please unset ASCEND_LAUNCH_BLOCKING in time after debugging.\n[ERROR] 2026-10-06-09:52:28 (PID:191557, Device:0, RankID:-1) ERR00100 PTA call acl api failed.\n",
+      "traceback": "Traceback (most recent call last):\n  File \"/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py\", line 397, in main\n    result = run_worker(args, case)\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py\", line 319, in run_worker\n    torch.npu.synchronize()\n  File \"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/utils.py\", line 72, in synchronize\n    return torch_npu._C._npu_synchronize()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: The Inner error is reported as above. The process exits for this inner error, and the current working operator name is PagedAttentionOperation.\nSince the operator is called asynchronously, the stacktrace may be inaccurate. If you want to get the accurate stacktrace, please set the environment variable ASCEND_LAUNCH_BLOCKING=1.\nNote: ASCEND_LAUNCH_BLOCKING=1 will force ops to run in synchronous mode, resulting in performance degradation. Please unset ASCEND_LAUNCH_BLOCKING in time after debugging.\n[ERROR] 2026-10-06-09:52:28 (PID:191557, Device:0, RankID:-1) ERR00100 PTA call acl api failed.\n\n",
+      "command": [
+        "/usr/local/python3.12.13/bin/python3",
+        "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py",
+        "--worker",
+        "{\"operator\": \"paged\", \"batch\": 1, \"context\": 768, \"pattern\": \"ragged\", \"capacity\": 4096, \"layout\": \"blocked4\", \"format\": 29, \"fill\": \"packed\", \"length_device\": \"cpu\"}",
+        "--chip",
+        "910B",
+        "--output",
+        "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_nz_descriptor_audit_20261006T095127Z_2f466ee5/summary_cases/0002.json",
+        "--block-size",
+        "128",
+        "--warmup",
+        "5",
+        "--samples",
+        "30",
+        "--calls-per-sample",
+        "10",
+        "--seed",
+        "310",
+        "--atol",
+        "0.003",
+        "--rtol",
+        "0.003"
+      ],
+      "case_started_unix_s": 1791280332.3888602,
+      "case_finished_unix_s": 1791280354.043893,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_nz_descriptor_audit_20261006T095127Z_2f466ee5/summary_cases/0002.log"
+    },
+    {
+      "case": {
+        "operator": "paged",
+        "batch": 1,
+        "context": 768,
+        "pattern": "ragged",
+        "capacity": 4096,
+        "layout": "blocked4",
+        "format": 29,
+        "fill": "writer",
+        "length_device": "cpu"
+      },
+      "status": "operation_error",
+      "source_commit": "80610e4438dba05011b05f89fc45d91e96992671",
+      "requested_chip": "910B",
+      "device_name": "Ascend910B2",
+      "torch_version": "2.10.0+cpu",
+      "torch_npu_version": "2.10.0",
+      "visible_devices": "7",
+      "cann_home": "/usr/local/Ascend/cann-9.0.0",
+      "hostname": "liteserver-c001-4",
+      "lengths": [
+        768
+      ],
+      "block_table": [
+        [
+          0,
+          7,
+          14,
+          28,
+          23,
+          12,
+          24,
+          1,
+          19,
+          25,
+          20,
+          17,
+          29,
+          2,
+          3,
+          22,
+          31,
+          26,
+          27,
+          30,
+          13,
+          15,
+          10,
+          11,
+          16,
+          18,
+          9,
+          5,
+          8,
+          21,
+          6,
+          4
+        ]
+      ],
+      "heads": {
+        "query": 14,
+        "kv": 2,
+        "dim": 64
+      },
+      "internal_format_requested": true,
+      "fixture_sha256": {
+        "q": "894b2519e5550b9bb35a7de1e8a624402caa1570395fe4057e0ba090edc90a4a",
+        "k": "a0cbd40b66b2ca8252451ba784303db21729c8f21d0611c268f6ceeda8c1be25",
+        "v": "f732539cc4f9602d49ae24305b9c216975795f03646a2eb28b02f68aa53fb439"
+      },
+      "cache_allocation_and_fill_s": 0.006394649855792522,
+      "cache_before_attention": {
+        "key": {
+          "shape": [
+            32,
+            8,
+            128,
+            16
+          ],
+          "stride": [
+            16384,
+            2048,
+            16,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        },
+        "value": {
+          "shape": [
+            32,
+            8,
+            128,
+            16
+          ],
+          "stride": [
+            16384,
+            2048,
+            16,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        }
+      },
+      "writer_binding": {
+        "module": "torch_npu.op_plugin.atb._atb_ops",
+        "file": "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/op_plugin/atb/_atb_ops.py",
+        "signature": "(*args, **kwargs)"
+      },
+      "stage": "attention_validation",
+      "writer_fill_s": 0.19999011000618339,
+      "writer_logical_roundtrip_exact": true,
+      "cache_for_attention": {
+        "key": {
+          "shape": [
+            32,
+            8,
+            128,
+            16
+          ],
+          "stride": [
+            16384,
+            2048,
+            16,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        },
+        "value": {
+          "shape": [
+            32,
+            8,
+            128,
+            16
+          ],
+          "stride": [
+            16384,
+            2048,
+            16,
+            1
+          ],
+          "dtype": "torch.float16",
+          "format": 29,
+          "logical_bytes": 1048576
+        }
+      },
+      "operation_binding": {
+        "module": "torch._ops.atb",
+        "file": "native binding",
+        "signature": "(*args: _P.args, **kwargs: _P.kwargs) -> ~_T"
+      },
+      "context_lens_device": "cpu",
+      "contract": "910B ATB compatibility control: same private op, CPU int32 lengths",
+      "error": "RuntimeError: The Inner error is reported as above. The process exits for this inner error, and the current working operator name is PagedAttentionOperation.\nSince the operator is called asynchronously, the stacktrace may be inaccurate. If you want to get the accurate stacktrace, please set the environment variable ASCEND_LAUNCH_BLOCKING=1.\nNote: ASCEND_LAUNCH_BLOCKING=1 will force ops to run in synchronous mode, resulting in performance degradation. Please unset ASCEND_LAUNCH_BLOCKING in time after debugging.\n[ERROR] 2026-10-06-09:52:50 (PID:191967, Device:0, RankID:-1) ERR00100 PTA call acl api failed.\n",
+      "traceback": "Traceback (most recent call last):\n  File \"/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py\", line 397, in main\n    result = run_worker(args, case)\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py\", line 319, in run_worker\n    torch.npu.synchronize()\n  File \"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/utils.py\", line 72, in synchronize\n    return torch_npu._C._npu_synchronize()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: The Inner error is reported as above. The process exits for this inner error, and the current working operator name is PagedAttentionOperation.\nSince the operator is called asynchronously, the stacktrace may be inaccurate. If you want to get the accurate stacktrace, please set the environment variable ASCEND_LAUNCH_BLOCKING=1.\nNote: ASCEND_LAUNCH_BLOCKING=1 will force ops to run in synchronous mode, resulting in performance degradation. Please unset ASCEND_LAUNCH_BLOCKING in time after debugging.\n[ERROR] 2026-10-06-09:52:50 (PID:191967, Device:0, RankID:-1) ERR00100 PTA call acl api failed.\n\n",
+      "command": [
+        "/usr/local/python3.12.13/bin/python3",
+        "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py",
+        "--worker",
+        "{\"operator\": \"paged\", \"batch\": 1, \"context\": 768, \"pattern\": \"ragged\", \"capacity\": 4096, \"layout\": \"blocked4\", \"format\": 29, \"fill\": \"writer\", \"length_device\": \"cpu\"}",
+        "--chip",
+        "910B",
+        "--output",
+        "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_nz_descriptor_audit_20261006T095127Z_2f466ee5/summary_cases/0003.json",
+        "--block-size",
+        "128",
+        "--warmup",
+        "5",
+        "--samples",
+        "30",
+        "--calls-per-sample",
+        "10",
+        "--seed",
+        "310",
+        "--atol",
+        "0.003",
+        "--rtol",
+        "0.003"
+      ],
+      "case_started_unix_s": 1791280354.0463653,
+      "case_finished_unix_s": 1791280375.901661,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_nz_descriptor_audit_20261006T095127Z_2f466ee5/summary_cases/0003.log"
+    }
+  ],
+  "same_layout_format_comparisons": [],
+  "note": "No NPU result transfers across chips; this is one-layer synthetic decode, not MinerU e2e."
+}

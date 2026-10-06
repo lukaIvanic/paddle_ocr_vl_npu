@@ -1,0 +1,15 @@
+mki_log delete old file:/root/ascend/log/atb/atb_453749_20260707172417.log
+[E1006 09:46:42.494397000 OpParamMaker.cpp:454] PagedAttentionOperation setup failed!
+Exception raised from OperationSetup at ../../../../third_party/op-plugin/op_plugin/utils/custom_functions/atb/AtbCommon.cpp:203 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0xc8 (0xffffa1ad5978 in /usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib/libc10.so)
+frame #1: c10::detail::torchCheckFail(char const*, char const*, unsigned int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) + 0xc4 (0xffffa1a79adc in /usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib/libc10.so)
+frame #2: atb::OperationSetup(atb::VariantPack, atb::Operation*, atb::Context*) + 0x278 (0xffff442faaa8 in /usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib/libop_plugin_atb.so)
+frame #3: <unknown function> + 0xac104 (0xffff442fc104 in /usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib/libop_plugin_atb.so)
+frame #4: <unknown function> + 0x3a26884 (0xffff90706884 in /usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib/libtorch_npu.so)
+frame #5: <unknown function> + 0xca83a0 (0xffff8d9883a0 in /usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib/libtorch_npu.so)
+frame #6: <unknown function> + 0xca8f7c (0xffff8d988f7c in /usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib/libtorch_npu.so)
+frame #7: <unknown function> + 0xca6e98 (0xffff8d986e98 in /usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib/libtorch_npu.so)
+frame #8: <unknown function> + 0xd29cc (0xffffb02f29cc in /lib/aarch64-linux-gnu/libstdc++.so.6)
+frame #9: <unknown function> + 0x80398 (0xffffb04d0398 in /lib/aarch64-linux-gnu/libc.so.6)
+frame #10: <unknown function> + 0xe9e9c (0xffffb0539e9c in /lib/aarch64-linux-gnu/libc.so.6)
+

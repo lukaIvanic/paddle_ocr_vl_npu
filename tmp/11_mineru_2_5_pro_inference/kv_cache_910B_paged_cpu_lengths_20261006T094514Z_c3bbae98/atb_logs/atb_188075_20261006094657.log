@@ -1,0 +1,2 @@
+[2026-10-06 09:46:57.160218] [error] [188104] [reshape_and_cache_operation.cpp:304] ReshapeAndCacheOperation_0 numHeads should be same
+[2026-10-06 09:46:57.160897] [error] [188104] [operation_base.cpp:625] ReshapeAndCacheOperation_0 invalid param, setup check fail, error code: 8

@@ -1,0 +1,9 @@
+{
+  "purpose": "User-requested idle Clef-flash server holding physical NPU 7; no benchmark traffic",
+  "physical_device": 7,
+  "server_ready": false,
+  "health_result": "connection refused on 127.0.0.1:18123",
+  "exit_code": null,
+  "exit_code_note": "Detached launcher exit code was not recorded; startup failure is in run.log",
+  "artifact_kind": "startup attempt; not a functioning server or inference validation"
+}

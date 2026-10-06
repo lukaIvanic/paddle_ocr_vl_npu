@@ -1,0 +1,2 @@
+[2026-10-06 09:48:53.292027] [error] [189431] [reshape_and_cache_operation.cpp:346] ReshapeAndCacheOperation_0 The blockSize of keyCache and valueCache should be 16-aligned
+[2026-10-06 09:48:53.292696] [error] [189431] [operation_base.cpp:625] ReshapeAndCacheOperation_0 invalid param, setup check fail, error code: 8

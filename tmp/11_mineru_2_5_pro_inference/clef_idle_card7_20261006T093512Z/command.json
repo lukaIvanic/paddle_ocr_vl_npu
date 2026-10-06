@@ -1,0 +1,14 @@
+{
+  "command": [
+    "docker",
+    "exec",
+    "research_vllm_ascend_023_external_workspace",
+    "bash",
+    "--noprofile",
+    "--norc",
+    "-c",
+    "set -e\nsource /usr/local/bin/npu-setup\n[[ \"$ASCEND_RT_VISIBLE_DEVICES\" == 7 ]] || { echo \"Refusing selected card $ASCEND_RT_VISIBLE_DEVICES: Clef reserved for 7\"; exit 1; }\nprobe_health=\"$(npu-smi info -t health -i 7 -c 0)\"\nprintf '%s\\n' \"$probe_health\"\n[[ \"$probe_health\" == *': OK'* ]] || exit 1\ncd /vllm-workspace/vllm-ascend\nexport PYTHONPATH=\"$PWD${PYTHONPATH:+:$PYTHONPATH}\"\nexec /usr/local/python3.12.13/bin/python3 -m vllm.entrypoints.openai.api_server --model /workspace/models/clef-flash --served-model-name clef-flash --hf-overrides '{\"architectures\":[\"ClefForSystemOne\"]}' --dtype bfloat16 --host 127.0.0.1 --port 18123 --distributed-executor-backend uni --enforce-eager --shutdown-timeout 30 --max-model-len 3072 --max-num-seqs 1 --max-num-batched-tokens 3072 --gpu-memory-utilization 0.7 --block-size 128 --no-enable-prefix-caching --no-async-scheduling --no-enable-chunked-prefill --worker-cls vllm_ascend.clef.worker.ClefWorker --additional-config '{\"clef\":{\"enabled\":true}}'\n"
+  ],
+  "launcher_pid": 3712141,
+  "purpose": "User-requested idle Clef-flash server holding physical NPU 7; no benchmark traffic"
+}

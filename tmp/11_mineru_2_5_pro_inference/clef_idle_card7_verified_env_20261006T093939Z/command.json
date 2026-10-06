@@ -1,0 +1,15 @@
+{
+  "command": [
+    "docker",
+    "exec",
+    "research_vllm_ascend_023_external_workspace",
+    "bash",
+    "--noprofile",
+    "--norc",
+    "-c",
+    "set -e\n# User explicitly authorized card 7 after the occupancy report.\nsource /usr/local/Ascend/ascend-toolkit/set_env.sh\nsource /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=1\nexport TORCH_DEVICE_BACKEND_AUTOLOAD=0 ASCEND_RT_VISIBLE_DEVICES=7 VLLM_WORKER_MULTIPROC_METHOD=spawn\nexport LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libjemalloc.so.2\nexport OMP_NUM_THREADS=1 XDG_CACHE_HOME=/workspace/.cache TORCHINDUCTOR_CACHE_DIR=/workspace/.cache/torchinductor TRITON_CACHE_DIR=/workspace/.cache/triton\nprobe_health=\"$(npu-smi info -t health -i 7 -c 0)\"\nprintf '%s\\n' \"$probe_health\"\n[[ \"$probe_health\" == *': OK'* ]] || exit 1\ncd /vllm-workspace/vllm-ascend\nexport PYTHONPATH=\"$PWD${PYTHONPATH:+:$PYTHONPATH}\"\nexec /usr/local/python3.12.13/bin/python3 -m vllm.entrypoints.openai.api_server --model /workspace/models/clef-flash --served-model-name clef-flash --hf-overrides '{\"architectures\":[\"ClefForSystemOne\"]}' --dtype bfloat16 --host 127.0.0.1 --port 18123 --distributed-executor-backend uni --enforce-eager --shutdown-timeout 30 --max-model-len 3072 --max-num-seqs 1 --max-num-batched-tokens 3072 --gpu-memory-utilization 0.7 --block-size 128 --no-enable-prefix-caching --no-async-scheduling --no-enable-chunked-prefill --worker-cls vllm_ascend.clef.worker.ClefWorker --additional-config '{\"clef\":{\"enabled\":true}}'\n"
+  ],
+  "launcher_pid": 3723938,
+  "purpose": "Explicit user authorization to launch idle Clef-flash on physical NPU 7 after occupancy report",
+  "environment_source": "Read container 023 /usr/local/bin/npu-setup; reproduced its environment with explicit user-authorized card 7"
+}

@@ -1,0 +1,175 @@
+	Health Status                  : OK
+	Error Code                     : NA
+	Error Information              : NA
+INFO 10-06 09:39:47 [__init__.py:44] Available plugins for group vllm.platform_plugins:
+INFO 10-06 09:39:47 [__init__.py:46] - ascend -> vllm_ascend:register
+INFO 10-06 09:39:47 [__init__.py:49] All plugins in this group will be loaded. Set `VLLM_PLUGINS` to control which plugins to load.
+INFO 10-06 09:39:47 [__init__.py:238] Platform plugin ascend is activated
+INFO 10-06 09:39:49 [platform.py:62] Breakable cudagraph is force disabled on Ascend because DeepSeek V4 PIECEWISE cudagraph is not supported yet.
+2026-10-06 09:39:59,178 - 30912 - ServiceProfiler - INFO - VLLM_USE_V1 not set, auto-detected via vLLM 0.23.0+empty: default 1
+INFO 10-06 09:40:00 [__init__.py:115] Registered model loader `<class 'vllm_ascend.model_loader.netloader.netloader.ModelNetLoaderElastic'>` with load format `netloader`
+INFO 10-06 09:40:00 [__init__.py:115] Registered model loader `<class 'vllm_ascend.model_loader.rfork.rfork_loader.RForkModelLoader'>` with load format `rfork`
+(APIServer pid=30912) INFO 10-06 09:40:00 [api_utils.py:339] 
+(APIServer pid=30912) INFO 10-06 09:40:00 [api_utils.py:339]        █     █     █▄   ▄█
+(APIServer pid=30912) INFO 10-06 09:40:00 [api_utils.py:339]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.23.0
+(APIServer pid=30912) INFO 10-06 09:40:00 [api_utils.py:339]   █▄█▀ █     █     █     █  model   /workspace/models/clef-flash
+(APIServer pid=30912) INFO 10-06 09:40:00 [api_utils.py:339]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=30912) INFO 10-06 09:40:00 [api_utils.py:339] 
+(APIServer pid=30912) INFO 10-06 09:40:00 [api_utils.py:273] non-default args: {'host': '127.0.0.1', 'port': 18123, 'model': '/workspace/models/clef-flash', 'dtype': 'bfloat16', 'max_model_len': 3072, 'enforce_eager': True, 'served_model_name': ['clef-flash'], 'hf_overrides': {'architectures': ['ClefForSystemOne']}, 'distributed_executor_backend': 'uni', 'worker_cls': 'vllm_ascend.clef.worker.ClefWorker', 'block_size': 128, 'gpu_memory_utilization': 0.7, 'enable_prefix_caching': False, 'max_num_batched_tokens': 3072, 'max_num_seqs': 1, 'enable_chunked_prefill': False, 'async_scheduling': False, 'additional_config': {'clef': {'enabled': True}}, 'shutdown_timeout': 30}
+(APIServer pid=30912) INFO 10-06 09:40:00 [model.py:611] Resolved architecture: ClefForSystemOne
+(APIServer pid=30912) INFO 10-06 09:40:00 [model.py:1745] Using max model len 3072
+(APIServer pid=30912) WARNING 10-06 09:40:00 [arg_utils.py:2388] This model does not officially support disabling chunked prefill. Disabling this manually may cause the engine to crash or produce incorrect outputs.
+(APIServer pid=30912) INFO 10-06 09:40:00 [vllm.py:999] Asynchronous scheduling is disabled.
+(APIServer pid=30912) WARNING 10-06 09:40:00 [vllm.py:1055] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(APIServer pid=30912) WARNING 10-06 09:40:00 [vllm.py:1097] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(APIServer pid=30912) INFO 10-06 09:40:00 [kernel.py:270] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(APIServer pid=30912) INFO 10-06 09:40:00 [vllm.py:1273] Cudagraph is disabled under eager mode
+(APIServer pid=30912) INFO 10-06 09:40:00 [utils.py:174] No quantization signature detected from model files for "/workspace/models/clef-flash". The model will be loaded as float. To force a quantization method, pass "--quantization <method>" explicitly.
+(APIServer pid=30912) WARNING 10-06 09:40:00 [platform.py:1056] GPU-specific parameter is not supported on Ascend. parameter=disable_cascade_attn, value=True, action: resetting to False.
+(APIServer pid=30912) INFO 10-06 09:40:00 [ascend_config.py:862] Dynamic EPLB is False
+(APIServer pid=30912) INFO 10-06 09:40:00 [ascend_config.py:863] The number of redundant experts is 0
+(APIServer pid=30912) INFO 10-06 09:40:00 [platform.py:528] Compilation disabled, using eager mode by default
+(APIServer pid=30912) INFO 10-06 09:40:00 [platform.py:779] Set PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+(APIServer pid=30912) INFO 10-06 09:40:00 [compilation.py:321] Enabled custom fusions: norm_quant, act_quant
+INFO 10-06 09:40:14 [__init__.py:44] Available plugins for group vllm.platform_plugins:
+INFO 10-06 09:40:14 [__init__.py:46] - ascend -> vllm_ascend:register
+INFO 10-06 09:40:14 [__init__.py:49] All plugins in this group will be loaded. Set `VLLM_PLUGINS` to control which plugins to load.
+INFO 10-06 09:40:14 [__init__.py:238] Platform plugin ascend is activated
+INFO 10-06 09:40:16 [platform.py:62] Breakable cudagraph is force disabled on Ascend because DeepSeek V4 PIECEWISE cudagraph is not supported yet.
+(EngineCore pid=31275) 2026-10-06 09:40:26,813 - 31275 - ServiceProfiler - INFO - VLLM_USE_V1 not set, auto-detected via vLLM 0.23.0+empty: default 1
+(EngineCore pid=31275) INFO 10-06 09:40:26 [__init__.py:115] Registered model loader `<class 'vllm_ascend.model_loader.netloader.netloader.ModelNetLoaderElastic'>` with load format `netloader`
+(EngineCore pid=31275) INFO 10-06 09:40:26 [__init__.py:115] Registered model loader `<class 'vllm_ascend.model_loader.rfork.rfork_loader.RForkModelLoader'>` with load format `rfork`
+(EngineCore pid=31275) INFO 10-06 09:40:26 [core.py:113] Initializing a V1 LLM engine (v0.23.0) with config: model='/workspace/models/clef-flash', speculative_config=None, tokenizer='/workspace/models/clef-flash', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=3072, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=True, quantization=None, quantization_config=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=npu, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=clef-flash, enable_prefix_caching=False, enable_chunked_prefill=False, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'vllm_ascend.compilation.compiler_interface.AscendCompiler', 'custom_ops': ['all'], 'ir_enable_torch_wrap': False, 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [3072], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=31275) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=31275) INFO 10-06 09:40:29 [ascend_config.py:862] Dynamic EPLB is False
+(EngineCore pid=31275) INFO 10-06 09:40:29 [ascend_config.py:863] The number of redundant experts is 0
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195] EngineCore failed to start.
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195] Traceback (most recent call last):
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]   File "/vllm-workspace/vllm/vllm/v1/engine/core.py", line 1164, in run_engine_core
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]   File "/vllm-workspace/vllm/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]     return func(*args, **kwargs)
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]   File "/vllm-workspace/vllm/vllm/v1/engine/core.py", line 930, in __init__
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]     super().__init__(
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]   File "/vllm-workspace/vllm/vllm/v1/engine/core.py", line 122, in __init__
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]   File "/vllm-workspace/vllm/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]     return func(*args, **kwargs)
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]   File "/vllm-workspace/vllm/vllm/v1/executor/abstract.py", line 109, in __init__
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]     self._init_executor()
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]   File "/vllm-workspace/vllm/vllm/v1/executor/uniproc_executor.py", line 63, in _init_executor
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]     self.driver_worker.init_device()
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 325, in init_device
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]     self.worker.init_device()  # type: ignore
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]   File "/vllm-workspace/vllm-ascend/vllm_ascend/clef/worker.py", line 88, in init_device
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]     self.device = self._init_device()
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]                   ^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 472, in _init_device
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195]     raise ValueError(
+(EngineCore pid=31275) ERROR 10-06 09:40:30 [core.py:1195] ValueError: Free memory on device (8.78/60.96 GiB) on startup is less than desired GPU memory utilization (0.7, 42.67 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(EngineCore pid=31275) Process EngineCore:
+(EngineCore pid=31275) Traceback (most recent call last):
+(EngineCore pid=31275)   File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=31275)     self.run()
+(EngineCore pid=31275)   File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/process.py", line 108, in run
+(EngineCore pid=31275)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=31275)   File "/vllm-workspace/vllm-ascend/vllm_ascend/patch/platform/patch_balance_schedule.py", line 665, in run_engine_core
+(EngineCore pid=31275)     return _ORIGINAL_RUN_ENGINE_CORE(*args, dp_rank=dp_rank, local_dp_rank=local_dp_rank, **kwargs)
+(EngineCore pid=31275)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275)   File "/vllm-workspace/vllm/vllm/v1/engine/core.py", line 1199, in run_engine_core
+(EngineCore pid=31275)     raise e
+(EngineCore pid=31275)   File "/vllm-workspace/vllm/vllm/v1/engine/core.py", line 1164, in run_engine_core
+(EngineCore pid=31275)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=31275)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275)   File "/vllm-workspace/vllm/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=31275)     return func(*args, **kwargs)
+(EngineCore pid=31275)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275)   File "/vllm-workspace/vllm/vllm/v1/engine/core.py", line 930, in __init__
+(EngineCore pid=31275)     super().__init__(
+(EngineCore pid=31275)   File "/vllm-workspace/vllm/vllm/v1/engine/core.py", line 122, in __init__
+(EngineCore pid=31275)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=31275)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275)   File "/vllm-workspace/vllm/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=31275)     return func(*args, **kwargs)
+(EngineCore pid=31275)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275)   File "/vllm-workspace/vllm/vllm/v1/executor/abstract.py", line 109, in __init__
+(EngineCore pid=31275)     self._init_executor()
+(EngineCore pid=31275)   File "/vllm-workspace/vllm/vllm/v1/executor/uniproc_executor.py", line 63, in _init_executor
+(EngineCore pid=31275)     self.driver_worker.init_device()
+(EngineCore pid=31275)   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 325, in init_device
+(EngineCore pid=31275)     self.worker.init_device()  # type: ignore
+(EngineCore pid=31275)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275)   File "/vllm-workspace/vllm-ascend/vllm_ascend/clef/worker.py", line 88, in init_device
+(EngineCore pid=31275)     self.device = self._init_device()
+(EngineCore pid=31275)                   ^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=31275)   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 472, in _init_device
+(EngineCore pid=31275)     raise ValueError(
+(EngineCore pid=31275) ValueError: Free memory on device (8.78/60.96 GiB) on startup is less than desired GPU memory utilization (0.7, 42.67 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(APIServer pid=30912) Traceback (most recent call last):
+(APIServer pid=30912)   File "<frozen runpy>", line 198, in _run_module_as_main
+(APIServer pid=30912)   File "<frozen runpy>", line 88, in _run_code
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/entrypoints/openai/api_server.py", line 705, in <module>
+(APIServer pid=30912)     uvloop.run(run_server(args))
+(APIServer pid=30912)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=30912)     return __asyncio.run(
+(APIServer pid=30912)            ^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/usr/local/python3.12.13/lib/python3.12/asyncio/runners.py", line 195, in run
+(APIServer pid=30912)     return runner.run(main)
+(APIServer pid=30912)            ^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/usr/local/python3.12.13/lib/python3.12/asyncio/runners.py", line 118, in run
+(APIServer pid=30912)     return self._loop.run_until_complete(task)
+(APIServer pid=30912)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=30912)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=30912)     return await main
+(APIServer pid=30912)            ^^^^^^^^^^
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/entrypoints/openai/api_server.py", line 665, in run_server
+(APIServer pid=30912)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/entrypoints/openai/api_server.py", line 679, in run_server_worker
+(APIServer pid=30912)     async with build_async_engine_client(
+(APIServer pid=30912)                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/usr/local/python3.12.13/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=30912)     return await anext(self.gen)
+(APIServer pid=30912)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/entrypoints/openai/api_server.py", line 99, in build_async_engine_client
+(APIServer pid=30912)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=30912)                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/usr/local/python3.12.13/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=30912)     return await anext(self.gen)
+(APIServer pid=30912)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/entrypoints/openai/api_server.py", line 135, in build_async_engine_client_from_engine_args
+(APIServer pid=30912)     async_llm = AsyncLLM.from_vllm_config(
+(APIServer pid=30912)                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/v1/engine/async_llm.py", line 217, in from_vllm_config
+(APIServer pid=30912)     return cls(
+(APIServer pid=30912)            ^^^^
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/v1/engine/async_llm.py", line 146, in __init__
+(APIServer pid=30912)     self.engine_core = EngineCoreClient.make_async_mp_client(
+(APIServer pid=30912)                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/tracing/otel.py", line 178, in sync_wrapper
+(APIServer pid=30912)     return func(*args, **kwargs)
+(APIServer pid=30912)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/v1/engine/core_client.py", line 131, in make_async_mp_client
+(APIServer pid=30912)     return AsyncMPClient(*client_args)
+(APIServer pid=30912)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/tracing/otel.py", line 178, in sync_wrapper
+(APIServer pid=30912)     return func(*args, **kwargs)
+(APIServer pid=30912)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/v1/engine/core_client.py", line 948, in __init__
+(APIServer pid=30912)     super().__init__(
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/v1/engine/core_client.py", line 570, in __init__
+(APIServer pid=30912)     with launch_core_engines(
+(APIServer pid=30912)          ^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=30912)   File "/usr/local/python3.12.13/lib/python3.12/contextlib.py", line 144, in __exit__
+(APIServer pid=30912)     next(self.gen)
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/v1/engine/utils.py", line 1213, in launch_core_engines
+(APIServer pid=30912)     wait_for_engine_startup(
+(APIServer pid=30912)   File "/vllm-workspace/vllm/vllm/v1/engine/utils.py", line 1273, in wait_for_engine_startup
+(APIServer pid=30912)     raise RuntimeError(
+(APIServer pid=30912) RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {'EngineCore': 1}
+(APIServer pid=30912) [ERROR] 2026-10-06-09:40:37 (PID:30912, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception

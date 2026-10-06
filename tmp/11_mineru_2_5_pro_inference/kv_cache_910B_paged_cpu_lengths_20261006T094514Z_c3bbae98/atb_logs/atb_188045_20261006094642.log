@@ -1,0 +1,2 @@
+[2026-10-06 09:46:42.864254] [error] [188068] [paged_attention_operation.cpp:569] headSize of keyCache and query should be same
+[2026-10-06 09:46:42.864848] [error] [188068] [operation_base.cpp:625] PagedAttentionOperation_0 invalid param, setup check fail, error code: 8

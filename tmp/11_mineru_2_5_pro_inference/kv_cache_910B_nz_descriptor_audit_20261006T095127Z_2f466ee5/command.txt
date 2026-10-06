@@ -1,0 +1,5 @@
+commit=2f466ee5e5c1db77df25f4c1bd520eaf46911ea0
+hostname=liteserver-c001-4
+chip=910B
+ASCEND_RT_VISIBLE_DEVICES=7
+command=/usr/local/python3.12.13/bin/python3 /workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py --chip 910B --output /workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/kv_cache_910B_nz_descriptor_audit_20261006T095127Z_2f466ee5/summary.json --operators paged --batches 1 --contexts 768 --patterns ragged --cache-length 4096 --formats 29 --paged-length-device cpu --block-size 128 --warmup 5 --samples 30 --calls-per-sample 10 --timeout 180 
