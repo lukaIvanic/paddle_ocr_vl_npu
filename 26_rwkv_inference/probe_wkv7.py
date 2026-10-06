@@ -137,7 +137,7 @@ def main():
         if args.backend == "torchair":
             import torchair
             from torchair.configs.compiler_config import CompilerConfig
-            from torchair._ge_concrete_graph.ge_converter import register_fx_node_ge_converter
+            from torchair._ge_concrete_graph.fx2ge_converter import register_fx_node_ge_converter
             from torchair import ge
 
             @register_fx_node_ge_converter(eager_op)
