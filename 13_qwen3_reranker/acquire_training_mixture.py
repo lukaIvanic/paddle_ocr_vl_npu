@@ -1,5 +1,6 @@
 """Acquire a bounded, source/length-stratified BGE-M3 sample from a pinned mirror."""
 import argparse
+from collections import OrderedDict
 import concurrent.futures
 import gzip
 import hashlib
@@ -76,6 +77,7 @@ def main():
     last_request = [0.0]
     parquet_lock = threading.Lock()
     parquet_files = {}
+    row_groups = OrderedDict()
 
     def parquet_rows(config, offset, length):
         import fsspec
@@ -94,7 +96,15 @@ def main():
                 n = reader.metadata.row_group(rg).num_rows
                 lo, hi = max(offset, base), min(offset + length, base + n)
                 if lo < hi:
-                    rows.extend(reader.read_row_group(rg).slice(lo - base, hi - lo).to_pylist())
+                    key = (config, rg)
+                    if key not in row_groups:
+                        row_groups[key] = reader.read_row_group(rg)
+                    row_groups.move_to_end(key)
+                    rows.extend(row_groups[key].slice(lo - base, hi - lo).to_pylist())
+                    # Reuse row groups for nearby sampled windows; bound RAM
+                    # while avoiding repeated HTTP reads of the same group.
+                    while len(row_groups) > 1 and sum(x.nbytes for x in row_groups.values()) > 256 * 1024**2:
+                        row_groups.popitem(last=False)
                 base += n
                 if base >= offset + length:
                     break
