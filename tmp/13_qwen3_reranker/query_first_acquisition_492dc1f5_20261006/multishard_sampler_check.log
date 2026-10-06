@@ -1,0 +1,6 @@
+ACQUISITION_PLAN {"requests": 2, "configs": 1, "source_rows": 200, "excluded": {"hotpotqa": "HotpotQAHardNegatives, pinned MTEB English v2", "msmarco": "Parent source of CMTEB MMarcoRetrieval", "mmarco_chinese": "CMTEB MMarcoRetrieval", "dureader": "CMTEB DuRetrieval", "t2ranking": "CMTEB T2Retrieval", "cMedQAv2": "CMTEB CmedqaRetrieval/MedicalRetrieval family"}}
+PARQUET_READ {"config": "nq_len-0-500", "offset": 185, "rows": 15}
+PARQUET_READ {"config": "nq_len-0-500", "offset": 100, "rows": 9}
+FETCH_PROGRESS {"requests": 2, "of": 2, "eligible_rows": 24, "seconds": 0.00360105399886379}
+ACQUIRED {"train_queries": 8, "validation_queries": 4, "sources": 1, "absent_sources": [], "bytes": 1435, "sha256": "a006ddfa648227f2d062c95c56b01553bdc59547f10de9e04aba426814880e3f", "seconds": 0.00430143699850305}
+MULTISHARD_INDEX_AND_SPLIT_CHECK_PASSED

@@ -1,0 +1,4 @@
+875081d4c821abbdee8b15518802c59e3cbf906b
+liteserver-c001-4
+physical_npu=6
+/usr/local/python3.12.13/bin/python3 -u 13_qwen3_reranker/run_query_first_training_curve.py --model /workspace/models/Qwen3-Reranker-0.6B --dataset /tmp/qwen-bge-runtime-pilot.json.gz --fixture /workspace/results/clef_touche_full/fixture.json --output tmp/13_qwen3_reranker/query_first_pilot_875081d4_20261006 --mode pilot --validation-queries 48 --touche-queries 8 --steps 3 --wall-time-limit 600
