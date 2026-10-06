@@ -38,10 +38,12 @@ class Weights(nn.Module):
         return getattr(self, self.names[name])
 
     def linear(self, x, name):
-        return F.linear(x.to(self.dense_dtype), self.get(name)).float()
+        y = F.linear(x.reshape(-1, x.shape[-1]).to(self.dense_dtype), self.get(name)).float()
+        return y.reshape(*x.shape[:-1], y.shape[-1])
 
     def rank(self, x, name):
-        return (x.to(self.dense_dtype) @ self.get(name)).float()
+        y = (x.reshape(-1, x.shape[-1]).to(self.dense_dtype) @ self.get(name)).float()
+        return y.reshape(*x.shape[:-1], y.shape[-1])
 
     def norm(self, x, name):
         return F.layer_norm(x, (768,), self.get(name + '.weight'), self.get(name + '.bias'), 1e-5)
