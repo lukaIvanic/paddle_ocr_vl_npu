@@ -1,0 +1,131 @@
+{
+  "fp16_mean_ndcg_at_10": 60.65793567707113,
+  "fp32_mean_ndcg_at_10": 60.65979403329791,
+  "delta_points": 0.0018583562267835418,
+  "paper_mean_ndcg_at_10": 63.41,
+  "remaining_gap_points": 2.750205966702083,
+  "fp16_total_seconds": 731.3860896199994,
+  "fp32_total_seconds": 571.3908456699992,
+  "queries_with_changed_ndcg": 4,
+  "queries": 649,
+  "prepared_tokens_candidates_shards_and_checkpoints_identical_verified": true,
+  "task_results": [
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "fp16_ndcg_at_10": 36.13666219614815,
+      "fp32_ndcg_at_10": 36.13666219614815,
+      "delta_points": 0.0,
+      "queries_with_changed_ndcg": 0,
+      "max_absolute_logit_delta": 0.04435110092163086,
+      "mean_absolute_logit_delta": 0.005591700906679035
+    },
+    {
+      "task": "NanoArguAnaRetrieval",
+      "fp16_ndcg_at_10": 44.42861000086612,
+      "fp32_ndcg_at_10": 44.42861000086612,
+      "delta_points": 0.0,
+      "queries_with_changed_ndcg": 0,
+      "max_absolute_logit_delta": 0.026488304138183594,
+      "mean_absolute_logit_delta": 0.003602259943075478
+    },
+    {
+      "task": "NanoClimateFeverRetrieval",
+      "fp16_ndcg_at_10": 30.3821848484138,
+      "fp32_ndcg_at_10": 30.31712081539214,
+      "delta_points": -0.06506403302165964,
+      "queries_with_changed_ndcg": 1,
+      "max_absolute_logit_delta": 0.036864280700683594,
+      "mean_absolute_logit_delta": 0.004761165290982171
+    },
+    {
+      "task": "NanoDBPediaRetrieval",
+      "fp16_ndcg_at_10": 60.43832831101979,
+      "fp32_ndcg_at_10": 60.50984956131418,
+      "delta_points": 0.0715212502943885,
+      "queries_with_changed_ndcg": 2,
+      "max_absolute_logit_delta": 0.029012680053710938,
+      "mean_absolute_logit_delta": 0.0030079456695355474
+    },
+    {
+      "task": "NanoFEVERRetrieval",
+      "fp16_ndcg_at_10": 89.04935395748934,
+      "fp32_ndcg_at_10": 89.04935395748934,
+      "delta_points": 0.0,
+      "queries_with_changed_ndcg": 0,
+      "max_absolute_logit_delta": 0.041609764099121094,
+      "mean_absolute_logit_delta": 0.004587559578276705
+    },
+    {
+      "task": "NanoFiQA2018Retrieval",
+      "fp16_ndcg_at_10": 50.37749607824553,
+      "fp32_ndcg_at_10": 50.37749607824553,
+      "delta_points": 0.0,
+      "queries_with_changed_ndcg": 0,
+      "max_absolute_logit_delta": 0.02548074722290039,
+      "mean_absolute_logit_delta": 0.0025050733647542073
+    },
+    {
+      "task": "NanoHotpotQARetrieval",
+      "fp16_ndcg_at_10": 85.08503752596887,
+      "fp32_ndcg_at_10": 85.10273893964427,
+      "delta_points": 0.017701413675396793,
+      "queries_with_changed_ndcg": 1,
+      "max_absolute_logit_delta": 0.028684139251708984,
+      "mean_absolute_logit_delta": 0.003910622561909259
+    },
+    {
+      "task": "NanoMSMARCORetrieval",
+      "fp16_ndcg_at_10": 64.04328645572147,
+      "fp32_ndcg_at_10": 64.04328645572147,
+      "delta_points": 0.0,
+      "queries_with_changed_ndcg": 0,
+      "max_absolute_logit_delta": 0.03642463684082031,
+      "mean_absolute_logit_delta": 0.0031273074537981303
+    },
+    {
+      "task": "NanoNFCorpusRetrieval",
+      "fp16_ndcg_at_10": 35.10899747951458,
+      "fp32_ndcg_at_10": 35.10899747951458,
+      "delta_points": 0.0,
+      "queries_with_changed_ndcg": 0,
+      "max_absolute_logit_delta": 0.03650236129760742,
+      "mean_absolute_logit_delta": 0.005085903494805097
+    },
+    {
+      "task": "NanoNQRetrieval",
+      "fp16_ndcg_at_10": 62.77726921674896,
+      "fp32_ndcg_at_10": 62.77726921674896,
+      "delta_points": 0.0,
+      "queries_with_changed_ndcg": 0,
+      "max_absolute_logit_delta": 0.03127861022949219,
+      "mean_absolute_logit_delta": 0.00344147858787328
+    },
+    {
+      "task": "NanoQuoraRetrieval",
+      "fp16_ndcg_at_10": 91.23885211557688,
+      "fp32_ndcg_at_10": 91.23885211557688,
+      "delta_points": 0.0,
+      "queries_with_changed_ndcg": 0,
+      "max_absolute_logit_delta": 0.026025772094726562,
+      "mean_absolute_logit_delta": 0.0025929283168632535
+    },
+    {
+      "task": "NanoSciFactRetrieval",
+      "fp16_ndcg_at_10": 77.47246957488818,
+      "fp32_ndcg_at_10": 77.47246957488818,
+      "delta_points": 0.0,
+      "queries_with_changed_ndcg": 0,
+      "max_absolute_logit_delta": 0.041348934173583984,
+      "mean_absolute_logit_delta": 0.005301927476376295
+    },
+    {
+      "task": "NanoTouche2020Retrieval",
+      "fp16_ndcg_at_10": 62.01461604132301,
+      "fp32_ndcg_at_10": 62.01461604132301,
+      "delta_points": 0.0,
+      "queries_with_changed_ndcg": 0,
+      "max_absolute_logit_delta": 0.0176851749420166,
+      "mean_absolute_logit_delta": 0.0029080433028213187
+    }
+  ]
+}

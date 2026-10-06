@@ -1,0 +1,9 @@
+{
+  "task": "NanoSciFactRetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 77.47246957488818,
+  "embedding_ndcg_at_10": 78.97086058299526,
+  "delta_embedding_points": -1.4983910081070775,
+  "metric_crosscheck_passed": true
+}

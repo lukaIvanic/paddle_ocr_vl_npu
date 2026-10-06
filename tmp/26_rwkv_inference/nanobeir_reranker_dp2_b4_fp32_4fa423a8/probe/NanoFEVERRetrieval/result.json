@@ -1,0 +1,9 @@
+{
+  "task": "NanoFEVERRetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 89.04935395748934,
+  "embedding_ndcg_at_10": 86.41752859108409,
+  "delta_embedding_points": 2.631825366405252,
+  "metric_crosscheck_passed": true
+}

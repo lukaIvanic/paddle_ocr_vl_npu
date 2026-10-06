@@ -1,0 +1,30 @@
+{
+  "done": 64400,
+  "total": 64900,
+  "worker_elapsed_seconds": 525.0817657200005,
+  "run_elapsed_seconds": 549.6902880300004,
+  "aggregate_pairs_per_second": 122.64756501626694,
+  "estimated_remaining_seconds": 9.025961195254874,
+  "workers": [
+    {
+      "done": 32100,
+      "total": 32500,
+      "elapsed_seconds": 502.00827491999917,
+      "pairs_per_second": 63.94316907448489,
+      "forward_and_transfer_seconds": 499.60861302994635,
+      "estimated_remaining_seconds": 9.025961195254874,
+      "task": "NanoTouche2020Retrieval",
+      "queries": 321
+    },
+    {
+      "done": 32300,
+      "total": 32400,
+      "elapsed_seconds": 502.55849560000024,
+      "pairs_per_second": 64.27112521784615,
+      "forward_and_transfer_seconds": 500.12217792000774,
+      "estimated_remaining_seconds": 2.206906352007197,
+      "task": "NanoTouche2020Retrieval",
+      "queries": 323
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "task": "NanoNQRetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 62.77726921674896,
+  "embedding_ndcg_at_10": 58.96273666475257,
+  "delta_embedding_points": 3.8145325519963933,
+  "metric_crosscheck_passed": true
+}

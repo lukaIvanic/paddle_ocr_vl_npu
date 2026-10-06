@@ -1,0 +1,9 @@
+{
+  "task": "NanoMSMARCORetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 64.04328645572147,
+  "embedding_ndcg_at_10": 49.75220866455733,
+  "delta_embedding_points": 14.291077791164142,
+  "metric_crosscheck_passed": true
+}

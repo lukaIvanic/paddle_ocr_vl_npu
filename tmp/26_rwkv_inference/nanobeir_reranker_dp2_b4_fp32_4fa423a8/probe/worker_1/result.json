@@ -1,0 +1,84 @@
+{
+  "all_checks_passed": true,
+  "physical_npu": "6",
+  "dense_dtype": "fp32",
+  "state_dtype": "fp32",
+  "cases": [
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "a352061134daa2c47861b8c4216ee5482a93be1d",
+      "offset": 96,
+      "length": 391,
+      "backend": "torchair_t512",
+      "logits": [
+        -7.858722686767578,
+        -9.550543785095215,
+        -7.657703399658203,
+        -4.9252753257751465
+      ],
+      "reference_logits": [
+        -7.85872745513916,
+        -9.550537109375,
+        -7.657705307006836,
+        -4.92527437210083
+      ],
+      "batch_vs_single": {
+        "max_abs": 6.67572021484375e-06,
+        "normalized_rmse": 6.052356980035256e-07,
+        "finite": true
+      },
+      "backend_vs_exact_eager": {
+        "max_abs": 6.67572021484375e-06,
+        "normalized_rmse": 5.519201522474759e-07,
+        "finite": true
+      }
+    },
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "a352061134daa2c47861b8c4216ee5482a93be1d",
+      "offset": 0,
+      "length": 1242,
+      "backend": "raw_eager_exact_length",
+      "logits": [
+        2.04470157623291,
+        -0.8117080330848694,
+        1.2726300954818726,
+        -2.48604416847229
+      ],
+      "reference_logits": [
+        2.04470157623291,
+        -0.8117080330848694,
+        1.2726300954818726,
+        -2.48604416847229
+      ],
+      "batch_vs_single": {
+        "max_abs": 5.4836273193359375e-06,
+        "normalized_rmse": 1.9378308024897706e-06,
+        "finite": true
+      },
+      "backend_vs_exact_eager": {
+        "max_abs": 0.0,
+        "normalized_rmse": 0.0,
+        "finite": true
+      }
+    }
+  ],
+  "device": "Ascend910B2",
+  "hbm_before": {
+    "free_bytes": 65102958592,
+    "total_bytes": 65452113920
+  },
+  "device_status": "NPU 0: busy HBM=57253/65536MB AICore=27% Health=OK\nNPU 1: busy HBM=57232/65536MB AICore=0% Health=OK\nNPU 2: busy HBM=57231/65536MB AICore=19% Health=OK\nNPU 3: busy HBM=57231/65536MB AICore=1% Health=OK\nNPU 4: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 5: excluded HBM=3197/65536MB AICore=0% Health=OK\nNPU 6: free HBM=3396/65536MB AICore=0% Health=OK\nNPU 7: free HBM=3401/65536MB AICore=0% Health=OK\n",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "matmul_allow_hf32": false,
+  "setup_and_preflight_seconds": 13.547083720000956,
+  "scoring_wall_seconds": 505.4398810599996,
+  "pairs": 32400,
+  "forward_and_transfer_seconds": 502.99381868001547,
+  "total_seconds": 518.98705462,
+  "peak_hbm_bytes": {
+    "allocated": 1569179648,
+    "reserved": 2707423232
+  }
+}

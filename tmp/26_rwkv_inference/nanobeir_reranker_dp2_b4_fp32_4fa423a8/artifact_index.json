@@ -1,0 +1,838 @@
+{
+  "all_artifacts_readback_verified": true,
+  "large_prepared_arrays_and_graph_caches_remain_on_server": true,
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/command.txt",
+      "relative_path": "command.txt",
+      "bytes": 1864,
+      "sha256": "0e556fcf7cec025c06d8282d762d0dafcd7daae8b90aba727bae54a8edddec5b",
+      "collected": true,
+      "stored_path": "command.txt"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/run.log",
+      "relative_path": "run.log",
+      "bytes": 58962,
+      "sha256": "b9525d452c5707056decdb2c3d4bd475e6ddbeea96d6822cc7cbd8aae393bfa9",
+      "collected": true,
+      "stored_path": "run.log.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/exit_code.txt",
+      "relative_path": "exit_code.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "collected": true,
+      "stored_path": "exit_code.txt"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/jobs_0.json",
+      "relative_path": "probe/jobs_0.json",
+      "bytes": 1387773,
+      "sha256": "9c901dc3133c3ce106b93b4f476cea9d38add0036ed3664ac3a8864b5a98217c",
+      "collected": true,
+      "stored_path": "probe/jobs_0.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/jobs_1.json",
+      "relative_path": "probe/jobs_1.json",
+      "bytes": 1356175,
+      "sha256": "7ddc2850fbbc08836a7ab76262719d3f4f90bf5ed830f475bcfa59d62a96add8",
+      "collected": true,
+      "stored_path": "probe/jobs_1.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/result.json",
+      "relative_path": "probe/result.json",
+      "bytes": 28094,
+      "sha256": "ec182c473d8e85830b7199b7bba1db075766c0aa79679d33f5cefde55ff27d90",
+      "collected": true,
+      "stored_path": "probe/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0.log",
+      "relative_path": "probe/worker_0.log",
+      "bytes": 10256,
+      "sha256": "b5bcc6b45ad776ce7b37b7662c5eaec808f71532cb41613ef37c2c8c2c5ff860",
+      "collected": true,
+      "stored_path": "probe/worker_0.log.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0_command.json",
+      "relative_path": "probe/worker_0_command.json",
+      "bytes": 1325,
+      "sha256": "6db6f008c2ca80e587cb652ac75fc47f34ba9ff5b1e4d8d9be066f6799682f0b",
+      "collected": true,
+      "stored_path": "probe/worker_0_command.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1.log",
+      "relative_path": "probe/worker_1.log",
+      "bytes": 10293,
+      "sha256": "fe49dde26d9739d163dadc4502008c8b7abc4274313436d1ceb7a0f71c6de0b1",
+      "collected": true,
+      "stored_path": "probe/worker_1.log.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1_command.json",
+      "relative_path": "probe/worker_1_command.json",
+      "bytes": 1325,
+      "sha256": "166ab196e4b52d8f5167e46b40b0b35253ceae0ab7e5a365c386c08b533e038d",
+      "collected": true,
+      "stored_path": "probe/worker_1_command.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/progress.json",
+      "relative_path": "probe/progress.json",
+      "bytes": 896,
+      "sha256": "7d686a1a2e4debc70aa280972aef9c0f6a5e7e2bbde53e72f15b8811d41e1547",
+      "collected": true,
+      "stored_path": "probe/progress.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/scores.jsonl",
+      "relative_path": "probe/worker_1/scores.jsonl",
+      "bytes": 1395983,
+      "sha256": "9f9df487bfd0a320e07ded2ed82567a51fe2972e87911a7dfa126e646e7c4286",
+      "collected": true,
+      "stored_path": "probe/worker_1/scores.jsonl.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/batch_timings.jsonl",
+      "relative_path": "probe/worker_1/batch_timings.jsonl",
+      "bytes": 1427462,
+      "sha256": "6b002e957329cff0b154537260034872258a8bb22c8df92c431b08090f46d850",
+      "collected": true,
+      "stored_path": "probe/worker_1/batch_timings.jsonl.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/progress.json",
+      "relative_path": "probe/worker_1/progress.json",
+      "bytes": 284,
+      "sha256": "7c66965f41fc463c45db34f9d51c655cded860d7495c7041a51110c2ced923d3",
+      "collected": true,
+      "stored_path": "probe/worker_1/progress.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/result.json",
+      "relative_path": "probe/worker_1/result.json",
+      "bytes": 2568,
+      "sha256": "35a7da4d2a24e6c4d5aad1fd3a54dd6ef5ef3cf754465da09cbd8d2579b1d49a",
+      "collected": true,
+      "stored_path": "probe/worker_1/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/scores.jsonl",
+      "relative_path": "probe/worker_0/scores.jsonl",
+      "bytes": 1428077,
+      "sha256": "2ca00a50ba75a4b12e3f2c4e679bfce16f47d6392ff6406f65db0747b56e2e50",
+      "collected": true,
+      "stored_path": "probe/worker_0/scores.jsonl.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/batch_timings.jsonl",
+      "relative_path": "probe/worker_0/batch_timings.jsonl",
+      "bytes": 1435229,
+      "sha256": "8fee3391500f6f0a2d6646203a597a8668c0e640112a9e269b341a3face1f784",
+      "collected": true,
+      "stored_path": "probe/worker_0/batch_timings.jsonl.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/progress.json",
+      "relative_path": "probe/worker_0/progress.json",
+      "bytes": 284,
+      "sha256": "266dca3da6f538f80444675e411f8420d238c9cef7835a699d4761e7b06c88a1",
+      "collected": true,
+      "stored_path": "probe/worker_0/progress.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/result.json",
+      "relative_path": "probe/worker_0/result.json",
+      "bytes": 2575,
+      "sha256": "9a528c2c856fb387dd2627f5f872f38de5008a574e9ca30adff38f4bdb1fd983",
+      "collected": true,
+      "stored_path": "probe/worker_0/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoSCIDOCSRetrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoSCIDOCSRetrieval/pair_scores.json.gz",
+      "bytes": 151233,
+      "sha256": "d990b70fcbaf07f75e6f60be63c390cca592c1e4949fbd52c083a4b754db7f26",
+      "collected": true,
+      "stored_path": "probe/NanoSCIDOCSRetrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoSCIDOCSRetrieval/per_query_scores.json",
+      "relative_path": "probe/NanoSCIDOCSRetrieval/per_query_scores.json",
+      "bytes": 4411,
+      "sha256": "5f8b951a54f72e0aa8d1cf96fe30c86aa8b4223bf19e738dcf1e886c80ee121b",
+      "collected": true,
+      "stored_path": "probe/NanoSCIDOCSRetrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoSCIDOCSRetrieval/result.json",
+      "relative_path": "probe/NanoSCIDOCSRetrieval/result.json",
+      "bytes": 236,
+      "sha256": "a96cbcbe1e6d5d0f82bf9706e079e0ab721fa272c774b5627015a8aba5ed5254",
+      "collected": true,
+      "stored_path": "probe/NanoSCIDOCSRetrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoArguAnaRetrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoArguAnaRetrieval/pair_scores.json.gz",
+      "bytes": 78046,
+      "sha256": "3e5f6454bb1b1b38ae9915673e2e20171dcc506b976b954a402da7812adc7399",
+      "collected": true,
+      "stored_path": "probe/NanoArguAnaRetrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoArguAnaRetrieval/per_query_scores.json",
+      "relative_path": "probe/NanoArguAnaRetrieval/per_query_scores.json",
+      "bytes": 3748,
+      "sha256": "f944587c454c955f74d6e27a534ef4dd7571de1939f3930685d926738d3465af",
+      "collected": true,
+      "stored_path": "probe/NanoArguAnaRetrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoArguAnaRetrieval/result.json",
+      "relative_path": "probe/NanoArguAnaRetrieval/result.json",
+      "bytes": 237,
+      "sha256": "f7da7976d96868c40a5afb9238ccf36f6c0bc200bf55bdb90266c3543b3752e4",
+      "collected": true,
+      "stored_path": "probe/NanoArguAnaRetrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoClimateFeverRetrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoClimateFeverRetrieval/pair_scores.json.gz",
+      "bytes": 81006,
+      "sha256": "4ab2a2808211ff59806beb08583de0981099eb38e157515ab7213c44fbe3c225",
+      "collected": true,
+      "stored_path": "probe/NanoClimateFeverRetrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoClimateFeverRetrieval/per_query_scores.json",
+      "relative_path": "probe/NanoClimateFeverRetrieval/per_query_scores.json",
+      "bytes": 2446,
+      "sha256": "b3effecef7fb31f519a187ba1198b8eee213c8f6bfeb50916a77d353117bebac",
+      "collected": true,
+      "stored_path": "probe/NanoClimateFeverRetrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoClimateFeverRetrieval/result.json",
+      "relative_path": "probe/NanoClimateFeverRetrieval/result.json",
+      "bytes": 240,
+      "sha256": "4bfaaebc57dd986f803dcca74f6955749f6cd1009a2e3050404a2755cc05e682",
+      "collected": true,
+      "stored_path": "probe/NanoClimateFeverRetrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoDBPediaRetrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoDBPediaRetrieval/pair_scores.json.gz",
+      "bytes": 105482,
+      "sha256": "ec8686d54c348db45157adc0fd8607b3f819b6d49adf6e2c4b9428270b7a67a4",
+      "collected": true,
+      "stored_path": "probe/NanoDBPediaRetrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoDBPediaRetrieval/per_query_scores.json",
+      "relative_path": "probe/NanoDBPediaRetrieval/per_query_scores.json",
+      "bytes": 3115,
+      "sha256": "486fac7cc7d71569fc2b4d0151ab6245bcee5a38a8dd90555ab4fa948db7b47a",
+      "collected": true,
+      "stored_path": "probe/NanoDBPediaRetrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoDBPediaRetrieval/result.json",
+      "relative_path": "probe/NanoDBPediaRetrieval/result.json",
+      "bytes": 234,
+      "sha256": "18ca60694bcc80f8c58b2b7800db17d76788abb39e8a187728d465df3eb5bea6",
+      "collected": true,
+      "stored_path": "probe/NanoDBPediaRetrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoFEVERRetrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoFEVERRetrieval/pair_scores.json.gz",
+      "bytes": 98040,
+      "sha256": "12387717783748e6d85c2f9e5fe139ef7037d272b1c180b61db74f36e10aa30a",
+      "collected": true,
+      "stored_path": "probe/NanoFEVERRetrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoFEVERRetrieval/per_query_scores.json",
+      "relative_path": "probe/NanoFEVERRetrieval/per_query_scores.json",
+      "bytes": 2263,
+      "sha256": "eb97a6ec74ad3e427db9d9a071fe348e06195788317031cf5ddf9f392f82fda5",
+      "collected": true,
+      "stored_path": "probe/NanoFEVERRetrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoFEVERRetrieval/result.json",
+      "relative_path": "probe/NanoFEVERRetrieval/result.json",
+      "bytes": 232,
+      "sha256": "6b69cd6200634017ba7be6c5e299472b343a5723481ac33e5e0dd9d0f2e27ce4",
+      "collected": true,
+      "stored_path": "probe/NanoFEVERRetrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoFiQA2018Retrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoFiQA2018Retrieval/pair_scores.json.gz",
+      "bytes": 64415,
+      "sha256": "10b54de2e81e95d8d15c9f8c614eb669ef53ba9f36ee41287c4bdaa464cb14f0",
+      "collected": true,
+      "stored_path": "probe/NanoFiQA2018Retrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoFiQA2018Retrieval/per_query_scores.json",
+      "relative_path": "probe/NanoFiQA2018Retrieval/per_query_scores.json",
+      "bytes": 2433,
+      "sha256": "0b6a3a3c738dc56e5b722339d2cc5412bd61ad0932344c407e610a0c94304ff3",
+      "collected": true,
+      "stored_path": "probe/NanoFiQA2018Retrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoFiQA2018Retrieval/result.json",
+      "relative_path": "probe/NanoFiQA2018Retrieval/result.json",
+      "bytes": 236,
+      "sha256": "71cd2c60957aada3dbf73cd0f1e0be706692b3919d74fc28debb927c6f01f708",
+      "collected": true,
+      "stored_path": "probe/NanoFiQA2018Retrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoHotpotQARetrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoHotpotQARetrieval/pair_scores.json.gz",
+      "bytes": 68834,
+      "sha256": "79f9b12174bec73f3243b3dba98d1644fc65d28a39444a1857320f84e9990441",
+      "collected": true,
+      "stored_path": "probe/NanoHotpotQARetrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoHotpotQARetrieval/per_query_scores.json",
+      "relative_path": "probe/NanoHotpotQARetrieval/per_query_scores.json",
+      "bytes": 3349,
+      "sha256": "4d6aac316132955aa2b6144dbe463d62d63a6342f7f5779c3f1ac1594f83d159",
+      "collected": true,
+      "stored_path": "probe/NanoHotpotQARetrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoHotpotQARetrieval/result.json",
+      "relative_path": "probe/NanoHotpotQARetrieval/result.json",
+      "bytes": 235,
+      "sha256": "8dca5e87e95a911c98a678e8d80f62c633517b735ff22879261394930dd26242",
+      "collected": true,
+      "stored_path": "probe/NanoHotpotQARetrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoMSMARCORetrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoMSMARCORetrieval/pair_scores.json.gz",
+      "bytes": 67754,
+      "sha256": "245fc6b7339ef382e86ca5f422f0de2756a37304bdf5e491ef2c79d85c211ea1",
+      "collected": true,
+      "stored_path": "probe/NanoMSMARCORetrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoMSMARCORetrieval/per_query_scores.json",
+      "relative_path": "probe/NanoMSMARCORetrieval/per_query_scores.json",
+      "bytes": 2396,
+      "sha256": "cb21fed481090369ad30c406da7261a7cea17a0bd41fde103aa37297f7947ba6",
+      "collected": true,
+      "stored_path": "probe/NanoMSMARCORetrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoMSMARCORetrieval/result.json",
+      "relative_path": "probe/NanoMSMARCORetrieval/result.json",
+      "bytes": 235,
+      "sha256": "9330002f8b580086b2812cfecbfb0b8a2fe4dcb5253c9423cce16bd5105ba743",
+      "collected": true,
+      "stored_path": "probe/NanoMSMARCORetrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoNFCorpusRetrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoNFCorpusRetrieval/pair_scores.json.gz",
+      "bytes": 60003,
+      "sha256": "d679cfc9b8af55c47c28b5d52643f91a7dadbeaa45ba967497d4101642cb0e64",
+      "collected": true,
+      "stored_path": "probe/NanoNFCorpusRetrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoNFCorpusRetrieval/per_query_scores.json",
+      "relative_path": "probe/NanoNFCorpusRetrieval/per_query_scores.json",
+      "bytes": 2796,
+      "sha256": "dab03411e1c2cf30cfcd70606319058f986ffcb26a1b68c420e80fddbb433a87",
+      "collected": true,
+      "stored_path": "probe/NanoNFCorpusRetrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoNFCorpusRetrieval/result.json",
+      "relative_path": "probe/NanoNFCorpusRetrieval/result.json",
+      "bytes": 235,
+      "sha256": "9fbec3ce2871396a919b7f7493127133c483b552d07e104d3f0a0bf44700394b",
+      "collected": true,
+      "stored_path": "probe/NanoNFCorpusRetrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoNQRetrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoNQRetrieval/pair_scores.json.gz",
+      "bytes": 66134,
+      "sha256": "366661e716d9273d7956b7a8b4df0b6aa95e65e365f9321bbe75ac08cd6e8f3c",
+      "collected": true,
+      "stored_path": "probe/NanoNQRetrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoNQRetrieval/per_query_scores.json",
+      "relative_path": "probe/NanoNQRetrieval/per_query_scores.json",
+      "bytes": 2487,
+      "sha256": "fa53ea2791d804fd41a2f127e4fc97feed96cf8e5d9d97b5f9c2659f6c8bfec8",
+      "collected": true,
+      "stored_path": "probe/NanoNQRetrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoNQRetrieval/result.json",
+      "relative_path": "probe/NanoNQRetrieval/result.json",
+      "bytes": 230,
+      "sha256": "2eeebe03e81e3df600fcbfb604029b0e3df8beb7b143937847a5c7a4a1409ca7",
+      "collected": true,
+      "stored_path": "probe/NanoNQRetrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoQuoraRetrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoQuoraRetrieval/pair_scores.json.gz",
+      "bytes": 64475,
+      "sha256": "3e10d1b0fa0bce456246e7050e5f4bda83f8b886d6a6eb528ac1d9c885d88771",
+      "collected": true,
+      "stored_path": "probe/NanoQuoraRetrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoQuoraRetrieval/per_query_scores.json",
+      "relative_path": "probe/NanoQuoraRetrieval/per_query_scores.json",
+      "bytes": 2227,
+      "sha256": "fea27849ed408b4d452b3ea7bb9e6030650ad55effba3bfbfbead516c828bb54",
+      "collected": true,
+      "stored_path": "probe/NanoQuoraRetrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoQuoraRetrieval/result.json",
+      "relative_path": "probe/NanoQuoraRetrieval/result.json",
+      "bytes": 234,
+      "sha256": "ce976538fbebfcfd14c2906b382722f94c7d2fd0919a53fc7c94ba19fe15bf53",
+      "collected": true,
+      "stored_path": "probe/NanoQuoraRetrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoSciFactRetrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoSciFactRetrieval/pair_scores.json.gz",
+      "bytes": 65094,
+      "sha256": "3e2026a66e69243e4dcf778a73760db6534a24cf09a717cdc1953c773af6b6a5",
+      "collected": true,
+      "stored_path": "probe/NanoSciFactRetrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoSciFactRetrieval/per_query_scores.json",
+      "relative_path": "probe/NanoSciFactRetrieval/per_query_scores.json",
+      "bytes": 2088,
+      "sha256": "3bf6061b6686bc03244e2837056955325a4eb68d15594d111e56be91bd26bb2d",
+      "collected": true,
+      "stored_path": "probe/NanoSciFactRetrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoSciFactRetrieval/result.json",
+      "relative_path": "probe/NanoSciFactRetrieval/result.json",
+      "bytes": 236,
+      "sha256": "76c31c4acc87db878a8e09a7919549dc9acf88820692cb3a57b7dd0ef4c561ac",
+      "collected": true,
+      "stored_path": "probe/NanoSciFactRetrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoTouche2020Retrieval/pair_scores.json.gz",
+      "relative_path": "probe/NanoTouche2020Retrieval/pair_scores.json.gz",
+      "bytes": 94932,
+      "sha256": "8a29598aa9a4bb82a35ecff7d1704718e1c30fd5b65a5408db42c466a0281ad6",
+      "collected": true,
+      "stored_path": "probe/NanoTouche2020Retrieval/pair_scores.json.gz"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoTouche2020Retrieval/per_query_scores.json",
+      "relative_path": "probe/NanoTouche2020Retrieval/per_query_scores.json",
+      "bytes": 2577,
+      "sha256": "1abcbce565774e1e548070baf0956baad79259086367be27a1490294b5dbe9ec",
+      "collected": true,
+      "stored_path": "probe/NanoTouche2020Retrieval/per_query_scores.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/NanoTouche2020Retrieval/result.json",
+      "relative_path": "probe/NanoTouche2020Retrieval/result.json",
+      "bytes": 236,
+      "sha256": "45277bddd83487d894019150313da9adcabc6ad1d580ebf4f15eb0ffc67881c2",
+      "collected": true,
+      "stored_path": "probe/NanoTouche2020Retrieval/result.json"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoSCIDOCSRetrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoSCIDOCSRetrieval/tokens.npy",
+      "bytes": 14888256,
+      "sha256": "e7e14293e99926378ab1c5ca45886b537323d178e4b89cc85d78e4afdc1c2fa1",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoSCIDOCSRetrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoSCIDOCSRetrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "a3dc72d3d2120971b0bda6a755fccedb51da347ab2d5187ae58283b4cce1de49",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoArguAnaRetrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoArguAnaRetrieval/tokens.npy",
+      "bytes": 15932896,
+      "sha256": "13b7a0dc7b8faacca2ed510740ef09fb4da1a296334f0222a1724c5b6936b9ec",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoArguAnaRetrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoArguAnaRetrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "9fa93865d636b17594d165fbc0f253e016ec914c41a79f26b60e05d34bbc17af",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoClimateFeverRetrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoClimateFeverRetrieval/tokens.npy",
+      "bytes": 19303840,
+      "sha256": "8f2703e18c43c2aa69c01557d10262dcd44b3d71f54a9e6b055f0135ba5b6a27",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoClimateFeverRetrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoClimateFeverRetrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "d5a1132dc1d282630246a4ac26cf9978f3054517fc7f1c458fa4db94fe9b55dd",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoDBPediaRetrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoDBPediaRetrieval/tokens.npy",
+      "bytes": 3353024,
+      "sha256": "9ace53447ad1f2363b14ba44ebaf83d397c95869f0f9832997e5b3a9320522b6",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoDBPediaRetrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoDBPediaRetrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "a2502c2c60edc2001ea1a6a3daa10515d75853ff7fb8d77d5ca3a0db23b8145b",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoFEVERRetrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoFEVERRetrieval/tokens.npy",
+      "bytes": 16133600,
+      "sha256": "eebb0b2d962784e9d674d9d9dc64a88851c7f760b833ac183e32b8ea32383089",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoFEVERRetrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoFEVERRetrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "7a4de7a94a663eb191f5914875ac296a61ac155f6e7874955723aad2b529bb69",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoFiQA2018Retrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoFiQA2018Retrieval/tokens.npy",
+      "bytes": 17866496,
+      "sha256": "15877ed868f1ebcd25641c39960dc99705720af7fb248d0c6c5cd26abfc177eb",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoFiQA2018Retrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoFiQA2018Retrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "9f603eb1ae7b5e7873ed09fc6f23119be714f6ed181b18ff0d38c7c7f49856ad",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoHotpotQARetrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoHotpotQARetrieval/tokens.npy",
+      "bytes": 5587744,
+      "sha256": "953c3dcbf986e8d07cdbbfeb5ecfb569b1a87ce288f3a6a818f8a4663b2e52e8",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoHotpotQARetrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoHotpotQARetrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "ba1bf05a04b8c309195347a848b870be71867e04ac68380ca340872a23dfbfb8",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoMSMARCORetrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoMSMARCORetrieval/tokens.npy",
+      "bytes": 3506816,
+      "sha256": "d30a06185e2be88884b66bcf7d9f71f2838a8666f9b03f41df69f0e0aaa3e553",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoMSMARCORetrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoMSMARCORetrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "510e78ef81c609c3473b63e83035a24ea6d1d1e8d891f02d0882ec493343824d",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoNFCorpusRetrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoNFCorpusRetrieval/tokens.npy",
+      "bytes": 14178976,
+      "sha256": "efc8040f71c7ae3701daf41527cd21b318b5613744d90568ba0eeaefb3fd9897",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoNFCorpusRetrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoNFCorpusRetrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "9f1ac59391d0e86c058a438cdd19ee52d8ad5e954c2f2e5fceb5ac0a6e42caf4",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoNQRetrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoNQRetrieval/tokens.npy",
+      "bytes": 8219744,
+      "sha256": "7c60b58552ce794d9112af4266728fbafed6f908748e640d6dc2e02a24c1ecc7",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoNQRetrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoNQRetrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "8a09779ccdda7d0133e4423cfed447e389ce0cadbd521ca1305aa2a2b870f96d",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoQuoraRetrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoQuoraRetrieval/tokens.npy",
+      "bytes": 1271008,
+      "sha256": "bf6db8b9205a1b97b22967392bb0ed187b5995fbb1c38b2143ecbbd8ed76292f",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoQuoraRetrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoQuoraRetrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "d324b98d08cb3f743b61d7db8cd34ddb5840ae3875e9fdd73eecfe597e54671c",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoSciFactRetrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoSciFactRetrieval/tokens.npy",
+      "bytes": 15851712,
+      "sha256": "3d1ea800acf68aa6904e7e819050e2b20907feec762a4a1d72207d3b55c56e0a",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoSciFactRetrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoSciFactRetrieval/offsets.npy",
+      "bytes": 40136,
+      "sha256": "625ba808c7f8bd99542f2111134d68f5ea810e0b7be2c689723e1c0a795569fc",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoTouche2020Retrieval/tokens.npy",
+      "relative_path": "probe/prepared/NanoTouche2020Retrieval/tokens.npy",
+      "bytes": 36013920,
+      "sha256": "e8dc683ec53229772bcd5799d08d05ab3516fb91ebfd61ceab77bbacf885b317",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/prepared/NanoTouche2020Retrieval/offsets.npy",
+      "relative_path": "probe/prepared/NanoTouche2020Retrieval/offsets.npy",
+      "bytes": 39336,
+      "sha256": "d677c092af4155fe3e05798403f0ded95fa957666320951734d34a67f20930d3",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/backbone_cache/graphs/dynamo_original_graph_1_rank_0_pid_55030_ts_20261006145113867645.pbtxt",
+      "relative_path": "probe/worker_1/backbone_cache/graphs/dynamo_original_graph_1_rank_0_pid_55030_ts_20261006145113867645.pbtxt",
+      "bytes": 2686556,
+      "sha256": "8340c4310719c92f58f3cf3bb20820f44d7a0b7ea68685f5402abbc312e91809",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.lock",
+      "relative_path": "probe/worker_1/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1_20261006145115.om",
+      "relative_path": "probe/worker_1/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1_20261006145115.om",
+      "bytes": 5003276,
+      "sha256": "f79cc36282453fc1572d5d3df0680a8b64c34e2b5f4a53a065249775a7611997",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.idx",
+      "relative_path": "probe/worker_1/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.idx",
+      "bytes": 149,
+      "sha256": "e3a1055cf561f010a7005e896a156ef179a610d88e869e0480a07de767ee8d72",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/compiled_module",
+      "relative_path": "probe/worker_1/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/compiled_module",
+      "bytes": 2561974,
+      "sha256": "a5d9fe34f2e50fd9f4d157cdf1d7087d369ddc3aa3679694ec23ba565b580fbd",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/head_cache/graphs/dynamo_original_graph_2_rank_0_pid_55030_ts_20261006145145613667.pbtxt",
+      "relative_path": "probe/worker_1/head_cache/graphs/dynamo_original_graph_2_rank_0_pid_55030_ts_20261006145145613667.pbtxt",
+      "bytes": 2288230,
+      "sha256": "640c5a479497a4fc1eeaa8c2b19b28123d78e00bdc531645b02750a574d6cf39",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.lock",
+      "relative_path": "probe/worker_1/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2_20261006145147.om",
+      "relative_path": "probe/worker_1/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2_20261006145147.om",
+      "bytes": 3252711,
+      "sha256": "d88f20d1d9d1c2686a2ca88665c7cfd083bce2ae4d8815c43d45149174763c28",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.idx",
+      "relative_path": "probe/worker_1/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.idx",
+      "bytes": 149,
+      "sha256": "c912d07b4a41bdf4543f753b1721b5329444e42e24c57ca05d6ee7ac4303c2af",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_1/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/compiled_module",
+      "relative_path": "probe/worker_1/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/compiled_module",
+      "bytes": 2200580,
+      "sha256": "331d1993e68c6bf3a6fcc2a5c11d65da866f7fdac9f973a8925546aedbedd849",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/backbone_cache/graphs/dynamo_original_graph_1_rank_0_pid_55030_ts_20261006145113867645.pbtxt",
+      "relative_path": "probe/worker_0/backbone_cache/graphs/dynamo_original_graph_1_rank_0_pid_55030_ts_20261006145113867645.pbtxt",
+      "bytes": 2686556,
+      "sha256": "8340c4310719c92f58f3cf3bb20820f44d7a0b7ea68685f5402abbc312e91809",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.lock",
+      "relative_path": "probe/worker_0/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1_20261006145115.om",
+      "relative_path": "probe/worker_0/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1_20261006145115.om",
+      "bytes": 5003276,
+      "sha256": "f79cc36282453fc1572d5d3df0680a8b64c34e2b5f4a53a065249775a7611997",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.idx",
+      "relative_path": "probe/worker_0/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.idx",
+      "bytes": 149,
+      "sha256": "e3a1055cf561f010a7005e896a156ef179a610d88e869e0480a07de767ee8d72",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/compiled_module",
+      "relative_path": "probe/worker_0/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/compiled_module",
+      "bytes": 2561974,
+      "sha256": "a5d9fe34f2e50fd9f4d157cdf1d7087d369ddc3aa3679694ec23ba565b580fbd",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/head_cache/graphs/dynamo_original_graph_2_rank_0_pid_55030_ts_20261006145145613667.pbtxt",
+      "relative_path": "probe/worker_0/head_cache/graphs/dynamo_original_graph_2_rank_0_pid_55030_ts_20261006145145613667.pbtxt",
+      "bytes": 2288230,
+      "sha256": "640c5a479497a4fc1eeaa8c2b19b28123d78e00bdc531645b02750a574d6cf39",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.lock",
+      "relative_path": "probe/worker_0/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2_20261006145147.om",
+      "relative_path": "probe/worker_0/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2_20261006145147.om",
+      "bytes": 3252711,
+      "sha256": "d88f20d1d9d1c2686a2ca88665c7cfd083bce2ae4d8815c43d45149174763c28",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.idx",
+      "relative_path": "probe/worker_0/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.idx",
+      "bytes": 149,
+      "sha256": "c912d07b4a41bdf4543f753b1721b5329444e42e24c57ca05d6ee7ac4303c2af",
+      "collected": false,
+      "stored_path": null
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/probe/worker_0/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/compiled_module",
+      "relative_path": "probe/worker_0/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/compiled_module",
+      "bytes": 2200580,
+      "sha256": "331d1993e68c6bf3a6fcc2a5c11d65da866f7fdac9f973a8925546aedbedd849",
+      "collected": false,
+      "stored_path": null
+    }
+  ]
+}

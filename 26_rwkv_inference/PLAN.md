@@ -8,9 +8,9 @@ been prepared, and the eight-case CPU FP32 smoke passed on 2026-10-06. The owned
 full embedding forward passes real-case NPU parity in eager and TorchAir, and
 complete NanoBEIR evaluation passed at reference batch 4: macro NDCG@10
 58.897462 versus reported CPU 58.907231. The 90M reranker passed numerical
-smoke and completed full NanoBEIR at B4 on two data-parallel NPUs in 12m11s.
-Its macro NDCG@10 is 60.657936 versus the published 63.41; the 2.752064-point
-accuracy gap remains unresolved. Investigate it before the next model size.
+smoke and completed full NanoBEIR at B4 on two data-parallel NPUs: FP16
+60.657936 in 12m11s, FP32 60.659794 in 9m31s. FP32 does not close the gap to
+published 63.41. Investigate the remaining 2.750206-point gap before the next size.
 Reference scores below remain upstream reports.
 
 ## 0. Establish a server CPU reference
@@ -278,10 +278,23 @@ B4, eight unchanged real pairs, 20 warm synchronized forwards per window:
 T512 compiled **34.27/33.90 ms**, eager **82.06/69.82 ms**; T2048 eager
 **89.88/97.15 ms** (FP32 **8.1% slower**). Recurrence stays FP32 in both;
 matmul HF32 is disabled. Successful runs pass numerical/replay gates, with
-maximum FP32–FP16 logit delta **0.008757**. FP32/T2048 compiled failed the
-exact-equality head check; retained without relaxing it or reporting its speed.
-These are endpoint-padded forward timings, not full-suite FP32 runtime/accuracy.
-[`Timings, inputs, source hashes and retained failure`](../tmp/26_rwkv_inference/reranker_dtype_b4_summary_37c1bc55.json).
+maximum FP32–FP16 logit delta **0.008757**. The original FP32/T2048 exact
+head check failed; source `4fa423a8` quantified the difference as **4.77e−7**.
+A tight **atol 2e−5 / rtol 2e−6** head check passes, with bitwise backbone states
+and repeat calls; compiled/eager latency is **113.27/97.52 ms**. These are
+endpoint-padded forward timings, distinct from the full-suite run below.
+[`Timing evidence and original failure`](../tmp/26_rwkv_inference/reranker_dtype_b4_summary_37c1bc55.json);
+[`quantified FP32 compiled-head check`](../tmp/26_rwkv_inference/reranker_fp32_head_b4_t2048_4fa423a8/).
+
+**Full FP32 NanoBEIR**, source `4fa423a8`, same 910B2 NPUs 7/6 and B4:
+**60.659794 NDCG@10**, only **+0.001858** over FP16, still **2.750206** below
+published 63.41. Only **4/649** query NDCGs change; **10/13** task scores are
+identical. All 64,900 pairs complete in **571.39 s (9m31s)**, peak reserved
+HBM **2.53 GiB/worker**. Prepared tokens, candidates, shards, checkpoints and
+model math match FP16; short inputs use TorchAir, longer inputs exact-length
+eager, with matmul HF32 disabled. Coverage and independent metric checks pass.
+FP16 precision does not explain this reproduction gap.
+[`Full evidence and precision comparison`](../tmp/26_rwkv_inference/nanobeir_reranker_dp2_b4_fp32_4fa423a8/fp16_fp32_comparison.json).
 
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,

@@ -1,0 +1,9 @@
+{
+  "task": "NanoNFCorpusRetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 35.10899747951458,
+  "embedding_ndcg_at_10": 32.53768513118794,
+  "delta_embedding_points": 2.571312348326636,
+  "metric_crosscheck_passed": true
+}
