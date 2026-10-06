@@ -1,0 +1,1109 @@
+{
+  "raw_profiles_remain_on_server": true,
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/inputs.json",
+      "bytes": 18241,
+      "sha256": "0a5e139202b3386e0dae793cda12c2a0803cf05dbd5b060a3cca084bd17d8dbe",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/result.json",
+      "bytes": 219198,
+      "sha256": "e633c01b2ff085f270122d5c0fa7143fd568758cf05512ab8e20e8e98a350a76",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/summary.json",
+      "bytes": 145384,
+      "sha256": "eefd5460725f33f2bd06674d6d1480f4f29d17cce68eefdb3c458ba6c37bbd24",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/summary.json",
+      "bytes": 171554,
+      "sha256": "67a9ecb9c33eee6a9792779d469a839b5c62255d4f11ae4d62af8774f9c8d04f",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/profiler_info.json",
+      "bytes": 1519,
+      "sha256": "5c579b794345d31d2ad52ab17dd2128d06cea132deb965ce0d7cc237fbd0add9",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/profiler_metadata.json",
+      "bytes": 248,
+      "sha256": "b93c96387d644d6ef4f51faa287aa41791193175e8fadc27a7e07dfaca17afb0",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/FRAMEWORK/torch.op_range",
+      "bytes": 24252140,
+      "sha256": "734c7efadbcbcc12ec525ec34fb19e288b61b42b6c0cbb37c3a45eeaffb2b67a",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/FRAMEWORK/torch.op_mark",
+      "bytes": 1247816,
+      "sha256": "74a680c84164267ebe00278bd14222e209f3d9acf44b782a8040eabc17bcf439",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/FRAMEWORK/torch.python_tracer_func",
+      "bytes": 926442,
+      "sha256": "dec4472d99540cd811800059708be471ee98a1325c70b0c8a4fb10f495f1b11b",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/FRAMEWORK/torch.python_tracer_hash",
+      "bytes": 53967,
+      "sha256": "9d5ff558c92153af311490f9c5f90c662452b64956285033076ae6269ca153ac",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+      "bytes": 46422325,
+      "sha256": "dce7c7e67174d08b749991591806ff1c8558dcadf8f2f4024a6a3ec5910ace21",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+      "bytes": 227,
+      "sha256": "ca0351e588aa2a298729294b83d7238b1154b77e205d7444d8caa11b3275a940",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+      "bytes": 1442,
+      "sha256": "58334e69b07fa98b0f988c58229541c3527048df841afff8193831d7d2781fd1",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+      "bytes": 2117,
+      "sha256": "41d378f0e4d1f1831449b5b1e6d2071c487b2f6f12c4260fbd1efc9bd9e9f476",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "bytes": 1547579,
+      "sha256": "668c03f8cbf0d9d3b50ab01fabc6347f370f78cba9fd9ddf53e8c8a47cd38ebe",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/ASCEND_PROFILER_OUTPUT/ascend_pytorch_profiler.db",
+      "bytes": 11735040,
+      "sha256": "8d0a0a3edaf63914f83a554f59d5e68aaf4cf65b0a1bf6fcdbbfb3c9f81a4197",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+      "bytes": 22865665,
+      "sha256": "9f43b57cf0ba79638e6e379c1e803980dbbb377923ff7540ca2bc13ef45ba323",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/ASCEND_PROFILER_OUTPUT/analysis.db",
+      "bytes": 8192,
+      "sha256": "1a95302831af3a120037b0af3961d7fd7c949e65d43a5ccba26416f74a6bb784",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/ASCEND_PROFILER_OUTPUT/analyse.done",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/logs/profiler_20261006125114_10656_ProfilingParser.log",
+      "bytes": 6821,
+      "sha256": "9ea90c53abde839ab4147578373a05a2e5f054146a696869e8c4b47280398393",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/logs/profiler_20261006125114_10682_CANNExportParser.log",
+      "bytes": 507,
+      "sha256": "fd5226b4c69848ec5adf82bf040ed1970d28a6a1d843f7f29e8c4882e44f052a",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/logs/profiler_20261006125115_10780_TracePreParser.log",
+      "bytes": 495,
+      "sha256": "939e5505fe008b440e4b29e8f896702ac5c6f9fdf73ea4ce5732b9f32864b770",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/logs/profiler_20261006125118_10959_CANNAnalyzeParser.log",
+      "bytes": 513,
+      "sha256": "b1b21f7409dc7af07f6594133d65b4945c5ade11aa7bb4968ea78071a1a4dc3a",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/logs/profiler_20261006125118_10981_TraceViewParser.log",
+      "bytes": 501,
+      "sha256": "b1e17b79cb1a4512067544a23de55cdc83c882a042d53c767b58b5e8ce80c43d",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/logs/profiler_20261006125118_11002_OperatorViewParser.log",
+      "bytes": 519,
+      "sha256": "4c149bef1ab8d43332da101e4974dbefca147741395a0673d4bb33e1a126e367",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/logs/profiler_20261006125119_11021_TraceStepTimeParser.log",
+      "bytes": 527,
+      "sha256": "5d05249aae1bd9cc0f5793768de552d0c3975b2ceff3b53811faf1a8ddd04d1f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/logs/profiler_20261006125119_11074_MemoryViewParser.log",
+      "bytes": 507,
+      "sha256": "6e6d46023a90a4ad2928cdca2c633ace842355a76b8932e36ba2b178615c3a8f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/logs/profiler_20261006125119_11144_KernelViewParser.log",
+      "bytes": 507,
+      "sha256": "b842c494ef000d79685680ddad7a74f98e167c687178f1520ed07ee84f6535b8",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/logs/profiler_20261006125119_11163_IntegrateParser.log",
+      "bytes": 501,
+      "sha256": "b15f3d050d71540a06aaee143adb8f885566b6820a872f42114dbdb55a8b5145",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/logs/profiler_20261006125119_11200_CommunicationParser.log",
+      "bytes": 525,
+      "sha256": "2c65c43c0cc3053776c4c30f5558819bb5fa7db00573a9493d7c7a4c8083875b",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/sample.json",
+      "bytes": 3125,
+      "sha256": "d935fba410690b1ccee5c688f3d03c0ddfdd0f6af580c6a81042993c0e714184",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/sample.json.done",
+      "bytes": 14,
+      "sha256": "8b9d4c649bfd1506aae53a5eb36b76eba54dcbbb1938501b9fe1f2e36d8e246f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/start_info",
+      "bytes": 174,
+      "sha256": "8b2cc727856af855703d4103453a2ff4186857f857a60e821aabd8aec3f29029",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/start_info.done",
+      "bytes": 13,
+      "sha256": "5c258eedc2d556dad6804245c1b04a3fdf39de1434da4068dc0bf6c03739580f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/host_start.log",
+      "bytes": 76,
+      "sha256": "2a68ff47c06b9cd9f0626ed0c00e99478eae32d67ae68c3630224c4b6143190f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/host_start.log.done",
+      "bytes": 12,
+      "sha256": "566a31fad999cc42a7b4ca139580726f372decf58b74de1959941ef82a425ef7",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/info.json",
+      "bytes": 667,
+      "sha256": "6f252e619c8f39127f4af39341233f5ce1a874830ae8eaaf50a7ad07a57e7d3c",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/info.json.done",
+      "bytes": 13,
+      "sha256": "bdff68141c3b6dcb51e4d5aa69ea84c8699e4b53d8b3f66934f80e8fa7c93081",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/end_info",
+      "bytes": 174,
+      "sha256": "60968271cb03ba7db56183b478992d97da3efec9e4a69204d3bec49afb03ba67",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/end_info.done",
+      "bytes": 13,
+      "sha256": "5c258eedc2d556dad6804245c1b04a3fdf39de1434da4068dc0bf6c03739580f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/sample.json",
+      "bytes": 3134,
+      "sha256": "cb5edb91d830cb9b4b90a465ae93b7f53a8ce4b3aa41eaef5a531f419fa5b5b6",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/sample.json.done",
+      "bytes": 14,
+      "sha256": "2983b8b04c6dfddbbae090b3f033bbdf673e17a84095c9dd59be14e23652c3f2",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/start_info.7",
+      "bytes": 174,
+      "sha256": "aaa8dc09528ea788d6309d074b87b182e3746f0007c5b73014e8047b4937f496",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/start_info.7.done",
+      "bytes": 13,
+      "sha256": "5c258eedc2d556dad6804245c1b04a3fdf39de1434da4068dc0bf6c03739580f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/dev_start.log.7",
+      "bytes": 54,
+      "sha256": "c4aa0d6c75b7f0ea8440e1b974bccd5a7d0989debf2aa4cdf60d076e6bd258de",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/dev_start.log.7.done",
+      "bytes": 12,
+      "sha256": "faf0ced2413d3e4562e43a9967abdbafb7d2efb5b9e9432b1a51b590db115151",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/host_start.log.7",
+      "bytes": 79,
+      "sha256": "3864b2108295bbcc40450823dd9b890a03d74151da403bea3cf4b497b70d4b2e",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/host_start.log.7.done",
+      "bytes": 12,
+      "sha256": "88830543d98e8ba5af13d8e82fb23f7167bf3e0d074209791dd9223179bcba50",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/info.json.7",
+      "bytes": 1012,
+      "sha256": "3ac69427ddf9ea91caf9be0b28aa93bb8238b825d8ba659bc3b1df9c8ae5c4f8",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/info.json.7.done",
+      "bytes": 14,
+      "sha256": "a5e91185d398acd81f5e12bb46b5087d08f18f53426eb123a50f0fcbf1b871b8",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/end_info.7",
+      "bytes": 174,
+      "sha256": "74ab4b784426d39a6532430baacd9a0eb97f3249eebc39a0dca729393fe05cfe",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/end_info.7.done",
+      "bytes": 13,
+      "sha256": "5c258eedc2d556dad6804245c1b04a3fdf39de1434da4068dc0bf6c03739580f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.compact.task_track.slice_0",
+      "bytes": 315648,
+      "sha256": "38239f840a87ca197c2406431d02860f9169bed321269c6021d6a8f12951fa12",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.compact.task_track.slice_0",
+      "bytes": 112064,
+      "sha256": "86d3af605aa0d88f5305e577f71545183333472f59dcd557d5010c12843e2e52",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.api_event.data.slice_0",
+      "bytes": 70080,
+      "sha256": "ab489ebed3c2a472c4a8a739e9f28ed203bf1fac95136b023a1911c2d5e7885e",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.compact.node_basic_info.slice_0",
+      "bytes": 112000,
+      "sha256": "015e7d15540fd69e5327d6332ee992b680973eb3a28d31f636e9560c9fbd0ce2",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.tensor_info.slice_0",
+      "bytes": 503808,
+      "sha256": "2094cf4fafa1e16295158462409bffb7678beee0a3e9810e6fbc709b846780fa",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.graph_id_map.slice_0",
+      "bytes": 256,
+      "sha256": "7a9fe8ecda9a8211e27fd915841893663d1f222ec1d2dba4fc2ca2b17ed724a0",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.logic_stream_info.slice_0",
+      "bytes": 256,
+      "sha256": "d184a81f4309dfba85afb4e05c96d3e4c02ecc8ba1e4ad4a15ccafa2909d7f8d",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.compact.node_basic_info.slice_0",
+      "bytes": 312448,
+      "sha256": "9acbb86433dfe2ae70bf62526a2c9fcf330d02e9421437c2cc8c6388f243726b",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.api_event.data.slice_0",
+      "bytes": 798480,
+      "sha256": "199645cb342c463399b1d14a7567a22ddfdabc56b815caf55965e4cd18891345",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.additional.tensor_info.slice_0",
+      "bytes": 2097152,
+      "sha256": "5c7dc8615bdd74248e23295da150886c6bbc6c460179d2c2dcb93fe411f16839",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.additional.context_id_info.slice_0",
+      "bytes": 24576,
+      "sha256": "6342d48cfcd6195b099f44e1269c4cc7a812d10cc65192cbab4448927acc7d59",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.additional.tensor_info.slice_0.done",
+      "bytes": 41,
+      "sha256": "cae4345893af07f390a0883aa22792b42aef05b23f237e9439f16c0869da8e05",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.additional.tensor_info.slice_1",
+      "bytes": 404480,
+      "sha256": "e42eef8df236b4b5206bead4cd2ec043ddce5970a8ef09b73fa84644d9ac5c22",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.type_info_dic.slice_0",
+      "bytes": 20558,
+      "sha256": "8b09c6eb48b90d9d12c1d675fd1ccd43f44f808300e9457e8c2a4bb54d5f8cb6",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.hash_dic.slice_0",
+      "bytes": 82385,
+      "sha256": "317632c7e5ec3dbc9f8cfb2e198bb401b8d4c5491fbd871c0ea6e8240108a7a1",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.additional.context_id_info.slice_0.done",
+      "bytes": 39,
+      "sha256": "fea3589c6716ca4576cf58aaa598f94285619fcb6b320ab9bc242c5266076c07",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.additional.tensor_info.slice_1.done",
+      "bytes": 40,
+      "sha256": "3f919c70164d02581d3b482be30c658208b24680f1840ffea8958c0f83ce5bba",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.api_event.data.slice_0.done",
+      "bytes": 40,
+      "sha256": "4752945ea9b3f94030ef7c4e42fc8126853061b790c9c12e3f196d2e3b8eb0fe",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.compact.node_basic_info.slice_0.done",
+      "bytes": 40,
+      "sha256": "b4f6650689c4392e1e27479728bb166f30fb3a5f128189307b70dc7328cbc2f3",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/aging.compact.task_track.slice_0.done",
+      "bytes": 40,
+      "sha256": "6c12c2199982a7d40b8818aaf6085fde7a5fe0d0bd252d0f234314764475e34f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.graph_id_map.slice_0.done",
+      "bytes": 37,
+      "sha256": "c2caa68e5399fb6d9b297610b8f140abf1c621d3c9be53ab5dbd084a6b1aafed",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.hash_dic.slice_0.done",
+      "bytes": 39,
+      "sha256": "bba8bef267c8a47739e2df4bc638918e33f28effd376f00957505ccd1e4fc89c",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.logic_stream_info.slice_0.done",
+      "bytes": 37,
+      "sha256": "c2caa68e5399fb6d9b297610b8f140abf1c621d3c9be53ab5dbd084a6b1aafed",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.tensor_info.slice_0.done",
+      "bytes": 40,
+      "sha256": "2568c9541e676ca86078dcc7daa4b739334d88a3d5c0ab4e0eff2aed775e6375",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.type_info_dic.slice_0.done",
+      "bytes": 39,
+      "sha256": "15b7b40fde47ff576da8a2f731011e4427166eb5904075d0acd7074aa292bf51",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.api_event.data.slice_0.done",
+      "bytes": 39,
+      "sha256": "ee2642cd34a167cec57255c815766fcf0fb17ae0123691f84b63368c60fd306b",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.compact.node_basic_info.slice_0.done",
+      "bytes": 40,
+      "sha256": "4e33e432d1d21395e49c541b707386e9249c680e92ffd309ac7b152afd85697f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.compact.task_track.slice_0.done",
+      "bytes": 40,
+      "sha256": "9e000adfecbfe146cff3e8f564ad42eec2af7fa40f4871969d7dfd63476132de",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.hash_dic.slice_1",
+      "bytes": 82385,
+      "sha256": "317632c7e5ec3dbc9f8cfb2e198bb401b8d4c5491fbd871c0ea6e8240108a7a1",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.hash_dic.slice_1.done",
+      "bytes": 39,
+      "sha256": "bba8bef267c8a47739e2df4bc638918e33f28effd376f00957505ccd1e4fc89c",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/unaging.additional.logic_stream_info.slice_0.complete",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/host/data/all_file.complete",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/data/lpmInfoConv.data.7.slice_0",
+      "bytes": 888,
+      "sha256": "ace4e2b91cc54b1e6e4d4b457242b47ed3a26355be9c8faf762ce33d814178ba",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/data/stars_soc.data.7.slice_0",
+      "bytes": 643584,
+      "sha256": "8b74c53e9ee4ebd94bfec7c83914e035d42a42f98353269b4344f3e02b3319d2",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/data/ffts_profile.data.7.slice_0",
+      "bytes": 624896,
+      "sha256": "1a2cc903850f695be589c5ba605e48c8e53d2c4f1c944323a815998b3da51e53",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/data/ffts_profile.data.7.slice_0.done",
+      "bytes": 40,
+      "sha256": "d0d55c4724bdfc8310b7af54ba867058632f68a39784fc1848adc7e6d489a735",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/data/lpmInfoConv.data.7.slice_0.done",
+      "bytes": 37,
+      "sha256": "6237ac6ea158af626a16613f483d3b1ca462d4bfe8ac8dea0cc2329b6eeaac9c",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/data/stars_soc.data.7.slice_0.done",
+      "bytes": 40,
+      "sha256": "1158294622545a981b8be65b6c9416d4b126aa6ccf2cbb9f6e185e8c9545f594",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/data/lpmInfoConv.data.7.slice_0.complete",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_eager/liteserver-c001-4_7706_20261006125112420_ascend_pt/PROF_000001_20261006125112449_00007706REOAEAIC/device_7/data/all_file.complete",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/profiler_info.json",
+      "bytes": 1519,
+      "sha256": "25f0bb14c2b7272c696f4dc673328fe4597a1f69baac60537c04d4c85ebf2bba",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/profiler_metadata.json",
+      "bytes": 248,
+      "sha256": "b93c96387d644d6ef4f51faa287aa41791193175e8fadc27a7e07dfaca17afb0",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/FRAMEWORK/torch.op_range",
+      "bytes": 39227,
+      "sha256": "be5099b520f1a972a5c1b1a5ef4a08b9e448223e40de96a918c060eb84595160",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/FRAMEWORK/torch.python_tracer_func",
+      "bytes": 36828,
+      "sha256": "ed3d17482edcb32fae4791d401afbe43f1eff9b8e82b723193223c65b7d78729",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/FRAMEWORK/torch.python_tracer_hash",
+      "bytes": 11875,
+      "sha256": "a510c547d8e0f91830febba9ad992a0679b4f15c71464f8cf8d3f724d85b19f7",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+      "bytes": 3681512,
+      "sha256": "5e844acb63616fb598ec7a48b3de00079be381de22f67963502d306b9ad6be02",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+      "bytes": 37893,
+      "sha256": "726a0334e657e2ae138f26d1f04462206ffd9835ce97249ee81eb4e1f8935cd1",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+      "bytes": 223,
+      "sha256": "09d6330885d287e11910770aa038e3c3be439e49e995408de8eb228e2475c9d3",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "bytes": 1040637,
+      "sha256": "5216de8ef195158c76fef56bc3f8beca366c497dee6303694b4a30f834f8b4f4",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+      "bytes": 1470,
+      "sha256": "9ecfa638f58644ea01b2b101c84b5bc2699756e965bc54361e1b87a7dd92045c",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+      "bytes": 500,
+      "sha256": "66b06c0a2d089b7f65d6cfdad6ca9a5cbbc05b49b23847a449d25a67abd59e2f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/ASCEND_PROFILER_OUTPUT/ascend_pytorch_profiler.db",
+      "bytes": 2248704,
+      "sha256": "6d5c96b5f5c47eb9b6513b8db0ff085c6cd900c85fff5c02191513f3fc31b4a4",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/ASCEND_PROFILER_OUTPUT/analysis.db",
+      "bytes": 8192,
+      "sha256": "058f8ecafcb2a07199217b170b2923ec4aa81d83fd029042c662bd9c63d4e320",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/ASCEND_PROFILER_OUTPUT/analyse.done",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/logs/profiler_20261006125125_11324_ProfilingParser.log",
+      "bytes": 6824,
+      "sha256": "986a98a1a3f6d627c59292d1df35c26e7072c3be809e9ca8759e93f24132e6df",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/logs/profiler_20261006125125_11350_CANNExportParser.log",
+      "bytes": 510,
+      "sha256": "bd608f2d7a714fea4349106c79bcbd6a27532fea3fb5fc91a0cfd597824955ed",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/logs/profiler_20261006125125_11373_TracePreParser.log",
+      "bytes": 498,
+      "sha256": "63e20b69c11b43891d2ecd75934babfe8a27b88bfd2e955f8dadaae07c168c61",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/logs/profiler_20261006125128_11614_CANNAnalyzeParser.log",
+      "bytes": 516,
+      "sha256": "780c2b6471e08fe99eebf05aedd99bdce542430aea967e8a44c36e1525459eae",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/logs/profiler_20261006125128_11643_TraceViewParser.log",
+      "bytes": 504,
+      "sha256": "bbaec75d0a6ee899f4f7d98db95b45b30e58784d49f18ce404daacfa26f083fd",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/logs/profiler_20261006125129_11680_OperatorViewParser.log",
+      "bytes": 522,
+      "sha256": "efc09f7a3512ca397a67ae85445804ba9932375639e8bfda59e2aa62af5e77bd",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/logs/profiler_20261006125129_11699_TraceStepTimeParser.log",
+      "bytes": 653,
+      "sha256": "0499560499463bae303a19bb93899eee5d1280a5f123e82664eceef842adb7a1",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/logs/profiler_20261006125129_11718_MemoryViewParser.log",
+      "bytes": 510,
+      "sha256": "7cc4ad8136609be460a4ce09df59bbaad1e99b44eeda2da1f58b29c3ab4cf686",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/logs/profiler_20261006125129_11771_KernelViewParser.log",
+      "bytes": 763,
+      "sha256": "818df9519e5248d2cf121a91f2c1ebe753c142f80f7bbf845bc9d1a8980825a1",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/logs/profiler_20261006125129_11808_IntegrateParser.log",
+      "bytes": 504,
+      "sha256": "4ca3d9836c2d7558c042c74a2a020966465b908daae655ba519e559087cd3869",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/logs/profiler_20261006125129_11896_CommunicationParser.log",
+      "bytes": 651,
+      "sha256": "668171e1670753253a277909bd1212aff3281e7d398c71682e36919736b97100",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/sample.json",
+      "bytes": 3128,
+      "sha256": "23869a126ae72d3f1adf0ec0c05945869b2a140baca9c1a3590f7b757ad34427",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/sample.json.done",
+      "bytes": 14,
+      "sha256": "e759bcd03dbe20c0264f0839520519529fbd6ccd63c91c7b74b73f9ebd6712b7",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/start_info",
+      "bytes": 174,
+      "sha256": "8759dcb693d48bdbfced77d2ecd3e7c843edce9c69d24d033e5c40656353972c",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/start_info.done",
+      "bytes": 13,
+      "sha256": "5c258eedc2d556dad6804245c1b04a3fdf39de1434da4068dc0bf6c03739580f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/host_start.log",
+      "bytes": 76,
+      "sha256": "c080e0657e9ed34194fed374124af6ca14acd057a123426d2fe8dd8c27a337df",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/host_start.log.done",
+      "bytes": 12,
+      "sha256": "566a31fad999cc42a7b4ca139580726f372decf58b74de1959941ef82a425ef7",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/info.json",
+      "bytes": 667,
+      "sha256": "23dab37a5c97b7975efc049f86d14ba0840c5733272d1197b6da16babc5a1349",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/info.json.done",
+      "bytes": 13,
+      "sha256": "bdff68141c3b6dcb51e4d5aa69ea84c8699e4b53d8b3f66934f80e8fa7c93081",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/end_info",
+      "bytes": 174,
+      "sha256": "9bbba477490f881aa8cb7fc664aa3ba938fae10be2c91a80fcc4d33a885eee19",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/end_info.done",
+      "bytes": 13,
+      "sha256": "5c258eedc2d556dad6804245c1b04a3fdf39de1434da4068dc0bf6c03739580f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/sample.json",
+      "bytes": 3137,
+      "sha256": "b8e761a735969a8937eef6a60db898485e6ad7143c95c68fe2824bb918fbd823",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/sample.json.done",
+      "bytes": 14,
+      "sha256": "293302fbf17d4e2a75c4b4da82c8b9c3cc3ecafa0160d181ae924410aa1133aa",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/start_info.7",
+      "bytes": 174,
+      "sha256": "a7e324c56ec830b9e1cb46f61267b404325a0e03293707a2d62d906ce11989b1",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/start_info.7.done",
+      "bytes": 13,
+      "sha256": "5c258eedc2d556dad6804245c1b04a3fdf39de1434da4068dc0bf6c03739580f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/dev_start.log.7",
+      "bytes": 54,
+      "sha256": "a198a4d3d1d47fa0d0a81838ca60d211083c89763e0c01c34ff01b3847c57fbb",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/dev_start.log.7.done",
+      "bytes": 12,
+      "sha256": "faf0ced2413d3e4562e43a9967abdbafb7d2efb5b9e9432b1a51b590db115151",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/host_start.log.7",
+      "bytes": 79,
+      "sha256": "05092d9d5480b3fbee1f91a4a8b082e0f226de7e9ea31c670f47a5ed33733485",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/host_start.log.7.done",
+      "bytes": 12,
+      "sha256": "88830543d98e8ba5af13d8e82fb23f7167bf3e0d074209791dd9223179bcba50",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/info.json.7",
+      "bytes": 1012,
+      "sha256": "c6d25f9f3a10eec1772f00ebb8c071e6c91c48d4d01fb7cc4df8421ab6659b8b",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/info.json.7.done",
+      "bytes": 14,
+      "sha256": "a5e91185d398acd81f5e12bb46b5087d08f18f53426eb123a50f0fcbf1b871b8",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/end_info.7",
+      "bytes": 174,
+      "sha256": "24eb18da687be9f5bbec879cb40a949aab8f777d5703dd7c91fd27ebf7411660",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/end_info.7.done",
+      "bytes": 13,
+      "sha256": "5c258eedc2d556dad6804245c1b04a3fdf39de1434da4068dc0bf6c03739580f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/aging.compact.task_track.slice_0",
+      "bytes": 640,
+      "sha256": "8c48d5391a6c3973548c103f018539666e9daf5a0ee2281c792344ae356b33b3",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.compact.task_track.slice_0",
+      "bytes": 112064,
+      "sha256": "86d3af605aa0d88f5305e577f71545183333472f59dcd557d5010c12843e2e52",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.api_event.data.slice_0",
+      "bytes": 70080,
+      "sha256": "ab489ebed3c2a472c4a8a739e9f28ed203bf1fac95136b023a1911c2d5e7885e",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.compact.node_basic_info.slice_0",
+      "bytes": 112000,
+      "sha256": "015e7d15540fd69e5327d6332ee992b680973eb3a28d31f636e9560c9fbd0ce2",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.tensor_info.slice_0",
+      "bytes": 503808,
+      "sha256": "2094cf4fafa1e16295158462409bffb7678beee0a3e9810e6fbc709b846780fa",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.graph_id_map.slice_0",
+      "bytes": 256,
+      "sha256": "7a9fe8ecda9a8211e27fd915841893663d1f222ec1d2dba4fc2ca2b17ed724a0",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.logic_stream_info.slice_0",
+      "bytes": 256,
+      "sha256": "d184a81f4309dfba85afb4e05c96d3e4c02ecc8ba1e4ad4a15ccafa2909d7f8d",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/aging.api_event.data.slice_0",
+      "bytes": 560,
+      "sha256": "ae1b83b9dc6191edcf3816b9a40e83f2eb9410a854ac4d2bff006c3088ddb8f3",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_0",
+      "bytes": 17,
+      "sha256": "b53f88b45d2da119c206b5b414a4df162a077258145b3efe2eed5a4181fbf5f8",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_0.done",
+      "bytes": 36,
+      "sha256": "b576a45721e4fc1a274b8a5c14d623767fe36253ae6d2d9e3d62dabaa735c162",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_1",
+      "bytes": 6408,
+      "sha256": "919d6f369776adfe0d61072a5b6ae3a19993bcc342a4cee6023160af3cd4f2fb",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_1.done",
+      "bytes": 38,
+      "sha256": "c3c2a7e1647c95c86aff757e1610dc6e70d447398739c2bd5937f9ada29190cb",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_2",
+      "bytes": 75,
+      "sha256": "cf28b60e09a16aab574b987b7c42ddc8876bbda7a38c8de16dc095b39cadd473",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_2.done",
+      "bytes": 36,
+      "sha256": "f1720b567bf08a9e8044c811e9648bcc03f6ed2962d7ba84a61c90b2b7ffe150",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_3",
+      "bytes": 1047,
+      "sha256": "42572e436499d5f5cae6a837b805478b558a5ab35a2c2b283e595b57ca65f6a6",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_3.done",
+      "bytes": 38,
+      "sha256": "8c81aba3673fd9bc659cb11be66db766af38515a0f15d47a8eadbdcca5144384",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/aging.api_event.data.slice_0.done",
+      "bytes": 37,
+      "sha256": "aa90f692f4ab34ecf84cc470b07f080b286416402d1beb3b0ec3f6abaab021ba",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/aging.compact.task_track.slice_0.done",
+      "bytes": 37,
+      "sha256": "4c140e8a24c15559c03659c326dbd40d1d977a18c62ec6ab716746b095f775bf",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.graph_id_map.slice_0.done",
+      "bytes": 37,
+      "sha256": "c2caa68e5399fb6d9b297610b8f140abf1c621d3c9be53ab5dbd084a6b1aafed",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.logic_stream_info.slice_0.done",
+      "bytes": 37,
+      "sha256": "c2caa68e5399fb6d9b297610b8f140abf1c621d3c9be53ab5dbd084a6b1aafed",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.tensor_info.slice_0.done",
+      "bytes": 40,
+      "sha256": "2568c9541e676ca86078dcc7daa4b739334d88a3d5c0ab4e0eff2aed775e6375",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.api_event.data.slice_0.done",
+      "bytes": 39,
+      "sha256": "ee2642cd34a167cec57255c815766fcf0fb17ae0123691f84b63368c60fd306b",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.compact.node_basic_info.slice_0.done",
+      "bytes": 40,
+      "sha256": "4e33e432d1d21395e49c541b707386e9249c680e92ffd309ac7b152afd85697f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.compact.task_track.slice_0.done",
+      "bytes": 40,
+      "sha256": "9e000adfecbfe146cff3e8f564ad42eec2af7fa40f4871969d7dfd63476132de",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_4",
+      "bytes": 143,
+      "sha256": "e629d0412f69b233887d5173b7f2e866de10cb81fba71db03ea790873f1d17ca",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_4.done",
+      "bytes": 37,
+      "sha256": "77abaea8926dd68dd43a41ac5b61355a7d6cce9fcc88d4ba56c8b93069680142",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_5",
+      "bytes": 12868,
+      "sha256": "2c804ef86084a7cc8f2519875405ce1b43f75ca53a7243299ca1cbd918526985",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.type_info_dic.slice_5.done",
+      "bytes": 39,
+      "sha256": "be1b4cfd4d90ed4da892cae0a09007e2b4e2c95ae7a780e17ff0731f75618e50",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.hash_dic.slice_0",
+      "bytes": 82385,
+      "sha256": "317632c7e5ec3dbc9f8cfb2e198bb401b8d4c5491fbd871c0ea6e8240108a7a1",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.hash_dic.slice_0.done",
+      "bytes": 39,
+      "sha256": "bba8bef267c8a47739e2df4bc638918e33f28effd376f00957505ccd1e4fc89c",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.hash_dic.slice_1",
+      "bytes": 82385,
+      "sha256": "317632c7e5ec3dbc9f8cfb2e198bb401b8d4c5491fbd871c0ea6e8240108a7a1",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.hash_dic.slice_1.done",
+      "bytes": 39,
+      "sha256": "bba8bef267c8a47739e2df4bc638918e33f28effd376f00957505ccd1e4fc89c",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/unaging.additional.logic_stream_info.slice_0.complete",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/host/data/all_file.complete",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/data/lpmInfoConv.data.7.slice_0",
+      "bytes": 888,
+      "sha256": "c4141784686cf2602f04376114d6816f8449bfbf965e0a9a5fc48d9b58828cd5",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/data/ts_track.data.7.slice_0",
+      "bytes": 160,
+      "sha256": "52836832a47c334261e3dc266883d73ace5d0a9eda5227043e4eea6a52af447e",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/data/stars_soc.data.7.slice_0",
+      "bytes": 449536,
+      "sha256": "64d4cd508b314ddabe5aab693b08ba442cf45becf81d26af276edf3cc36e1013",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/data/ffts_profile.data.7.slice_0",
+      "bytes": 448000,
+      "sha256": "0aaa7050a7bde7788da452fc72b6c91a5abb377d4d1dd21595dc84641ead1ad5",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/data/ffts_profile.data.7.slice_0.done",
+      "bytes": 40,
+      "sha256": "59602237a5798efff296a3648e743259af17cfee8311cad18057f8079ac0f62f",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/data/lpmInfoConv.data.7.slice_0.done",
+      "bytes": 37,
+      "sha256": "6237ac6ea158af626a16613f483d3b1ca462d4bfe8ac8dea0cc2329b6eeaac9c",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/data/stars_soc.data.7.slice_0.done",
+      "bytes": 40,
+      "sha256": "20c11ac806aecb1ab39eee554bbc3561c7b20882ab35ef65c3173476f146526d",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/data/ts_track.data.7.slice_0.done",
+      "bytes": 37,
+      "sha256": "fcc2709296d5f87b4a692829b2d4b8fba1a45396653b457621cdc31137fb6128",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/data/lpmInfoConv.data.7.slice_0.complete",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/data/ts_track.data.7.slice_0.complete",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_7706_20261006125125202_ascend_pt/PROF_000002_20261006125125231_00007706MNJLKCMF/device_7/data/all_file.complete",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    }
+  ]
+}

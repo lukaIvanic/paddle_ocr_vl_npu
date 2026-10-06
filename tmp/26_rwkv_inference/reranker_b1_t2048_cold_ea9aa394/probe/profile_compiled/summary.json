@@ -1,0 +1,4334 @@
+{
+  "parser_sha256": "9ae82d05402c94375da2384cb36c6c38cb1add9cfc1618130f16d37f6214e965",
+  "profile_iterations": 2,
+  "runs": [
+    {
+      "run_root": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt",
+      "ascend_output_dir": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT",
+      "files": {
+        "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/profiler_metadata.json"
+      },
+      "operator_details": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "row_count": 23,
+        "total_device_us": 137131.08000000002,
+        "total_host_us": 18816.55,
+        "top_by_device_total_us": [
+          {
+            "name": "rwkv.compiled_score",
+            "count": 1,
+            "device_total_us": 45710.36,
+            "host_total_us": 4817.37,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(57): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "cache_compiler inference",
+            "count": 2,
+            "device_total_us": 45710.36,
+            "host_total_us": 4585.9800000000005,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(598): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "TorchDynamo Cache Lookup",
+            "count": 2,
+            "device_total_us": 45710.36,
+            "host_total_us": 508.25,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "Torch-Compiled Region: 0/0",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 3345.52,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "TorchNpuGraphBase::Run",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 2476.9700000000003,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "AssembleInputs",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 457.55,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "AssembleOutputs",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 266.03,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "ExecuteGraph",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 402.33000000000004,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "RefreshAtTensorFromGeTensor",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 985.6200000000001,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "aten::empty",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 492.04999999999995,
+            "input_shape_samples": [
+              ";\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "empty_tensor",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 244.38,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "aten::set_",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 234.5,
+            "input_shape_samples": [
+              "0;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          }
+        ],
+        "top_by_host_total_us": [
+          {
+            "name": "rwkv.compiled_score",
+            "count": 1,
+            "device_total_us": 45710.36,
+            "host_total_us": 4817.37,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(57): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "cache_compiler inference",
+            "count": 2,
+            "device_total_us": 45710.36,
+            "host_total_us": 4585.9800000000005,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(598): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "Torch-Compiled Region: 0/0",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 3345.52,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "TorchNpuGraphBase::Run",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 2476.9700000000003,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "RefreshAtTensorFromGeTensor",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 985.6200000000001,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "TorchDynamo Cache Lookup",
+            "count": 2,
+            "device_total_us": 45710.36,
+            "host_total_us": 508.25,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "aten::empty",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 492.04999999999995,
+            "input_shape_samples": [
+              ";\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "AssembleInputs",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 457.55,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "ExecuteGraph",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 402.33000000000004,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "AssembleOutputs",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 266.03,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "empty_tensor",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 244.38,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          },
+          {
+            "name": "aten::set_",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 234.5,
+            "input_shape_samples": [
+              "0;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(876): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(108): g;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(729): inner_fn;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(531): wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py(134): call_func_at_runtime_with_args;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py(357): runtime_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py(1148): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(1181): _fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(29): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py(953): compile_wrapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(524): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): <lambda>;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(188): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(203): <module>"
+            ]
+          }
+        ]
+      },
+      "kernel_details": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "row_count": 3500,
+        "total_duration_us": 91425.41999999995,
+        "total_wait_us": 225.92000000000144,
+        "total_aicore_time_us": 4451.829999999998,
+        "weighted_cube_utilization_pct": 82.22316628488119,
+        "top_kernel_names": [
+          {
+            "name": "RwkvReferenceWkv7_5",
+            "count": 2,
+            "duration_us": 4699.280000000001,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7_5"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "RwkvReferenceWkv7_11",
+            "count": 2,
+            "duration_us": 4699.280000000001,
+            "wait_us": 0.02,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7_11"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "RwkvReferenceWkv7",
+            "count": 2,
+            "duration_us": 4698.04,
+            "wait_us": 0.21,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "RwkvReferenceWkv7_6",
+            "count": 2,
+            "duration_us": 4697.52,
+            "wait_us": 0.01,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7_6"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "RwkvReferenceWkv7_10",
+            "count": 2,
+            "duration_us": 4695.62,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7_10"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "RwkvReferenceWkv7_4",
+            "count": 2,
+            "duration_us": 4694.58,
+            "wait_us": 0.02,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7_4"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "RwkvReferenceWkv7_9",
+            "count": 2,
+            "duration_us": 4694.3,
+            "wait_us": 0.08,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7_9"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "RwkvReferenceWkv7_1",
+            "count": 2,
+            "duration_us": 4694.139999999999,
+            "wait_us": 0.08,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7_1"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "RwkvReferenceWkv7_7",
+            "count": 2,
+            "duration_us": 4694.1,
+            "wait_us": 0.12,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7_7"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "RwkvReferenceWkv7_3",
+            "count": 2,
+            "duration_us": 4693.96,
+            "wait_us": 0.09,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7_3"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "RwkvReferenceWkv7_2",
+            "count": 2,
+            "duration_us": 4693.9,
+            "wait_us": 0.12,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7_2"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "RwkvReferenceWkv7_8",
+            "count": 2,
+            "duration_us": 4693.88,
+            "wait_us": 0.02,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7_8"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "GroupNorm_4",
+            "count": 2,
+            "duration_us": 858.62,
+            "wait_us": 0.04,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GroupNorm_4"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;768;768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768;2048,12;2048,12\""
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "output_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "GroupNorm_5",
+            "count": 2,
+            "duration_us": 847.62,
+            "wait_us": 0.18,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GroupNorm_5"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;768;768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768;2048,12;2048,12\""
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "output_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "GroupNorm_3",
+            "count": 2,
+            "duration_us": 846.88,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GroupNorm_3"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;768;768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768;2048,12;2048,12\""
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "output_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          }
+        ],
+        "top_kernel_types": [
+          {
+            "name": "RwkvReferenceWkv7",
+            "count": 48,
+            "duration_us": 56472.71999999998,
+            "wait_us": 1.8700000000000003,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7",
+              "RwkvReferenceWkv7_1",
+              "RwkvReferenceWkv7_2"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\"",
+              "\"1,12,1,64;1,12,1,64;1,12,1,64;1,12,1,64;1,12,1,64;1,12,1,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\"",
+              "\"1,12,1,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "GroupNormSilu",
+            "count": 46,
+            "duration_us": 9444.579999999996,
+            "wait_us": 2.7699999999999996,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GroupNorm",
+              "GroupNorm_1",
+              "GroupNorm_2"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;768;768\"",
+              "\"1,768;768;768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768;2048,12;2048,12\"",
+              "\"1,768;1,12;1,12\""
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "output_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "Cast",
+            "count": 1186,
+            "duration_us": 5612.080000000009,
+            "wait_us": 64.01000000000006,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Cast_557",
+              "Cast_560",
+              "trans_Cast_2"
+            ],
+            "input_shape_samples": [
+              "\"1,768\"",
+              "\"1,1,64\"",
+              "\"1,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,768\"",
+              "\"1,1,64\"",
+              "\"1,64\""
+            ],
+            "input_format_samples": [
+              "ND",
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT",
+              "FLOAT16",
+              "FLOAT16;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul",
+            "count": 658,
+            "duration_us": 5186.1600000000035,
+            "wait_us": 40.12000000000001,
+            "aicore_time_us": 4451.829999999998,
+            "kernel_name_samples": [
+              "MatMul_162",
+              "MatMul_166",
+              "MatMul_168"
+            ],
+            "input_shape_samples": [
+              "\"1,768;4,48,16,16\"",
+              "\"1,768;768,128\"",
+              "\"1,768;768,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,64\"",
+              "\"1,128\"",
+              "\"1,768\""
+            ],
+            "input_format_samples": [
+              "ND;FRACTAL_NZ",
+              "ND;ND",
+              "FRACTAL_NZ;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "StridedSliceD",
+            "count": 46,
+            "duration_us": 3080.0199999999995,
+            "wait_us": 2.8100000000000005,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "StridedSliceV2",
+              "StridedSliceV2_1",
+              "StridedSliceV2_2"
+            ],
+            "input_shape_samples": [
+              "\"1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,2047,768\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT"
+            ]
+          },
+          {
+            "name": "AutomaticBufferFusionOp",
+            "count": 186,
+            "duration_us": 1995.52,
+            "wait_us": 11.549999999999995,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sub_46Mul_197Add_184Mul_198Add_185Mul_200Add_187Mul_201Add_188Mul_202Add_189Mul_203Add_191",
+              "Sigmoid_46Mul_199",
+              "SubMulAddMul_1Add_1Mul_3Add_3Mul_4Add_4Mul_5Add_5Mul_6Add_7"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768\"",
+              "\"1,1,768;\"",
+              "\"1,2048,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768\"",
+              "\"1,1,768\"",
+              "\"1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND",
+              "ND;ND",
+              "ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND;ND;ND;ND",
+              "ND",
+              "ND;ND;ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "TransData",
+            "count": 282,
+            "duration_us": 1484.1200000000022,
+            "wait_us": 13.249999999999996,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_0",
+              "trans_TransData_6",
+              "trans_TransData_10"
+            ],
+            "input_shape_samples": [
+              "\"768,64\"",
+              "\"1,64\"",
+              "\"2048,64\""
+            ],
+            "output_shape_samples": [
+              "\"4,48,16,16\"",
+              "\"4,1,16,16\"",
+              "\"4,128,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "Transpose",
+            "count": 166,
+            "duration_us": 1429.7399999999998,
+            "wait_us": 8.600000000000001,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Reshape_19/ConfusionTranspose/Transpose",
+              "Reshape_21/ConfusionTranspose/Transpose",
+              "Reshape_23/ConfusionTranspose/Transpose"
+            ],
+            "input_shape_samples": [
+              "\"2048,12,64;3\"",
+              "\"12,2048,64;3\""
+            ],
+            "output_shape_samples": [
+              "\"12,2048,64\"",
+              "\"2048,12,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64",
+              "FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "LayerNormV3",
+            "count": 100,
+            "duration_us": 1342.8999999999996,
+            "wait_us": 38.80000000000001,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "LayerNormV4_24_LayerNormV3",
+              "LayerNormV4_25_LayerNormV3",
+              "LayerNormV4_LayerNormV3"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;768;768\"",
+              "\"1,2048,768;768;768\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768;1,1,1;1,1,1\"",
+              "\"1,2048,768;1,2048,1;1,2048,1\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "Add",
+            "count": 94,
+            "duration_us": 1318.759999999999,
+            "wait_us": 4.9,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_190Sigmoid_47Sub_47Mul_205Add_192Mul_206Mul_208Mul_209",
+              "Add_6Sigmoid_1Sub_1Mul_8Add_8Mul_9Mul_11Mul_12",
+              "Add_10"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;1,1,768;;1,1,768;;1,1,768;1,1,768;768\"",
+              "\"1,1,768;1,2048,768;;1,1,768;;1,2048,768;1,2048,768;768\"",
+              "\"1,2048,768;1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768;1,1,768;1,1,768\"",
+              "\"1,2048,768;1,2048,768;1,2048,768\"",
+              "\"1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND",
+              "ND;ND",
+              "ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND",
+              "ND",
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "Mul",
+            "count": 138,
+            "duration_us": 798.7199999999996,
+            "wait_us": 6.3699999999999966,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Mul_204",
+              "Mul_207",
+              "Mul_7"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;1,1,768\"",
+              "\"1,2048,768;1,1,768\"",
+              "\"1,2048,768;1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768\"",
+              "\"1,2048,768\"",
+              "\"1,2048,12,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "GatherV2",
+            "count": 118,
+            "duration_us": 685.8400000000006,
+            "wait_us": 5.999999999999996,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GatherV2_25",
+              "GatherV2_26",
+              "GatherV2_28"
+            ],
+            "input_shape_samples": [
+              "\"2,1,768;;1\"",
+              "\"65536,768;1,2048;1\"",
+              "\"12,1,12,64,64;;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,768\"",
+              "\"1,2048,768\"",
+              "\"1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64;INT64"
+            ]
+          },
+          {
+            "name": "Square",
+            "count": 46,
+            "duration_us": 360.54,
+            "wait_us": 3.140000000000001,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Pow/Square",
+              "Pow_1/Square",
+              "Pow_2/Square"
+            ],
+            "input_shape_samples": [
+              "\"1,2048,3072\"",
+              "\"1,1,3072\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,3072\"",
+              "\"1,1,3072\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT"
+            ]
+          },
+          {
+            "name": "LpNormV2",
+            "count": 48,
+            "duration_us": 356.4399999999999,
+            "wait_us": 3.099999999999999,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "LpNormV2_12",
+              "LpNormV2",
+              "LpNormV2_1"
+            ],
+            "input_shape_samples": [
+              "\"1,1,12,64\"",
+              "\"1,2048,12,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,12,1\"",
+              "\"1,2048,12,1\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT"
+            ]
+          },
+          {
+            "name": "ReduceSumD",
+            "count": 46,
+            "duration_us": 318.06,
+            "wait_us": 2.67,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "ReduceSum_11",
+              "ReduceSum",
+              "ReduceSum_1"
+            ],
+            "input_shape_samples": [
+              "\"1,1,12,64\"",
+              "\"1,2048,12,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,12,1\"",
+              "\"1,2048,12,1\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT"
+            ]
+          }
+        ],
+        "top_core_types": [
+          {
+            "name": "AI_VECTOR_CORE",
+            "count": 2842,
+            "duration_us": 86239.25999999982,
+            "wait_us": 185.80000000000075,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "LayerNormV4_24_LayerNormV3",
+              "LayerNormV4_25_LayerNormV3",
+              "GatherV2_25"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;768;768\"",
+              "\"2,1,768;;1\"",
+              "\"65536,768;1,2048;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768;1,1,1;1,1,1\"",
+              "\"1,768\"",
+              "\"1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND",
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND",
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND",
+              "ND",
+              "ND;ND;ND;ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT",
+              "FLOAT;INT64;INT64",
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "AI_CORE",
+            "count": 658,
+            "duration_us": 5186.1600000000035,
+            "wait_us": 40.12000000000001,
+            "aicore_time_us": 4451.829999999998,
+            "kernel_name_samples": [
+              "MatMul_162",
+              "MatMul_166",
+              "MatMul_168"
+            ],
+            "input_shape_samples": [
+              "\"1,768;4,48,16,16\"",
+              "\"1,768;768,128\"",
+              "\"1,768;768,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,64\"",
+              "\"1,128\"",
+              "\"1,768\""
+            ],
+            "input_format_samples": [
+              "ND;FRACTAL_NZ",
+              "ND;ND",
+              "FRACTAL_NZ;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          }
+        ],
+        "top_input_formats": [
+          {
+            "name": "ND;ND;ND;ND;ND;ND;ND",
+            "count": 48,
+            "duration_us": 56472.71999999998,
+            "wait_us": 1.8700000000000003,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7",
+              "RwkvReferenceWkv7_1",
+              "RwkvReferenceWkv7_2"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\"",
+              "\"1,12,1,64;1,12,1,64;1,12,1,64;1,12,1,64;1,12,1,64;1,12,1,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\"",
+              "\"1,12,1,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "ND",
+            "count": 1562,
+            "duration_us": 10668.320000000002,
+            "wait_us": 82.4000000000002,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Cast_557",
+              "Cast_560",
+              "trans_TransData_0"
+            ],
+            "input_shape_samples": [
+              "\"1,768\"",
+              "\"768,64\"",
+              "\"1,1,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,768\"",
+              "\"4,48,16,16\"",
+              "\"1,1,64\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND",
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT",
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "NCHW;NCHW;NCHW",
+            "count": 46,
+            "duration_us": 9444.579999999996,
+            "wait_us": 2.7699999999999996,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GroupNorm",
+              "GroupNorm_1",
+              "GroupNorm_2"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;768;768\"",
+              "\"1,768;768;768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768;2048,12;2048,12\"",
+              "\"1,768;1,12;1,12\""
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "output_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "ND;ND",
+            "count": 1108,
+            "duration_us": 8920.980000000023,
+            "wait_us": 61.059999999999995,
+            "aicore_time_us": 3752.524000000002,
+            "kernel_name_samples": [
+              "MatMul_168",
+              "MatMul_164",
+              "MatMul_169"
+            ],
+            "input_shape_samples": [
+              "\"1,768;768,128\"",
+              "\"1,768;768,768\"",
+              "\"1,128;128,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,128\"",
+              "\"1,768\"",
+              "\"1,1,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16",
+              "FLOAT16;FLOAT",
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "ND;ND;ND",
+            "count": 266,
+            "duration_us": 2178.940000000002,
+            "wait_us": 47.78000000000004,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "LayerNormV4_24_LayerNormV3",
+              "LayerNormV4_25_LayerNormV3",
+              "GatherV2_25"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;768;768\"",
+              "\"2,1,768;;1\"",
+              "\"65536,768;1,2048;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768;1,1,1;1,1,1\"",
+              "\"1,768\"",
+              "\"1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND",
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT",
+              "FLOAT;INT64;INT64"
+            ]
+          },
+          {
+            "name": "ND;ND;ND;ND;ND;ND;ND;ND",
+            "count": 46,
+            "duration_us": 986.7199999999997,
+            "wait_us": 2.38,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_190Sigmoid_47Sub_47Mul_205Add_192Mul_206Mul_208Mul_209",
+              "Add_6Sigmoid_1Sub_1Mul_8Add_8Mul_9Mul_11Mul_12",
+              "Add_20Sigmoid_4Sub_4Mul_24Add_22Mul_25Mul_28Mul_29"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;1,1,768;;1,1,768;;1,1,768;1,1,768;768\"",
+              "\"1,1,768;1,2048,768;;1,1,768;;1,2048,768;1,2048,768;768\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768;1,1,768;1,1,768\"",
+              "\"1,2048,768;1,2048,768;1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND",
+            "count": 46,
+            "duration_us": 904.9000000000002,
+            "wait_us": 2.9199999999999995,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sub_46Mul_197Add_184Mul_198Add_185Mul_200Add_187Mul_201Add_188Mul_202Add_189Mul_203Add_191",
+              "SubMulAddMul_1Add_1Mul_3Add_3Mul_4Add_4Mul_5Add_5Mul_6Add_7",
+              "Sub_3Mul_16Add_14Mul_17Add_15Mul_19Add_17Mul_20Mul_21Add_19Mul_22Add_21Add_18"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768\"",
+              "\"1,2048,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768\"",
+              "\"1,2048,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768\"",
+              "\"1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND;ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "ND;ND;ND;ND",
+            "count": 90,
+            "duration_us": 704.6200000000007,
+            "wait_us": 5.879999999999997,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sub_2Mul_15Add_12",
+              "Sigmoid_6Sub_5Mul_26Add_24",
+              "Sub_6Mul_32Add_28"
+            ],
+            "input_shape_samples": [
+              "\"1,2048,768;1,2048,768;1,1,768;1,2048,768\"",
+              "\"1,2048,768;1,2048,768;1,2048,768;1,2048,768\"",
+              "\"1,1,768;1,1,768;1,1,768;1,1,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,768\"",
+              "\"1,1,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FRACTAL_NZ;ND",
+            "count": 140,
+            "duration_us": 541.9999999999997,
+            "wait_us": 9.239999999999998,
+            "aicore_time_us": 378.67399999999986,
+            "kernel_name_samples": [
+              "MatMul_167",
+              "MatMul_163",
+              "MatMul_2"
+            ],
+            "input_shape_samples": [
+              "\"4,1,16,16;64,768\"",
+              "\"4,128,16,16;64,768\"",
+              "\"2,128,16,16;32,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,768\"",
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "FRACTAL_NZ;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "ND;FRACTAL_NZ",
+            "count": 142,
+            "duration_us": 445.6200000000001,
+            "wait_us": 9.479999999999993,
+            "aicore_time_us": 320.63200000000006,
+            "kernel_name_samples": [
+              "MatMul_162",
+              "MatMul_166",
+              "MatMul_5"
+            ],
+            "input_shape_samples": [
+              "\"1,768;4,48,16,16\"",
+              "\"2048,768;4,48,16,16\"",
+              "\"2048,768;2,48,16,16\""
+            ],
+            "output_shape_samples": [
+              "\"1,64\"",
+              "\"2048,64\"",
+              "\"2048,32\""
+            ],
+            "input_format_samples": [
+              "ND;FRACTAL_NZ"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND",
+            "count": 4,
+            "duration_us": 86.24000000000001,
+            "wait_us": 0.14,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sub_43Mul_186Add_174Mul_187Add_175Mul_189Add_177Mul_190Mul_191Add_179Add_178",
+              "Pack"
+            ],
+            "input_shape_samples": [
+              "\"1,2048,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,1,768;1,2048,768;1,2048,768\"",
+              "\"1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768\"",
+              "\"12,1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND;ND;ND",
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "ND;ND;ND;ND;ND;ND",
+            "count": 2,
+            "duration_us": 69.78,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_180Sigmoid_44Sub_44Mul_193Add_181Mul_194"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;1,2048,768;;1,1,768;;1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,768;1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          }
+        ],
+        "top_input_dtypes": [
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 48,
+            "duration_us": 56472.71999999998,
+            "wait_us": 1.8700000000000003,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7",
+              "RwkvReferenceWkv7_1",
+              "RwkvReferenceWkv7_2"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\"",
+              "\"1,12,1,64;1,12,1,64;1,12,1,64;1,12,1,64;1,12,1,64;1,12,1,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\"",
+              "\"1,12,1,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT",
+            "count": 194,
+            "duration_us": 10937.680000000011,
+            "wait_us": 44.55000000000001,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "LayerNormV4_24_LayerNormV3",
+              "LayerNormV4_25_LayerNormV3",
+              "LayerNormV4_LayerNormV3"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;768;768\"",
+              "\"1,2048,768;768;768\"",
+              "\"1,1,12,1;;\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768;1,1,1;1,1,1\"",
+              "\"1,2048,768;1,2048,1;1,2048,1\"",
+              "\"1,1,12,1\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND",
+              "NCHW;NCHW;NCHW"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND",
+              "ND",
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT",
+            "count": 896,
+            "duration_us": 7256.2000000000135,
+            "wait_us": 48.28999999999998,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Cast_557",
+              "Cast_560",
+              "Tanh_12"
+            ],
+            "input_shape_samples": [
+              "\"1,768\"",
+              "\"1,1,64\"",
+              "\"1,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,768\"",
+              "\"1,1,64\"",
+              "\"1,64\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT16;FLOAT16",
+            "count": 658,
+            "duration_us": 5186.1600000000035,
+            "wait_us": 40.12000000000001,
+            "aicore_time_us": 4451.829999999998,
+            "kernel_name_samples": [
+              "MatMul_162",
+              "MatMul_166",
+              "MatMul_168"
+            ],
+            "input_shape_samples": [
+              "\"1,768;4,48,16,16\"",
+              "\"1,768;768,128\"",
+              "\"1,768;768,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,64\"",
+              "\"1,128\"",
+              "\"1,768\""
+            ],
+            "input_format_samples": [
+              "ND;FRACTAL_NZ",
+              "ND;ND",
+              "FRACTAL_NZ;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "FLOAT16",
+            "count": 666,
+            "duration_us": 3412.119999999995,
+            "wait_us": 34.109999999999985,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_0",
+              "trans_Cast_2",
+              "trans_TransData_6"
+            ],
+            "input_shape_samples": [
+              "\"768,64\"",
+              "\"1,1,64\"",
+              "\"1,1,128\""
+            ],
+            "output_shape_samples": [
+              "\"4,48,16,16\"",
+              "\"1,1,64\"",
+              "\"1,1,128\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ",
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT",
+            "count": 282,
+            "duration_us": 1694.6399999999992,
+            "wait_us": 13.799999999999988,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sigmoid_46Mul_199",
+              "Mul_204",
+              "RealDiv_12"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;\"",
+              "\"1,1,768;1,1,768\"",
+              "\"1,1,12,64;1,1,12,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768\"",
+              "\"1,1,12,64\"",
+              "\"1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;INT64",
+            "count": 192,
+            "duration_us": 1457.1799999999996,
+            "wait_us": 11.010000000000002,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "BroadcastTo_12",
+              "Reshape_19/ConfusionTranspose/Transpose",
+              "Reshape_21/ConfusionTranspose/Transpose"
+            ],
+            "input_shape_samples": [
+              "\"1,1,12,1;4\"",
+              "\"2048,12,64;3\"",
+              "\"1,2048,12,1;4\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,12,64\"",
+              "\"12,2048,64\"",
+              "\"1,2048,12,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ]
+          },
+          {
+            "name": "FLOAT16;FLOAT",
+            "count": 236,
+            "duration_us": 1319.399999999999,
+            "wait_us": 13.64999999999999,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_Cast_5Add_186",
+              "trans_Cast_21Mul_210",
+              "trans_Cast_27Add_2"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;1,1,768\"",
+              "\"1,1,12,64;1,1,12,1\"",
+              "\"1,2048,768;1,1,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768\"",
+              "\"1,1,12,64\"",
+              "\"1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 46,
+            "duration_us": 986.7199999999997,
+            "wait_us": 2.38,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_190Sigmoid_47Sub_47Mul_205Add_192Mul_206Mul_208Mul_209",
+              "Add_6Sigmoid_1Sub_1Mul_8Add_8Mul_9Mul_11Mul_12",
+              "Add_20Sigmoid_4Sub_4Mul_24Add_22Mul_25Mul_28Mul_29"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;1,1,768;;1,1,768;;1,1,768;1,1,768;768\"",
+              "\"1,1,768;1,2048,768;;1,1,768;;1,2048,768;1,2048,768;768\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768;1,1,768;1,1,768\"",
+              "\"1,2048,768;1,2048,768;1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 46,
+            "duration_us": 904.9000000000002,
+            "wait_us": 2.9199999999999995,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sub_46Mul_197Add_184Mul_198Add_185Mul_200Add_187Mul_201Add_188Mul_202Add_189Mul_203Add_191",
+              "SubMulAddMul_1Add_1Mul_3Add_3Mul_4Add_4Mul_5Add_5Mul_6Add_7",
+              "Sub_3Mul_16Add_14Mul_17Add_15Mul_19Add_17Mul_20Mul_21Add_19Mul_22Add_21Add_18"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768\"",
+              "\"1,2048,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768\"",
+              "\"1,2048,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,768;1,1,768;1,1,768;1,1,768;1,1,768;1,1,768\"",
+              "\"1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND;ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 90,
+            "duration_us": 704.6200000000007,
+            "wait_us": 5.879999999999997,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sub_2Mul_15Add_12",
+              "Sigmoid_6Sub_5Mul_26Add_24",
+              "Sub_6Mul_32Add_28"
+            ],
+            "input_shape_samples": [
+              "\"1,2048,768;1,2048,768;1,1,768;1,2048,768\"",
+              "\"1,2048,768;1,2048,768;1,2048,768;1,2048,768\"",
+              "\"1,1,768;1,1,768;1,1,768;1,1,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,768\"",
+              "\"1,1,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;INT64;INT64",
+            "count": 118,
+            "duration_us": 685.8400000000006,
+            "wait_us": 5.999999999999996,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GatherV2_25",
+              "GatherV2_26",
+              "GatherV2_28"
+            ],
+            "input_shape_samples": [
+              "\"2,1,768;;1\"",
+              "\"65536,768;1,2048;1\"",
+              "\"12,1,12,64,64;;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,768\"",
+              "\"1,2048,768\"",
+              "\"1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64;INT64"
+            ]
+          },
+          {
+            "name": "FLOAT;INT32",
+            "count": 22,
+            "duration_us": 251.22,
+            "wait_us": 1.2000000000000002,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Transpose_9",
+              "Transpose_22",
+              "Transpose_35"
+            ],
+            "input_shape_samples": [
+              "\"12,2048,64;3\""
+            ],
+            "output_shape_samples": [
+              "\"2048,12,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 4,
+            "duration_us": 86.24000000000001,
+            "wait_us": 0.14,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sub_43Mul_186Add_174Mul_187Add_175Mul_189Add_177Mul_190Mul_191Add_179Add_178",
+              "Pack"
+            ],
+            "input_shape_samples": [
+              "\"1,2048,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,1,768;1,2048,768;1,2048,768\"",
+              "\"1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768\"",
+              "\"12,1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND;ND;ND",
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 2,
+            "duration_us": 69.78,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_180Sigmoid_44Sub_44Mul_193Add_181Mul_194"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;1,2048,768;;1,1,768;;1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,768;1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          }
+        ],
+        "top_shape_signatures": [
+          {
+            "name": "RwkvReferenceWkv7 | \"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\" -> \"1,12,2048,64;1,12,64,64\"",
+            "count": 24,
+            "duration_us": 56348.59999999999,
+            "wait_us": 0.77,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7",
+              "RwkvReferenceWkv7_1",
+              "RwkvReferenceWkv7_2"
+            ],
+            "input_shape_samples": [
+              "\"1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,2048,64;1,12,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,12,2048,64;1,12,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "GroupNormSilu | \"2048,768;768;768\" -> \"2048,768;2048,12;2048,12\"",
+            "count": 22,
+            "duration_us": 9310.839999999998,
+            "wait_us": 0.93,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GroupNorm",
+              "GroupNorm_1",
+              "GroupNorm_2"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;768;768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768;2048,12;2048,12\""
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "output_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "StridedSliceD | \"1,2048,768\" -> \"1,2047,768\"",
+            "count": 46,
+            "duration_us": 3080.0199999999995,
+            "wait_us": 2.8100000000000005,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "StridedSliceV2",
+              "StridedSliceV2_1",
+              "StridedSliceV2_2"
+            ],
+            "input_shape_samples": [
+              "\"1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,2047,768\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT"
+            ]
+          },
+          {
+            "name": "Cast | \"2048,768\" -> \"2048,768\"",
+            "count": 234,
+            "duration_us": 1615.8799999999992,
+            "wait_us": 12.669999999999998,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Cast_11",
+              "Cast_14",
+              "Cast_17"
+            ],
+            "input_shape_samples": [
+              "\"2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT",
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"2048,768;768,768\" -> \"2048,768\"",
+            "count": 94,
+            "duration_us": 1334.5199999999998,
+            "wait_us": 5.5,
+            "aicore_time_us": 1231.6850000000006,
+            "kernel_name_samples": [
+              "MatMul_3",
+              "MatMul",
+              "MatMul_4"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;768,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "LayerNormV3 | \"1,2048,768;768;768\" -> \"1,2048,768;1,2048,1;1,2048,1\"",
+            "count": 48,
+            "duration_us": 1251.6,
+            "wait_us": 2.5500000000000007,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "LayerNormV4_LayerNormV3",
+              "LayerNormV4_1_LayerNormV3",
+              "LayerNormV4_2_LayerNormV3"
+            ],
+            "input_shape_samples": [
+              "\"1,2048,768;768;768\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,768;1,2048,1;1,2048,1\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "Transpose | \"2048,12,64;3\" -> \"12,2048,64\"",
+            "count": 144,
+            "duration_us": 1178.5200000000002,
+            "wait_us": 7.3999999999999995,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Reshape_19/ConfusionTranspose/Transpose",
+              "Reshape_21/ConfusionTranspose/Transpose",
+              "Reshape_23/ConfusionTranspose/Transpose"
+            ],
+            "input_shape_samples": [
+              "\"2048,12,64;3\""
+            ],
+            "output_shape_samples": [
+              "\"12,2048,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ]
+          },
+          {
+            "name": "Add | \"1,1,768;1,2048,768;;1,1,768;;1,2048,768;1,2048,768;768\" -> \"1,2048,768;1,2048,768;1,2048,768\"",
+            "count": 22,
+            "duration_us": 946.6199999999997,
+            "wait_us": 0.9099999999999999,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_6Sigmoid_1Sub_1Mul_8Add_8Mul_9Mul_11Mul_12",
+              "Add_20Sigmoid_4Sub_4Mul_24Add_22Mul_25Mul_28Mul_29",
+              "Add_36Sigmoid_8Sub_8Mul_41Add_38Mul_42Mul_45Mul_46"
+            ],
+            "input_shape_samples": [
+              "\"1,1,768;1,2048,768;;1,1,768;;1,2048,768;1,2048,768;768\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,768;1,2048,768;1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"2048,768;3072,768\" -> \"2048,3072\"",
+            "count": 22,
+            "duration_us": 841.1199999999999,
+            "wait_us": 1.41,
+            "aicore_time_us": 818.0479999999999,
+            "kernel_name_samples": [
+              "MatMul_10",
+              "MatMul_24",
+              "MatMul_38"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"2048,3072;768,3072\" -> \"2048,768\"",
+            "count": 22,
+            "duration_us": 810.0199999999998,
+            "wait_us": 1.02,
+            "aicore_time_us": 767.795,
+            "kernel_name_samples": [
+              "MatMul_11",
+              "MatMul_25",
+              "MatMul_39"
+            ],
+            "input_shape_samples": [
+              "\"2048,3072;768,3072\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "AutomaticBufferFusionOp | \"1,2048,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,2048,768\" -> \"1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768\"",
+            "count": 20,
+            "duration_us": 779.1200000000001,
+            "wait_us": 1.2300000000000002,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sub_3Mul_16Add_14Mul_17Add_15Mul_19Add_17Mul_20Mul_21Add_19Mul_22Add_21Add_18",
+              "Sub_7Mul_33Add_30Mul_34Add_31Mul_36Add_33Mul_37Mul_38Add_35Mul_39Add_37Add_34",
+              "Sub_11Mul_50Add_46Mul_51Add_47Mul_53Add_49Mul_54Mul_55Add_51Mul_56Add_53Add_50"
+            ],
+            "input_shape_samples": [
+              "\"1,2048,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,1,768;1,1,768;1,2048,768;1,1,768;1,2048,768;1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768;1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND;ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "Cast | \"1,2048,768;1,2048,768\" -> \"1,2048,768\"",
+            "count": 66,
+            "duration_us": 723.4999999999999,
+            "wait_us": 3.44,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_Cast_42Mul_14",
+              "trans_Cast_44Add_11",
+              "trans_Cast_48Add_13"
+            ],
+            "input_shape_samples": [
+              "\"1,2048,768;1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT"
+            ]
+          },
+          {
+            "name": "Cast | \"1,2048,768\" -> \"1,2048,768\"",
+            "count": 94,
+            "duration_us": 656.04,
+            "wait_us": 5.959999999999999,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_Cast_31",
+              "trans_Cast_39",
+              "trans_Cast_36"
+            ],
+            "input_shape_samples": [
+              "\"1,2048,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,2048,768\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "TransData | \"768,64\" -> \"4,48,16,16\"",
+            "count": 96,
+            "duration_us": 591.9799999999998,
+            "wait_us": 4.41,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_0",
+              "trans_TransData_6",
+              "trans_TransData_28"
+            ],
+            "input_shape_samples": [
+              "\"768,64\""
+            ],
+            "output_shape_samples": [
+              "\"4,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "GatherV2 | \"2,1,768;;1\" -> \"1,768\"",
+            "count": 92,
+            "duration_us": 544.4000000000003,
+            "wait_us": 4.859999999999997,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GatherV2_25",
+              "GatherV2_26",
+              "GatherV2_28"
+            ],
+            "input_shape_samples": [
+              "\"2,1,768;;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64;INT64"
+            ]
+          }
+        ],
+        "top_matmul_names": [
+          {
+            "name": "MatMul_10",
+            "count": 2,
+            "duration_us": 81.0,
+            "wait_us": 0.16,
+            "aicore_time_us": 79.144,
+            "kernel_name_samples": [
+              "MatMul_10"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_52",
+            "count": 2,
+            "duration_us": 76.62,
+            "wait_us": 0.12,
+            "aicore_time_us": 74.286,
+            "kernel_name_samples": [
+              "MatMul_52"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_24",
+            "count": 2,
+            "duration_us": 76.2,
+            "wait_us": 0.13999999999999999,
+            "aicore_time_us": 74.215,
+            "kernel_name_samples": [
+              "MatMul_24"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_94",
+            "count": 2,
+            "duration_us": 76.2,
+            "wait_us": 0.0,
+            "aicore_time_us": 74.208,
+            "kernel_name_samples": [
+              "MatMul_94"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_136",
+            "count": 2,
+            "duration_us": 76.12,
+            "wait_us": 0.06,
+            "aicore_time_us": 74.197,
+            "kernel_name_samples": [
+              "MatMul_136"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_38",
+            "count": 2,
+            "duration_us": 76.1,
+            "wait_us": 0.02,
+            "aicore_time_us": 73.99199999999999,
+            "kernel_name_samples": [
+              "MatMul_38"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_66",
+            "count": 2,
+            "duration_us": 76.06,
+            "wait_us": 0.27,
+            "aicore_time_us": 74.18100000000001,
+            "kernel_name_samples": [
+              "MatMul_66"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_150",
+            "count": 2,
+            "duration_us": 75.9,
+            "wait_us": 0.18,
+            "aicore_time_us": 74.256,
+            "kernel_name_samples": [
+              "MatMul_150"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_80",
+            "count": 2,
+            "duration_us": 75.88,
+            "wait_us": 0.12,
+            "aicore_time_us": 73.955,
+            "kernel_name_samples": [
+              "MatMul_80"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_108",
+            "count": 2,
+            "duration_us": 75.68,
+            "wait_us": 0.18,
+            "aicore_time_us": 72.247,
+            "kernel_name_samples": [
+              "MatMul_108"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_95",
+            "count": 2,
+            "duration_us": 75.46000000000001,
+            "wait_us": 0.0,
+            "aicore_time_us": 71.707,
+            "kernel_name_samples": [
+              "MatMul_95"
+            ],
+            "input_shape_samples": [
+              "\"2048,3072;768,3072\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_122",
+            "count": 2,
+            "duration_us": 75.36,
+            "wait_us": 0.16,
+            "aicore_time_us": 73.367,
+            "kernel_name_samples": [
+              "MatMul_122"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_123",
+            "count": 2,
+            "duration_us": 74.14,
+            "wait_us": 0.08,
+            "aicore_time_us": 69.976,
+            "kernel_name_samples": [
+              "MatMul_123"
+            ],
+            "input_shape_samples": [
+              "\"2048,3072;768,3072\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_151",
+            "count": 2,
+            "duration_us": 73.74000000000001,
+            "wait_us": 0.27,
+            "aicore_time_us": 69.881,
+            "kernel_name_samples": [
+              "MatMul_151"
+            ],
+            "input_shape_samples": [
+              "\"2048,3072;768,3072\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul_11",
+            "count": 2,
+            "duration_us": 73.74,
+            "wait_us": 0.05,
+            "aicore_time_us": 68.726,
+            "kernel_name_samples": [
+              "MatMul_11"
+            ],
+            "input_shape_samples": [
+              "\"2048,3072;768,3072\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          }
+        ],
+        "top_matmul_shape_signatures": [
+          {
+            "name": "MatMul | \"2048,768;768,768\" -> \"2048,768\" | ND;ND -> ND",
+            "count": 94,
+            "duration_us": 1334.5199999999998,
+            "wait_us": 5.5,
+            "aicore_time_us": 1231.6850000000006,
+            "kernel_name_samples": [
+              "MatMul_3",
+              "MatMul",
+              "MatMul_4"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;768,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"2048,768;3072,768\" -> \"2048,3072\" | ND;ND -> ND",
+            "count": 22,
+            "duration_us": 841.1199999999999,
+            "wait_us": 1.41,
+            "aicore_time_us": 818.0479999999999,
+            "kernel_name_samples": [
+              "MatMul_10",
+              "MatMul_24",
+              "MatMul_38"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"2048,3072;768,3072\" -> \"2048,768\" | ND;ND -> ND",
+            "count": 22,
+            "duration_us": 810.0199999999998,
+            "wait_us": 1.02,
+            "aicore_time_us": 767.795,
+            "kernel_name_samples": [
+              "MatMul_11",
+              "MatMul_25",
+              "MatMul_39"
+            ],
+            "input_shape_samples": [
+              "\"2048,3072;768,3072\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,768;768,768\" -> \"1,768\" | ND;ND -> ND",
+            "count": 98,
+            "duration_us": 336.14000000000004,
+            "wait_us": 6.139999999999998,
+            "aicore_time_us": 221.04599999999996,
+            "kernel_name_samples": [
+              "MatMul_164",
+              "MatMul_161",
+              "MatMul_165"
+            ],
+            "input_shape_samples": [
+              "\"1,768;768,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"4,128,16,16;64,768\" -> \"2048,768\" | FRACTAL_NZ;ND -> ND",
+            "count": 48,
+            "duration_us": 219.2400000000001,
+            "wait_us": 3.92,
+            "aicore_time_us": 168.17499999999998,
+            "kernel_name_samples": [
+              "MatMul_2",
+              "MatMul_6",
+              "MatMul_14"
+            ],
+            "input_shape_samples": [
+              "\"4,128,16,16;64,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "FRACTAL_NZ;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,3072;768,3072\" -> \"1,768\" | ND;ND -> ND",
+            "count": 24,
+            "duration_us": 200.34000000000003,
+            "wait_us": 1.3800000000000001,
+            "aicore_time_us": 160.54799999999997,
+            "kernel_name_samples": [
+              "MatMul_172",
+              "MatMul_186",
+              "MatMul_200"
+            ],
+            "input_shape_samples": [
+              "\"1,3072;768,3072\""
+            ],
+            "output_shape_samples": [
+              "\"1,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,768;3072,768\" -> \"1,3072\" | ND;ND -> ND",
+            "count": 24,
+            "duration_us": 195.58,
+            "wait_us": 0.7,
+            "aicore_time_us": 160.84400000000002,
+            "kernel_name_samples": [
+              "MatMul_171",
+              "MatMul_185",
+              "MatMul_199"
+            ],
+            "input_shape_samples": [
+              "\"1,768;3072,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,3072\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"2048,768;4,48,16,16\" -> \"2048,64\" | ND;FRACTAL_NZ -> ND",
+            "count": 48,
+            "duration_us": 176.07999999999993,
+            "wait_us": 3.26,
+            "aicore_time_us": 125.92599999999999,
+            "kernel_name_samples": [
+              "MatMul_5",
+              "MatMul_1",
+              "MatMul_13"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;4,48,16,16\""
+            ],
+            "output_shape_samples": [
+              "\"2048,64\""
+            ],
+            "input_format_samples": [
+              "ND;FRACTAL_NZ"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"2048,128;128,768\" -> \"2048,768\" | ND;ND -> ND",
+            "count": 22,
+            "duration_us": 153.32,
+            "wait_us": 0.92,
+            "aicore_time_us": 128.099,
+            "kernel_name_samples": [
+              "MatMul_8",
+              "MatMul_20",
+              "MatMul_34"
+            ],
+            "input_shape_samples": [
+              "\"2048,128;128,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"2048,768;768,128\" -> \"2048,128\" | ND;ND -> ND",
+            "count": 22,
+            "duration_us": 152.38,
+            "wait_us": 1.9700000000000002,
+            "aicore_time_us": 129.91899999999998,
+            "kernel_name_samples": [
+              "MatMul_7",
+              "MatMul_19",
+              "MatMul_33"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;768,128\""
+            ],
+            "output_shape_samples": [
+              "\"2048,128\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"2048,768;2,48,16,16\" -> \"2048,32\" | ND;FRACTAL_NZ -> ND",
+            "count": 22,
+            "duration_us": 133.88,
+            "wait_us": 0.88,
+            "aicore_time_us": 109.049,
+            "kernel_name_samples": [
+              "MatMul_21",
+              "MatMul_35",
+              "MatMul_49"
+            ],
+            "input_shape_samples": [
+              "\"2048,768;2,48,16,16\""
+            ],
+            "output_shape_samples": [
+              "\"2048,32\""
+            ],
+            "input_format_samples": [
+              "ND;FRACTAL_NZ"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"4,1,16,16;64,768\" -> \"1,768\" | FRACTAL_NZ;ND -> ND",
+            "count": 48,
+            "duration_us": 133.40000000000003,
+            "wait_us": 2.9700000000000006,
+            "aicore_time_us": 78.90100000000001,
+            "kernel_name_samples": [
+              "MatMul_167",
+              "MatMul_163",
+              "MatMul_175"
+            ],
+            "input_shape_samples": [
+              "\"4,1,16,16;64,768\""
+            ],
+            "output_shape_samples": [
+              "\"1,768\""
+            ],
+            "input_format_samples": [
+              "FRACTAL_NZ;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"2,128,16,16;32,768\" -> \"2048,768\" | FRACTAL_NZ;ND -> ND",
+            "count": 22,
+            "duration_us": 124.56000000000002,
+            "wait_us": 1.04,
+            "aicore_time_us": 96.17100000000002,
+            "kernel_name_samples": [
+              "MatMul_22",
+              "MatMul_36",
+              "MatMul_50"
+            ],
+            "input_shape_samples": [
+              "\"2,128,16,16;32,768\""
+            ],
+            "output_shape_samples": [
+              "\"2048,768\""
+            ],
+            "input_format_samples": [
+              "FRACTAL_NZ;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,768;768,128\" -> \"1,128\" | ND;ND -> ND",
+            "count": 24,
+            "duration_us": 98.66,
+            "wait_us": 0.9300000000000002,
+            "aicore_time_us": 86.257,
+            "kernel_name_samples": [
+              "MatMul_168",
+              "MatMul_180",
+              "MatMul_194"
+            ],
+            "input_shape_samples": [
+              "\"1,768;768,128\""
+            ],
+            "output_shape_samples": [
+              "\"1,128\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,768;4,48,16,16\" -> \"1,64\" | ND;FRACTAL_NZ -> ND",
+            "count": 48,
+            "duration_us": 97.71999999999998,
+            "wait_us": 3.2999999999999994,
+            "aicore_time_us": 60.379000000000005,
+            "kernel_name_samples": [
+              "MatMul_162",
+              "MatMul_166",
+              "MatMul_174"
+            ],
+            "input_shape_samples": [
+              "\"1,768;4,48,16,16\""
+            ],
+            "output_shape_samples": [
+              "\"1,64\""
+            ],
+            "input_format_samples": [
+              "ND;FRACTAL_NZ"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ]
+          }
+        ],
+        "top_transdata_names": [
+          {
+            "name": "trans_TransData_132",
+            "count": 2,
+            "duration_us": 20.939999999999998,
+            "wait_us": 0.19,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_132"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_297",
+            "count": 2,
+            "duration_us": 18.58,
+            "wait_us": 0.09,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_297"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_64",
+            "count": 2,
+            "duration_us": 18.46,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_64"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_165",
+            "count": 2,
+            "duration_us": 17.86,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_165"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_198",
+            "count": 2,
+            "duration_us": 17.86,
+            "wait_us": 0.15,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_198"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_28",
+            "count": 2,
+            "duration_us": 17.84,
+            "wait_us": 0.06,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_28"
+            ],
+            "input_shape_samples": [
+              "\"768,64\""
+            ],
+            "output_shape_samples": [
+              "\"4,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_393",
+            "count": 2,
+            "duration_us": 17.78,
+            "wait_us": 0.17,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_393"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_231",
+            "count": 2,
+            "duration_us": 17.72,
+            "wait_us": 0.17,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_231"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_330",
+            "count": 2,
+            "duration_us": 17.700000000000003,
+            "wait_us": 0.26,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_330"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_99",
+            "count": 2,
+            "duration_us": 17.68,
+            "wait_us": 0.07,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_99"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_264",
+            "count": 2,
+            "duration_us": 17.68,
+            "wait_us": 0.24,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_264"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_363",
+            "count": 2,
+            "duration_us": 17.66,
+            "wait_us": 0.22,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_363"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_426",
+            "count": 2,
+            "duration_us": 17.64,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_426"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_249",
+            "count": 2,
+            "duration_us": 17.52,
+            "wait_us": 0.28,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_249"
+            ],
+            "input_shape_samples": [
+              "\"768,64\""
+            ],
+            "output_shape_samples": [
+              "\"4,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "trans_TransData_798",
+            "count": 2,
+            "duration_us": 17.36,
+            "wait_us": 0.12,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_798"
+            ],
+            "input_shape_samples": [
+              "\"768,1\""
+            ],
+            "output_shape_samples": [
+              "\"1,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          }
+        ],
+        "top_transdata_shape_signatures": [
+          {
+            "name": "TransData | \"768,64\" -> \"4,48,16,16\" | ND -> FRACTAL_NZ",
+            "count": 96,
+            "duration_us": 591.9799999999998,
+            "wait_us": 4.41,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_0",
+              "trans_TransData_6",
+              "trans_TransData_28"
+            ],
+            "input_shape_samples": [
+              "\"768,64\""
+            ],
+            "output_shape_samples": [
+              "\"4,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "TransData | \"768,32\" -> \"2,48,16,16\" | ND -> FRACTAL_NZ",
+            "count": 44,
+            "duration_us": 306.78,
+            "wait_us": 2.2199999999999998,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_64",
+              "trans_TransData_99",
+              "trans_TransData_132"
+            ],
+            "input_shape_samples": [
+              "\"768,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "TransData | \"2048,64\" -> \"4,128,16,16\" | ND -> FRACTAL_NZ",
+            "count": 48,
+            "duration_us": 285.74,
+            "wait_us": 2.3700000000000006,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_29",
+              "trans_TransData_25",
+              "trans_TransData_52"
+            ],
+            "input_shape_samples": [
+              "\"2048,64\""
+            ],
+            "output_shape_samples": [
+              "\"4,128,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "TransData | \"2048,32\" -> \"2,128,16,16\" | ND -> FRACTAL_NZ",
+            "count": 22,
+            "duration_us": 182.44,
+            "wait_us": 1.1400000000000001,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_65",
+              "trans_TransData_100",
+              "trans_TransData_133"
+            ],
+            "input_shape_samples": [
+              "\"2048,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,128,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "TransData | \"1,64\" -> \"4,1,16,16\" | ND -> FRACTAL_NZ",
+            "count": 48,
+            "duration_us": 67.94000000000001,
+            "wait_us": 2.23,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_10",
+              "trans_TransData_3",
+              "trans_TransData_414"
+            ],
+            "input_shape_samples": [
+              "\"1,64\""
+            ],
+            "output_shape_samples": [
+              "\"4,1,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "TransData | \"1,32\" -> \"2,1,16,16\" | ND -> FRACTAL_NZ",
+            "count": 22,
+            "duration_us": 31.880000000000003,
+            "wait_us": 0.76,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_427",
+              "trans_TransData_462",
+              "trans_TransData_497"
+            ],
+            "input_shape_samples": [
+              "\"1,32\""
+            ],
+            "output_shape_samples": [
+              "\"2,1,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          },
+          {
+            "name": "TransData | \"768,1\" -> \"1,48,16,16\" | ND -> FRACTAL_NZ",
+            "count": 2,
+            "duration_us": 17.36,
+            "wait_us": 0.12,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "trans_TransData_798"
+            ],
+            "input_shape_samples": [
+              "\"768,1\""
+            ],
+            "output_shape_samples": [
+              "\"1,48,16,16\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "FRACTAL_NZ"
+            ],
+            "input_dtype_samples": [
+              "FLOAT16"
+            ]
+          }
+        ],
+        "suspect_kernel_rows": [
+          {
+            "name": "GroupNorm_4",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 429.6,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_4",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 429.02,
+            "wait_us": 0.04,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_5",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 425.46,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_3",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 424.88,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_10",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 424.6,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_8",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 424.34,
+            "wait_us": 0.13,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 423.8,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_1",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 423.68,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_6",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 423.42,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_6",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 423.34,
+            "wait_us": 0.14,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_9",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 422.98,
+            "wait_us": 0.16,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_7",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 422.36,
+            "wait_us": 0.04,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_5",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 422.16,
+            "wait_us": 0.18,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_2",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 422.1,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_2",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 422.06,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"2048,768;768;768\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"2048,768;2048,12;2048,12\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          }
+        ]
+      },
+      "op_statistic": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "row_count": 23,
+        "top_op_types": [
+          {
+            "op_type": "RwkvReferenceWkv7",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 48,
+            "total_time_us": 56472.72,
+            "avg_time_us": 1176.515,
+            "ratio_pct": 61.769
+          },
+          {
+            "op_type": "GroupNormSilu",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 46,
+            "total_time_us": 9444.58,
+            "avg_time_us": 205.316,
+            "ratio_pct": 10.33
+          },
+          {
+            "op_type": "Cast",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 1186,
+            "total_time_us": 5612.08,
+            "avg_time_us": 4.731,
+            "ratio_pct": 6.138
+          },
+          {
+            "op_type": "MatMul",
+            "core_type": "AI_CORE",
+            "count": 658,
+            "total_time_us": 5186.16,
+            "avg_time_us": 7.881,
+            "ratio_pct": 5.673
+          },
+          {
+            "op_type": "StridedSliceD",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 46,
+            "total_time_us": 3080.02,
+            "avg_time_us": 66.956,
+            "ratio_pct": 3.369
+          },
+          {
+            "op_type": "AutomaticBufferFusionOp",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 186,
+            "total_time_us": 1995.52,
+            "avg_time_us": 10.728,
+            "ratio_pct": 2.183
+          },
+          {
+            "op_type": "TransData",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 282,
+            "total_time_us": 1484.12,
+            "avg_time_us": 5.262,
+            "ratio_pct": 1.623
+          },
+          {
+            "op_type": "Transpose",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 166,
+            "total_time_us": 1429.74,
+            "avg_time_us": 8.612,
+            "ratio_pct": 1.564
+          },
+          {
+            "op_type": "LayerNormV3",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 100,
+            "total_time_us": 1342.9,
+            "avg_time_us": 13.429,
+            "ratio_pct": 1.469
+          },
+          {
+            "op_type": "Add",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 94,
+            "total_time_us": 1318.76,
+            "avg_time_us": 14.029,
+            "ratio_pct": 1.442
+          },
+          {
+            "op_type": "Mul",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 138,
+            "total_time_us": 798.72,
+            "avg_time_us": 5.787,
+            "ratio_pct": 0.874
+          },
+          {
+            "op_type": "GatherV2",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 118,
+            "total_time_us": 685.84,
+            "avg_time_us": 5.812,
+            "ratio_pct": 0.75
+          },
+          {
+            "op_type": "Square",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 46,
+            "total_time_us": 360.54,
+            "avg_time_us": 7.837,
+            "ratio_pct": 0.394
+          },
+          {
+            "op_type": "LpNormV2",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 48,
+            "total_time_us": 356.44,
+            "avg_time_us": 7.425,
+            "ratio_pct": 0.39
+          },
+          {
+            "op_type": "ReduceSumD",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 46,
+            "total_time_us": 318.06,
+            "avg_time_us": 6.914,
+            "ratio_pct": 0.348
+          }
+        ]
+      },
+      "api_statistic": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "row_count": 7,
+        "top_apis": [
+          {
+            "level": "model",
+            "api_name": "ModelLoad",
+            "count": 1,
+            "time_us": 374907.97,
+            "avg_us": 374907.97,
+            "max_us": 374907.97
+          },
+          {
+            "level": "acl",
+            "api_name": "aclrtSynchronizeDeviceWithTimeout",
+            "count": 2,
+            "time_us": 88631.64,
+            "avg_us": 44315.82,
+            "max_us": 88620.27
+          },
+          {
+            "level": "node",
+            "api_name": "launch",
+            "count": 1750,
+            "time_us": 22736.81,
+            "avg_us": 12.992,
+            "max_us": 143.3
+          },
+          {
+            "level": "model",
+            "api_name": "ModelExecute",
+            "count": 2,
+            "time_us": 67.03,
+            "avg_us": 33.515,
+            "max_us": 40.91
+          },
+          {
+            "level": "model",
+            "api_name": "InputCopy",
+            "count": 2,
+            "time_us": 64.67,
+            "avg_us": 32.335,
+            "max_us": 44.74
+          },
+          {
+            "level": "node",
+            "api_name": "step_info",
+            "count": 4,
+            "time_us": 40.33,
+            "avg_us": 10.083,
+            "max_us": 24.09
+          },
+          {
+            "level": "model",
+            "api_name": "OutputCopy",
+            "count": 2,
+            "time_us": 0.76,
+            "avg_us": 0.38,
+            "max_us": 0.46
+          }
+        ]
+      },
+      "step_trace_time": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "row_count": 1,
+        "totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 91425.41999999995,
+          "Free": 144.75999999999675,
+          "Overlapped": 0.0,
+          "Preparing": 2151.75,
+          "Stage": 91570.0
+        }
+      },
+      "trace_view": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394/probe/profile_compiled/liteserver-c001-4_15278_20261006125548191_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "event_count": 21657,
+        "top_trace_events": [
+          {
+            "name": "Model@ModelLoad",
+            "count": 1,
+            "duration_us": 374907.97
+          },
+          {
+            "name": "run_reranker_buckets.py(203): <module>",
+            "count": 1,
+            "duration_us": 94097.03
+          },
+          {
+            "name": "run_reranker_buckets.py(188): main",
+            "count": 1,
+            "duration_us": 94083.16
+          },
+          {
+            "name": "run_reranker_buckets.py(51): profile",
+            "count": 1,
+            "duration_us": 94081.87
+          },
+          {
+            "name": "ProfilerStep#0",
+            "count": 1,
+            "duration_us": 93862.35
+          },
+          {
+            "name": "NOTIFY_WAIT",
+            "count": 2,
+            "duration_us": 91489.23999999999
+          },
+          {
+            "name": "Computing",
+            "count": 3500,
+            "duration_us": 91425.41999999995
+          },
+          {
+            "name": "torch_npu/npu/utils.py(62): synchronize",
+            "count": 1,
+            "duration_us": 88757.99
+          },
+          {
+            "name": "<built-in function _npu_synchronize>",
+            "count": 1,
+            "duration_us": 88633.27
+          },
+          {
+            "name": "AscendCL@aclrtSynchronizeDeviceWithTimeout",
+            "count": 2,
+            "duration_us": 88631.64
+          },
+          {
+            "name": "Iteration 2",
+            "count": 1,
+            "duration_us": 45782.24
+          },
+          {
+            "name": "Iteration 1",
+            "count": 1,
+            "duration_us": 45777.84
+          },
+          {
+            "name": "Node@launch",
+            "count": 1750,
+            "duration_us": 22736.810000000012
+          },
+          {
+            "name": "rwkv.compiled_score",
+            "count": 1,
+            "duration_us": 4817.37
+          },
+          {
+            "name": "RwkvReferenceWkv7_5",
+            "count": 2,
+            "duration_us": 4699.280000000001
+          }
+        ],
+        "top_trace_categories": [
+          {
+            "name": "unknown",
+            "count": 12276,
+            "duration_us": 760940.3100000891
+          },
+          {
+            "name": "python_function",
+            "count": 562,
+            "duration_us": 519486.31000000006
+          },
+          {
+            "name": "cpu_op",
+            "count": 24,
+            "duration_us": 112678.90000000001
+          },
+          {
+            "name": "Iteration Time",
+            "count": 2,
+            "duration_us": 91560.07999999999
+          }
+        ]
+      },
+      "profiler_info": {
+        "config": {
+          "common_config": {
+            "activities": [
+              "ProfilerActivity.CPU",
+              "ProfilerActivity.NPU"
+            ],
+            "schedule": {
+              "wait": 0,
+              "active": 1,
+              "warmup": 0,
+              "repeat": 1,
+              "skip_first": 0
+            },
+            "record_shapes": true,
+            "profile_memory": false,
+            "with_stack": true,
+            "with_flops": false,
+            "with_modules": false
+          },
+          "experimental_config": {
+            "_profiler_level": "Level1",
+            "_aic_metrics": "ACL_AICORE_PIPE_UTILIZATION",
+            "_l2_cache": false,
+            "_msprof_tx": false,
+            "_mstx": false,
+            "_data_simplification": true,
+            "record_op_args": false,
+            "_export_type": [
+              "text"
+            ],
+            "_host_sys": [],
+            "_op_attr": false,
+            "_gc_detect_threshold": null,
+            "_mstx_domain_include": [],
+            "_mstx_domain_exclude": [],
+            "_sys_io": false,
+            "_sys_interconnection": false
+          }
+        },
+        "start_info": {
+          "syscnt_enable": true,
+          "freq": 100,
+          "start_cnt": 119796789820,
+          "start_monotonic": 1044992110160
+        },
+        "end_info": {
+          "collectionTimeEnd": 1791291348592946200,
+          "MonotonicTimeEnd": 1045364602280
+        },
+        "torch_npu_version": "2.10.0.post2",
+        "cann_version": "9.0.1"
+      }
+    }
+  ]
+}

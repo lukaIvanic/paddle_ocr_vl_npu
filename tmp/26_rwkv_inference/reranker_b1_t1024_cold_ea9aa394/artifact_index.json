@@ -1,0 +1,17 @@
+{
+  "raw_profiles_remain_on_server": true,
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t1024_cold_ea9aa394/probe/inputs.json",
+      "bytes": 31825,
+      "sha256": "9472a2f6dbc3c878c2728934d855602375049bb3b9ff9bc4869c54dab9112209",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_b1_t1024_cold_ea9aa394/probe/result.json",
+      "bytes": 10438,
+      "sha256": "f2d29361504ade3165217661d492cfc21ea71573b22c892058de7d7ed30f221d",
+      "collected": true
+    }
+  ]
+}

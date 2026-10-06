@@ -1,0 +1,165 @@
+{
+  "source_commit": "ea9aa394018a15f78722cc0af697b8982f4517aa",
+  "chip": "Ascend910B2",
+  "physical_npu": 7,
+  "precision": "FP16 projections; FP32 states/pointwise",
+  "batch_size": 1,
+  "timing_scope": "prepared NPU inputs, warmed synchronized calls; excludes tokenization, first call, profiling; median over four selected real pairs per bucket",
+  "selection": "brief biased boundary/close-score probe, not an accuracy benchmark",
+  "buckets": [
+    {
+      "tokens": 256,
+      "selected_pairs": 4,
+      "eager_ms": 81.22891749999894,
+      "compiled_ms": 11.464702500035173,
+      "speedup": 7.085130861420062,
+      "cold_first_call_seconds": 99.19969834000005,
+      "cached_first_call_seconds": 5.197712839999895,
+      "cache_log_load_verified": true,
+      "cold_vs_loaded_scores_bitwise_equal": true,
+      "compiled_vs_padded_eager_max_abs": 0,
+      "maximum_padding_logit_delta": 1.328125,
+      "close_pair_order": {
+        "b2_logit": 0.0,
+        "raw_logit": 1.0,
+        "padded_logit": 1.0,
+        "compiled_logit": 1.0
+      },
+      "padding_reversed_selected_pair": false,
+      "cold_evidence": "tmp/26_rwkv_inference/reranker_b1_t256_cold_ea9aa394",
+      "cached_evidence": "tmp/26_rwkv_inference/reranker_b1_t256_cached_v2_ea9aa394",
+      "result_sha256": {
+        "cold": "4ed5582d00bc2fe1f494dd5a7611b55d19820acd1d88d1e1cdb74b10520e4b0c",
+        "cached": "b1f46a086bf1d6aae2282091afad21e8f1f03ec87412a4724ad3e96abc59ae7f"
+      },
+      "profiles": {
+        "eager": {
+          "profile_iterations": 2,
+          "kernel_count_per_score": 2441.0,
+          "device_kernel_ms_per_score": 17.330400000000004,
+          "wkv_fraction_of_device_kernel_time": 0.21699268337718688,
+          "summary_sha256": "540b6a10f52e7eba2d222ca06fce5c59a6f64e9dbf3cd7aaeb5e2ba689ff775c"
+        },
+        "compiled": {
+          "profile_iterations": 2,
+          "kernel_count_per_score": 1750.0,
+          "device_kernel_ms_per_score": 11.431630000000013,
+          "wkv_fraction_of_device_kernel_time": 0.3187988064694182,
+          "summary_sha256": "47970bcd359d2aa286ea0252e5299fef920f387129a0d763d5778a42adb063e8"
+        }
+      }
+    },
+    {
+      "tokens": 512,
+      "selected_pairs": 4,
+      "eager_ms": 84.23909999996226,
+      "compiled_ms": 16.546997500029192,
+      "speedup": 5.090899421469886,
+      "cold_first_call_seconds": 73.09143241000004,
+      "cached_first_call_seconds": 4.679669419999982,
+      "cache_log_load_verified": true,
+      "cold_vs_loaded_scores_bitwise_equal": true,
+      "compiled_vs_padded_eager_max_abs": 0,
+      "maximum_padding_logit_delta": 0.53125,
+      "close_pair_order": {
+        "b2_logit": 0.0,
+        "raw_logit": -1.0,
+        "padded_logit": 1.0,
+        "compiled_logit": 1.0
+      },
+      "padding_reversed_selected_pair": true,
+      "cold_evidence": "tmp/26_rwkv_inference/reranker_b1_t512_cold_ea9aa394",
+      "cached_evidence": "tmp/26_rwkv_inference/reranker_b1_t512_cached_v2_ea9aa394",
+      "result_sha256": {
+        "cold": "e633c01b2ff085f270122d5c0fa7143fd568758cf05512ab8e20e8e98a350a76",
+        "cached": "f2e9b9953b09183a51fc5c1e6eefcee5e3c3569fcaec4ea1af507723613d771c"
+      },
+      "profiles": {
+        "eager": {
+          "profile_iterations": 2,
+          "kernel_count_per_score": 2441.0,
+          "device_kernel_ms_per_score": 21.715789999999934,
+          "wkv_fraction_of_device_kernel_time": 0.3353398609951569,
+          "summary_sha256": "eefd5460725f33f2bd06674d6d1480f4f29d17cce68eefdb3c458ba6c37bbd24"
+        },
+        "compiled": {
+          "profile_iterations": 2,
+          "kernel_count_per_score": 1750.0,
+          "device_kernel_ms_per_score": 16.52870000000005,
+          "wkv_fraction_of_device_kernel_time": 0.43401295927689265,
+          "summary_sha256": "67a9ecb9c33eee6a9792779d469a839b5c62255d4f11ae4d62af8774f9c8d04f"
+        }
+      }
+    },
+    {
+      "tokens": 1024,
+      "selected_pairs": 4,
+      "eager_ms": 76.36492250000515,
+      "compiled_ms": 26.755997500004014,
+      "speedup": 2.8541235474399222,
+      "cold_first_call_seconds": 73.89074976999996,
+      "cached_first_call_seconds": 4.693246719999934,
+      "cache_log_load_verified": true,
+      "cold_vs_loaded_scores_bitwise_equal": true,
+      "compiled_vs_padded_eager_max_abs": 0,
+      "maximum_padding_logit_delta": 0.65625,
+      "close_pair_order": {
+        "b2_logit": 0.0,
+        "raw_logit": -1.0,
+        "padded_logit": 1.0,
+        "compiled_logit": 1.0
+      },
+      "padding_reversed_selected_pair": true,
+      "cold_evidence": "tmp/26_rwkv_inference/reranker_b1_t1024_cold_ea9aa394",
+      "cached_evidence": "tmp/26_rwkv_inference/reranker_b1_t1024_cached_v2_ea9aa394",
+      "result_sha256": {
+        "cold": "f2d29361504ade3165217661d492cfc21ea71573b22c892058de7d7ed30f221d",
+        "cached": "8edab399674fcc31e49a50c21ecde4e2db9682d27ce300347760a2d5be8287d9"
+      },
+      "profiles": {}
+    },
+    {
+      "tokens": 2048,
+      "selected_pairs": 4,
+      "eager_ms": 80.30485750009575,
+      "compiled_ms": 45.751427500022146,
+      "speedup": 1.7552426642875105,
+      "cold_first_call_seconds": 75.00589504000015,
+      "cached_first_call_seconds": 4.7845895700002075,
+      "cache_log_load_verified": true,
+      "cold_vs_loaded_scores_bitwise_equal": true,
+      "compiled_vs_padded_eager_max_abs": 0,
+      "maximum_padding_logit_delta": 1.13671875,
+      "close_pair_order": {
+        "b2_logit": -1.0,
+        "raw_logit": -1.0,
+        "padded_logit": 1.0,
+        "compiled_logit": 1.0
+      },
+      "padding_reversed_selected_pair": true,
+      "cold_evidence": "tmp/26_rwkv_inference/reranker_b1_t2048_cold_ea9aa394",
+      "cached_evidence": "tmp/26_rwkv_inference/reranker_b1_t2048_cached_v2_ea9aa394",
+      "result_sha256": {
+        "cold": "c9de386f9859215d49d044b701f04a34c194fb8ebc079a693b99434eb1fe7d04",
+        "cached": "c911178ed9245d5caaed0b586984240e0217f980d030a42d6f3b470b83c7a392"
+      },
+      "profiles": {
+        "eager": {
+          "profile_iterations": 2,
+          "kernel_count_per_score": 2441.0,
+          "device_kernel_ms_per_score": 50.58321999999997,
+          "wkv_fraction_of_device_kernel_time": 0.5606748641150171,
+          "summary_sha256": "8b7bf98a252eff08dbfbf0f3cf3243f416805943ccfc7f42ad40bfdf493f2824"
+        },
+        "compiled": {
+          "profile_iterations": 2,
+          "kernel_count_per_score": 1750.0,
+          "device_kernel_ms_per_score": 45.71270999999998,
+          "wkv_fraction_of_device_kernel_time": 0.6176916660596146,
+          "summary_sha256": "85c2982cbdc95630afdb1032a63351d3d97bed2dddbf8105d49856fb79fce14b"
+        }
+      }
+    }
+  ],
+  "all_checks_passed": true
+}

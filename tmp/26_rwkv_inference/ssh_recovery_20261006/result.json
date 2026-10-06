@@ -1,0 +1,24 @@
+{
+  "observed_utc": "2026-10-06T12:42:02.991941+00:00",
+  "host": "root@116.204.40.238:22",
+  "container": "research_vllm_ascend_023_external_workspace",
+  "initial_inspect": {
+    "status": "exited",
+    "started": "2026-10-05T10:22:41.2019819Z",
+    "finished": "2026-10-06T20:39:04.12929159+08:00",
+    "exit": 255,
+    "oom": false,
+    "restart": "no"
+  },
+  "boot_observed": "2026-10-06 20:38 CST",
+  "reboot_cause": "unknown; prior journal not persistent",
+  "recovery": "docker start existing research container; foreground ControlMaster retained as exec session 53254",
+  "control_socket": "/tmp/codex-blue-zone-1000/rwkv-023-master-recovered",
+  "history_source_mac_chat": "01a1006c-775a-7963-86bd-190f9fdc1811",
+  "history_findings": [
+    "Earlier detached ControlMaster cleanup avoided by retained foreground PTY",
+    "Prior stopped-container recovery after host reboot",
+    "October 3 connection drops aligned with recorded MaxStartups throttling; host did not reboot then"
+  ],
+  "post_recovery_output": "2026\u5e74 10\u6708 06\u65e5 \u661f\u671f\u4e8c 12:46:17 UTC\n 20:46:17 up 7 min,  0 users,  load average: 14.18, 9.08, 4.35\n         \u7cfb\u7edf\u5f15\u5bfc 2026-10-06 20:38\n/research_vllm_ascend_023_external_workspace status=running started=2026-10-06T12:43:02.38601928Z restart=no\n  0 dec4064568644ab4b338f0f54e64e616 Tue 2026-10-06 20:38:43 CST\u2014Tue 2026-10-06 20:46:17 CST\n"
+}

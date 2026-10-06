@@ -9,7 +9,7 @@ full embedding forward passes real-case NPU parity in eager and TorchAir, and
 complete NanoBEIR evaluation passed at reference batch 4: macro NDCG@10
 58.897462 versus reported CPU 58.907231. The 90M reranker passed numerical
 smoke and completed NanoSCIDOCS at B2; its score was below the embedding
-baseline. Next is checking full NanoBEIR against the reported reranker aggregate.
+baseline. Settle the reranker padding policy before full NanoBEIR reproduction.
 Reference scores below remain upstream reports.
 
 ## 0. Establish a server CPU reference
@@ -195,15 +195,24 @@ Longest input **B2/T2046** passed CPU FP32 comparison (logit max error
 Left zero padding and one terminal EOS follow the release; no pair was truncated.
 Peak reserved HBM **0.93 GiB**.
 [`Run, scores, timings and hashes`](../tmp/26_rwkv_inference/nanoscidocs_reranker_eager_b2_fp16_edd3c013/)
-include verified readback of the server-resident CPU anchor. Next: full NanoBEIR
-with the 90M reranker, keeping batch/padding differences explicit.
+include verified readback of the server-resident CPU anchor. The probe below
+identifies a padding issue to settle before changing the evaluation path.
 
-B1 optimization probe `run_reranker_buckets.py` is implemented at `1e65a6b1`:
-real-pair padding checks, combined static scorer buckets 256/512/1024/2048,
-persistent TorchAir GE cache, warm timings and short eager/compiled CPU+NPU
-profiles. Fresh-process cache reuse is a separate check. **Not run:** the server
-SSH endpoint was unreachable on 2026-10-06; no compiled reranker or profile
-results are claimed. Resume with T256, then the remaining buckets and cache reuse.
+B1 scorer probe `run_reranker_buckets.py`, source `ea9aa394`, passed 16 selected
+real pairs across static T256/512/1024/2048: compiled scores exactly match
+padded eager, repeats are stable, and fresh-process disk-cache loads preserve
+identical scores. Warm medians were **11.5/16.5/26.8/45.8 ms**, versus eager
+**81.2/84.2/76.4/80.3 ms**; prepared inputs only, profiles/first calls excluded.
+Cold compile took 73–99 s; cached first calls about 5 s. The compile-only cleanup
+guard also passed a fresh independent CPU/NPU smoke.
+
+**Padding is not neutral:** maximum selected logit change 1.328; selected pair
+order reversed at T512/1024/2048. Match and validate the upstream padding policy
+before using these buckets for benchmark accuracy. Profiles show eager dispatch
+gaps and 2,441 kernels/score versus compiled 1,750; WKV occupies 32% of compiled
+device kernel time at T256 and 62% at T2048, followed by casts/normalization.
+[`Summary, evidence paths and hashes`](../tmp/26_rwkv_inference/reranker_b1_bucket_summary_ea9aa394.json);
+raw traces remain on server, with verified local summaries/hash manifests.
 
 For each released pair:
 
@@ -491,17 +500,17 @@ ssh -F /home/luka/Documents/Codex/2026-10-01/can-you-connect-to-my-mac/work/ssh-
   'docker exec research_vllm_ascend_023_external_workspace hostname'
 ```
 
-This route was tested successfully. A dedicated multiplexed master was started
-and verified on 2026-10-06 at the control socket above, with `ControlPersist=yes`
-(indefinite idle persistence), `ServerAliveInterval=30` and
-`ServerAliveCountMax=3`. Reuse it for subsequent commands. The pre-existing shared
-master remains unchanged; its configuration uses 600-second idle persistence.
-The dedicated connection can be re-established with the same SSH config/socket
-and `-M -N -f` if it disconnects.
+On 2026-10-06 the host rebooted; v0.23 stayed stopped (`restart=no`, exit 255,
+not OOM). Restarting that existing container restored the lane; the cause of the
+reboot is unknown (no retained previous journal). A foreground `-M -N` host
+master at the socket above is retained as session 53254 (`ControlPersist=no`;
+keep the session alive). Mac history records detached masters being cleaned up;
+prefer retaining the foreground session.
+[`Recovery evidence`](../tmp/26_rwkv_inference/ssh_recovery_20261006/result.json).
 
 Run workloads inside the selected container;
 preserve the parent source-through-Git lane and use `source npu-setup` for NPU
-execution. Container inspection did not change packages or launch inference.
+execution. Models, environments and prior evidence survived the reboot.
 
 The upstream GPU implementation uses custom CUDA kernels; the owned Ascend
 embedding path is validated above. There is currently no CUDA validation lane. The

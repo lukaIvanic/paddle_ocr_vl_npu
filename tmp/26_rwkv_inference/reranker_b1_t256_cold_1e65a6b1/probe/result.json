@@ -1,0 +1,59 @@
+{
+  "source_commit": "1e65a6b1a96d42e0324e31181503bb3f383dd6e4",
+  "source_sha256": {
+    "run_reranker_buckets.py": "3e8f061e68fa96b7efcd2b4845ac54ec7cd61bfd552b77a0060fe80f2eba69b4",
+    "local_modeling_rwkv_embedding.py": "14af5fb43576f0b0b505d8fcd20ba1adc255ded9b485c0a845ff8d48c6924f24",
+    "local_modeling_rwkv_reranker.py": "8d264e6600f7ad397929d9760f805cfb8b05a5675811205c2de634243c1979ac"
+  },
+  "batch_size": 1,
+  "bucket": 256,
+  "physical_npu": "7",
+  "dense_dtype": "fp16",
+  "state_pointwise_dtype": "float32",
+  "document_caching": false,
+  "padding": "left zero to bucket; one terminal EOS; last 2048 for raw overflow",
+  "compile_parity_atol": 0.02,
+  "compile_parity_rtol": 0.005,
+  "cases": [],
+  "all_checks_passed": false,
+  "input_sha256": {
+    "checkpoint": "9033eec92f163d1a710474977fa3fb68b7ee04697e0e961d83434743bd256a15",
+    "reranker": "6b6f36543ad71aa48bca3cca97863c529e9153515fb777184c36475b3badb6be",
+    "data": "bfc261e4b59f9b5e3e9915cc9cde95241d2dfe466ee4595a012c7369f4d34190",
+    "candidates": "dcd8a6d3de984c5d0ca47d36e211838cfe496cb13681021e6c960ae0c38c74b6",
+    "baseline_result": "21add7208053f370267215663aa51d742f8d844babbe0cec93ab4e7579046a83",
+    "smoke_result": "294fe6cb08d8378a3009e3fa8304e2047157b6b92954681213f51c7f864cbca3"
+  },
+  "selection": {
+    "eligible_pairs": 3154,
+    "selection_basis": "minimum/maximum raw length and closest same-query B2 logits; not a benchmark sample",
+    "close_pair": [
+      [
+        "a352061134daa2c47861b8c4216ee5482a93be1d",
+        "3f4e71d715fce70c89e4503d747aad11fcac8a43"
+      ],
+      [
+        "a352061134daa2c47861b8c4216ee5482a93be1d",
+        "a0456c27cdd58f197032c1c8b4f304f09d4c9bc5"
+      ]
+    ]
+  },
+  "device": "Ascend910B2",
+  "device_status": "NPU 0: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 1: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 2: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 3: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 4: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 5: excluded HBM=3197/65536MB AICore=0% Health=OK\nNPU 6: free HBM=3197/65536MB AICore=0% Health=OK\nNPU 7: free HBM=3197/65536MB AICore=0% Health=OK\n",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "torchair": "unknown",
+  "hbm_before": {
+    "free_bytes": 65103392768,
+    "total_bytes": 65452113920
+  },
+  "compile": {
+    "cache_dir": "/workspace/rwkv_reference/graph_cache/reranker_buckets/65b0fda175e673b2_b1_t256",
+    "cache_files_before": {},
+    "dynamic": false,
+    "fullgraph": true,
+    "ge_cache": true
+  },
+  "error": "Unsupported: Missing bytecode handler\n  Explanation: Dynamo does not know how to handle the bytecode instruction `DELETE_DEREF`.\n  Hint: Do not trace code that produces the `DELETE_DEREF` bytecode instruction (see https://docs.python.org/3/library/dis.html for bytecode semantics).\n  Hint: It may be possible to write Dynamo tracing rules for this code. Please report an issue to PyTorch if you encounter this graph break often and it is causing performance issues.\n\n  Developer debug context: DELETE_DEREF with args (<torch._dynamo.symbolic_convert.InliningInstructionTranslator object at 0xfffeaa71d7f0>, Instruction(opcode=139, opname='DELETE_DEREF', arg=31, argval='z', offset=2458, starts_line=100, is_jump_target=False, positions=Positions(lineno=100, end_lineno=100, col_offset=12, end_col_offset=13), target=None, exn_tab_entry=None, argrepr=None))\n\n For more details about this graph break, please visit: https://meta-pytorch.github.io/compile-graph-break-site/gb/gb0082.html\n\nfrom user code:\n   File \"/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py\", line 30, in forward\n    _, state, _ = self.backbone.encode_states(ids)\n  File \"/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/local_modeling_rwkv_embedding.py\", line 150, in encode_states\n    x, first, final = block.run(x, first,\n  File \"/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/local_modeling_rwkv_embedding.py\", line 100, in run\n    del z, delta, r, w, k, xv, v, a, g, kk, y, extra\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+  "total_seconds": 22.894958150000036
+}

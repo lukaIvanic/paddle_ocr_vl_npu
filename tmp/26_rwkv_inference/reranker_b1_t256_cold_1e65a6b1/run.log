@@ -1,0 +1,40 @@
+Selected physical NPU 7 as logical npu:0 (health/idle check; not a reservation)
+Python: /usr/local/python3.12.13/bin/python3
+ninja: no work to do.
+COMPILE_START {"bucket": 256, "cache_expected": false, "raw_tokens": 36}
+Traceback (most recent call last):
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py", line 199, in <module>
+    if __name__ == '__main__': main()
+                               ^^^^^^
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py", line 158, in main
+    before = time.perf_counter(); actual = forward(padded); torch.npu.synchronize(); first = time.perf_counter()-before
+                                           ^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py", line 599, in __call__
+    return self._compiled_model(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py", line 524, in __call__
+    return self.compiled_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 963, in compile_wrapper
+    raise e.with_traceback(None) from e.__cause__  # User compiler error
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch._dynamo.exc.Unsupported: Missing bytecode handler
+  Explanation: Dynamo does not know how to handle the bytecode instruction `DELETE_DEREF`.
+  Hint: Do not trace code that produces the `DELETE_DEREF` bytecode instruction (see https://docs.python.org/3/library/dis.html for bytecode semantics).
+  Hint: It may be possible to write Dynamo tracing rules for this code. Please report an issue to PyTorch if you encounter this graph break often and it is causing performance issues.
+
+  Developer debug context: DELETE_DEREF with args (<torch._dynamo.symbolic_convert.InliningInstructionTranslator object at 0xfffeaa71d7f0>, Instruction(opcode=139, opname='DELETE_DEREF', arg=31, argval='z', offset=2458, starts_line=100, is_jump_target=False, positions=Positions(lineno=100, end_lineno=100, col_offset=12, end_col_offset=13), target=None, exn_tab_entry=None, argrepr=None))
+
+ For more details about this graph break, please visit: https://meta-pytorch.github.io/compile-graph-break-site/gb/gb0082.html
+
+from user code:
+   File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py", line 30, in forward
+    _, state, _ = self.backbone.encode_states(ids)
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/local_modeling_rwkv_embedding.py", line 150, in encode_states
+    x, first, final = block.run(x, first,
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/local_modeling_rwkv_embedding.py", line 100, in run
+    del z, delta, r, w, k, xv, v, a, g, kk, y, extra
+
+Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dynamo"
+
+[ERROR] 2026-10-06-12:44:36 (PID:606, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception

@@ -1,0 +1,216 @@
+{
+  "all_readbacks_passed": true,
+  "large_arrays_remain_on_server": true,
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_smoke_cleanup_ea9aa394/probe/english_relevant.npz",
+      "sha256": "a3a96c8f8c4c6fc7426a483699912feb52ff9e15ec7c744735364b3f05c6526b",
+      "bytes": 2403795,
+      "arrays": {
+        "input_ids": [
+          1,
+          40
+        ],
+        "cpu_hidden": [
+          1,
+          40,
+          768
+        ],
+        "cpu_shift": [
+          12,
+          2,
+          1,
+          768
+        ],
+        "cpu_matrix": [
+          12,
+          1,
+          12,
+          64,
+          64
+        ],
+        "cpu_logits": [
+          1
+        ],
+        "npu_logits": [
+          1
+        ]
+      }
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_smoke_cleanup_ea9aa394/probe/english_other.npz",
+      "sha256": "49dfa51b09de46a22d98e45a06661e3e851fafbb4b98ee8ea1a9370fea02a9bb",
+      "bytes": 2397836,
+      "arrays": {
+        "input_ids": [
+          1,
+          38
+        ],
+        "cpu_hidden": [
+          1,
+          38,
+          768
+        ],
+        "cpu_shift": [
+          12,
+          2,
+          1,
+          768
+        ],
+        "cpu_matrix": [
+          12,
+          1,
+          12,
+          64,
+          64
+        ],
+        "cpu_logits": [
+          1
+        ],
+        "npu_logits": [
+          1
+        ]
+      }
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_smoke_cleanup_ea9aa394/probe/chinese.npz",
+      "sha256": "26cd3beb2c5938211ab58372a8f3179bce25633e919a62826fca1ff552cd869c",
+      "bytes": 2448561,
+      "arrays": {
+        "input_ids": [
+          1,
+          56
+        ],
+        "cpu_hidden": [
+          1,
+          56,
+          768
+        ],
+        "cpu_shift": [
+          12,
+          2,
+          1,
+          768
+        ],
+        "cpu_matrix": [
+          12,
+          1,
+          12,
+          64,
+          64
+        ],
+        "cpu_logits": [
+          1
+        ],
+        "npu_logits": [
+          1
+        ]
+      }
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_smoke_cleanup_ea9aa394/probe/empty.npz",
+      "sha256": "e6b0b03148825f8509b3a0b7e44390553866f5944e7690435372c99416aad2a9",
+      "bytes": 2361512,
+      "arrays": {
+        "input_ids": [
+          1,
+          25
+        ],
+        "cpu_hidden": [
+          1,
+          25,
+          768
+        ],
+        "cpu_shift": [
+          12,
+          2,
+          1,
+          768
+        ],
+        "cpu_matrix": [
+          12,
+          1,
+          12,
+          64,
+          64
+        ],
+        "cpu_logits": [
+          1
+        ],
+        "npu_logits": [
+          1
+        ]
+      }
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_smoke_cleanup_ea9aa394/probe/long_prefix.npz",
+      "sha256": "0bad214dbbf286b3adca2d681a402c82ece1e0cd58d6718df074bdf519561141",
+      "bytes": 3276532,
+      "arrays": {
+        "input_ids": [
+          1,
+          346
+        ],
+        "cpu_hidden": [
+          1,
+          346,
+          768
+        ],
+        "cpu_shift": [
+          12,
+          2,
+          1,
+          768
+        ],
+        "cpu_matrix": [
+          12,
+          1,
+          12,
+          64,
+          64
+        ],
+        "cpu_logits": [
+          1
+        ],
+        "npu_logits": [
+          1
+        ]
+      }
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_smoke_cleanup_ea9aa394/probe/english_relevant_b2.npz",
+      "sha256": "3a4205834c1e8f2a88571fb7ced87d68e586504b485c63e770fcdc51a165f6e8",
+      "bytes": 4802103,
+      "arrays": {
+        "input_ids": [
+          2,
+          40
+        ],
+        "cpu_hidden": [
+          2,
+          40,
+          768
+        ],
+        "cpu_shift": [
+          12,
+          2,
+          2,
+          768
+        ],
+        "cpu_matrix": [
+          12,
+          2,
+          12,
+          64,
+          64
+        ],
+        "cpu_logits": [
+          2
+        ],
+        "npu_logits": [
+          2
+        ]
+      }
+    }
+  ]
+}
