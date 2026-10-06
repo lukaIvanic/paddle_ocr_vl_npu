@@ -74,11 +74,17 @@ def main():
     p.add_argument("--allow-shared-device", action="store_true",
                    help="Explicitly authorized shared-device correctness run; skip timing")
     p.add_argument("--lengths", default="1,47,48,49,64,128,512,976")
+    p.add_argument("--batch-sizes", default="1,2")
+    p.add_argument("--backend", choices=("raw_eager", "torchair"), default="raw_eager")
     p.add_argument("--repeats", type=int, default=20)
     args = p.parse_args()
     lengths = [int(x) for x in args.lengths.split(",")]
-    if not 1 <= args.repeats <= 100 or any(not 1 <= x <= 2048 for x in lengths):
+    batches = [int(x) for x in args.batch_sizes.split(",")]
+    if (not 1 <= args.repeats <= 100 or any(not 1 <= x <= 2048 for x in lengths)
+            or any(x not in (1, 2) for x in batches)):
         p.error("Use lengths 1..2048 and repeats 1..100")
+    if args.backend == "torchair" and (len(lengths) != 1 or len(batches) != 1):
+        p.error("TorchAir probes use exactly one batch/length shape per process")
     root = Path(__file__).parent / "wkv7_npu"
     build = args.build_root.resolve()
     output = args.output.resolve()
@@ -86,7 +92,7 @@ def main():
     report = {"hostname": platform.node(), "machine": platform.machine(),
               "source_commit": subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip(),
               "script_sha256": digest(__file__), "physical_npu": os.environ.get("ASCEND_RT_VISIBLE_DEVICES"),
-              "backend": "raw_eager", "torchair_used": False, "python_stock_fallback": False,
+              "backend": args.backend, "torchair_used": args.backend == "torchair", "python_stock_fallback": False,
               "same_name_override": False, "shared_device": args.allow_shared_device,
               "atol": 2e-5, "rtol": 2e-4, "cases": [],
               "all_checks_passed": False, "inference_executed": False}
@@ -126,8 +132,27 @@ def main():
         # Stock control establishes that this selected device can execute work.
         control = torch.ones((64, 64), device="npu")
         assert torch.equal((control @ control).cpu(), torch.full((64, 64), 64.))
-        op = torch.ops.rwkv_reference.wkv7.default
-        for batch in (1, 2):
+        eager_op = torch.ops.rwkv_reference.wkv7.default
+        op = eager_op
+        if args.backend == "torchair":
+            import torchair
+            from torchair.configs.compiler_config import CompilerConfig
+            from torchair._ge_concrete_graph.ge_converter import register_fx_node_ge_converter
+            from torchair import ge
+
+            @register_fx_node_ge_converter(eager_op)
+            def convert(k, v, w, r, a, b, hi, meta_outputs=None):
+                return ge.custom_op("RwkvReferenceWkv7",
+                    inputs={"k": k, "v": v, "w": w, "r": r, "a": a, "b": b, "hi": hi},
+                    attrs={}, outputs=["o", "ho"])
+
+            def forward(k, v, w, r, a, b, hi):
+                return eager_op(k, v, w, r, a, b, hi)
+
+            report["graph_cache"] = str(output / "graph_cache")
+            op = torchair.inference.cache_compile(forward, config=CompilerConfig(),
+                    dynamic=False, cache_dir=report["graph_cache"], ge_cache=True)
+        for batch in batches:
             for length in lengths:
                 for nonzero in (False, True):
                     cpu = make_inputs(batch, length, nonzero, 20261006 + length)
@@ -142,15 +167,18 @@ def main():
                     got = (out.cpu(), state.cpu())
                     comparisons = [compare(x, y) for x, y in zip(got, expected)]
                     assert all(x["allclose"] for x in comparisons), comparisons
+                    if args.backend == "torchair":
+                        direct = tuple(x.cpu() for x in eager_op(*device))
+                        assert all(compare(x, y)["allclose"] for x, y in zip(got, direct)), "Compiled vs eager"
                     assert all(torch.equal(x.cpu(), y) for x, y in zip(device, cpu)), "Input mutation"
                     repeated = tuple(x.cpu() for x in op(*device))
                     assert all(torch.equal(x, y) for x, y in zip(got, repeated)), "Repeat-call mismatch"
                     if length > 1:
                         split = length // 2
                         left = [x[:, :, :split].contiguous() for x in device[:6]] + [device[6]]
-                        lo, ls = op(*left)
+                        lo, ls = eager_op(*left)
                         right = [x[:, :, split:].contiguous() for x in device[:6]] + [ls]
-                        ro, rs = op(*right)
+                        ro, rs = eager_op(*right)
                         assert compare(torch.cat([lo, ro], dim=2).cpu(), got[0])["allclose"], "Split output"
                         assert compare(rs.cpu(), got[1])["allclose"], "Split final state"
                     steady = None
