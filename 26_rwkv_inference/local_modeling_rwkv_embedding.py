@@ -49,14 +49,15 @@ class Block(Weights):
             raise ValueError(f'Block keys mismatch: missing={expected-set(values)}, unexpected={set(values)-expected}')
         super().__init__(values, device, dense_dtype)
 
-    def run(self, x, first, previous=None, matrix=None):
+    def run(self, x, first, previous=None, matrix=None, valid_lengths=None):
         B, T, C = x.shape
         H = C // 64
         if previous is None:
             previous = torch.zeros((2, B, C), device=x.device, dtype=torch.float32)
         z = self.norm(x, 'ln1')
         delta = torch.cat((previous[0][:, None], z[:, :-1]), dim=1) - z
-        att_previous = z[:, -1]
+        att_previous = (z[:, -1] if valid_lengths is None else
+            z.gather(1, (valid_lengths.long()-1)[:, None, None].expand(B, 1, C)).squeeze(1))
         def mix(name):
             return z + delta * self.get('att.x_' + name)
         r = self.linear(mix('r'), 'att.receptance.weight')
@@ -79,7 +80,11 @@ class Block(Weights):
         state = (torch.zeros((B, H, 64, 64), device=x.device, dtype=torch.float32)
                  if matrix is None else matrix.contiguous())
         inputs = [layout(t) for t in (k, v, w, r, -kk, kk * a)]
-        if T <= 2048:
+        if valid_lengths is not None:
+            if T > 2048:
+                raise ValueError('Endpoint state capture supports T<=2048')
+            y, state = torch.ops.rwkv_endpoint.wkv7.default(*inputs, state, valid_lengths)
+        elif T <= 2048:
             y, state = torch.ops.rwkv_reference.wkv7.default(*inputs, state)
         else:
             # Preserve the complete prepared sequence; only split the recurrence
@@ -102,7 +107,8 @@ class Block(Weights):
             del z, delta, r, w, k, xv, v, a, g, kk, y, extra
         z = self.norm(x, 'ln2')
         delta = torch.cat((previous[1][:, None], z[:, :-1]), dim=1) - z
-        ffn_previous = z[:, -1]
+        ffn_previous = (z[:, -1] if valid_lengths is None else
+            z.gather(1, (valid_lengths.long()-1)[:, None, None].expand(B, 1, C)).squeeze(1))
         mixed = z + delta * self.get('ffn.x_k')
         x = x + self.linear(F.relu(self.linear(mixed, 'ffn.key.weight')).square(), 'ffn.value.weight')
         return x, first, (torch.stack((att_previous, ffn_previous)), state)
@@ -143,7 +149,7 @@ class Embedding(Weights):
         embedding = F.normalize(self.norm(y + pooled, 'head.retr_head.norm'), dim=-1)
         return embedding, layers
 
-    def encode_states(self, ids, state=None, trace=False):
+    def encode_states(self, ids, state=None, trace=False, valid_lengths=None):
         """Return final hidden outputs and [token-shift, TimeMix] state; never mutate inputs."""
         x = self.norm(F.embedding(ids, self.get('emb.weight')), 'blocks.0.ln0')
         previous, matrices = state if state is not None else (None, None)
@@ -151,7 +157,7 @@ class Embedding(Weights):
         for i, block in enumerate(self.blocks):
             x, first, final = block.run(x, first,
                 None if previous is None else previous[i],
-                None if matrices is None else matrices[i])
+                None if matrices is None else matrices[i], valid_lengths)
             shifts.append(final[0]); states.append(final[1])
             if trace:
                 layers.append(x)

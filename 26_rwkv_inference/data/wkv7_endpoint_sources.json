@@ -1,0 +1,27 @@
+{
+  "base_sources": {
+    "CMakeLists.txt": "5cda934c63a9a15640d308184db571e82f3bf1e90b9a5247d0746c1046c8f6ac",
+    "bridge.cpp": "5271b6f98b63da8e2d790f4154bab9a7d8c156f15ba261ffe6e80e8a591ab987",
+    "LICENSE": "97e7afb9392d7c7f940607b30319a0501d9c2f8429f15c5f87ff944b1bcb73d6",
+    "build.sh": "c220cb882fede343af63ad7ac41153f13d0bc6182c4af8ae4155ef5ba4e47e30",
+    "op_host/CMakeLists.txt": "54aa68b551a22faf57476b414e03643b0a433545239c329bf603ccf9c4d674b6",
+    "op_host/rwkv_reference_wkv7_tiling.h": "5227e65c2b4f1e2067a44d120cfb6746de70ea4684d9d0fa8ccb01350cd4ee40",
+    "op_host/rwkv_reference_wkv7.cpp": "0f88cbf1fa7f96edfad7cd20e5b26be40081f218403c1a11f5a0fcdff3ab5a20",
+    "op_kernel/CMakeLists.txt": "5f228bd04aae822f620be2230fcf2494c325b0ea74e6bf26ae66a1f1390462cd",
+    "op_kernel/rwkv_reference_wkv7.cpp": "543380c5a32b26fc3ef7d5f2fce762e41f9066753dd76503e92508f91b5420ed"
+  },
+  "identities": {
+    "pytorch": "rwkv_endpoint::wkv7",
+    "GE_CANN": "RwkvEndpointWkv7",
+    "aclnn": "aclnnRwkvEndpointWkv7",
+    "kernel": "rwkv_endpoint_wkv7",
+    "vendor": "rwkv_endpoint"
+  },
+  "contract": {
+    "inputs": "Existing contiguous FP32 [B,H,T<=2048,64] tensors and FP32 [B,H,64,64] initial state; int32 NPU lengths[B], caller guarantees 0<=length<=T",
+    "outputs": "FP32 [B,H,T,64], valid prefix matches reference; trailing outputs zero. FP32 [B,H,64,64] state after length updates. No mutation.",
+    "device": "Ascend 910B2",
+    "model": "B1 initially; lengths>=1; terminal EOS included in length",
+    "adaptation": "Skip recurrence updates in each tile at positions >= length; keep original padded strides. Read length on device per head. Original operator remains unchanged."
+  }
+}
