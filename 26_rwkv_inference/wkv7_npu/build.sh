@@ -19,5 +19,5 @@ packages=("$build"/*.run)
 bash "${packages[0]}" --quiet --install-path="$build/install"
 api=$(find "$build/install" -path '*/op_api/lib/libcust_opapi.so' -type f)
 [[ -n "$api" && $(echo "$api" | wc -l) -eq 1 ]]
-nm -D "$api" | rg 'aclnnRwkvReferenceWkv7(GetWorkspaceSize)?$'
+nm -D "$api" | grep -E 'aclnnRwkvReferenceWkv7(GetWorkspaceSize)?$'
 printf 'WKV7_BUILD_ROOT=%s\nWKV7_INSTALL_ROOT=%s\n' "$build" "$build/install"

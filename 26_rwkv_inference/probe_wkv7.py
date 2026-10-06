@@ -104,6 +104,10 @@ def main():
             return
         if not report["physical_npu"]:
             raise RuntimeError("source npu-setup first; no physical NPU was selected")
+        status = subprocess.check_output(["/usr/local/bin/npu-status"], text=True)
+        report["device_status_before_inference"] = status
+        if f"NPU {report['physical_npu']}: free " not in status:
+            raise RuntimeError("Selected device is no longer healthy and free; rerun npu-setup")
         torch.npu.set_device(0)
         torch.npu.set_compile_mode(jit_compile=False)
         torch.npu.config.allow_internal_format = False
