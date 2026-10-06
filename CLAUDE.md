@@ -78,6 +78,11 @@ and — importantly on a shared box — calls `npu-status --last-free` to pick a
 device and export it as `ASCEND_RT_VISIBLE_DEVICES`. It prints the physical
 device it selected and the interpreter to use.
 
+Verify that the selected physical card reports `OK` health and is unoccupied
+before inference. Occupancy-based selection alone does not establish health.
+If necessary, choose another healthy, free card from the current inventory;
+if none exists, report that blocker rather than sharing an occupied card.
+
 Use `/usr/local/python3.12.13/bin/python3` for model/operator probes; its torch
 and torch-npu imports were verified through this route on 2026-10-06 (both
 2.10.0, observed device `Ascend910B2`). Full experiment-09 runs use

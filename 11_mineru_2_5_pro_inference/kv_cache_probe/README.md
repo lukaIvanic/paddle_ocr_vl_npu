@@ -3,7 +3,9 @@
 Status, 2026-10-06: implemented; CPU packing checks passed on the Mac. **No NPU
 timing or correctness result yet.** The current host-master plus `docker exec`
 route is verified working; the earlier connection-blocker report used a retired
-container SSH alias.
+container SSH alias. The subsequent 910B inventory check found all healthy cards
+occupied and the two unoccupied cards reporting `Alarm`; benchmark execution
+awaits a healthy free card. Recheck the current inventory before running.
 
 This probes one-token **text decode attention** with synthetic, identical FP16
 Q/K/V and MinerU dimensions: 14 query heads, 2 KV heads, D64, KV4096. Vision
@@ -115,6 +117,7 @@ git fetch origin codex/mineru-kv-cache-layout-probe
 git checkout --detach FETCH_HEAD
 source npu-setup
 export PYTHON=/usr/local/python3.12.13/bin/python3
+# Confirm the selected physical card is healthy (OK) and unoccupied first.
 CHIP=910B bash 11_mineru_2_5_pro_inference/kv_cache_probe/run_probe.sh
 ```
 
