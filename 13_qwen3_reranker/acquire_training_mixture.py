@@ -25,6 +25,7 @@ def main():
     p.add_argument("--seed", type=int, default=731)
     p.add_argument("--cache", type=Path, default=Path("/tmp/qwen-mixture-http-cache"))
     p.add_argument("--prefer-parquet", action="store_true")
+    p.add_argument("--hub-endpoint", default="https://huggingface.co")
     args = p.parse_args()
     started = time.monotonic()
     info = json.loads(args.metadata.read_text())
@@ -84,7 +85,7 @@ def main():
                 files = [s["rfilename"] for s in info["siblings"]
                          if s["rfilename"].startswith(config + "/") and s["rfilename"].endswith(".parquet")]
                 assert len(files) == 1, "Expected one mirror Parquet shard per config"
-                url = f"https://huggingface.co/datasets/{MIRROR}/resolve/{REVISION}/{files[0]}?download=true"
+                url = f"{args.hub_endpoint.rstrip('/')}/datasets/{MIRROR}/resolve/{REVISION}/{files[0]}?download=true"
                 stream = fsspec.open(url, mode="rb", block_size=1024**2, client_kwargs={"trust_env": True}).open()
                 parquet_files[config] = (pq.ParquetFile(stream), url)
             reader, url = parquet_files[config]
@@ -161,7 +162,7 @@ def main():
             if i % 10 == 0 or i == len(jobs):
                 print("FETCH_PROGRESS", json.dumps({"requests": i, "of": len(jobs),
                       "eligible_rows": len(pool), "seconds": time.monotonic() - started}), flush=True)
-    fresh = json.load(urllib.request.urlopen("https://huggingface.co/api/datasets/" + MIRROR, timeout=30))
+    fresh = json.load(urllib.request.urlopen(args.hub_endpoint.rstrip('/') + "/api/datasets/" + MIRROR, timeout=30))
     assert fresh["sha"] == REVISION, "Mirror revision changed during acquisition"
     dataset = select_split(pool, counts, args.train_queries, args.val_queries, args.seed)
     dataset["provenance"] = {
@@ -174,6 +175,7 @@ def main():
         "sampling": "proportional released-row source and length quotas; source floors 4 train/2 validation; random blocks without replacement with uniform circular windows inside partial blocks; quota caps reflect eligible unique rows",
         "acquisition_script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "prefer_parquet": args.prefer_parquet,
+        "hub_endpoint": args.hub_endpoint,
         "counts_by_config": counts, "responses": responses, "seed": args.seed,
         "seconds": time.monotonic() - started,
     }
