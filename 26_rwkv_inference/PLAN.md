@@ -241,6 +241,15 @@ converter; its evidence is retained and the harness correction passed. No new
 accuracy or throughput result; upstream logical B32 preparation remains next.
 [`Endpoint test summary, inputs, sources and package/graph hashes`](../tmp/26_rwkv_inference/reranker_endpoint_summary_8a64221a.json).
 
+**Clean endpoint forward timings**, source `2b17b64a`, 910B2 NPU 7, B1 FP16,
+20 repetitions/input after warmup, no document caching: T512 (257–510 valid tokens)
+**13.7–17.2 ms compiled / 82.3–83.2 ms eager**;
+T2048 (1038–2046 valid tokens) **33.1–46.7 / 84.0–84.4 ms**.
+The head takes about 1.7–1.8 ms. Setup, tokenization, transfers, validation and
+profiling are excluded; all score/state checks still pass. Both fresh processes
+used private copies of the existing graph caches.
+[`Samples, stage timings and hashes`](../tmp/26_rwkv_inference/reranker_endpoint_timing_summary_2b17b64a.json).
+
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,
 followed by casts/normalization. Optimization remains pending the padding policy.

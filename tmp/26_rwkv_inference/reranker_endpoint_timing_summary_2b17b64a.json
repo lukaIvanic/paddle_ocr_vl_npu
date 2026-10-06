@@ -1,0 +1,245 @@
+{
+  "device": "Ascend 910B2 physical NPU 7",
+  "batch_size": 1,
+  "precision": "FP16 projections, FP32 state/pointwise",
+  "scope": "Uncached full pair forward, separate compiled backbone and head. Prepared NPU inputs, warm graphs, no tokenization/transfers/compile/validation/profiling within timings.",
+  "measurement": "20 synchronized repetitions after 3 warmups per real input and stage. Host wall and NPU events. Runs did not overlap.",
+  "padding": "Extra trailing bucket padding excluded at valid endpoint; original terminal EOS retained.",
+  "rows": [
+    {
+      "bucket": 512,
+      "run_path": "reranker_endpoint_timing_t512_2b17b64a",
+      "result_sha256": "3498196576a059d39489767d79ecf0db928486b134845cd585173592f33cd843",
+      "valid_tokens": [
+        257,
+        510,
+        341,
+        306
+      ],
+      "cases": [
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "b31f0085b7dd24bdde1e5cec003589ce4bf4238c",
+          "valid_tokens": 257,
+          "endpoint_logit": -5.5234375,
+          "speedup": 5.993933791820131,
+          "stages_host_median_ms": {
+            "compiled_total": 13.723565000418603,
+            "eager_total": 82.25814000024911,
+            "compiled_backbone": 12.158824999914941,
+            "compiled_head": 1.7257599997719808
+          },
+          "stages_npu_median_ms": {
+            "compiled_total": 13.60708999633789,
+            "eager_total": 82.12173080444335,
+            "compiled_backbone": 12.046400070190428,
+            "compiled_head": 1.6285600066184998
+          },
+          "compiled_pairs_per_second": 72.86736354361986
+        },
+        {
+          "query_id": "546b3592f59b3445ef12fba506b729c832198c33",
+          "document_id": "6513888c5ef473bdbb3167c7b52f0985be071f7a",
+          "valid_tokens": 510,
+          "endpoint_logit": -5.90625,
+          "speedup": 4.813419334220082,
+          "stages_host_median_ms": {
+            "compiled_total": 17.170374999750493,
+            "eager_total": 82.64821499960817,
+            "compiled_backbone": 15.585034999730851,
+            "compiled_head": 1.7192649997923581
+          },
+          "stages_npu_median_ms": {
+            "compiled_total": 17.062129974365238,
+            "eager_total": 82.50426101684572,
+            "compiled_backbone": 15.478790283203125,
+            "compiled_head": 1.6186100244522095
+          },
+          "compiled_pairs_per_second": 58.23984624765221
+        },
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "075bc988728788aa033b04dee1753ded711180ee",
+          "valid_tokens": 341,
+          "endpoint_logit": -8.0859375,
+          "speedup": 5.584651772834278,
+          "stages_host_median_ms": {
+            "compiled_total": 14.89703000015652,
+            "eager_total": 83.19472500033953,
+            "compiled_backbone": 13.301890000093408,
+            "compiled_head": 1.7421449997527816
+          },
+          "stages_npu_median_ms": {
+            "compiled_total": 14.787039756774902,
+            "eager_total": 83.05830001831055,
+            "compiled_backbone": 13.196579933166504,
+            "compiled_head": 1.6421400308609009
+          },
+          "compiled_pairs_per_second": 67.12747440191053
+        },
+        {
+          "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+          "document_id": "a6f1dfcc44277d4cfd8507284d994c9283dc3a2f",
+          "valid_tokens": 306,
+          "endpoint_logit": -8.0703125,
+          "speedup": 5.725560509176713,
+          "stages_host_median_ms": {
+            "compiled_total": 14.432635000048322,
+            "eager_total": 82.63492499963832,
+            "compiled_backbone": 12.83464499965703,
+            "compiled_head": 1.7316749999736203
+          },
+          "stages_npu_median_ms": {
+            "compiled_total": 14.32272005081177,
+            "eager_total": 82.49614715576173,
+            "compiled_backbone": 12.728919982910156,
+            "compiled_head": 1.6301800012588499
+          },
+          "compiled_pairs_per_second": 69.28741702375567
+        }
+      ],
+      "compiled_total_host_median_ms_range": [
+        13.723565000418603,
+        17.170374999750493
+      ],
+      "eager_total_host_median_ms_range": [
+        82.25814000024911,
+        83.19472500033953
+      ],
+      "compiled_backbone_host_median_ms_range": [
+        12.158824999914941,
+        15.585034999730851
+      ],
+      "compiled_head_host_median_ms_range": [
+        1.7192649997923581,
+        1.7421449997527816
+      ],
+      "speedup_range": [
+        4.813419334220082,
+        5.993933791820131
+      ],
+      "compiled_pairs_per_second_range": [
+        58.23984624765221,
+        72.86736354361986
+      ]
+    },
+    {
+      "bucket": 2048,
+      "run_path": "reranker_endpoint_timing_t2048_2b17b64a",
+      "result_sha256": "48486983cd9ae8fc98017e267a4bdde7589c11f437b8b74ca646b97b1915fecf",
+      "valid_tokens": [
+        1038,
+        2046,
+        1039,
+        2035
+      ],
+      "cases": [
+        {
+          "query_id": "d406239de17bbb4f66d4c835f2a5f1be977b4131",
+          "document_id": "2532d0567c8334e4cadf282a73ffe399c1c32476",
+          "valid_tokens": 1038,
+          "endpoint_logit": -5.03515625,
+          "speedup": 2.5331320375390205,
+          "stages_host_median_ms": {
+            "compiled_total": 33.203210000010586,
+            "eager_total": 84.1081150001628,
+            "compiled_backbone": 31.426330000158487,
+            "compiled_head": 1.8263099996147503
+          },
+          "stages_npu_median_ms": {
+            "compiled_total": 33.01771926879883,
+            "eager_total": 83.96824264526367,
+            "compiled_backbone": 31.317230224609375,
+            "compiled_head": 1.7286800146102907
+          },
+          "compiled_pairs_per_second": 30.117569957834835
+        },
+        {
+          "query_id": "e0a8b67880070624ef8787a08bbbd5aa178d65ac",
+          "document_id": "18b534c7207a1376fa92e87fe0d2cfb358d98c51",
+          "valid_tokens": 2046,
+          "endpoint_logit": -5.640625,
+          "speedup": 1.7958407992070333,
+          "stages_host_median_ms": {
+            "compiled_total": 46.748884999942675,
+            "eager_total": 83.95355500033475,
+            "compiled_backbone": 45.07781500024066,
+            "compiled_head": 1.8480749999980617
+          },
+          "stages_npu_median_ms": {
+            "compiled_total": 46.620309829711914,
+            "eager_total": 83.81917190551758,
+            "compiled_backbone": 44.965829849243164,
+            "compiled_head": 1.7498599886894228
+          },
+          "compiled_pairs_per_second": 21.390884509892082
+        },
+        {
+          "query_id": "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+          "document_id": "2532d0567c8334e4cadf282a73ffe399c1c32476",
+          "valid_tokens": 1039,
+          "endpoint_logit": -5.30859375,
+          "speedup": 2.5473797678975605,
+          "stages_host_median_ms": {
+            "compiled_total": 33.12320999930307,
+            "eager_total": 84.37739500004682,
+            "compiled_backbone": 31.460819999665546,
+            "compiled_head": 1.8107349997080746
+          },
+          "stages_npu_median_ms": {
+            "compiled_total": 33.00594902038574,
+            "eager_total": 84.22169876098633,
+            "compiled_backbone": 31.337820053100582,
+            "compiled_head": 1.7145900130271912
+          },
+          "compiled_pairs_per_second": 30.190310661950956
+        },
+        {
+          "query_id": "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+          "document_id": "18b534c7207a1376fa92e87fe0d2cfb358d98c51",
+          "valid_tokens": 2035,
+          "endpoint_logit": -5.1796875,
+          "speedup": 1.8084860216813834,
+          "stages_host_median_ms": {
+            "compiled_total": 46.59109000021999,
+            "eager_total": 84.25933500029714,
+            "compiled_backbone": 44.930734999979904,
+            "compiled_head": 1.8109399998138542
+          },
+          "stages_npu_median_ms": {
+            "compiled_total": 46.47400093078613,
+            "eager_total": 84.12933731079102,
+            "compiled_backbone": 44.80917930603027,
+            "compiled_head": 1.714389979839325
+          },
+          "compiled_pairs_per_second": 21.463331293500072
+        }
+      ],
+      "compiled_total_host_median_ms_range": [
+        33.12320999930307,
+        46.748884999942675
+      ],
+      "eager_total_host_median_ms_range": [
+        83.95355500033475,
+        84.37739500004682
+      ],
+      "compiled_backbone_host_median_ms_range": [
+        31.426330000158487,
+        45.07781500024066
+      ],
+      "compiled_head_host_median_ms_range": [
+        1.8107349997080746,
+        1.8480749999980617
+      ],
+      "speedup_range": [
+        1.7958407992070333,
+        2.5473797678975605
+      ],
+      "compiled_pairs_per_second_range": [
+        21.390884509892082,
+        30.190310661950956
+      ]
+    }
+  ],
+  "all_required_checks_passed": true
+}
