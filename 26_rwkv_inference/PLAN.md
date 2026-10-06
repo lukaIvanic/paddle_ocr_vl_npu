@@ -7,8 +7,10 @@ provenance and reference scores. The server CPU environment and C runtime have
 been prepared, and the eight-case CPU FP32 smoke passed on 2026-10-06. The owned
 full embedding forward passes real-case NPU parity in eager and TorchAir, and
 complete NanoBEIR evaluation passed at reference batch 4: macro NDCG@10
-58.897462 versus reported CPU 58.907231. Next is the 90M reranker. Reference
-scores below remain upstream reports.
+58.897462 versus reported CPU 58.907231. The 90M reranker passed numerical
+smoke and completed NanoSCIDOCS at B2; its score was below the embedding
+baseline. Next is checking full NanoBEIR against the reported reranker aggregate.
+Reference scores below remain upstream reports.
 
 ## 0. Establish a server CPU reference
 
@@ -135,8 +137,8 @@ Peak reserved HBM was **2.44 GiB**. Top-100 candidates for all 649 queries
 scores, timings, candidates and acquisition/protocol provenance:
 [`full NanoBEIR evidence`](../tmp/26_rwkv_inference/nanobeir_eager_b4_fp16_c3166fd1/).
 Large embedding arrays remain on the server with recorded hashes.
-Next: numerical anchors and NPU adaptation of the **90M reranker**, then
-NanoSCIDOCS and full NanoBEIR.
+The **90M reranker** numerical anchors and NanoSCIDOCS run are now recorded
+below; full NanoBEIR remains pending.
 
 Start NanoBEIR evaluation on one NPU. If it is not fast enough, use **data
 parallelism**, with a complete model replica on each participating NPU and
@@ -175,7 +177,26 @@ The runner took **46.20 s**, including CPU reference work and artifact writing;
 these are numerical smoke results, not benchmark accuracy or steady throughput.
 [`Evidence and checkpoint provenance`](../tmp/26_rwkv_inference/reranker_smoke_eager_fp16_955f8fb7/)
 include hashes and independently verified readback of six server-resident NPZ
-anchors. Next: 90M reranker NanoSCIDOCS using the saved 0.1B top-100 candidates.
+anchors.
+
+**90M NanoSCIDOCS completed**, source `edd3c013`, same shared 910B2 NPU 7,
+raw eager FP16 projections/FP32 state, **B2**, saved 0.1B top-100 candidates.
+All **50 queries / 5,000 pairs** and independent per-query metric checks passed.
+NDCG@10 was **36.255**, versus embedding baseline **41.058** (**−4.803 points**).
+No published NanoSCIDOCS reranker score is available; this establishes execution
+and a task score, not reproduction of the paper's aggregate. Preserve this
+quality regression when assessing full NanoBEIR and the upstream batching
+protocol; do not attribute it to precision or model quality without evidence.
+
+Scoring took **296.38 s (4m56s; 16.87 pairs/s)**; total including setup and CPU
+preflight **375.89 s (6m16s)**. B2 forward median/p95: **95.35/171.69 ms**.
+Longest input **B2/T2046** passed CPU FP32 comparison (logit max error
+**0.001896**) and matched separately executed identically padded rows exactly.
+Left zero padding and one terminal EOS follow the release; no pair was truncated.
+Peak reserved HBM **0.93 GiB**.
+[`Run, scores, timings and hashes`](../tmp/26_rwkv_inference/nanoscidocs_reranker_eager_b2_fp16_edd3c013/)
+include verified readback of the server-resident CPU anchor. Next: full NanoBEIR
+with the 90M reranker, keeping batch/padding differences explicit.
 
 For each released pair:
 

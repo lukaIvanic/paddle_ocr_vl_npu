@@ -1,0 +1,32 @@
+{
+  "all_readbacks_passed": true,
+  "large_arrays_remain_on_server": true,
+  "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanoscidocs_reranker_eager_b2_fp16_edd3c013/probe/preflight.npz",
+  "sha256": "e44751de5e4927078d65d1bbaeeb63e0a786568dee7c31dfe8e282f3b4359266",
+  "bytes": 4573184,
+  "arrays": {
+    "input_ids": [
+      2,
+      2046
+    ],
+    "cpu_logits": [
+      2
+    ],
+    "npu_logits": [
+      2
+    ],
+    "cpu_shift": [
+      12,
+      2,
+      2,
+      768
+    ],
+    "cpu_matrix": [
+      12,
+      2,
+      12,
+      64,
+      64
+    ]
+  }
+}

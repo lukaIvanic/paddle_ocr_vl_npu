@@ -1,0 +1,23 @@
+{
+  "batch_timings.jsonl": {
+    "stored_as": "batch_timings.jsonl.gz",
+    "uncompressed_sha256": "39c5893580552088881a4d6fd29c6c388d83c2f18352e11f6d8425026d8ed915",
+    "compressed_sha256": "d1ec564bbe236f884ad093fa9ff906c932f393b38b3b601d6afa830b8e003ee5",
+    "uncompressed_bytes": 876424,
+    "compressed_bytes": 266563
+  },
+  "pair_scores.json": {
+    "stored_as": "pair_scores.json.gz",
+    "uncompressed_sha256": "24bfc017d7ca87dd6cd4bb182cb372f488340a324802994bc4d348584e7427e7",
+    "compressed_sha256": "78f7b726c6cae811e260e213ac43e7af83d2c3f290cb70cb39dfc70337053a1a",
+    "uncompressed_bytes": 302625,
+    "compressed_bytes": 115903
+  },
+  "ranked_top100.json": {
+    "stored_as": "ranked_top100.json.gz",
+    "uncompressed_sha256": "d2fc7f6cc330b05bd4bb2956ade0296369297e6356050fc2a51fa2bbf1952a81",
+    "compressed_sha256": "e9fdf654866db7ba7f446cdbfc2a5c652145d37520e82a288474f4ac5237d16b",
+    "uncompressed_bytes": 242603,
+    "compressed_bytes": 93171
+  }
+}
