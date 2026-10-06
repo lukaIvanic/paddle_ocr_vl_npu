@@ -265,3 +265,7 @@ there is no 310P or CUDA validation claim.
 The result narrows the problem: instruction semantics, field formatting, and
 causal content order all affect behavior. Simple role explanations and tested
 task reversals do not provide an accuracy-preserving document-first prompt yet.
+
+The subsequent [explicit first/second-field instruction rerun](POSITIONAL_INSTRUCTION_RESULTS.md)
+tests five layouts with the position explanation in the task, system, or both,
+using the same 46-query sample and initial short examples.

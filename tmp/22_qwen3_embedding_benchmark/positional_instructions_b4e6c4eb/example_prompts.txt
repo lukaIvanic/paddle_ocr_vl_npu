@@ -1,0 +1,281 @@
+normal
+<|im_start|>system
+Judge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query
+<Query>: What is the capital of France?
+<Document>: Paris is the capital of France.<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+normal_position_task
+<|im_start|>system
+Judge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query. The first input text field contains the query. The second input text field contains the document. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels.
+<Query>: What is the capital of France?
+<Document>: Paris is the capital of France.<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+normal_position_system
+<|im_start|>system
+Judge whether the document meets the requirements of the query and the task instruction. The first input text field contains the query. The second input text field contains the document. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query
+<Query>: What is the capital of France?
+<Document>: Paris is the capital of France.<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+normal_position_both
+<|im_start|>system
+Judge whether the document meets the requirements of the query and the task instruction. The first input text field contains the query. The second input text field contains the document. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query. The first input text field contains the query. The second input text field contains the document. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels.
+<Query>: What is the capital of France?
+<Document>: Paris is the capital of France.<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+document_first
+<|im_start|>system
+Judge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query
+<Document>: Paris is the capital of France.
+<Query>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+document_first_position_task
+<|im_start|>system
+Judge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels.
+<Document>: Paris is the capital of France.
+<Query>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+document_first_position_system
+<|im_start|>system
+Judge whether the document meets the requirements of the query and the task instruction. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query
+<Document>: Paris is the capital of France.
+<Query>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+document_first_position_both
+<|im_start|>system
+Judge whether the document meets the requirements of the query and the task instruction. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels.
+<Document>: Paris is the capital of France.
+<Query>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+swapped_contents
+<|im_start|>system
+Judge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query
+<Query>: Paris is the capital of France.
+<Document>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+swapped_contents_position_task
+<|im_start|>system
+Judge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels.
+<Query>: Paris is the capital of France.
+<Document>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+swapped_contents_position_system
+<|im_start|>system
+Judge whether the document meets the requirements of the query and the task instruction. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query
+<Query>: Paris is the capital of France.
+<Document>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+swapped_contents_position_both
+<|im_start|>system
+Judge whether the document meets the requirements of the query and the task instruction. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels.
+<Query>: Paris is the capital of France.
+<Document>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+query_first_wrong_labels
+<|im_start|>system
+Judge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query
+<Document>: What is the capital of France?
+<Query>: Paris is the capital of France.<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+query_first_wrong_labels_position_task
+<|im_start|>system
+Judge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query. The first input text field contains the query. The second input text field contains the document. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels.
+<Document>: What is the capital of France?
+<Query>: Paris is the capital of France.<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+query_first_wrong_labels_position_system
+<|im_start|>system
+Judge whether the document meets the requirements of the query and the task instruction. The first input text field contains the query. The second input text field contains the document. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query
+<Document>: What is the capital of France?
+<Query>: Paris is the capital of France.<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+query_first_wrong_labels_position_both
+<|im_start|>system
+Judge whether the document meets the requirements of the query and the task instruction. The first input text field contains the query. The second input text field contains the document. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query. The first input text field contains the query. The second input text field contains the document. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels.
+<Document>: What is the capital of France?
+<Query>: Paris is the capital of France.<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+document_then_instruction
+<|im_start|>system
+Judge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Document>: Paris is the capital of France.
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query
+<Query>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+document_then_instruction_position_task
+<|im_start|>system
+Judge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Document>: Paris is the capital of France.
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels.
+<Query>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+document_then_instruction_position_system
+<|im_start|>system
+Judge whether the document meets the requirements of the query and the task instruction. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Document>: Paris is the capital of France.
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query
+<Query>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+document_then_instruction_position_both
+<|im_start|>system
+Judge whether the document meets the requirements of the query and the task instruction. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels. Note that the answer can only be "yes" or "no".<|im_end|>
+<|im_start|>user
+<Document>: Paris is the capital of France.
+<Instruct>: Given a web search query, retrieve relevant passages that answer the query. The first input text field contains the document. The second input text field contains the query. The task instruction is not an input text field. Identify the document and query by field position, regardless of the field labels.
+<Query>: What is the capital of France?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+
+End of prompt examples.
