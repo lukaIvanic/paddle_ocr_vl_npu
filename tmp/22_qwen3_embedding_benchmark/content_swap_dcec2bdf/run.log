@@ -1,0 +1,65 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 4784.11it/s]
+/workspace/repos/qwen-order-ed892111/22_qwen3_embedding_benchmark/probe_document_first.py:110: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  logits = model(input_ids=tensor, attention_mask=torch.ones_like(tensor),
+{"id": "1/51530f3f-2019-04-18T18:15:02Z-00007-000", "grade": 0, "scores": {"query_first": 0.23370636999607086, "swapped_contents": 0.8670357465744019, "document_first": 0.3073580265045166, "document_then_instruction": 0.29421496391296387, "query_first_split_boundaries": 0.2568320035934448, "document_first_split_boundaries": 0.3775406777858734}}
+{"id": "1/4d8487a-2019-04-18T18:20:20Z-00003-000", "grade": 0, "scores": {"query_first": 0.3486451506614685, "swapped_contents": 0.4687906503677368, "document_first": 0.2018132209777832, "document_then_instruction": 0.28140559792518616, "query_first_split_boundaries": 0.24508501589298248, "document_first_split_boundaries": 0.2120688110589981}}
+{"id": "1/ff0947ec-2019-04-18T12:23:12Z-00001-000", "grade": 1, "scores": {"query_first": 0.531209409236908, "swapped_contents": 0.6513548493385315, "document_first": 0.622459352016449, "document_then_instruction": 0.43782350420951843, "query_first_split_boundaries": 0.5, "document_first_split_boundaries": 0.622459352016449}}
+{"id": "1/e3f07189-2019-04-18T17:54:23Z-00006-000", "grade": 1, "scores": {"query_first": 0.037326887249946594, "swapped_contents": 0.02161533385515213, "document_first": 0.042087726294994354, "document_then_instruction": 0.05665242299437523, "query_first_split_boundaries": 0.03514484688639641, "document_first_split_boundaries": 0.042087726294994354}}
+{"id": "1/51530f3f-2019-04-18T18:15:02Z-00004-000", "grade": 2, "scores": {"query_first": 0.665410578250885, "swapped_contents": 0.7185944318771362, "document_first": 0.5, "document_then_instruction": 0.622459352016449, "query_first_split_boundaries": 0.637030839920044, "document_first_split_boundaries": 0.43782350420951843}}
+{"id": "1/24e47090-2019-04-18T19:22:46Z-00004-000", "grade": 2, "scores": {"query_first": 0.7057850360870361, "swapped_contents": 0.7981867790222168, "document_first": 0.1919327825307846, "document_then_instruction": 0.2568320035934448, "query_first_split_boundaries": 0.6791787147521973, "document_first_split_boundaries": 0.18242551386356354}}
+{"id": "9/96158d24-2019-04-18T11:23:27Z-00001-000", "grade": 0, "scores": {"query_first": 0.43782350420951843, "swapped_contents": 0.562176525592804, "document_first": 0.4687906503677368, "document_then_instruction": 0.6513548493385315, "query_first_split_boundaries": 0.43782350420951843, "document_first_split_boundaries": 0.4687906503677368}}
+{"id": "9/cf842d6a-2019-04-18T17:28:15Z-00006-000", "grade": 1, "scores": {"query_first": 0.4073334336280823, "swapped_contents": 0.4073334336280823, "document_first": 0.5, "document_then_instruction": 0.3775406777858734, "query_first_split_boundaries": 0.3775406777858734, "document_first_split_boundaries": 0.43782350420951843}}
+{"id": "9/2403550a-2019-04-18T14:02:10Z-00006-000", "grade": 1, "scores": {"query_first": 0.24508501589298248, "swapped_contents": 0.7431680560112, "document_first": 0.6791787147521973, "document_then_instruction": 0.7057850360870361, "query_first_split_boundaries": 0.24508501589298248, "document_first_split_boundaries": 0.6791787147521973}}
+{"id": "9/b5339025-2019-04-18T18:30:27Z-00003-000", "grade": 2, "scores": {"query_first": 0.28140559792518616, "swapped_contents": 0.43782350420951843, "document_first": 0.43782350420951843, "document_then_instruction": 0.3486451506614685, "query_first_split_boundaries": 0.24508501589298248, "document_first_split_boundaries": 0.5}}
+{"id": "9/a7f5e454-2019-04-18T13:43:30Z-00002-000", "grade": 2, "scores": {"query_first": 0.7057850360870361, "swapped_contents": 0.7662936449050903, "document_first": 0.531209409236908, "document_then_instruction": 0.5, "query_first_split_boundaries": 0.7057850360870361, "document_first_split_boundaries": 0.531209409236908}}
+{"id": "33/8eeab760-2019-04-18T16:21:32Z-00001-000", "grade": 0, "scores": {"query_first": 0.3486451506614685, "swapped_contents": 0.42250463366508484, "document_first": 0.3073580265045166, "document_then_instruction": 0.2120688110589981, "query_first_split_boundaries": 0.3486451506614685, "document_first_split_boundaries": 0.2689414322376251}}
+{"id": "33/57f0866c-2019-04-18T13:10:45Z-00006-000", "grade": 0, "scores": {"query_first": 0.29421496391296387, "swapped_contents": 0.7772998809814453, "document_first": 0.3208213150501251, "document_then_instruction": 0.17328819632530212, "query_first_split_boundaries": 0.3345894515514374, "document_first_split_boundaries": 0.23370636999607086}}
+{"id": "33/2e8edb11-2019-04-18T16:22:57Z-00005-000", "grade": 1, "scores": {"query_first": 0.562176525592804, "swapped_contents": 0.665410578250885, "document_first": 0.2568320035934448, "document_then_instruction": 0.28140559792518616, "query_first_split_boundaries": 0.562176525592804, "document_first_split_boundaries": 0.24508501589298248}}
+{"id": "33/ac45b77d-2019-04-18T13:38:21Z-00007-000", "grade": 2, "scores": {"query_first": 0.531209409236908, "swapped_contents": 0.7662936449050903, "document_first": 0.28140559792518616, "document_then_instruction": 0.2120688110589981, "query_first_split_boundaries": 0.562176525592804, "document_first_split_boundaries": 0.28140559792518616}}
+{"id": "33/7eabc63c-2019-04-18T12:18:12Z-00002-000", "grade": 2, "scores": {"query_first": 0.9284088015556335, "swapped_contents": 0.893309473991394, "document_first": 0.4687906503677368, "document_then_instruction": 0.622459352016449, "query_first_split_boundaries": 0.9324532747268677, "document_first_split_boundaries": 0.5}}
+{"id": "synthetic-0-1", "grade": 1, "scores": {"query_first": 0.9284088015556335, "swapped_contents": 0.4687906503677368, "document_first": 0.8872045874595642, "document_then_instruction": 0.7431680560112, "query_first_split_boundaries": 0.9433475732803345, "document_first_split_boundaries": 0.8991213440895081}}
+{"id": "synthetic-0-0", "grade": 0, "scores": {"query_first": 9.610241977497935e-05, "swapped_contents": 3.8449352359748445e-06, "document_first": 6.962256520637311e-06, "document_then_instruction": 2.178264912799932e-05, "query_first_split_boundaries": 0.00013135180051904172, "document_first_split_boundaries": 6.643433152930811e-06}}
+{"id": "synthetic-1-1", "grade": 1, "scores": {"query_first": 0.7662936449050903, "swapped_contents": 0.3486451506614685, "document_first": 0.5467381477355957, "document_then_instruction": 0.7185944318771362, "query_first_split_boundaries": 0.7057850360870361, "document_first_split_boundaries": 0.6076632142066956}}
+{"id": "synthetic-1-0", "grade": 0, "scores": {"query_first": 4.2228334677929524e-06, "swapped_contents": 6.540437425428536e-06, "document_first": 1.2606946256710216e-05, "document_then_instruction": 1.8925147742265835e-05, "query_first_split_boundaries": 6.748051418981049e-06, "document_first_split_boundaries": 1.56895475811325e-05}}
+{"id": "synthetic-2-1", "grade": 1, "scores": {"query_first": 0.9553191661834717, "swapped_contents": 0.1561049073934555, "document_first": 0.4073334336280823, "document_then_instruction": 0.5, "query_first_split_boundaries": 0.9626730680465698, "document_first_split_boundaries": 0.43782350420951843}}
+{"id": "synthetic-2-0", "grade": 0, "scores": {"query_first": 3.7558672829618445e-06, "swapped_contents": 1.3444405340123922e-06, "document_first": 4.710908342531184e-06, "document_then_instruction": 0.00010889690020121634, "query_first_split_boundaries": 7.706508768023923e-06, "document_first_split_boundaries": 3.8449352359748445e-06}}
+{
+  "pairs": 22,
+  "graded_pair_orderings": {
+    "query_first": {
+      "correct": 24,
+      "total": 31,
+      "ties": 0
+    },
+    "swapped_contents": {
+      "correct": 21,
+      "total": 31,
+      "ties": 0
+    },
+    "document_first": {
+      "correct": 17,
+      "total": 31,
+      "ties": 0
+    },
+    "document_then_instruction": {
+      "correct": 18,
+      "total": 31,
+      "ties": 1
+    },
+    "query_first_split_boundaries": {
+      "correct": 23,
+      "total": 31,
+      "ties": 2
+    },
+    "document_first_split_boundaries": {
+      "correct": 21,
+      "total": 31,
+      "ties": 0
+    }
+  },
+  "baseline_max_abs_difference_from_saved": 0.028820395469665527,
+  "split_boundary_controls_have_identical_token_multisets": true,
+  "all_token_multisets_identical": false,
+  "all_special_token_sequences_identical": true
+}

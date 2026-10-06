@@ -1,0 +1,975 @@
+{
+  "status": "completed",
+  "scope": "selected-pair diagnostic, not a benchmark accuracy estimate",
+  "environment": {
+    "host": "liteserver-c001-4",
+    "chip": "Ascend 910B2",
+    "physical_npu": "6",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0.post2",
+    "transformers": "5.5.4",
+    "dtype": "bfloat16",
+    "attention": "sdpa",
+    "batch_size": 1,
+    "use_cache": false
+  },
+  "commit": "dcec2bdf17c42648bf2d69626d6a3cb1800dd0c1",
+  "fixture_sha256": "8f0e908ce694b0e3d4d90d1977e02b195b94020458638361c5ee813dbecd2ef2",
+  "source_sha256": "a9665519868d81f2ad0fd934ecd9834812a8b98156b9789ace5481326fc209ae",
+  "tokenizer_sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+  "prefix": "<|im_start|>system\nJudge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be \"yes\" or \"no\".<|im_end|>\n<|im_start|>user\n",
+  "suffix": "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "prefix_ids": [
+    151644,
+    8948,
+    198,
+    60256,
+    3425,
+    279,
+    11789,
+    20027,
+    279,
+    8502,
+    3118,
+    389,
+    279,
+    11361,
+    323,
+    279,
+    758,
+    1235,
+    3897,
+    13,
+    7036,
+    429,
+    279,
+    4226,
+    646,
+    1172,
+    387,
+    330,
+    9693,
+    1,
+    476,
+    330,
+    2152,
+    3263,
+    151645,
+    198,
+    151644,
+    872,
+    198
+  ],
+  "suffix_ids": [
+    151645,
+    198,
+    151644,
+    77091,
+    198,
+    151667,
+    271,
+    151668,
+    271
+  ],
+  "bos_token_id": null,
+  "special_tokens_map": {
+    "eos_token": "<|im_end|>",
+    "pad_token": "<|endoftext|>"
+  },
+  "add_special_tokens": false,
+  "truncation": false,
+  "answer_token_ids": {
+    "yes": 9693,
+    "no": 2152
+  },
+  "summary": {
+    "pairs": 22,
+    "graded_pair_orderings": {
+      "query_first": {
+        "correct": 24,
+        "total": 31,
+        "ties": 0
+      },
+      "swapped_contents": {
+        "correct": 21,
+        "total": 31,
+        "ties": 0
+      },
+      "document_first": {
+        "correct": 17,
+        "total": 31,
+        "ties": 0
+      },
+      "document_then_instruction": {
+        "correct": 18,
+        "total": 31,
+        "ties": 1
+      },
+      "query_first_split_boundaries": {
+        "correct": 23,
+        "total": 31,
+        "ties": 2
+      },
+      "document_first_split_boundaries": {
+        "correct": 21,
+        "total": 31,
+        "ties": 0
+      }
+    },
+    "baseline_max_abs_difference_from_saved": 0.028820395469665527,
+    "split_boundary_controls_have_identical_token_multisets": true,
+    "all_token_multisets_identical": false,
+    "all_special_token_sequences_identical": true
+  },
+  "touche_orderings": {
+    "query_first": {
+      "correct": 21,
+      "total": 28,
+      "ties": 0
+    },
+    "swapped_contents": {
+      "correct": 18,
+      "total": 28,
+      "ties": 0
+    },
+    "document_first": {
+      "correct": 14,
+      "total": 28,
+      "ties": 0
+    },
+    "document_then_instruction": {
+      "correct": 15,
+      "total": 28,
+      "ties": 1
+    },
+    "query_first_split_boundaries": {
+      "correct": 20,
+      "total": 28,
+      "ties": 2
+    },
+    "document_first_split_boundaries": {
+      "correct": 18,
+      "total": 28,
+      "ties": 0
+    }
+  },
+  "synthetic_orderings": {
+    "query_first": {
+      "correct": 3,
+      "total": 3,
+      "ties": 0
+    },
+    "swapped_contents": {
+      "correct": 3,
+      "total": 3,
+      "ties": 0
+    },
+    "document_first": {
+      "correct": 3,
+      "total": 3,
+      "ties": 0
+    },
+    "document_then_instruction": {
+      "correct": 3,
+      "total": 3,
+      "ties": 0
+    },
+    "query_first_split_boundaries": {
+      "correct": 3,
+      "total": 3,
+      "ties": 0
+    },
+    "document_first_split_boundaries": {
+      "correct": 3,
+      "total": 3,
+      "ties": 0
+    }
+  },
+  "prompt_audit": {
+    "all_prefix_suffix_ids_identical": true,
+    "swapped_contents_exact_for_all_pairs": true,
+    "normal_scores_max_abs_change_from_prior_probe": 0.0
+  },
+  "pairs": [
+    {
+      "id": "1/51530f3f-2019-04-18T18:15:02Z-00007-000",
+      "query_id": "1",
+      "document_id": "51530f3f-2019-04-18T18:15:02Z-00007-000",
+      "query": "Should teachers get tenure?",
+      "grade": 0,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.23971034586429596,
+      "variants": {
+        "query_first": {
+          "score": 0.23370636999607086,
+          "tokens": 175
+        },
+        "swapped_contents": {
+          "score": 0.8670357465744019,
+          "tokens": 175
+        },
+        "document_first": {
+          "score": 0.3073580265045166,
+          "tokens": 175
+        },
+        "document_then_instruction": {
+          "score": 0.29421496391296387,
+          "tokens": 175
+        },
+        "query_first_split_boundaries": {
+          "score": 0.2568320035934448,
+          "tokens": 176
+        },
+        "document_first_split_boundaries": {
+          "score": 0.3775406777858734,
+          "tokens": 176
+        }
+      }
+    },
+    {
+      "id": "1/4d8487a-2019-04-18T18:20:20Z-00003-000",
+      "query_id": "1",
+      "document_id": "4d8487a-2019-04-18T18:20:20Z-00003-000",
+      "query": "Should teachers get tenure?",
+      "grade": 0,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.35213422775268555,
+      "variants": {
+        "query_first": {
+          "score": 0.3486451506614685,
+          "tokens": 273
+        },
+        "swapped_contents": {
+          "score": 0.4687906503677368,
+          "tokens": 273
+        },
+        "document_first": {
+          "score": 0.2018132209777832,
+          "tokens": 273
+        },
+        "document_then_instruction": {
+          "score": 0.28140559792518616,
+          "tokens": 273
+        },
+        "query_first_split_boundaries": {
+          "score": 0.24508501589298248,
+          "tokens": 274
+        },
+        "document_first_split_boundaries": {
+          "score": 0.2120688110589981,
+          "tokens": 274
+        }
+      }
+    },
+    {
+      "id": "1/ff0947ec-2019-04-18T12:23:12Z-00001-000",
+      "query_id": "1",
+      "document_id": "ff0947ec-2019-04-18T12:23:12Z-00001-000",
+      "query": "Should teachers get tenure?",
+      "grade": 1,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.5239690542221069,
+      "variants": {
+        "query_first": {
+          "score": 0.531209409236908,
+          "tokens": 118
+        },
+        "swapped_contents": {
+          "score": 0.6513548493385315,
+          "tokens": 118
+        },
+        "document_first": {
+          "score": 0.622459352016449,
+          "tokens": 118
+        },
+        "document_then_instruction": {
+          "score": 0.43782350420951843,
+          "tokens": 118
+        },
+        "query_first_split_boundaries": {
+          "score": 0.5,
+          "tokens": 119
+        },
+        "document_first_split_boundaries": {
+          "score": 0.622459352016449,
+          "tokens": 119
+        }
+      }
+    },
+    {
+      "id": "1/e3f07189-2019-04-18T17:54:23Z-00006-000",
+      "query_id": "1",
+      "document_id": "e3f07189-2019-04-18T17:54:23Z-00006-000",
+      "query": "Should teachers get tenure?",
+      "grade": 1,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.035272371023893356,
+      "variants": {
+        "query_first": {
+          "score": 0.037326887249946594,
+          "tokens": 175
+        },
+        "swapped_contents": {
+          "score": 0.02161533385515213,
+          "tokens": 175
+        },
+        "document_first": {
+          "score": 0.042087726294994354,
+          "tokens": 175
+        },
+        "document_then_instruction": {
+          "score": 0.05665242299437523,
+          "tokens": 175
+        },
+        "query_first_split_boundaries": {
+          "score": 0.03514484688639641,
+          "tokens": 176
+        },
+        "document_first_split_boundaries": {
+          "score": 0.042087726294994354,
+          "tokens": 176
+        }
+      }
+    },
+    {
+      "id": "1/51530f3f-2019-04-18T18:15:02Z-00004-000",
+      "query_id": "1",
+      "document_id": "51530f3f-2019-04-18T18:15:02Z-00004-000",
+      "query": "Should teachers get tenure?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.6658551096916199,
+      "variants": {
+        "query_first": {
+          "score": 0.665410578250885,
+          "tokens": 443
+        },
+        "swapped_contents": {
+          "score": 0.7185944318771362,
+          "tokens": 443
+        },
+        "document_first": {
+          "score": 0.5,
+          "tokens": 443
+        },
+        "document_then_instruction": {
+          "score": 0.622459352016449,
+          "tokens": 443
+        },
+        "query_first_split_boundaries": {
+          "score": 0.637030839920044,
+          "tokens": 444
+        },
+        "document_first_split_boundaries": {
+          "score": 0.43782350420951843,
+          "tokens": 444
+        }
+      }
+    },
+    {
+      "id": "1/24e47090-2019-04-18T19:22:46Z-00004-000",
+      "query_id": "1",
+      "document_id": "24e47090-2019-04-18T19:22:46Z-00004-000",
+      "query": "Should teachers get tenure?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.7079384922981262,
+      "variants": {
+        "query_first": {
+          "score": 0.7057850360870361,
+          "tokens": 999
+        },
+        "swapped_contents": {
+          "score": 0.7981867790222168,
+          "tokens": 999
+        },
+        "document_first": {
+          "score": 0.1919327825307846,
+          "tokens": 999
+        },
+        "document_then_instruction": {
+          "score": 0.2568320035934448,
+          "tokens": 999
+        },
+        "query_first_split_boundaries": {
+          "score": 0.6791787147521973,
+          "tokens": 1000
+        },
+        "document_first_split_boundaries": {
+          "score": 0.18242551386356354,
+          "tokens": 1000
+        }
+      }
+    },
+    {
+      "id": "9/96158d24-2019-04-18T11:23:27Z-00001-000",
+      "query_id": "9",
+      "document_id": "96158d24-2019-04-18T11:23:27Z-00001-000",
+      "query": "Should students have to wear school uniforms?",
+      "grade": 0,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.44581565260887146,
+      "variants": {
+        "query_first": {
+          "score": 0.43782350420951843,
+          "tokens": 180
+        },
+        "swapped_contents": {
+          "score": 0.562176525592804,
+          "tokens": 180
+        },
+        "document_first": {
+          "score": 0.4687906503677368,
+          "tokens": 180
+        },
+        "document_then_instruction": {
+          "score": 0.6513548493385315,
+          "tokens": 180
+        },
+        "query_first_split_boundaries": {
+          "score": 0.43782350420951843,
+          "tokens": 181
+        },
+        "document_first_split_boundaries": {
+          "score": 0.4687906503677368,
+          "tokens": 181
+        }
+      }
+    },
+    {
+      "id": "9/cf842d6a-2019-04-18T17:28:15Z-00006-000",
+      "query_id": "9",
+      "document_id": "cf842d6a-2019-04-18T17:28:15Z-00006-000",
+      "query": "Should students have to wear school uniforms?",
+      "grade": 1,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.37851303815841675,
+      "variants": {
+        "query_first": {
+          "score": 0.4073334336280823,
+          "tokens": 104
+        },
+        "swapped_contents": {
+          "score": 0.4073334336280823,
+          "tokens": 104
+        },
+        "document_first": {
+          "score": 0.5,
+          "tokens": 104
+        },
+        "document_then_instruction": {
+          "score": 0.3775406777858734,
+          "tokens": 104
+        },
+        "query_first_split_boundaries": {
+          "score": 0.3775406777858734,
+          "tokens": 105
+        },
+        "document_first_split_boundaries": {
+          "score": 0.43782350420951843,
+          "tokens": 105
+        }
+      }
+    },
+    {
+      "id": "9/2403550a-2019-04-18T14:02:10Z-00006-000",
+      "query_id": "9",
+      "document_id": "2403550a-2019-04-18T14:02:10Z-00006-000",
+      "query": "Should students have to wear school uniforms?",
+      "grade": 1,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.2473648190498352,
+      "variants": {
+        "query_first": {
+          "score": 0.24508501589298248,
+          "tokens": 159
+        },
+        "swapped_contents": {
+          "score": 0.7431680560112,
+          "tokens": 159
+        },
+        "document_first": {
+          "score": 0.6791787147521973,
+          "tokens": 159
+        },
+        "document_then_instruction": {
+          "score": 0.7057850360870361,
+          "tokens": 159
+        },
+        "query_first_split_boundaries": {
+          "score": 0.24508501589298248,
+          "tokens": 160
+        },
+        "document_first_split_boundaries": {
+          "score": 0.6791787147521973,
+          "tokens": 160
+        }
+      }
+    },
+    {
+      "id": "9/b5339025-2019-04-18T18:30:27Z-00003-000",
+      "query_id": "9",
+      "document_id": "b5339025-2019-04-18T18:30:27Z-00003-000",
+      "query": "Should students have to wear school uniforms?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.26909467577934265,
+      "variants": {
+        "query_first": {
+          "score": 0.28140559792518616,
+          "tokens": 130
+        },
+        "swapped_contents": {
+          "score": 0.43782350420951843,
+          "tokens": 130
+        },
+        "document_first": {
+          "score": 0.43782350420951843,
+          "tokens": 130
+        },
+        "document_then_instruction": {
+          "score": 0.3486451506614685,
+          "tokens": 130
+        },
+        "query_first_split_boundaries": {
+          "score": 0.24508501589298248,
+          "tokens": 131
+        },
+        "document_first_split_boundaries": {
+          "score": 0.5,
+          "tokens": 131
+        }
+      }
+    },
+    {
+      "id": "9/a7f5e454-2019-04-18T13:43:30Z-00002-000",
+      "query_id": "9",
+      "document_id": "a7f5e454-2019-04-18T13:43:30Z-00002-000",
+      "query": "Should students have to wear school uniforms?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.6856916546821594,
+      "variants": {
+        "query_first": {
+          "score": 0.7057850360870361,
+          "tokens": 258
+        },
+        "swapped_contents": {
+          "score": 0.7662936449050903,
+          "tokens": 258
+        },
+        "document_first": {
+          "score": 0.531209409236908,
+          "tokens": 258
+        },
+        "document_then_instruction": {
+          "score": 0.5,
+          "tokens": 258
+        },
+        "query_first_split_boundaries": {
+          "score": 0.7057850360870361,
+          "tokens": 259
+        },
+        "document_first_split_boundaries": {
+          "score": 0.531209409236908,
+          "tokens": 259
+        }
+      }
+    },
+    {
+      "id": "33/8eeab760-2019-04-18T16:21:32Z-00001-000",
+      "query_id": "33",
+      "document_id": "8eeab760-2019-04-18T16:21:32Z-00001-000",
+      "query": "Should people become vegetarian?",
+      "grade": 0,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.35788536071777344,
+      "variants": {
+        "query_first": {
+          "score": 0.3486451506614685,
+          "tokens": 107
+        },
+        "swapped_contents": {
+          "score": 0.42250463366508484,
+          "tokens": 107
+        },
+        "document_first": {
+          "score": 0.3073580265045166,
+          "tokens": 107
+        },
+        "document_then_instruction": {
+          "score": 0.2120688110589981,
+          "tokens": 107
+        },
+        "query_first_split_boundaries": {
+          "score": 0.3486451506614685,
+          "tokens": 108
+        },
+        "document_first_split_boundaries": {
+          "score": 0.2689414322376251,
+          "tokens": 108
+        }
+      }
+    },
+    {
+      "id": "33/57f0866c-2019-04-18T13:10:45Z-00006-000",
+      "query_id": "33",
+      "document_id": "57f0866c-2019-04-18T13:10:45Z-00006-000",
+      "query": "Should people become vegetarian?",
+      "grade": 0,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.2949363887310028,
+      "variants": {
+        "query_first": {
+          "score": 0.29421496391296387,
+          "tokens": 173
+        },
+        "swapped_contents": {
+          "score": 0.7772998809814453,
+          "tokens": 173
+        },
+        "document_first": {
+          "score": 0.3208213150501251,
+          "tokens": 173
+        },
+        "document_then_instruction": {
+          "score": 0.17328819632530212,
+          "tokens": 173
+        },
+        "query_first_split_boundaries": {
+          "score": 0.3345894515514374,
+          "tokens": 174
+        },
+        "document_first_split_boundaries": {
+          "score": 0.23370636999607086,
+          "tokens": 174
+        }
+      }
+    },
+    {
+      "id": "33/2e8edb11-2019-04-18T16:22:57Z-00005-000",
+      "query_id": "33",
+      "document_id": "2e8edb11-2019-04-18T16:22:57Z-00005-000",
+      "query": "Should people become vegetarian?",
+      "grade": 1,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.5670397281646729,
+      "variants": {
+        "query_first": {
+          "score": 0.562176525592804,
+          "tokens": 215
+        },
+        "swapped_contents": {
+          "score": 0.665410578250885,
+          "tokens": 215
+        },
+        "document_first": {
+          "score": 0.2568320035934448,
+          "tokens": 215
+        },
+        "document_then_instruction": {
+          "score": 0.28140559792518616,
+          "tokens": 215
+        },
+        "query_first_split_boundaries": {
+          "score": 0.562176525592804,
+          "tokens": 216
+        },
+        "document_first_split_boundaries": {
+          "score": 0.24508501589298248,
+          "tokens": 216
+        }
+      }
+    },
+    {
+      "id": "33/ac45b77d-2019-04-18T13:38:21Z-00007-000",
+      "query_id": "33",
+      "document_id": "ac45b77d-2019-04-18T13:38:21Z-00007-000",
+      "query": "Should people become vegetarian?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.5578327178955078,
+      "variants": {
+        "query_first": {
+          "score": 0.531209409236908,
+          "tokens": 111
+        },
+        "swapped_contents": {
+          "score": 0.7662936449050903,
+          "tokens": 111
+        },
+        "document_first": {
+          "score": 0.28140559792518616,
+          "tokens": 111
+        },
+        "document_then_instruction": {
+          "score": 0.2120688110589981,
+          "tokens": 111
+        },
+        "query_first_split_boundaries": {
+          "score": 0.562176525592804,
+          "tokens": 112
+        },
+        "document_first_split_boundaries": {
+          "score": 0.28140559792518616,
+          "tokens": 112
+        }
+      }
+    },
+    {
+      "id": "33/7eabc63c-2019-04-18T12:18:12Z-00002-000",
+      "query_id": "33",
+      "document_id": "7eabc63c-2019-04-18T12:18:12Z-00002-000",
+      "query": "Should people become vegetarian?",
+      "grade": 2,
+      "source": "Touche2020Retrieval.v3",
+      "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+      "saved_qwen_score": 0.9302287697792053,
+      "variants": {
+        "query_first": {
+          "score": 0.9284088015556335,
+          "tokens": 273
+        },
+        "swapped_contents": {
+          "score": 0.893309473991394,
+          "tokens": 273
+        },
+        "document_first": {
+          "score": 0.4687906503677368,
+          "tokens": 273
+        },
+        "document_then_instruction": {
+          "score": 0.622459352016449,
+          "tokens": 273
+        },
+        "query_first_split_boundaries": {
+          "score": 0.9324532747268677,
+          "tokens": 274
+        },
+        "document_first_split_boundaries": {
+          "score": 0.5,
+          "tokens": 274
+        }
+      }
+    },
+    {
+      "id": "synthetic-0-1",
+      "query_id": "synthetic-0",
+      "query": "What is the capital of France?",
+      "grade": 1,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "variants": {
+        "query_first": {
+          "score": 0.9284088015556335,
+          "tokens": 85
+        },
+        "swapped_contents": {
+          "score": 0.4687906503677368,
+          "tokens": 85
+        },
+        "document_first": {
+          "score": 0.8872045874595642,
+          "tokens": 85
+        },
+        "document_then_instruction": {
+          "score": 0.7431680560112,
+          "tokens": 85
+        },
+        "query_first_split_boundaries": {
+          "score": 0.9433475732803345,
+          "tokens": 86
+        },
+        "document_first_split_boundaries": {
+          "score": 0.8991213440895081,
+          "tokens": 86
+        }
+      }
+    },
+    {
+      "id": "synthetic-0-0",
+      "query_id": "synthetic-0",
+      "query": "What is the capital of France?",
+      "grade": 0,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "variants": {
+        "query_first": {
+          "score": 9.610241977497935e-05,
+          "tokens": 85
+        },
+        "swapped_contents": {
+          "score": 3.8449352359748445e-06,
+          "tokens": 85
+        },
+        "document_first": {
+          "score": 6.962256520637311e-06,
+          "tokens": 85
+        },
+        "document_then_instruction": {
+          "score": 2.178264912799932e-05,
+          "tokens": 85
+        },
+        "query_first_split_boundaries": {
+          "score": 0.00013135180051904172,
+          "tokens": 86
+        },
+        "document_first_split_boundaries": {
+          "score": 6.643433152930811e-06,
+          "tokens": 86
+        }
+      }
+    },
+    {
+      "id": "synthetic-1-1",
+      "query_id": "synthetic-1",
+      "query": "How do I reset a forgotten password?",
+      "grade": 1,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "variants": {
+        "query_first": {
+          "score": 0.7662936449050903,
+          "tokens": 93
+        },
+        "swapped_contents": {
+          "score": 0.3486451506614685,
+          "tokens": 93
+        },
+        "document_first": {
+          "score": 0.5467381477355957,
+          "tokens": 93
+        },
+        "document_then_instruction": {
+          "score": 0.7185944318771362,
+          "tokens": 93
+        },
+        "query_first_split_boundaries": {
+          "score": 0.7057850360870361,
+          "tokens": 94
+        },
+        "document_first_split_boundaries": {
+          "score": 0.6076632142066956,
+          "tokens": 94
+        }
+      }
+    },
+    {
+      "id": "synthetic-1-0",
+      "query_id": "synthetic-1",
+      "query": "How do I reset a forgotten password?",
+      "grade": 0,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "variants": {
+        "query_first": {
+          "score": 4.2228334677929524e-06,
+          "tokens": 87
+        },
+        "swapped_contents": {
+          "score": 6.540437425428536e-06,
+          "tokens": 87
+        },
+        "document_first": {
+          "score": 1.2606946256710216e-05,
+          "tokens": 87
+        },
+        "document_then_instruction": {
+          "score": 1.8925147742265835e-05,
+          "tokens": 87
+        },
+        "query_first_split_boundaries": {
+          "score": 6.748051418981049e-06,
+          "tokens": 88
+        },
+        "document_first_split_boundaries": {
+          "score": 1.56895475811325e-05,
+          "tokens": 88
+        }
+      }
+    },
+    {
+      "id": "synthetic-2-1",
+      "query_id": "synthetic-2",
+      "query": "Why do leaves look green?",
+      "grade": 1,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "variants": {
+        "query_first": {
+          "score": 0.9553191661834717,
+          "tokens": 90
+        },
+        "swapped_contents": {
+          "score": 0.1561049073934555,
+          "tokens": 90
+        },
+        "document_first": {
+          "score": 0.4073334336280823,
+          "tokens": 90
+        },
+        "document_then_instruction": {
+          "score": 0.5,
+          "tokens": 90
+        },
+        "query_first_split_boundaries": {
+          "score": 0.9626730680465698,
+          "tokens": 91
+        },
+        "document_first_split_boundaries": {
+          "score": 0.43782350420951843,
+          "tokens": 91
+        }
+      }
+    },
+    {
+      "id": "synthetic-2-0",
+      "query_id": "synthetic-2",
+      "query": "Why do leaves look green?",
+      "grade": 0,
+      "source": "synthetic_sanity",
+      "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+      "variants": {
+        "query_first": {
+          "score": 3.7558672829618445e-06,
+          "tokens": 84
+        },
+        "swapped_contents": {
+          "score": 1.3444405340123922e-06,
+          "tokens": 84
+        },
+        "document_first": {
+          "score": 4.710908342531184e-06,
+          "tokens": 84
+        },
+        "document_then_instruction": {
+          "score": 0.00010889690020121634,
+          "tokens": 84
+        },
+        "query_first_split_boundaries": {
+          "score": 7.706508768023923e-06,
+          "tokens": 85
+        },
+        "document_first_split_boundaries": {
+          "score": 3.8449352359748445e-06,
+          "tokens": 85
+        }
+      }
+    }
+  ]
+}
