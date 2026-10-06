@@ -1,0 +1,6 @@
+Commit: eaeba0ac28ee65baa3c2343a0c4efa65ffe3790c
+Host: liteserver-c001-4
+Container: research_vllm_ascend_023_external_workspace
+NPU: 6 (shared only with our Clef service; accuracy probe, not a latency benchmark)
+source npu-setup attempted, idle selector found no free device; CANN/ATB sourced, ASCEND_RT_VISIBLE_DEVICES=6 TORCH_DEVICE_BACKEND_AUTOLOAD=0 OMP_NUM_THREADS=1 explicitly set
+/usr/local/python3.12.13/bin/python3 -u 22_qwen3_embedding_benchmark/probe_document_first.py --model /workspace/models/Qwen3-Reranker-4B --fixture /workspace/results/clef_touche_full/fixture.json --output /workspace/results/qwen-order-ed892111/controls.json
