@@ -406,9 +406,12 @@ def main():
         result["log"] = str(path.with_suffix(".log"))
         path.write_text(json.dumps(result, indent=2) + "\n")
         results.append(result)
+        error_excerpt = result.get("error", "")
+        if error_excerpt:
+            error_excerpt = error_excerpt.splitlines()[0][:500]
         print(json.dumps({"case": case, "status": result["status"],
                           "timing": result.get("timing_ms_per_call", {}).get("device_median"),
-                          "error": result.get("error")}), flush=True)
+                          "error": error_excerpt or None}), flush=True)
         args.output.write_text(json.dumps({"source_commit": SOURCE_COMMIT, "results": results}, indent=2) + "\n")
         if result["status"] == "timeout":
             # A device-side hang can survive terminating the worker. Do not
