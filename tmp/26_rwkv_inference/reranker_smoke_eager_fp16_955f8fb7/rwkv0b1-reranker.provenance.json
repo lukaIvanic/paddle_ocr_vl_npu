@@ -1,0 +1,18 @@
+{
+  "repository": "howard-hou/EmbeddingRWKV",
+  "revision": "d6bfff190b6ce4fb6bbd9c574e7e26df3df64075",
+  "metadata_url": "https://huggingface.co/api/models/howard-hou/EmbeddingRWKV/revision/d6bfff190b6ce4fb6bbd9c574e7e26df3df64075?blobs=true",
+  "file": {
+    "rfilename": "rwkv0b1-reranker.pth",
+    "blobId": "e98ba55a62c443ecbf59fd8ddb1c2f7f6485f695",
+    "size": 370287479,
+    "lfs": {
+      "sha256": "6b6f36543ad71aa48bca3cca97863c529e9153515fb777184c36475b3badb6be",
+      "size": 370287479,
+      "pointerSize": 134
+    }
+  },
+  "server_path": "/workspace/rwkv_reference/models/rwkv0b1-reranker.pth",
+  "verified_sha256": "6b6f36543ad71aa48bca3cca97863c529e9153515fb777184c36475b3badb6be",
+  "download_seconds": 501.1256375699304
+}

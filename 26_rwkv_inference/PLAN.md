@@ -150,6 +150,33 @@ Order: **90M, then 317M, then 1.3B**. The latter two also require adapting their
 matching **0.4B and 1.4B embedding/state backbones**. Candidate retrieval remains
 the saved **0.1B** retriever output for all three, as in the paper.
 
+The smallest reranker checkpoint is pinned in
+[`data/reranker_checkpoint.json`](data/reranker_checkpoint.json): **90,963,456
+reranker parameters**, 12 layers, width 768, BF16 weights. Its 370,287,479-byte
+release also contains unused vision/projection tensors; text inference loads only
+`reranker.*`. Downloaded directly on the selected server; SHA256 verified.
+`local_modeling_rwkv_embedding.py` and `local_modeling_rwkv_reranker.py` keep the
+models separate. The embedder exports/accepts both previous-token vectors and
+FP32 `[value,key]` matrices; the reranker reads those matrices with one learned
+token. `run_reranker_smoke.py` uses hash-pinned upstream PyTorch functions as an
+independent CPU FP32 reference, replacing only the CUDA recurrence, decorators
+and device literals. This is a small numerical oracle, not an existing released
+CPU reranker runtime.
+
+**Smallest-reranker smoke passed**, source `955f8fb7`, shared Ascend 910B2
+NPU 7, eager FP16 projections/FP32 state: five B1 pairs (T25–346) and B2/T40.
+All state, hidden-output and 12 reranker-layer comparisons passed. Maximum
+CPU/NPU logit difference **0.017441**; ten continuation splits passed, with
+maximum cached/full logit difference **0.001465** (CPU continuation was exact).
+Saved states remained unchanged and repeated scoring was bitwise stable;
+B2 versus identical separately executed padded rows passed (max **0.004395**).
+The embedding API regression also passed (max embedding error **6.29e-5**).
+The runner took **46.20 s**, including CPU reference work and artifact writing;
+these are numerical smoke results, not benchmark accuracy or steady throughput.
+[`Evidence and checkpoint provenance`](../tmp/26_rwkv_inference/reranker_smoke_eager_fp16_955f8fb7/)
+include hashes and independently verified readback of six server-resident NPZ
+anchors. Next: 90M reranker NanoSCIDOCS using the saved 0.1B top-100 candidates.
+
 For each released pair:
 
 1. Check a few query/document pairs against the reference computation, including
@@ -431,7 +458,7 @@ SSH configuration, not the default `~/.ssh/config`:
 
 ```bash
 ssh -F /home/luka/Documents/Codex/2026-10-01/can-you-connect-to-my-mac/work/ssh-blue-zone/config \
-  -o ControlPath=/tmp/codex-blue-zone-1000/rwkv-023-master \
+  -o ControlPath=/tmp/codex-blue-zone-1000/rwkv-023-master-recovered \
   blue_zone_npu_server \
   'docker exec research_vllm_ascend_023_external_workspace hostname'
 ```
