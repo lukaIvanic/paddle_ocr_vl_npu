@@ -97,6 +97,8 @@ def main():
     parser.add_argument('--fixture', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--phase', choices=['calibration', 'holdout'], required=True)
+    parser.add_argument('--max-document-tokens', type=int, default=900,
+                        help='Holdout selection limit only; documents are never truncated')
     args = parser.parse_args()
     import torch
     import torch_npu
@@ -120,7 +122,7 @@ def main():
             query = fixture['queries'][qid]
             for grade in (0, 1, 2):
                 eligible = sorted((d for d in query['candidates'] if query['qrels'].get(d) == grade
-                                   and len(encode(fixture['documents'][d]['text'])) <= 900),
+                                   and len(encode(fixture['documents'][d]['text'])) <= args.max_document_tokens),
                                   key=lambda d: (len(encode(fixture['documents'][d]['text'])), d))
                 for index in sorted({0, len(eligible) // 2}) if eligible else []:
                     did = eligible[index]
@@ -143,6 +145,7 @@ def main():
         head_input['last'] = inputs[0][:, -1, :].detach().float()
     handle = model.lm_head.register_forward_pre_hook(capture_head)
     result = dict(status='running', phase=args.phase, scope='controlled selected-pair diagnostic, not full benchmark',
+                  holdout_max_document_tokens=args.max_document_tokens,
                   commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
                   source_sha256=sha(__file__), prior_sha256=sha(args.prior_result), fixture_sha256=sha(args.fixture),
                   tokenizer_sha256=sha(args.model / 'tokenizer.json'),
@@ -153,6 +156,8 @@ def main():
                   normal_prefix=PREFIX, normal_prefix_ids=encode(PREFIX), answer_token_ids=dict(no=no, yes=yes), pairs=[])
     with torch.inference_mode():
         for pair in pairs:
+            if args.phase == 'holdout':
+                torch.npu.empty_cache()
             row = {**pair, 'variants': {}}
             atomic_bags = []
             for name, (prefix, task, fields, atomic) in variants(pair, args.phase == 'holdout').items():
