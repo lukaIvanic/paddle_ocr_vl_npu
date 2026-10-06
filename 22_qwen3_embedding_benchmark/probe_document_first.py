@@ -88,6 +88,7 @@ def main():
             query = f'<Query>: {pair["query"]}'
             document = f'<Document>: {pair["document"]}'
             bodies = dict(query_first='\n'.join([instruction, query, document]),
+                          swapped_contents='\n'.join([instruction, f'<Query>: {pair["document"]}', f'<Document>: {pair["query"]}']),
                           document_first='\n'.join([instruction, document, query]),
                           document_then_instruction='\n'.join([document, instruction, query]),
                           query_first_split_boundaries='\n'.join([instruction, query, document]),
