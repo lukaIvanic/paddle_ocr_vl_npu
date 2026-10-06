@@ -136,6 +136,8 @@ def main():
                         help='Follow-up: score the normal baseline and joint system/task remap only')
     parser.add_argument('--positional-instructions', action='store_true',
                         help='Rerun five layouts with explicit first/second roles in task, system, or both')
+    parser.add_argument('--resume-from', type=Path,
+                        help='Reuse completed rows after validating an overlap pair on the new run')
     args = parser.parse_args()
     assert not (args.joint_remap_only and args.positional_instructions)
     import torch
@@ -193,11 +195,32 @@ def main():
                   tokenizer_sha256=sha(args.model / 'tokenizer.json'),
                   environment=dict(host=platform.node(), chip='Ascend 910B2', physical_npu=os.getenv('ASCEND_RT_VISIBLE_DEVICES'),
                                    torch=torch.__version__, torch_npu=torch_npu.__version__, transformers=transformers.__version__,
-                                   dtype='bfloat16', attention='sdpa', use_cache=False, batch_size=1),
+                                   dtype='bfloat16', attention='sdpa', use_cache=False, batch_size=1,
+                                   allocator_config=os.getenv('PYTORCH_NPU_ALLOC_CONF')),
                   controls=controls, suffix=SUFFIX, suffix_ids=encode(SUFFIX),
                   normal_prefix=PREFIX, normal_prefix_ids=encode(PREFIX), answer_token_ids=dict(no=no, yes=yes), pairs=[])
+    resume_rows = {}
+    overlap_id = None
+    if args.resume_from:
+        snapshot = json.loads(args.resume_from.read_text())
+        for key in ('fixture_sha256', 'prior_sha256', 'tokenizer_sha256', 'phase', 'positional_instructions', 'holdout_max_document_tokens'):
+            assert snapshot[key] == result[key], f'Resume setting differs: {key}'
+        assert [r['id'] for r in snapshot['pairs']] == [r['id'] for r in pairs[:len(snapshot['pairs'])]]
+        resume_rows = {r['id']: r for r in snapshot['pairs']}
+        if resume_rows:
+            overlap_id = snapshot['pairs'][0]['id']
+        result['resume'] = dict(path=str(args.resume_from), sha256=sha(args.resume_from),
+                                original_commit=snapshot['commit'], completed_rows=len(resume_rows), overlap_id=overlap_id,
+                                original_environment=snapshot['environment'])
     with torch.inference_mode():
         for pair in pairs:
+            previous_resume_row = resume_rows.get(pair['id'])
+            if previous_resume_row:
+                assert all(previous_resume_row[k] == v for k, v in pair.items()), 'Resume pair content changed'
+            if previous_resume_row and pair['id'] != overlap_id:
+                assert result['resume']['overlap_max_abs_score_difference'] == 0
+                result['pairs'].append(previous_resume_row)
+                continue
             if args.phase == 'holdout':
                 torch.npu.empty_cache()
             row = {**pair, 'variants': {}}
@@ -257,6 +280,12 @@ def main():
                 previous = next(r for r in prior['pairs'] if r['id'] == pair['id'])
                 assert row['variants']['normal']['input_ids'] == previous['variants']['query_first']['input_ids']
                 row['normal_score_change_from_prior'] = row['variants']['normal']['score'] - previous['variants']['query_first']['score']
+            if pair['id'] == overlap_id:
+                assert row['variants'].keys() == previous_resume_row['variants'].keys()
+                assert all(value['input_ids'] == previous_resume_row['variants'][name]['input_ids'] for name, value in row['variants'].items())
+                difference = max(abs(value['score'] - previous_resume_row['variants'][name]['score']) for name, value in row['variants'].items())
+                result['resume']['overlap_max_abs_score_difference'] = difference
+                assert difference == 0, 'Allocator retry changed overlap scores; do not combine runs'
             result['pairs'].append(row)
             if len(result['pairs']) % 5 == 0:
                 save(args.output, result)
