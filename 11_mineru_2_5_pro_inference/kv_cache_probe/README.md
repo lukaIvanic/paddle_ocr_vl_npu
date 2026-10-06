@@ -43,6 +43,44 @@ Primary source links:
 - [Format constants](https://github.com/vllm-project/vllm-ascend/blob/80610e4438dba05011b05f89fc45d91e96992671/vllm_ascend/utils.py#L54)
 - [Common attention query contract](https://github.com/vllm-project/vllm-ascend/blob/80610e4438dba05011b05f89fc45d91e96992671/vllm_ascend/attention/attention_v1.py#L1279)
 
+### The private operation has a chip-specific cache contract
+
+Huawei's [PagedAttention input/output table, CANN 9.0.0-beta.2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900beta2/API/ascendtbapi/ascendtb_01_0197.html)
+and [CANN 9.1 basic-function table](https://www.hiascend.com/doc_center/source/en/CANNCommunityEdition/910/acce/ascendtb/ascendtb_01_0202.html)
+distinguish Atlas A2/A3 products from Atlas inference products. For this probe's
+FP16, Hkv2/D64/block128 configuration, the documented contracts specialize to:
+
+| Product family / tested chip | K/V logical shape | Storage |
+| --- | --- | --- |
+| Atlas A2 / our 910B2 | `[NB, 128, 2, 64]` | ND |
+| Atlas inference / target 310P | `[NB, 8, 128, 16]` | NZ |
+
+Both tables put `contextLens` on CPU as int32. These are published contracts,
+not documentation retrieved for the exact installed ATB 9.0.0.B160 build. The
+910B results nevertheless agree with the documented family distinction: native
+ordinary pages pass, whereas the blocked NZ reader fails its head-size check.
+The same Python entry point does not select the same supported cache contract
+on both chips. No supported ND/NZ comparison on the 910B private operation is
+established, and a 310P ND control may also reject by design.
+
+The installed torch-npu reports git revision
+`94f8a8e6b523d7ba553e1b80d5b5248478391526`; its `third_party/op-plugin` gitlink
+is `dedc316708372c9a8bfde4527abd2a94b74840f5`.
+That revision's [PagedAttention wrapper](https://github.com/Ascend/op-plugin/blob/dedc316708372c9a8bfde4527abd2a94b74840f5/op_plugin/ops/atb/PagedAttentionAtb.cpp)
+creates `atb::infer::PagedAttentionParam` and calls ATB
+`PagedAttentionOperation`. K/V are passed without format conversion.
+The [tensor bridge](https://github.com/Ascend/op-plugin/blob/dedc316708372c9a8bfde4527abd2a94b74840f5/op_plugin/utils/custom_functions/atb/AtbCommon.cpp)
+copies logical tensor dimensions and selects host/device pointers from the
+tensor's device; its [format helper](https://github.com/Ascend/op-plugin/blob/dedc316708372c9a8bfde4527abd2a94b74840f5/op_plugin/utils/custom_functions/atb/Utils.cpp)
+normalizes base formats to ND but preserves format 29. The lengths conversion
+flag changes storage format, not device placement. There is no ordinary
+cache-NZ override in the installed `PagedAttentionParam` header.
+
+Thus this probe really reaches the ATB private reader with genuine NZ; the
+reader failure is consistent with its 910B contract, rather than proof of
+broken 310P NZ attention. Installed build metadata and pinned source hashes
+are preserved in the [contract audit](../../tmp/11_mineru_2_5_pro_inference/atb_contract_audit_20261006T101234Z_64668826/audit.json).
+
 Our current `LocalMinerUStaticCache.allocate` in `local_modeling_mineru.py`
 allocates dense BNSD `[B, 2, capacity, 64]` tensors with no explicit NZ cache
 conversion. `attend_static_decode` calls IncreFA with a future-slot bool mask,
@@ -218,10 +256,24 @@ ND on 310P, an ND-versus-NZ speed ratio for that operation is unavailable.
 The reviewed 910B control with CPU lengths establishes that the installed
 private operation works for ordinary native pages, but its 310P blocked
 contract cannot be validated on that chip. Run the default NPU-length contract
-on 310P first. If it reports the same `tensor.hostData is null` failure, preserve
-that evidence and return it; do not assume a 910B metadata workaround is the
-production 310P contract. The writer-filled blocked format-29 case is essential:
-a logical roundtrip alone does not prove attention reads those bytes correctly.
+on 310P first, preserving all results. Provided it finishes without a timeout
+or device error, also run the documented CPU-length control separately:
+
+```bash
+CHIP=310P OPERATORS=paged PAGED_LENGTH_DEVICE=cpu RUN_NAME=paged_cpu_lengths \
+  BATCHES=1,16 CONTEXTS=768 \
+  bash 11_mineru_2_5_pro_inference/kv_cache_probe/run_probe.sh
+```
+
+This resolves the mismatch between the audited vLLM source's NPU lengths and
+ATB's published CPU-length requirement without hiding it in a fallback. Record
+the installed vLLM-Ascend/torch-npu revisions and inspect that installation's
+310P call site before identifying either variant as its production contract.
+The writer-filled blocked format-29 case is essential: a logical roundtrip
+alone does not prove attention reads those bytes correctly. If ND is unsupported,
+compare the validated NZ private operation against the validated native
+IncreFA control using the same fixture; label this an operator comparison,
+not an isolated cache-format speedup.
 
 Only if the controls pass, expand `CONTEXTS=768,1408,2816,4096` and
 `PATTERNS=uniform,ragged`. If a change is needed, report the failing command,

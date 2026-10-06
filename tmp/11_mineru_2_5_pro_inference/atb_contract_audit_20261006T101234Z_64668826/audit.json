@@ -1,0 +1,54 @@
+{
+  "scope": "read-only installed-runtime metadata and source audit; no new NPU inference",
+  "authoring_commit_before_documentation_update": "64668826",
+  "runtime_capture_utc": "2026-10-06T10:12:34.711009+00:00",
+  "container": "research_vllm_ascend_021_external_workspace",
+  "torch_npu_version": "2.10.0",
+  "torch_npu_git_version": "94f8a8e6b523d7ba553e1b80d5b5248478391526",
+  "op_plugin_gitlink": {
+    "path": "third_party/op-plugin",
+    "mode": "160000",
+    "type": "commit",
+    "sha": "dedc316708372c9a8bfde4527abd2a94b74840f5"
+  },
+  "gitlink_source_url": "https://api.github.com/repos/Ascend/pytorch/git/trees/94f8a8e6b523d7ba553e1b80d5b5248478391526?recursive=1",
+  "atb_version": "9.0.0.B160",
+  "atb_branch": "br_release_cann_9.0.0_20260928",
+  "atb_commit": "8bf8f4054d644f14d3924a7f0b4d0467ef5cfa52",
+  "platform": "aarch64",
+  "installed_header_path": "/usr/local/Ascend/nnal/atb/9.0.0/atb/cxx_abi_1/include/atb/infer_op_params.h",
+  "installed_header_sha256": "937b17e8a22bf2ba270120831d134db8c53d068d6d32c120bbb264724cd7ceb2",
+  "installed_atb_plugin_path": "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib/libop_plugin_atb.so",
+  "installed_atb_plugin_sha256": "95b0da8f7d2e6f90e5b279a393f4405c2e4698f85ee6fbad897ed210af0a6a98",
+  "source_files": [
+    {
+      "file": "PagedAttentionAtb.cpp",
+      "sha256": "5228d04f02e4ef1f0fe6490a7b3dc73ba4173bba00602fdb651d6072704ac0bd",
+      "source_url": "https://github.com/Ascend/op-plugin/blob/dedc316708372c9a8bfde4527abd2a94b74840f5/op_plugin/ops/atb/PagedAttentionAtb.cpp"
+    },
+    {
+      "file": "AtbCommon.cpp",
+      "sha256": "859d095c359b685ff87d82d5813fdaafa58ee208567882357328aa2a16bc86e7",
+      "source_url": "https://github.com/Ascend/op-plugin/blob/dedc316708372c9a8bfde4527abd2a94b74840f5/op_plugin/utils/custom_functions/atb/AtbCommon.cpp"
+    },
+    {
+      "file": "Utils.cpp",
+      "sha256": "c62c9a9695d584bf97dddc8e35c344e55023498a705c91192b7e0eb39b96a618",
+      "source_url": "https://github.com/Ascend/op-plugin/blob/dedc316708372c9a8bfde4527abd2a94b74840f5/op_plugin/utils/custom_functions/atb/Utils.cpp"
+    }
+  ],
+  "documentation_urls": [
+    "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900beta2/API/ascendtbapi/ascendtb_01_0197.html",
+    "https://www.hiascend.com/doc_center/source/en/CANNCommunityEdition/910/acce/ascendtb/ascendtb_01_0202.html"
+  ],
+  "documentation_scope": "Published 9.0.0-beta.2 and 9.1 tables; not exact installed 9.0.0.B160 documentation",
+  "findings": {
+    "reader": "ATB PagedAttentionOperation",
+    "kv_format_conversion": false,
+    "tensor_bridge_shape": "logical tensor sizes",
+    "format_bridge": "base formats normalized to ND; NZ descriptor 29 retained",
+    "length_device_bridge": "CPU lengths have hostData; NPU lengths have deviceData; no NPU-to-CPU transfer",
+    "installed_paged_attention_parameter_cache_nz_override": false
+  },
+  "source_mapping_limit": "Reported build git revision and its pinned gitlink establish source provenance; not a disassembly or complete binary-source reproducibility check"
+}
