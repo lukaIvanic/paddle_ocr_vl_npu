@@ -1,0 +1,42 @@
+{
+  "repository": "https://github.com/RWKV-Vibe/rwkv_Ascend",
+  "commit": "1a6eaeb47358001c4fed6e636ed95545fed1f20b",
+  "license": "CANN Open Software License Agreement v1.0",
+  "files": {
+    "op_host/rwkv_reference_wkv7.cpp": {
+      "upstream_path": "cann-ops-rwkv/src/rwkv7/wkv7/op_host/wkv7.cpp",
+      "upstream_sha256": "74a2a965833258f153256c21c96c4cc61afd6ba87902777b36567745c85c5629",
+      "import_sha256": "0f88cbf1fa7f96edfad7cd20e5b26be40081f218403c1a11f5a0fcdff3ab5a20"
+    },
+    "op_host/rwkv_reference_wkv7_tiling.h": {
+      "upstream_path": "cann-ops-rwkv/src/rwkv7/wkv7/op_host/wkv7_tiling.h",
+      "upstream_sha256": "b50dceec2ea5f30db08d13e9de50d2174afc1cd90b84440c752f03a92d32d84b",
+      "import_sha256": "5227e65c2b4f1e2067a44d120cfb6746de70ea4684d9d0fa8ccb01350cd4ee40"
+    },
+    "op_kernel/rwkv_reference_wkv7.cpp": {
+      "upstream_path": "cann-ops-rwkv/src/rwkv7/wkv7/op_kernel/wkv7.cpp",
+      "upstream_sha256": "b7aaeccbe1bab03ca53c40874a1130eab04b3561e6bd8e0c429d95c8eda02fc8",
+      "import_sha256": "543380c5a32b26fc3ef7d5f2fce762e41f9066753dd76503e92508f91b5420ed"
+    }
+  },
+  "adaptations": [
+    "Independent GE/ACLNN/kernel/vendor identities; recurrence math unchanged",
+    "Infer final-state shape from initial state",
+    "Reject head sizes other than hardcoded 64 and empty dimensions",
+    "Build scaffold reused from parent vector_add_rms_norm"
+  ],
+  "identities": {
+    "torch": "rwkv_reference::wkv7",
+    "ge": "RwkvReferenceWkv7",
+    "aclnn": "aclnnRwkvReferenceWkv7",
+    "kernel": "rwkv_reference_wkv7",
+    "vendor": "rwkv_reference"
+  },
+  "contract": {
+    "chip": "Ascend910B2",
+    "inputs": "k,v,log_decay,r,a,b: contiguous FP32 [B,H,T,64]; hi: contiguous FP32 [B,H,64,64] (value,key orientation)",
+    "outputs": "o [B,H,T,64], ho [B,H,64,64], FP32",
+    "state_mutation": false,
+    "tiling_key": 0
+  }
+}
