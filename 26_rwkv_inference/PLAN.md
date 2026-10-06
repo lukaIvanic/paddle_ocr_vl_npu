@@ -250,6 +250,16 @@ profiling are excluded; all score/state checks still pass. Both fresh processes
 used private copies of the existing graph caches.
 [`Samples, stage timings and hashes`](../tmp/26_rwkv_inference/reranker_endpoint_timing_summary_2b17b64a.json).
 
+**B2/B4 endpoint probes passed**, source `df84396b`, same 910B2 NPU 7/FP16:
+eight real pairs, unchanged row IDs, mixed lengths, row reversal and exact replay.
+Compiled states/logits equal batched eager exactly; B1 comparison passes tolerance.
+Maximum B1 logit delta **0.015625**; a close pair becomes a tie under B4 row
+reversal. This is retained; no benchmark accuracy result is implied.
+T512 compiled **96.4–108.5 pairs/s B2 / 117.1 B4**; T2048 **35.5–35.6 / 37.9**.
+At B4/T2048 raw eager is faster: **44.2 pairs/s**, 90.4 ms/batch versus compiled
+105.5 ms. Peak PyTorch reserved HBM **1.83 GiB**. Same timing exclusions as above.
+[`Batch comparisons, stage timings and evidence`](../tmp/26_rwkv_inference/reranker_endpoint_batch_summary_df84396b.json).
+
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,
 followed by casts/normalization. Optimization remains pending the padding policy.

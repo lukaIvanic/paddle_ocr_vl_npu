@@ -1,0 +1,528 @@
+{
+  "source_commit": "df84396b11b70135ba1d7526a82e6c718d8e8ab0",
+  "source_sha256": {
+    "probe_reranker_endpoint.py": "68b1758b65c734070c5daa80af3cedce3b0d5477820be515c6a7891d0b82f684",
+    "wkv7_endpoint.py": "73b1b8f8b7ac791c60efdadba6fae8e81bff2b850b14904ea3628f7e54160647",
+    "local_modeling_rwkv_embedding.py": "1070af432dd7ca522f21320abb87743eeea0c92103a36060f03d9997a674cb96",
+    "local_modeling_rwkv_reranker.py": "8d264e6600f7ad397929d9760f805cfb8b05a5675811205c2de634243c1979ac",
+    "data/wkv7_endpoint_sources.json": "227b9bff5007246def0e1cfc3599156e9d71b40e79810c7c0ce638e29f0c849f"
+  },
+  "phase": "model",
+  "backend": "torchair",
+  "bucket": 2048,
+  "dtype": "fp16",
+  "batch_size": 4,
+  "physical_npu": "7",
+  "shared_device": true,
+  "contract": "Right-padded fixed shape; int32 device valid length includes EOS; extra right padding excluded from recurrent state",
+  "recurrence_tolerance": {
+    "atol": 2e-05,
+    "rtol": 0.0002
+  },
+  "model_state_tolerance": {
+    "atol": 0.02,
+    "rtol": 0.005
+  },
+  "model_logit_tolerance": {
+    "atol": 0.02,
+    "rtol": 0.005
+  },
+  "cases": [
+    {
+      "case_ids": [
+        {
+          "query_id": "d406239de17bbb4f66d4c835f2a5f1be977b4131",
+          "document_id": "2532d0567c8334e4cadf282a73ffe399c1c32476"
+        },
+        {
+          "query_id": "e0a8b67880070624ef8787a08bbbd5aa178d65ac",
+          "document_id": "18b534c7207a1376fa92e87fe0d2cfb358d98c51"
+        },
+        {
+          "query_id": "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+          "document_id": "2532d0567c8334e4cadf282a73ffe399c1c32476"
+        },
+        {
+          "query_id": "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+          "document_id": "18b534c7207a1376fa92e87fe0d2cfb358d98c51"
+        }
+      ],
+      "batch_size": 4,
+      "T": 2048,
+      "valid_tokens": [
+        1038,
+        2046,
+        1039,
+        2035
+      ],
+      "raw_logits": [
+        -5.0390625,
+        -5.640625,
+        -5.3046875,
+        -5.1796875
+      ],
+      "single_endpoint_logits": [
+        -5.03515625,
+        -5.640625,
+        -5.30859375,
+        -5.1796875
+      ],
+      "endpoint_logits": [
+        -5.03515625,
+        -5.63671875,
+        -5.3046875,
+        -5.1796875
+      ],
+      "max_logit_delta_vs_single": 0.00390625,
+      "max_logit_delta_vs_raw": 0.00390625,
+      "state_parity": [
+        {
+          "max_abs": 0.009093284606933594,
+          "normalized_rmse": 0.0006661823717877269,
+          "finite": true
+        },
+        {
+          "max_abs": 0.027858734130859375,
+          "normalized_rmse": 0.00040946484659798443,
+          "finite": true
+        }
+      ],
+      "logit_parity": {
+        "max_abs": 0.00390625,
+        "normalized_rmse": 0.0005215761484578252,
+        "finite": true
+      },
+      "call_seconds": 73.67441249999956,
+      "compiled_vs_eager_bitwise_equal": true,
+      "row_permutation_check": false,
+      "repeat_first_case": false,
+      "timing": {
+        "compiled_total": {
+          "repeats": 20,
+          "warmups": 3,
+          "host_samples_seconds": [
+            0.10613677999936044,
+            0.10555431000011595,
+            0.10554444999979751,
+            0.10552989000007074,
+            0.10553638999954273,
+            0.10554926999975578,
+            0.10553593999975419,
+            0.10552048999943509,
+            0.1055378599994583,
+            0.10552177000045049,
+            0.10556440999971528,
+            0.10570425999958388,
+            0.10551068999939162,
+            0.1055324600001768,
+            0.10552856999947835,
+            0.10552026000004844,
+            0.10553367000011349,
+            0.10552937000011298,
+            0.10553014000015537,
+            0.1055138600004284
+          ],
+          "device_samples_seconds": [
+            0.10538057708740234,
+            0.1054256591796875,
+            0.1054329833984375,
+            0.10541391754150391,
+            0.10542088317871094,
+            0.10542671966552734,
+            0.10542046356201172,
+            0.10541301727294922,
+            0.105413818359375,
+            0.10541410064697265,
+            0.10542024230957031,
+            0.10555782318115234,
+            0.10539305877685547,
+            0.10541889953613282,
+            0.10541458129882812,
+            0.1054106216430664,
+            0.10541988372802734,
+            0.10541185760498047,
+            0.10541612243652344,
+            0.10540393829345703
+          ],
+          "host_median_seconds": 0.10553306500014514,
+          "host_max_seconds": 0.10613677999936044,
+          "device_median_seconds": 0.10541535186767578,
+          "pairs_per_second": 37.90281273451594
+        },
+        "eager_total": {
+          "repeats": 20,
+          "warmups": 3,
+          "host_samples_seconds": [
+            0.09043319000011252,
+            0.09049181999944267,
+            0.0903794799996831,
+            0.090393210000002,
+            0.09036040999944817,
+            0.0904243699997096,
+            0.0904498899999453,
+            0.09050383999965561,
+            0.09041824999985693,
+            0.0903463799995734,
+            0.0903790399997888,
+            0.09033932000056666,
+            0.09043242000007012,
+            0.09046229999967181,
+            0.09048321000045689,
+            0.09045610999964993,
+            0.09040127000025677,
+            0.0904878400006055,
+            0.09049692000007781,
+            0.09035863000008248
+          ],
+          "device_samples_seconds": [
+            0.09022872161865235,
+            0.09029440307617187,
+            0.09024111938476563,
+            0.09020030212402344,
+            0.09021183776855468,
+            0.09025547790527344,
+            0.09023905944824219,
+            0.09030931854248046,
+            0.09023194122314453,
+            0.09019606018066406,
+            0.09019999694824218,
+            0.09021505737304687,
+            0.0902417221069336,
+            0.09031643676757813,
+            0.09035710144042969,
+            0.0903113784790039,
+            0.09020465850830078,
+            0.09029889678955078,
+            0.09034068298339844,
+            0.09023448181152344
+          ],
+          "host_median_seconds": 0.09042839499988986,
+          "host_max_seconds": 0.09050383999965561,
+          "device_median_seconds": 0.09024008941650391,
+          "pairs_per_second": 44.233893568550805
+        },
+        "compiled_backbone": {
+          "repeats": 20,
+          "warmups": 3,
+          "host_samples_seconds": [
+            0.1028503699999419,
+            0.10281460999976844,
+            0.10283766999964428,
+            0.10281179999947199,
+            0.10280862000035995,
+            0.10283889000038471,
+            0.1028253999993467,
+            0.10280706000048667,
+            0.10284375999981421,
+            0.10279684999932215,
+            0.10283583000000363,
+            0.10282112000004417,
+            0.10285753999960434,
+            0.10280203000002075,
+            0.10292033000041556,
+            0.10286610000002838,
+            0.10296778000065387,
+            0.10288378999939596,
+            0.1028498399991804,
+            0.10287105000043084
+          ],
+          "device_samples_seconds": [
+            0.1027239990234375,
+            0.10270464324951172,
+            0.10273100280761718,
+            0.10270719909667969,
+            0.10269847869873047,
+            0.10273001861572266,
+            0.10271601867675781,
+            0.10270030212402344,
+            0.10273336029052735,
+            0.1026871566772461,
+            0.10272798156738282,
+            0.10271295928955078,
+            0.10274896240234375,
+            0.10269377899169922,
+            0.10281437683105468,
+            0.10272942352294921,
+            0.10282710266113282,
+            0.10276255798339844,
+            0.1027415771484375,
+            0.10276399993896485
+          ],
+          "host_median_seconds": 0.10283828000001449,
+          "host_max_seconds": 0.10296778000065387,
+          "device_median_seconds": 0.10272870254516601,
+          "pairs_per_second": 38.89602198713783
+        },
+        "compiled_head": {
+          "repeats": 20,
+          "warmups": 3,
+          "host_samples_seconds": [
+            0.003001050000420946,
+            0.002989700000398443,
+            0.0029782299998259987,
+            0.0029789999998683925,
+            0.0029811499998686486,
+            0.002987599999869417,
+            0.0029823300001226016,
+            0.00298689999999624,
+            0.0029828599999746075,
+            0.002980770000249322,
+            0.002982009999868751,
+            0.002979530000629893,
+            0.0029836200001227553,
+            0.002982699999847682,
+            0.002975049999804469,
+            0.002985179999996035,
+            0.0029856700002710568,
+            0.0029787699995722505,
+            0.0029838800001016352,
+            0.0029774800004815916
+          ],
+          "device_samples_seconds": [
+            0.0028857200145721434,
+            0.0028864800930023192,
+            0.0028804399967193605,
+            0.002878040075302124,
+            0.002881279945373535,
+            0.0028870799541473387,
+            0.002883939981460571,
+            0.0028864400386810303,
+            0.002880860090255737,
+            0.0028809599876403807,
+            0.002883500099182129,
+            0.0028782401084899902,
+            0.002879460096359253,
+            0.0028847599029541014,
+            0.0028766798973083496,
+            0.002881119966506958,
+            0.0028835999965667724,
+            0.002878499984741211,
+            0.002885159969329834,
+            0.002879899978637695
+          ],
+          "host_median_seconds": 0.002982514999985142,
+          "host_max_seconds": 0.003001050000420946,
+          "device_median_seconds": 0.0028811999559402463,
+          "pairs_per_second": 1341.1500026051594
+        }
+      }
+    },
+    {
+      "case_ids": [
+        {
+          "query_id": "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+          "document_id": "18b534c7207a1376fa92e87fe0d2cfb358d98c51"
+        },
+        {
+          "query_id": "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+          "document_id": "2532d0567c8334e4cadf282a73ffe399c1c32476"
+        },
+        {
+          "query_id": "e0a8b67880070624ef8787a08bbbd5aa178d65ac",
+          "document_id": "18b534c7207a1376fa92e87fe0d2cfb358d98c51"
+        },
+        {
+          "query_id": "d406239de17bbb4f66d4c835f2a5f1be977b4131",
+          "document_id": "2532d0567c8334e4cadf282a73ffe399c1c32476"
+        }
+      ],
+      "batch_size": 4,
+      "T": 2048,
+      "valid_tokens": [
+        2035,
+        1039,
+        2046,
+        1038
+      ],
+      "raw_logits": [
+        -5.1796875,
+        -5.3046875,
+        -5.640625,
+        -5.0390625
+      ],
+      "single_endpoint_logits": [
+        -5.1796875,
+        -5.30859375,
+        -5.640625,
+        -5.03515625
+      ],
+      "endpoint_logits": [
+        -5.1796875,
+        -5.3046875,
+        -5.63671875,
+        -5.03515625
+      ],
+      "max_logit_delta_vs_single": 0.00390625,
+      "max_logit_delta_vs_raw": 0.00390625,
+      "state_parity": [
+        {
+          "max_abs": 0.008880615234375,
+          "normalized_rmse": 0.0007049472769722342,
+          "finite": true
+        },
+        {
+          "max_abs": 0.027896881103515625,
+          "normalized_rmse": 0.0004220684932079166,
+          "finite": true
+        }
+      ],
+      "logit_parity": {
+        "max_abs": 0.00390625,
+        "normalized_rmse": 0.0005215761484578252,
+        "finite": true
+      },
+      "call_seconds": 0.10590794000017922,
+      "compiled_vs_eager_bitwise_equal": true,
+      "row_permutation_check": true,
+      "repeat_first_case": false
+    },
+    {
+      "case_ids": [
+        {
+          "query_id": "d406239de17bbb4f66d4c835f2a5f1be977b4131",
+          "document_id": "2532d0567c8334e4cadf282a73ffe399c1c32476"
+        },
+        {
+          "query_id": "e0a8b67880070624ef8787a08bbbd5aa178d65ac",
+          "document_id": "18b534c7207a1376fa92e87fe0d2cfb358d98c51"
+        },
+        {
+          "query_id": "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+          "document_id": "2532d0567c8334e4cadf282a73ffe399c1c32476"
+        },
+        {
+          "query_id": "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+          "document_id": "18b534c7207a1376fa92e87fe0d2cfb358d98c51"
+        }
+      ],
+      "batch_size": 4,
+      "T": 2048,
+      "valid_tokens": [
+        1038,
+        2046,
+        1039,
+        2035
+      ],
+      "raw_logits": [
+        -5.0390625,
+        -5.640625,
+        -5.3046875,
+        -5.1796875
+      ],
+      "single_endpoint_logits": [
+        -5.03515625,
+        -5.640625,
+        -5.30859375,
+        -5.1796875
+      ],
+      "endpoint_logits": [
+        -5.03515625,
+        -5.63671875,
+        -5.3046875,
+        -5.1796875
+      ],
+      "max_logit_delta_vs_single": 0.00390625,
+      "max_logit_delta_vs_raw": 0.00390625,
+      "state_parity": [
+        {
+          "max_abs": 0.009093284606933594,
+          "normalized_rmse": 0.0006661823717877269,
+          "finite": true
+        },
+        {
+          "max_abs": 0.027858734130859375,
+          "normalized_rmse": 0.00040946484659798443,
+          "finite": true
+        }
+      ],
+      "logit_parity": {
+        "max_abs": 0.00390625,
+        "normalized_rmse": 0.0005215761484578252,
+        "finite": true
+      },
+      "call_seconds": 0.10596093999993172,
+      "compiled_vs_eager_bitwise_equal": true,
+      "row_permutation_check": false,
+      "repeat_first_case": true
+    }
+  ],
+  "all_checks_passed": true,
+  "benchmark": {
+    "enabled": true,
+    "repeats": 20,
+    "scope": "Prepared NPU inputs; synchronized fixed-batch forward only. No compile, transfers, tokenization, correctness work or profiling inside timed calls."
+  },
+  "device": "Ascend910B2",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "hbm_before": {
+    "free_bytes": 65097637888,
+    "total_bytes": 65452113920
+  },
+  "package_manifest": {
+    "base": {
+      "base_sources": {
+        "CMakeLists.txt": "5cda934c63a9a15640d308184db571e82f3bf1e90b9a5247d0746c1046c8f6ac",
+        "bridge.cpp": "5271b6f98b63da8e2d790f4154bab9a7d8c156f15ba261ffe6e80e8a591ab987",
+        "LICENSE": "97e7afb9392d7c7f940607b30319a0501d9c2f8429f15c5f87ff944b1bcb73d6",
+        "build.sh": "c220cb882fede343af63ad7ac41153f13d0bc6182c4af8ae4155ef5ba4e47e30",
+        "op_host/CMakeLists.txt": "54aa68b551a22faf57476b414e03643b0a433545239c329bf603ccf9c4d674b6",
+        "op_host/rwkv_reference_wkv7_tiling.h": "5227e65c2b4f1e2067a44d120cfb6746de70ea4684d9d0fa8ccb01350cd4ee40",
+        "op_host/rwkv_reference_wkv7.cpp": "0f88cbf1fa7f96edfad7cd20e5b26be40081f218403c1a11f5a0fcdff3ab5a20",
+        "op_kernel/CMakeLists.txt": "5f228bd04aae822f620be2230fcf2494c325b0ea74e6bf26ae66a1f1390462cd",
+        "op_kernel/rwkv_reference_wkv7.cpp": "543380c5a32b26fc3ef7d5f2fce762e41f9066753dd76503e92508f91b5420ed"
+      },
+      "identities": {
+        "pytorch": "rwkv_endpoint::wkv7",
+        "GE_CANN": "RwkvEndpointWkv7",
+        "aclnn": "aclnnRwkvEndpointWkv7",
+        "kernel": "rwkv_endpoint_wkv7",
+        "vendor": "rwkv_endpoint"
+      },
+      "contract": {
+        "inputs": "Existing contiguous FP32 [B,H,T<=2048,64] tensors and FP32 [B,H,64,64] initial state; int32 NPU lengths[B], caller guarantees 0<=length<=T",
+        "outputs": "FP32 [B,H,T,64], valid prefix matches reference; trailing outputs zero. FP32 [B,H,64,64] state after length updates. No mutation.",
+        "device": "Ascend 910B2",
+        "model": "B1 initially; lengths>=1; terminal EOS included in length",
+        "adaptation": "Skip recurrence updates in each tile at positions >= length; keep original padded strides. Read length on device per head. Original operator remains unchanged."
+      }
+    },
+    "generated_sha256": {
+      "CMakeLists.txt": "5cda934c63a9a15640d308184db571e82f3bf1e90b9a5247d0746c1046c8f6ac",
+      "bridge.cpp": "155cf1612e61f16de9adcf0ff4031346839d36647fde50ebdf0c8886578064d3",
+      "LICENSE": "97e7afb9392d7c7f940607b30319a0501d9c2f8429f15c5f87ff944b1bcb73d6",
+      "build.sh": "6c6d35f6b8ea1270a7a139909dbbc24452fea6c13351fb62117a76292feee328",
+      "op_host/CMakeLists.txt": "54aa68b551a22faf57476b414e03643b0a433545239c329bf603ccf9c4d674b6",
+      "op_host/rwkv_endpoint_wkv7_tiling.h": "75098fdab99bd05e037a6c63f1988c67ee2ab44eec7c2b4f9fef33e34e259c91",
+      "op_host/rwkv_endpoint_wkv7.cpp": "04f9bb1aa4e265f9cab01055648a82f27508d6f49a23b06ca2ec1a67f14ed749",
+      "op_kernel/CMakeLists.txt": "5f228bd04aae822f620be2230fcf2494c325b0ea74e6bf26ae66a1f1390462cd",
+      "op_kernel/rwkv_endpoint_wkv7.cpp": "29eaa0014dddaa238db9771b78c0f3fcb913c9293c2501c8cd56d341deb41626"
+    }
+  },
+  "op_api_sha256": "64f105f5a726e9ff253213f3538df48373be6af6c2c9be0e469815c4217afbd1",
+  "independent_api_symbols_verified": true,
+  "checkpoint_sha256": {
+    "checkpoint": "9033eec92f163d1a710474977fa3fb68b7ee04697e0e961d83434743bd256a15",
+    "reranker": "6b6f36543ad71aa48bca3cca97863c529e9153515fb777184c36475b3badb6be"
+  },
+  "default_path_regression_passed": true,
+  "batched_vs_individual_states_and_scores_passed": true,
+  "row_permutation_and_replay_passed": true,
+  "distinct_GE_op_verified": true,
+  "graph_artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/backbone_cache/graphs/dynamo_original_graph_1_rank_0_pid_48146_ts_20261006141130276540.pbtxt",
+      "sha256": "aa259d8cee6007169eec0639537a0a888e1c9c065ba54e4872c41cbb0664ef6c"
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/head_cache/graphs/dynamo_original_graph_2_rank_0_pid_48146_ts_20261006141214397259.pbtxt",
+      "sha256": "a1aa562f561dd59a8f43a1494d77bd91a572dcd34b3a41cb29d823de39d1aad2"
+    }
+  ],
+  "static_shapes_with_device_length_changes_passed": true,
+  "peak_hbm_bytes": {
+    "allocated": 1580131328,
+    "reserved": 1967128576
+  },
+  "total_seconds": 95.7883599199995
+}

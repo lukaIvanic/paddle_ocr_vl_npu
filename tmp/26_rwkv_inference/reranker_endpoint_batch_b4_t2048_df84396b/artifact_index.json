@@ -1,0 +1,78 @@
+{
+  "all_artifacts_readback_verified": true,
+  "graphs_and_compile_caches_remain_on_server": true,
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/inputs.json",
+      "bytes": 330966,
+      "sha256": "f4fd78d97db69b92143c52ef0a99e479e2887152ef5c953c8ec3ef394ad80891",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/result.json",
+      "bytes": 18084,
+      "sha256": "847f2f61e2633a3417189277fe2accddcb91b7ef80cfccc756e377ab6aff62ae",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/backbone_cache/graphs/dynamo_original_graph_1_rank_0_pid_48146_ts_20261006141130276540.pbtxt",
+      "bytes": 2958108,
+      "sha256": "aa259d8cee6007169eec0639537a0a888e1c9c065ba54e4872c41cbb0664ef6c",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1_20261006141132.om",
+      "bytes": 6334913,
+      "sha256": "4ed80ca1867a3bd934c58da8475c57f11ea9a2992333aff713f1c88bde25a147",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.idx",
+      "bytes": 149,
+      "sha256": "64f613ee68c891a1865d7931179084687fcc3817d2a78711487917f5635fd6c8",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/compiled_module",
+      "bytes": 2835040,
+      "sha256": "ff67f650f58e944e135572856cd2c11e9f856844ff509c45633b00795b771c1a",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/head_cache/graphs/dynamo_original_graph_2_rank_0_pid_48146_ts_20261006141214397259.pbtxt",
+      "bytes": 2562092,
+      "sha256": "a1aa562f561dd59a8f43a1494d77bd91a572dcd34b3a41cb29d823de39d1aad2",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2_20261006141216.om",
+      "bytes": 4601625,
+      "sha256": "dec975f6603f3db48f2d2f3dbfe97862e71e56317f1939916c633ecde6fa6c28",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.idx",
+      "bytes": 149,
+      "sha256": "b92fd5f46cfc237c4101131a174bb3e6cd6f3c3d5dd426b53614d3a86b85eb07",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t2048_df84396b/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/compiled_module",
+      "bytes": 2472901,
+      "sha256": "67de3b6650383f9816c5722da66d682eee6279ec5b89ad7951cc7beb33e6ffdf",
+      "collected": false
+    }
+  ]
+}

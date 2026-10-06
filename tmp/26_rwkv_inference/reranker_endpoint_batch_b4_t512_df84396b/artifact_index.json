@@ -1,0 +1,78 @@
+{
+  "all_artifacts_readback_verified": true,
+  "graphs_and_compile_caches_remain_on_server": true,
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/inputs.json",
+      "bytes": 82614,
+      "sha256": "119dd7afdd940feb6b0fc43be9c7af8be960f40dfd9ee387dc71e5f8975d6afc",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/result.json",
+      "bytes": 18078,
+      "sha256": "1700ff79dce12c30c80519198ad3db059c887d2d8a094229df6ca2e11d1a1ee7",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/backbone_cache/graphs/dynamo_original_graph_1_rank_0_pid_43636_ts_20261006140900539178.pbtxt",
+      "bytes": 2955932,
+      "sha256": "504f3cc6e0e0a8ffcaea348dfd4912f04f3a860a3ea327cdcc53c8e4503781e1",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1_20261006140902.om",
+      "bytes": 6321937,
+      "sha256": "e1c96dd012b685c7fa3acb769979fb2b63553feb7d038ece00010d3b676319e0",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/graph_1.idx",
+      "bytes": 149,
+      "sha256": "f34e6bd186344c924b3c8cbe8d8dbbfe72f36d134a354f0f64a7558f9af42184",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/backbone_cache/Backbone_static_gecache_9fd6b74bca1eda9e65f00ec7a8a029e2/forward/compiled_module",
+      "bytes": 2830968,
+      "sha256": "8807c3fb3dbcfcf9923a0665ab4a43a594ac98ccca2e468553740c7fb61c735d",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/head_cache/graphs/dynamo_original_graph_2_rank_0_pid_43636_ts_20261006141000014863.pbtxt",
+      "bytes": 2562092,
+      "sha256": "4de0c6d451effe34c6afbf320315111e4974c11973b4e296a47f1a32ea4e1696",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2_20261006141001.om",
+      "bytes": 4601625,
+      "sha256": "ebd0698ae68c10cf7cfec9d56e6b882b5c013f44c0161ed1d17c116ed976bb64",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/graph_2.idx",
+      "bytes": 149,
+      "sha256": "8cea0636eea12b97110d1f68655a67c7b0e8eedcb2a8b5244225988c0e107fcf",
+      "collected": false
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_endpoint_batch_b4_t512_df84396b/probe/head_cache/Reranker_static_gecache_dce86ff474301487b03c294cd84141b0/forward/compiled_module",
+      "bytes": 2472900,
+      "sha256": "9e00fd5ffd0b4057f57426222888615cd42dd2bf899181b51d6a0dae5838b043",
+      "collected": false
+    }
+  ]
+}
