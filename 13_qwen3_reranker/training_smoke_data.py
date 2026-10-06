@@ -84,9 +84,8 @@ def ranking_metrics(groups, logits):
         margins = [yes - no for no, yes in rows]
         wins += sum(margins[0] > x for x in margins[1:])
         ties += sum(margins[0] == x for x in margins[1:])
-        # Stable original index breaks ties; report ties separately.
-        ranking = sorted(range(len(rows)), key=lambda i: (-margins[i], i))
-        rank = ranking.index(0) + 1
+        # A tied negative ranks ahead of the positive: avoid positive-index bias.
+        rank = 1 + sum(x >= margins[0] for x in margins[1:])
         top1 += rank == 1
         mrr += 1 / rank
         ndcg += 1 / math.log2(rank + 1)
@@ -94,4 +93,5 @@ def ranking_metrics(groups, logits):
     return {"queries": n, "pairs": offset, "correct_orderings": wins,
             "total_orderings": offset - n, "ties": ties,
             "ordering_accuracy": wins / (offset - n), "top1_accuracy": top1 / n,
-            "mrr": mrr / n, "ndcg": ndcg / n}
+            "mrr": mrr / n, "ndcg": ndcg / n,
+            "tie_policy": "negative_before_positive"}
