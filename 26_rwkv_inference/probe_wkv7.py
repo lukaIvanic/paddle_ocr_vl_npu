@@ -8,6 +8,14 @@ import platform
 import subprocess
 import time
 
+os.environ["TORCH_DEVICE_BACKEND_AUTOLOAD"] = "0"
+import torch
+
+
+class WkvStep(torch.nn.Module):
+    def forward(self, k, v, w, r, a, b, hi):
+        return torch.ops.rwkv_reference.wkv7.default(k, v, w, r, a, b, hi)
+
 
 def digest(path):
     with Path(path).open("rb") as f:
@@ -146,11 +154,8 @@ def main():
                     inputs={"k": k, "v": v, "w": w, "r": r, "a": a, "b": b, "hi": hi},
                     attrs={}, outputs=["o", "ho"])
 
-            def forward(k, v, w, r, a, b, hi):
-                return eager_op(k, v, w, r, a, b, hi)
-
             report["graph_cache"] = str(output / "graph_cache")
-            op = torchair.inference.cache_compile(forward, config=CompilerConfig(),
+            op = torchair.inference.cache_compile(WkvStep().forward, config=CompilerConfig(),
                     dynamic=False, cache_dir=report["graph_cache"], ge_cache=True)
         for batch in batches:
             for length in lengths:
