@@ -1,0 +1,1 @@
+{"boundary_cases_checked": 10, "all_checks_passed": true, "inference_executed": false, "device": "cpu", "hostname": "liteserver-c001-4", "checks": "pinned C tokenizer and preprocessing match Python audit"}

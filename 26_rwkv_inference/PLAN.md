@@ -95,8 +95,12 @@ the long T976 case and **46.3/7.54 ms** for B2/T96. Corresponding four-thread C
 CPU measurements were **1.53/10.54/2.53 s**. These shared-device timings exclude
 tokenization, transfers, traces and cold compilation (34–52 s per fresh shape).
 
-Next: NanoSCIDOCS. Audit prepared sequence lengths first: the current bridge
-accepts T≤2048, while upstream preprocessing can produce longer sequences.
+Next: NanoSCIDOCS. A full length audit at dataset revision
+`484eb90549fc3f0b9c42b3551e80ceb999515537` found **all 2,210 documents and 50 queries
+fit T≤2048**. Prepared document lengths: median **688**, p95 **1360**, max **2032**;
+queries: **128/160/176**, including instruction. Raw document maximum was **2005**.
+The current bridge cap therefore covers this task; verify its upper-end NPU
+inputs before evaluation. See [`length audit`](../tmp/26_rwkv_inference/nanoscidocs_length_audit_12deec8f/result.json).
 
 Start NanoBEIR evaluation on one NPU. If it is not fast enough, use **data
 parallelism**, with a complete model replica on each participating NPU and

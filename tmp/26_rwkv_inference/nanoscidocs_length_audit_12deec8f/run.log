@@ -1,0 +1,94 @@
+{
+  "dataset": "zeta-alpha-ai/NanoSCIDOCS",
+  "revision": "484eb90549fc3f0b9c42b3551e80ceb999515537",
+  "upstream_commit": "3c306736c58550f4be6d384be068512ba9bfbd72",
+  "vocabulary_sha256": "e6dee3d4e31b4d5c40ac99508ac6c701ceef4bed681bf2167ce9a908552bca89",
+  "tokenizer_sha256": "963ed277d1f0d3a110ccb9ccabed529595ca409011ff676c8f0d58a4b004dedd",
+  "ctx_len": 2048,
+  "eos_chunk_size": 512,
+  "query_instruction": "Instruct: Given a query, retrieve documents that answer the query\nQuery: {query}",
+  "corpus_text": "(title + space + text).strip(); dataset has no title field",
+  "groups": {
+    "corpus": {
+      "count": 2210,
+      "raw_min": 0,
+      "raw_median": 169.5,
+      "raw_p95": 359,
+      "raw_max": 2005,
+      "prepared_min": 16,
+      "prepared_median": 688.0,
+      "prepared_p95": 1360,
+      "prepared_max": 2032,
+      "prepared_over_2048": 0,
+      "raw_over_2048": 0,
+      "longest": [
+        {
+          "id": "7dfce578644bc101ae4ffcd0184d2227c6d07809",
+          "raw_tokens": 506,
+          "prepared_tokens": 2032
+        },
+        {
+          "id": "4b65024cd376067156a5ac967899a7748fa31f6f",
+          "raw_tokens": 506,
+          "prepared_tokens": 2032
+        },
+        {
+          "id": "18b534c7207a1376fa92e87fe0d2cfb358d98c51",
+          "raw_tokens": 2005,
+          "prepared_tokens": 2016
+        },
+        {
+          "id": "7752e0835506a6629c1b06e67f2afb1e5d2bb714",
+          "raw_tokens": 502,
+          "prepared_tokens": 2016
+        },
+        {
+          "id": "92c4413c2a344f297f2eb6f96800bcc7de01ad37",
+          "raw_tokens": 503,
+          "prepared_tokens": 2016
+        }
+      ]
+    },
+    "queries": {
+      "count": 50,
+      "raw_min": 24,
+      "raw_median": 30.0,
+      "raw_p95": 37,
+      "raw_max": 42,
+      "prepared_min": 112,
+      "prepared_median": 128.0,
+      "prepared_p95": 160,
+      "prepared_max": 176,
+      "prepared_over_2048": 0,
+      "raw_over_2048": 0,
+      "longest": [
+        {
+          "id": "20534da8c7ee7063cbb32620d53e7322f90be2e0",
+          "raw_tokens": 42,
+          "prepared_tokens": 176
+        },
+        {
+          "id": "c9dee006f3b6b2b30e422ad2fd8abb86c751376d",
+          "raw_tokens": 37,
+          "prepared_tokens": 160
+        },
+        {
+          "id": "a95fd5d561bc2996b4d6d5574139ad8162cb78ce",
+          "raw_tokens": 38,
+          "prepared_tokens": 160
+        },
+        {
+          "id": "e0a8b67880070624ef8787a08bbbd5aa178d65ac",
+          "raw_tokens": 37,
+          "prepared_tokens": 160
+        },
+        {
+          "id": "3713243ded59fd9b0a4428bd101616bad7393311",
+          "raw_tokens": 32,
+          "prepared_tokens": 144
+        }
+      ]
+    }
+  },
+  "input_rows_sha256": "4d609256e385eed954417a347de2f7ee1cea04431c537af719e7340b828d2f33"
+}
