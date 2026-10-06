@@ -82,6 +82,7 @@ def main():
     config_locks = {}
 
     def parquet_rows(config, offset, length):
+        import aiohttp
         import fsspec
         import pyarrow.parquet as pq
         with parquet_lock:
@@ -94,7 +95,9 @@ def main():
             for filename in files:
                 if filename not in parquet_files:
                     url = f"{args.hub_endpoint.rstrip('/')}/datasets/{MIRROR}/resolve/{REVISION}/{filename}?download=true"
-                    stream = fsspec.open(url, mode="rb", block_size=1024**2, client_kwargs={"trust_env": True}).open()
+                    stream = fsspec.open(url, mode="rb", block_size=1024**2,
+                        client_kwargs={"trust_env": True,
+                            "timeout": aiohttp.ClientTimeout(total=60, sock_connect=10, sock_read=30)}).open()
                     parquet_files[filename] = (pq.ParquetFile(stream), url)
                 reader, url = parquet_files[filename]
                 if base + reader.metadata.num_rows <= offset:
@@ -169,7 +172,7 @@ def main():
                     raise
                 delay = min(60, 5 * 2**attempt)
                 print("FETCH_RETRY", json.dumps({"config": config, "offset": offset,
-                      "error": str(e), "delay_seconds": delay}), flush=True)
+                      "error": repr(e), "delay_seconds": delay}), flush=True)
                 time.sleep(delay)
         valid = [clean_row(r["row"], config, r["row_idx"], blocked)
                  for r in data["rows"] if offset <= r["row_idx"] < offset + length and not r.get("truncated_cells")]
