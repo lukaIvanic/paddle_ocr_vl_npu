@@ -1,0 +1,161 @@
+{
+  "source_commit": "1315ecc75a4bbde9e5784e8243a093b152614343",
+  "source_sha256": {
+    "probe_reranker_padding.py": "912fe0400b082fde02a2a57dd721dc3b5b234acb1c8339a8503715abe3996450",
+    "local_modeling_rwkv_embedding.py": "94199e1cea70874184b27306ddc01f7836f17b7e3479f70dfc0141c74d060b67",
+    "local_modeling_rwkv_reranker.py": "8d264e6600f7ad397929d9760f805cfb8b05a5675811205c2de634243c1979ac",
+    "run_reranker_smoke.py": "91c62ae2fb96f0745eb0fea42d742b10ddf48323c9b7b76ca9ab987d5d5ecaf9"
+  },
+  "physical_npu": "7",
+  "backend": "raw_eager",
+  "cpu_reference": "Hash-pinned released math, FP32; explicit recurrence replaces CUDA",
+  "npu_precision": "FP16 projections, FP32 state/pointwise",
+  "cases": [
+    {
+      "query_id": "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+      "document_id": "18b534c7207a1376fa92e87fe0d2cfb358d98c51",
+      "bucket": 2048,
+      "raw_tokens": 2035,
+      "padding_tokens": 13,
+      "cpu_raw_logit": -5.180273056030273,
+      "cpu_padded_logit": -4.773715019226074,
+      "npu_raw_logit": -5.1796875,
+      "npu_padded_logit": -4.77734375,
+      "cpu_padding_delta": 0.4065580368041992,
+      "npu_padding_delta": 0.40234375,
+      "raw_cpu_npu": {
+        "max_abs": 0.0005855560302734375,
+        "normalized_rmse": 0.00011303574865451083,
+        "finite": true
+      },
+      "padded_cpu_npu": {
+        "max_abs": 0.0036287307739257812,
+        "normalized_rmse": 0.0007601481629535556,
+        "finite": true
+      },
+      "cpu_raw_vs_padded_state": [
+        {
+          "max_abs": 1.461319923400879,
+          "normalized_rmse": 0.12454995512962341,
+          "finite": true
+        },
+        {
+          "max_abs": 5.720737457275391,
+          "normalized_rmse": 0.10785617679357529,
+          "finite": true
+        }
+      ],
+      "npu_raw_vs_padded_state": [
+        {
+          "max_abs": 1.4539985656738281,
+          "normalized_rmse": 0.12447109073400497,
+          "finite": true
+        },
+        {
+          "max_abs": 5.726627349853516,
+          "normalized_rmse": 0.10788024961948395,
+          "finite": true
+        }
+      ],
+      "zero_prefix": {
+        "shift_l2": 139.31956481933594,
+        "matrix_l2": 171.2908935546875
+      },
+      "prefix_continuation_logit": -4.765625,
+      "prefix_continuation_vs_full": {
+        "max_abs": 0.01171875,
+        "normalized_rmse": 0.0024529844522476196,
+        "finite": true
+      },
+      "fp16_continuation_passed": false,
+      "cpu_fp32_continuation": {
+        "max_abs": 0.0,
+        "normalized_rmse": 0.0,
+        "finite": true
+      },
+      "npu_fp32_continuation": {
+        "max_abs": 3.337860107421875e-06,
+        "normalized_rmse": 6.992167982389219e-07,
+        "finite": true
+      },
+      "npu_fp32_padded_cpu_parity": {
+        "max_abs": 2.384185791015625e-06,
+        "normalized_rmse": 4.994403184355178e-07,
+        "finite": true
+      },
+      "npu_fp32_logits": {
+        "full": -4.773712635040283,
+        "split": -4.773709297180176
+      },
+      "companion_padding_tokens": 0,
+      "companion_logit": -5.1796875,
+      "right_padding_logit": -1.548828125
+    }
+  ],
+  "selected_case_index": 3,
+  "fp32_continuation_check": true,
+  "thresholds": {
+    "cpu_npu_atol": 0.02,
+    "cpu_npu_rtol": 0.005,
+    "split_atol": 0.002,
+    "split_rtol": 0.001
+  },
+  "all_checks_passed": true,
+  "wrapper_sha256": "a6a00f711c95a3a1d927c7d3c4bfc2436bae1d6ba06bf4b76d7d1e373c850123",
+  "upstream_predict_default_batch_size": 32,
+  "tokenizer_wrapper_parity": true,
+  "input_sha256": {
+    "checkpoint": "9033eec92f163d1a710474977fa3fb68b7ee04697e0e961d83434743bd256a15",
+    "reranker": "6b6f36543ad71aa48bca3cca97863c529e9153515fb777184c36475b3badb6be",
+    "data": "bfc261e4b59f9b5e3e9915cc9cde95241d2dfe466ee4595a012c7369f4d34190"
+  },
+  "device": "Ascend910B2",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "hbm_before": {
+    "free_bytes": 65098215424,
+    "total_bytes": 65452113920
+  },
+  "pad_embedding": {
+    "token_id": 0,
+    "raw_l2": 0.3986901342868805,
+    "after_ln0_l2": 3.6476871967315674,
+    "raw_all_zero": false
+  },
+  "padding_count_sweep": [
+    {
+      "padding_tokens": 0,
+      "logit": -8.0703125
+    },
+    {
+      "padding_tokens": 1,
+      "logit": -8.0546875
+    },
+    {
+      "padding_tokens": 2,
+      "logit": -9.0
+    },
+    {
+      "padding_tokens": 8,
+      "logit": -8.8515625
+    },
+    {
+      "padding_tokens": 32,
+      "logit": -8.671875
+    },
+    {
+      "padding_tokens": 64,
+      "logit": -8.6015625
+    },
+    {
+      "padding_tokens": 128,
+      "logit": -8.5859375
+    },
+    {
+      "padding_tokens": 206,
+      "logit": -8.6015625
+    }
+  ],
+  "pair_order": [],
+  "total_seconds": 96.87360563000038
+}

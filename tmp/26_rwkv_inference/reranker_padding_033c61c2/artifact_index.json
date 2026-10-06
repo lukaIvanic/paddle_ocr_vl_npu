@@ -1,0 +1,17 @@
+{
+  "all_artifacts_readback_verified": true,
+  "artifacts": [
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_padding_033c61c2/probe/inputs.json",
+      "bytes": 126105,
+      "sha256": "efa748fdf991a6300f163d523508b627d91a6345220477007050cdece680c9de",
+      "collected": true
+    },
+    {
+      "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_padding_033c61c2/probe/result.json",
+      "bytes": 7114,
+      "sha256": "8ffd521cff7fbb2a2e44c1f21dff549b5de736e802c6a7d5da4641e7e2b73b3b",
+      "collected": true
+    }
+  ]
+}

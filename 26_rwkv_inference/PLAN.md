@@ -206,11 +206,30 @@ identical scores. Warm medians were **11.5/16.5/26.8/45.8 ms**, versus eager
 Cold compile took 73–99 s; cached first calls about 5 s. The compile-only cleanup
 guard also passed a fresh independent CPU/NPU smoke.
 
-**Padding is not neutral:** maximum selected logit change 1.328; selected pair
-order reversed at T512/1024/2048. Match and validate the upstream padding policy
-before using these buckets for benchmark accuracy. Profiles show eager dispatch
-gaps and 2,441 kernels/score versus compiled 1,750; WKV occupies 32% of compiled
-device kernel time at T256 and 62% at T2048, followed by casts/normalization.
+**Padding diagnosis**, sources `033c61c2` / `1315ecc7`, 910B2 NPU 7:
+token 0 is a nonzero embedding and unmasked recurrent input in the release.
+All four selected cases match released token preparation and CPU FP32/NPU FP16
+scores. At T512, the 341/306-token pair reverses on both CPU and NPU: NPU
+logits change from −8.078/−8.070 to −7.699/−8.602. Right padding also changes
+the final matrices; it is not a neutral replacement. These sampled documents
+are unjudged and outside the earlier B2 top ten; no NDCG degradation is established.
+One long FP16 split-continuation check fails the unchanged strict tolerance
+(0.011719 logits); isolated CPU FP32 is exact and NPU FP32 differs by 0.00000334.
+Preserve that failure separately from the much larger padding effect.
+
+The inspected MTEB 1.38.60 path calls the released wrapper's default **B32**
+(outer chunks 128), padding each group to its maximum before retaining the last
+2,048 tokens. Our B2 run matches the padding rule, not those batch boundaries.
+Next compare NanoSCIDOCS with upstream logical B32 input preparation; device
+execution can split prepared rows without changing their IDs. Any extra static
+bucket padding must freeze both recurrent matrices and previous-token vectors.
+Removing all upstream padding would instead change the benchmark protocol.
+[`Diagnosis and retained failure/controls`](../tmp/26_rwkv_inference/reranker_padding_summary_1315ecc7.json);
+[`pinned upstream source findings`](data/reranker_padding_sources.json).
+
+Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
+WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,
+followed by casts/normalization. Optimization remains pending the padding policy.
 [`Summary, evidence paths and hashes`](../tmp/26_rwkv_inference/reranker_b1_bucket_summary_ea9aa394.json);
 raw traces remain on server, with verified local summaries/hash manifests.
 

@@ -1,0 +1,34 @@
+{
+  "repository": "https://github.com/howard-hou/EmbeddingRWKV",
+  "revision": "3c306736c58550f4be6d384be068512ba9bfbd72",
+  "files": {
+    "embedding/reranker/src/wrapper.py": {
+      "sha256": "a6a00f711c95a3a1d927c7d3c4bfc2436bae1d6ba06bf4b76d7d1e373c850123",
+      "url": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/embedding/reranker/src/wrapper.py"
+    },
+    "embedding/reranker/evaluate_mteb.py": {
+      "sha256": "1dad99f2c2e2c1287e02fe981bc49db90d6bfbb5be8c82ddb136593689552cca",
+      "url": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/embedding/reranker/evaluate_mteb.py"
+    },
+    "embedding/reranker/src/dataset.py": {
+      "sha256": "38c0e5bd1f2655c1239c495e53bf07d8fb5a0268ce52b2d4848c8b64130f5679",
+      "url": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/embedding/reranker/src/dataset.py"
+    },
+    "embedding/reranker/scripts/train/rwkv0b1_textonly_reranker.sh": {
+      "sha256": "5f87c8a8a3286cab8e3830504bbb2f8adeb262c526de8d67af30fd2abbb2af65",
+      "url": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/embedding/reranker/scripts/train/rwkv0b1_textonly_reranker.sh"
+    },
+    "package/src/rwkv_emb/reference/rwkv7.py": {
+      "sha256": "e1e578e7f95bc811ac898008e617392fc8a001990b5c7bac178ca77f8d6800c0",
+      "url": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/package/src/rwkv_emb/reference/rwkv7.py"
+    }
+  },
+  "mteb_contract_version": "1.38.60",
+  "findings": [
+    "TokenizerWrapper uses one terminal EOS, then unmasked token-ID-0 left padding to the batch maximum, then last-2048 truncation.",
+    "CrossEncoderWrapper.predict defaults to 32; the inspected MTEB evaluator chunks at 128 but invokes predict without forwarding batch_size, so this wrapper internally pads in groups of 32.",
+    "The checked-in smallest text-only training example selects ctx_len=2048 and the dataset left-pads to ctx_len. This is source evidence, not proof of the exact training run used for released weights.",
+    "No padding mask reaches the released RWKV forward_seq_batch; token 0 enters embedding, token mixing and recurrence."
+  ],
+  "mteb_retrieval_evaluator_sha256": "4c263097549b369e7842a846d59c65ced8327bc460386c29aa07de05fcf67c75"
+}

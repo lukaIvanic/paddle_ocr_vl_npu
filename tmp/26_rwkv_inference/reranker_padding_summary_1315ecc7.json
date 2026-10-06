@@ -1,0 +1,357 @@
+{
+  "device": "Ascend 910B2 physical NPU 7",
+  "inference_path_changed": false,
+  "run_paths": [
+    "reranker_padding_033c61c2",
+    "reranker_padding_fp32_1315ecc7"
+  ],
+  "run_sha256": {
+    "reranker_padding_033c61c2": "8ffd521cff7fbb2a2e44c1f21dff549b5de736e802c6a7d5da4641e7e2b73b3b",
+    "reranker_padding_fp32_1315ecc7": "e252e8daea4322d940cb79237d98251a9dcd10e9f8d0173d3930b0ce931608a8"
+  },
+  "all_four_prepared_inputs_match_released_tokenizer": true,
+  "all_four_cpu_fp32_npu_fp16_score_parity_checks_passed": true,
+  "first_run_exit_code": 1,
+  "first_run_failure": "Fourth case exceeds unchanged FP16 split-continuation tolerance; preserved in run.log",
+  "control_run_exit_code": 0,
+  "strict_fp16_continuation_passed_all_cases": false,
+  "cpu_and_npu_fp32_split_controls_passed": true,
+  "pad_embedding": {
+    "token_id": 0,
+    "raw_l2": 0.3986901342868805,
+    "after_ln0_l2": 3.6476871967315674,
+    "raw_all_zero": false
+  },
+  "cases": [
+    {
+      "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+      "document_id": "075bc988728788aa033b04dee1753ded711180ee",
+      "bucket": 512,
+      "raw_tokens": 341,
+      "padding_tokens": 171,
+      "cpu_raw_logit": -8.075565338134766,
+      "cpu_padded_logit": -7.708708763122559,
+      "npu_raw_logit": -8.078125,
+      "npu_padded_logit": -7.69921875,
+      "cpu_padding_delta": 0.36685657501220703,
+      "npu_padding_delta": 0.37890625,
+      "raw_cpu_npu": {
+        "max_abs": 0.002559661865234375,
+        "normalized_rmse": 0.0003169637930113822,
+        "finite": true
+      },
+      "padded_cpu_npu": {
+        "max_abs": 0.009490013122558594,
+        "normalized_rmse": 0.0012310768943279982,
+        "finite": true
+      },
+      "cpu_raw_vs_padded_state": [
+        {
+          "max_abs": 1.7076542377471924,
+          "normalized_rmse": 0.1815343052148819,
+          "finite": true
+        },
+        {
+          "max_abs": 5.77811336517334,
+          "normalized_rmse": 0.13072478771209717,
+          "finite": true
+        }
+      ],
+      "npu_raw_vs_padded_state": [
+        {
+          "max_abs": 1.707854986190796,
+          "normalized_rmse": 0.18158140778541565,
+          "finite": true
+        },
+        {
+          "max_abs": 5.783924102783203,
+          "normalized_rmse": 0.1307656168937683,
+          "finite": true
+        }
+      ],
+      "zero_prefix": {
+        "shift_l2": 139.35198974609375,
+        "matrix_l2": 173.4190673828125
+      },
+      "prefix_continuation_logit": -7.6953125,
+      "prefix_continuation_vs_full": {
+        "max_abs": 0.00390625,
+        "normalized_rmse": 0.0005073566571809351,
+        "finite": true
+      },
+      "companion_padding_tokens": 0,
+      "companion_logit": -8.078125,
+      "right_padding_logit": -1.3798828125,
+      "positive_qrel": false,
+      "previous_b2_rank": 99
+    },
+    {
+      "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+      "document_id": "a6f1dfcc44277d4cfd8507284d994c9283dc3a2f",
+      "bucket": 512,
+      "raw_tokens": 306,
+      "padding_tokens": 206,
+      "cpu_raw_logit": -8.061561584472656,
+      "cpu_padded_logit": -8.590607643127441,
+      "npu_raw_logit": -8.0703125,
+      "npu_padded_logit": -8.6015625,
+      "cpu_padding_delta": -0.5290460586547852,
+      "npu_padding_delta": -0.53125,
+      "raw_cpu_npu": {
+        "max_abs": 0.00875091552734375,
+        "normalized_rmse": 0.0010855111759155989,
+        "finite": true
+      },
+      "padded_cpu_npu": {
+        "max_abs": 0.010954856872558594,
+        "normalized_rmse": 0.0012752133188769221,
+        "finite": true
+      },
+      "cpu_raw_vs_padded_state": [
+        {
+          "max_abs": 1.9732608795166016,
+          "normalized_rmse": 0.19965098798274994,
+          "finite": true
+        },
+        {
+          "max_abs": 5.7868852615356445,
+          "normalized_rmse": 0.13500860333442688,
+          "finite": true
+        }
+      ],
+      "npu_raw_vs_padded_state": [
+        {
+          "max_abs": 1.9749338626861572,
+          "normalized_rmse": 0.19973598420619965,
+          "finite": true
+        },
+        {
+          "max_abs": 5.794637680053711,
+          "normalized_rmse": 0.13506759703159332,
+          "finite": true
+        }
+      ],
+      "zero_prefix": {
+        "shift_l2": 139.305908203125,
+        "matrix_l2": 173.48060607910156
+      },
+      "prefix_continuation_logit": -8.609375,
+      "prefix_continuation_vs_full": {
+        "max_abs": 0.0078125,
+        "normalized_rmse": 0.000908265239559114,
+        "finite": true
+      },
+      "companion_padding_tokens": 35,
+      "companion_logit": -8.65625,
+      "right_padding_logit": -1.384765625,
+      "positive_qrel": false,
+      "previous_b2_rank": 98
+    },
+    {
+      "query_id": "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+      "document_id": "2532d0567c8334e4cadf282a73ffe399c1c32476",
+      "bucket": 2048,
+      "raw_tokens": 1039,
+      "padding_tokens": 1009,
+      "cpu_raw_logit": -5.303143501281738,
+      "cpu_padded_logit": -4.358082294464111,
+      "npu_raw_logit": -5.3046875,
+      "npu_padded_logit": -4.359375,
+      "cpu_padding_delta": 0.945061206817627,
+      "npu_padding_delta": 0.9453125,
+      "raw_cpu_npu": {
+        "max_abs": 0.0015439987182617188,
+        "normalized_rmse": 0.0002911478222813457,
+        "finite": true
+      },
+      "padded_cpu_npu": {
+        "max_abs": 0.0012927055358886719,
+        "normalized_rmse": 0.00029662257293239236,
+        "finite": true
+      },
+      "cpu_raw_vs_padded_state": [
+        {
+          "max_abs": 1.7279670238494873,
+          "normalized_rmse": 0.15766404569149017,
+          "finite": true
+        },
+        {
+          "max_abs": 6.555066108703613,
+          "normalized_rmse": 0.13429631292819977,
+          "finite": true
+        }
+      ],
+      "npu_raw_vs_padded_state": [
+        {
+          "max_abs": 1.7250983715057373,
+          "normalized_rmse": 0.1576147973537445,
+          "finite": true
+        },
+        {
+          "max_abs": 6.555420875549316,
+          "normalized_rmse": 0.13427244126796722,
+          "finite": true
+        }
+      ],
+      "zero_prefix": {
+        "shift_l2": 139.53201293945312,
+        "matrix_l2": 173.10191345214844
+      },
+      "prefix_continuation_logit": -4.35546875,
+      "prefix_continuation_vs_full": {
+        "max_abs": 0.00390625,
+        "normalized_rmse": 0.0008960573468357325,
+        "finite": true
+      },
+      "companion_padding_tokens": 996,
+      "companion_logit": -4.359375,
+      "right_padding_logit": -1.4326171875,
+      "positive_qrel": false,
+      "previous_b2_rank": 49
+    },
+    {
+      "query_id": "c20b4068be640ebaffbc56382c3e4e0bcf62664e",
+      "document_id": "18b534c7207a1376fa92e87fe0d2cfb358d98c51",
+      "bucket": 2048,
+      "raw_tokens": 2035,
+      "padding_tokens": 13,
+      "cpu_raw_logit": -5.180273056030273,
+      "cpu_padded_logit": -4.773715019226074,
+      "npu_raw_logit": -5.1796875,
+      "npu_padded_logit": -4.77734375,
+      "cpu_padding_delta": 0.4065580368041992,
+      "npu_padding_delta": 0.40234375,
+      "raw_cpu_npu": {
+        "max_abs": 0.0005855560302734375,
+        "normalized_rmse": 0.00011303574865451083,
+        "finite": true
+      },
+      "padded_cpu_npu": {
+        "max_abs": 0.0036287307739257812,
+        "normalized_rmse": 0.0007601481629535556,
+        "finite": true
+      },
+      "cpu_raw_vs_padded_state": [
+        {
+          "max_abs": 1.461319923400879,
+          "normalized_rmse": 0.12454995512962341,
+          "finite": true
+        },
+        {
+          "max_abs": 5.720737457275391,
+          "normalized_rmse": 0.10785617679357529,
+          "finite": true
+        }
+      ],
+      "npu_raw_vs_padded_state": [
+        {
+          "max_abs": 1.4539985656738281,
+          "normalized_rmse": 0.12447109073400497,
+          "finite": true
+        },
+        {
+          "max_abs": 5.726627349853516,
+          "normalized_rmse": 0.10788024961948395,
+          "finite": true
+        }
+      ],
+      "zero_prefix": {
+        "shift_l2": 139.31956481933594,
+        "matrix_l2": 171.2908935546875
+      },
+      "prefix_continuation_logit": -4.765625,
+      "prefix_continuation_vs_full": {
+        "max_abs": 0.01171875,
+        "normalized_rmse": 0.0024529844522476196,
+        "finite": true
+      },
+      "fp16_continuation_passed": false,
+      "cpu_fp32_continuation": {
+        "max_abs": 0.0,
+        "normalized_rmse": 0.0,
+        "finite": true
+      },
+      "npu_fp32_continuation": {
+        "max_abs": 3.337860107421875e-06,
+        "normalized_rmse": 6.992167982389219e-07,
+        "finite": true
+      },
+      "npu_fp32_padded_cpu_parity": {
+        "max_abs": 2.384185791015625e-06,
+        "normalized_rmse": 4.994403184355178e-07,
+        "finite": true
+      },
+      "npu_fp32_logits": {
+        "full": -4.773712635040283,
+        "split": -4.773709297180176
+      },
+      "companion_padding_tokens": 0,
+      "companion_logit": -5.1796875,
+      "right_padding_logit": -1.548828125,
+      "positive_qrel": false,
+      "previous_b2_rank": 46
+    }
+  ],
+  "pair_order": [
+    {
+      "bucket": 512,
+      "first_document": "075bc988728788aa033b04dee1753ded711180ee",
+      "second_document": "a6f1dfcc44277d4cfd8507284d994c9283dc3a2f",
+      "cpu_raw_logit_difference": -0.014003753662109375,
+      "cpu_padded_logit_difference": 0.8818988800048828,
+      "npu_raw_logit_difference": -0.0078125,
+      "npu_padded_logit_difference": 0.90234375
+    },
+    {
+      "bucket": 2048,
+      "first_document": "2532d0567c8334e4cadf282a73ffe399c1c32476",
+      "second_document": "18b534c7207a1376fa92e87fe0d2cfb358d98c51",
+      "cpu_raw_logit_difference": -0.12287044525146484,
+      "cpu_padded_logit_difference": 0.4156327247619629,
+      "npu_raw_logit_difference": -0.125,
+      "npu_padded_logit_difference": 0.41796875
+    }
+  ],
+  "padding_count_sweep": [
+    {
+      "padding_tokens": 0,
+      "logit": -8.0703125
+    },
+    {
+      "padding_tokens": 1,
+      "logit": -8.0546875
+    },
+    {
+      "padding_tokens": 2,
+      "logit": -9.0
+    },
+    {
+      "padding_tokens": 8,
+      "logit": -8.8515625
+    },
+    {
+      "padding_tokens": 32,
+      "logit": -8.671875
+    },
+    {
+      "padding_tokens": 64,
+      "logit": -8.6015625
+    },
+    {
+      "padding_tokens": 128,
+      "logit": -8.5859375
+    },
+    {
+      "padding_tokens": 206,
+      "logit": -8.6015625
+    }
+  ],
+  "quality_limit": "Selected reversed pairs are unjudged and outside the previous B2 top ten. This diagnoses input-dependent scores, not NDCG degradation. No new full accuracy run.",
+  "qrel_and_rank_evidence": {
+    "dataset_sha256": "bfc261e4b59f9b5e3e9915cc9cde95241d2dfe466ee4595a012c7369f4d34190",
+    "rank_path": "tmp/26_rwkv_inference/nanoscidocs_reranker_eager_b2_fp16_edd3c013/probe/ranked_top100.json.gz",
+    "rank_sha256": "e9fdf654866db7ba7f446cdbfc2a5c652145d37520e82a288474f4ac5237d16b"
+  },
+  "upstream_default_protocol": "MTEB 1.38.60 outer128; predict default32; pad each group to maximum then retain last2048.",
+  "next_step": "Compare NanoSCIDOCS under upstream logical B32 padding; actual device rows may run separately with identical prepared inputs. For compilation, any extra bucket padding must freeze both matrix and token-shift states. Do not silently remove upstream padding."
+}
