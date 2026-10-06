@@ -11,8 +11,9 @@ have been completed yet; all reference measurements below are upstream reports.
 Use the selected v0.23 container for an explicitly labeled CPU FP32 run of the
 0.1B embedding model before the NPU adaptation. Start with a few fixed samples,
 including English and Chinese and a sample crossing an EOS chunk boundary.
-Save exact input token IDs, preprocessing/pooling metadata, intermediate
-recurrent states and final embeddings for comparison with the NPU path.
+Save exact input token IDs, preprocessing/pooling metadata, layer hidden outputs
+and final embeddings for comparison with the NPU path. The C trace API does not
+expose raw recurrent matrices; add that tracing later if needed for the NPU port.
 Inspect the upstream CPU execution path before selecting the reference runner;
 the C implementation provides an additional embedding reference but does not
 replace the need for intermediate-state comparisons. Keep RWKV dependencies in
@@ -141,8 +142,12 @@ checks and our complete benchmark results.
 - [Official source](https://github.com/howard-hou/EmbeddingRWKV), inspected at
   `3c306736c58550f4be6d384be068512ba9bfbd72`.
 - [Released checkpoints](https://huggingface.co/howard-hou/EmbeddingRWKV/tree/main).
-  The checkpoint repository revision and individual file hashes must be recorded
-  when obtaining weights; they have not been pinned here yet.
+  The 0.1B checkpoint is pinned to repository revision
+  `d6bfff190b6ce4fb6bbd9c574e7e26df3df64075`, with metadata license Apache-2.0.
+  `rwkv0b1-emb-curriculum.pth` is 476,851,895 bytes; its published and locally
+  verified SHA256 is
+  `9033eec92f163d1a710474977fa3fb68b7ee04697e0e961d83434743bd256a15`.
+  Source: the Hugging Face model metadata API with `blobs=true`, 2026-10-06.
 - [Evaluation implementation](https://github.com/howard-hou/EmbeddingRWKV/tree/3c306736c58550f4be6d384be068512ba9bfbd72/embedding/eval).
 - [CPU embedding implementation and reproduction report](https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/rwkv-emb.c/REPRODUCTION.md).
 - [NanoBEIR datasets](https://huggingface.co/collections/zeta-alpha-ai/nanobeir).
@@ -155,6 +160,66 @@ checks and our complete benchmark results.
 The inspected source repository has an Apache-2.0 license. Record the checkpoint
 license metadata separately with the downloaded revision. Keep weights and full
 reference checkouts in ignored model/cache locations, outside experiment source.
+
+## CPU reference code and preparation
+
+One Python entrypoint: **`run_cpu_reference.py`**, with cases in
+**`data/smoke_cases.json`**. It has two commands:
+
+- `prepare`: verify the pinned checkpoint/source/vocabulary hashes, export the
+  410 text tensors to upstream's FP32 binary format, copy the unmodified C source
+  and license, and build `librwkv_emb.so`. Record source, binary, compiler and
+  export provenance in `manifest.json`. This does not execute inference.
+- `smoke`: use the C API for all tokenization, preprocessing and forward math;
+  save per-batch NPZ files with raw/prepared token IDs, valid EOS masks, layer
+  hidden outputs and normalized embeddings. Record exact expanded texts,
+  dimensions, source identity, timing and artifact hashes in `result.json`.
+  Check finite outputs, normalized embeddings and repeat-call isolation.
+
+The eight cases cover English, Chinese, Unicode, an empty document and a long
+document. The long case has 961 raw tokens under the pinned upstream tokenizer,
+so it crosses the 512-token chunk boundary. Query instruction insertion is
+explicit; no semantic ranking expectation is treated as a correctness check.
+Default smoke settings are B1 and four CPU threads. The runtime and result
+directories must be new; the script refuses overwrites. Hidden-output traces
+are labeled separately from recurrent matrices. MTEB and Transformers are not
+needed for this small C-backed smoke.
+
+Proposed server paths (preparation status will be recorded below after setup):
+
+- Source: `/workspace/repos/rwkv-cpu-reference`, branch `codex/rwkv-cpu-reference`.
+- Venv: `/workspace/venvs/rwkv_cpu_py312` (inherits torch and NumPy from the
+  selected container, without changing its base packages).
+- Checkpoint: `/workspace/rwkv_reference/models/rwkv0b1-emb-curriculum.pth`.
+- Pinned upstream reference assets: `/workspace/rwkv_reference/upstream`.
+- Prepared runtime: `/workspace/rwkv_reference/runtime`.
+
+The container's `/workspace/models` mount is read-only, so RWKV assets use its
+writable `/workspace` mount. Downloads are staged locally and transferred through
+the multiplexed SSH connection. Project source arrives through Git.
+
+Preparation command inside the selected container:
+
+```bash
+cd /workspace/repos/rwkv-cpu-reference
+TORCH_DEVICE_BACKEND_AUTOLOAD=0 \
+/workspace/venvs/rwkv_cpu_py312/bin/python \
+  26_rwkv_inference/run_cpu_reference.py prepare \
+  --upstream /workspace/rwkv_reference/upstream \
+  --checkpoint /workspace/rwkv_reference/models/rwkv0b1-emb-curriculum.pth \
+  --runtime /workspace/rwkv_reference/runtime
+```
+
+The first model smoke waits for Luka's code review. Its command will be:
+
+```bash
+cd /workspace/repos/rwkv-cpu-reference
+TORCH_DEVICE_BACKEND_AUTOLOAD=0 \
+/workspace/venvs/rwkv_cpu_py312/bin/python -u \
+  26_rwkv_inference/run_cpu_reference.py smoke \
+  --runtime /workspace/rwkv_reference/runtime \
+  --output tmp/26_rwkv_inference/cpu_smoke_$(git rev-parse --short HEAD)
+```
 
 ## Released model pairs and accuracy references
 

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "english_query",
+      "role": "query",
+      "text": "How do solar panels generate electricity?"
+    },
+    {
+      "id": "english_document",
+      "role": "document",
+      "text": "Solar panels contain photovoltaic cells that convert sunlight into electricity."
+    },
+    {
+      "id": "english_other_document",
+      "role": "document",
+      "text": "Bread dough rises when yeast produces carbon dioxide during fermentation."
+    },
+    {
+      "id": "chinese_query",
+      "role": "query",
+      "text": "太阳能电池板如何产生电能？"
+    },
+    {
+      "id": "chinese_document",
+      "role": "document",
+      "text": "太阳能电池板中的光伏电池将太阳光转换为电能。"
+    },
+    {
+      "id": "unicode_document",
+      "role": "document",
+      "text": "A café in Łódź measures naïve users' reactions to solar energy ☀️.\nSecond line: 中文 and Ελληνικά."
+    },
+    {
+      "id": "empty_document",
+      "role": "document",
+      "text": ""
+    },
+    {
+      "id": "multi_chunk_document",
+      "role": "document",
+      "text": "The document describes renewable energy research and laboratory measurements. ",
+      "repeat": 96,
+      "minimum_raw_tokens": 513
+    }
+  ]
+}
