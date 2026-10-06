@@ -1,0 +1,5 @@
+Source commit: a2254ce9
+Host: liteserver-c001-4
+Container: research_vllm_ascend_023_external_workspace
+ASCEND_RT_VISIBLE_DEVICES: empty; no inference
+Exact command argv: ['bash', '--noprofile', '--norc', '-c', "source /usr/local/Ascend/ascend-toolkit/set_env.sh && source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=1 && source /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/bin/set_env.bash && export TORCH_DEVICE_BACKEND_AUTOLOAD=0 && export ASCEND_RT_VISIBLE_DEVICES='' && export PATH=/usr/local/python3.12.13/bin:$PATH && nm -D /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/op_api/lib/libcust_opapi.so | grep -E 'aclnnRwkvReferenceWkv7(GetWorkspaceSize)?$' && cd /workspace/repos/rwkv-cpu-reference && /workspace/venvs/rwkv_cpu_py312/bin/python -u 26_rwkv_inference/probe_wkv7.py --build-root /workspace/rwkv_reference/wkv7_build_178d16e6 --output /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/wkv7_bridge_a2254ce9/probe --build-only"]

@@ -1,0 +1,215 @@
+{
+  "kernel_metadata": {
+    "binFileName": "RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e",
+    "binFileSuffix": ".o",
+    "blockDim": -1,
+    "coreType": "VectorCore",
+    "core_type": "AIV",
+    "intercoreSync": 0,
+    "kernelName": "RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e",
+    "magic": "RT_DEV_BINARY_MAGIC_ELF_AIVEC",
+    "memoryStamping": [],
+    "opParaSize": 40,
+    "parameters": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "sha256": "0c45aa4318fd5dd93a9f42a4edbc0f2a39b3cce8cf6b2c5ef4cb02f3b8d63d95",
+    "workspace": {
+      "num": 1,
+      "size": [
+        -1
+      ],
+      "type": [
+        0
+      ]
+    },
+    "kernelList": [
+      {
+        "kernelName": "RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e_0"
+      }
+    ],
+    "optionalInputMode": "gen_placeholder",
+    "optionalOutputMode": "gen_placeholder",
+    "supportSuperKernel": 1,
+    "compileInfo": {},
+    "supportInfo": {
+      "implMode": "high_performance",
+      "int64Mode": false,
+      "simplifiedKeyMode": 0,
+      "simplifiedKey": [
+        "RwkvReferenceWkv7/d=0,p=1/0,2/0,2/0,2/0,2/0,2/0,2/0,2/0,2/0,2",
+        "RwkvReferenceWkv7/d=0,p=0/0,2/0,2/0,2/0,2/0,2/0,2/0,2/0,2/0,2",
+        "RwkvReferenceWkv7/d=1,p=1/0,2/0,2/0,2/0,2/0,2/0,2/0,2/0,2/0,2",
+        "RwkvReferenceWkv7/d=1,p=0/0,2/0,2/0,2/0,2/0,2/0,2/0,2/0,2/0,2"
+      ],
+      "optionalInputMode": "gen_placeholder",
+      "optionalOutputMode": "gen_placeholder",
+      "staticKey": "cf3aeb72027cecbd25a02117062b9ccea707bf25549eb26542a1171b39e64080,e3470dbc7aef41eb3d0896dd6f076a0e8b5cf2fd841b30afe53d2d382a2680cd",
+      "inputs": [
+        {
+          "name": "k",
+          "index": 0,
+          "dtype": "float32",
+          "format": "ND",
+          "paramType": "required",
+          "shape": [
+            -2
+          ],
+          "format_match_mode": "FormatAgnostic"
+        },
+        {
+          "name": "v",
+          "index": 1,
+          "dtype": "float32",
+          "format": "ND",
+          "paramType": "required",
+          "shape": [
+            -2
+          ],
+          "format_match_mode": "FormatAgnostic"
+        },
+        {
+          "name": "w",
+          "index": 2,
+          "dtype": "float32",
+          "format": "ND",
+          "paramType": "required",
+          "shape": [
+            -2
+          ],
+          "format_match_mode": "FormatAgnostic"
+        },
+        {
+          "name": "r",
+          "index": 3,
+          "dtype": "float32",
+          "format": "ND",
+          "paramType": "required",
+          "shape": [
+            -2
+          ],
+          "format_match_mode": "FormatAgnostic"
+        },
+        {
+          "name": "a",
+          "index": 4,
+          "dtype": "float32",
+          "format": "ND",
+          "paramType": "required",
+          "shape": [
+            -2
+          ],
+          "format_match_mode": "FormatAgnostic"
+        },
+        {
+          "name": "b",
+          "index": 5,
+          "dtype": "float32",
+          "format": "ND",
+          "paramType": "required",
+          "shape": [
+            -2
+          ],
+          "format_match_mode": "FormatAgnostic"
+        },
+        {
+          "name": "hi",
+          "index": 6,
+          "dtype": "float32",
+          "format": "ND",
+          "paramType": "required",
+          "shape": [
+            -2
+          ],
+          "format_match_mode": "FormatAgnostic"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "o",
+          "index": 0,
+          "dtype": "float32",
+          "format": "ND",
+          "paramType": "required",
+          "shape": [
+            -2
+          ],
+          "format_match_mode": "FormatAgnostic"
+        },
+        {
+          "name": "ho",
+          "index": 1,
+          "dtype": "float32",
+          "format": "ND",
+          "paramType": "required",
+          "shape": [
+            -2
+          ],
+          "format_match_mode": "FormatAgnostic"
+        }
+      ],
+      "opMode": "dynamic",
+      "deterministic": "ignore"
+    },
+    "filePath": "ascend910b/rwkv_reference_wkv7/RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e.json"
+  },
+  "files": {
+    "/workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/op_impl/ai_core/tbe/kernel/ascend910b/rwkv_reference_wkv7/RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e.json": "15211ffd1076010a23cff08b2cc248d0c6b74588dc827abc2cc84166e2eb4265",
+    "/workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/op_impl/ai_core/tbe/kernel/ascend910b/rwkv_reference_wkv7/RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e.o": "0c45aa4318fd5dd93a9f42a4edbc0f2a39b3cce8cf6b2c5ef4cb02f3b8d63d95",
+    "/workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/op_api/lib/libcust_opapi.so": "e72ad142ce9357fa6619cac59c0e808db82046fe4094f0c721f3ef20c33baea6",
+    "/workspace/rwkv_reference/wkv7_build_178d16e6/custom_opp_ubuntu_aarch64.run": "b775848f5da7184cb14b83c69b4bc135d651bcecafd00d3e3ba4f3c0b1598e60"
+  },
+  "upstream": {
+    "repository": "https://github.com/RWKV-Vibe/rwkv_Ascend",
+    "commit": "1a6eaeb47358001c4fed6e636ed95545fed1f20b",
+    "license": "CANN Open Software License Agreement v1.0",
+    "files": {
+      "op_host/rwkv_reference_wkv7.cpp": {
+        "upstream_path": "cann-ops-rwkv/src/rwkv7/wkv7/op_host/wkv7.cpp",
+        "upstream_sha256": "74a2a965833258f153256c21c96c4cc61afd6ba87902777b36567745c85c5629",
+        "import_sha256": "0f88cbf1fa7f96edfad7cd20e5b26be40081f218403c1a11f5a0fcdff3ab5a20"
+      },
+      "op_host/rwkv_reference_wkv7_tiling.h": {
+        "upstream_path": "cann-ops-rwkv/src/rwkv7/wkv7/op_host/wkv7_tiling.h",
+        "upstream_sha256": "b50dceec2ea5f30db08d13e9de50d2174afc1cd90b84440c752f03a92d32d84b",
+        "import_sha256": "5227e65c2b4f1e2067a44d120cfb6746de70ea4684d9d0fa8ccb01350cd4ee40"
+      },
+      "op_kernel/rwkv_reference_wkv7.cpp": {
+        "upstream_path": "cann-ops-rwkv/src/rwkv7/wkv7/op_kernel/wkv7.cpp",
+        "upstream_sha256": "b7aaeccbe1bab03ca53c40874a1130eab04b3561e6bd8e0c429d95c8eda02fc8",
+        "import_sha256": "543380c5a32b26fc3ef7d5f2fce762e41f9066753dd76503e92508f91b5420ed"
+      }
+    },
+    "adaptations": [
+      "Independent GE/ACLNN/kernel/vendor identities; recurrence math unchanged",
+      "Infer final-state shape from initial state",
+      "Reject head sizes other than hardcoded 64 and empty dimensions",
+      "Build scaffold reused from parent vector_add_rms_norm"
+    ],
+    "identities": {
+      "torch": "rwkv_reference::wkv7",
+      "ge": "RwkvReferenceWkv7",
+      "aclnn": "aclnnRwkvReferenceWkv7",
+      "kernel": "rwkv_reference_wkv7",
+      "vendor": "rwkv_reference"
+    },
+    "contract": {
+      "chip": "Ascend910B2",
+      "inputs": "k,v,log_decay,r,a,b: contiguous FP32 [B,H,T,64]; hi: contiguous FP32 [B,H,64,64] (value,key orientation)",
+      "outputs": "o [B,H,T,64], ho [B,H,64,64], FP32",
+      "state_mutation": false,
+      "tiling_key": 0
+    }
+  },
+  "elf_symbols": "\nSymbol table '.symtab' contains 13 entries:\n   Num:    Value          Size Type    Bind   Vis      Ndx Name\n     0: 0000000000000000     0 NOTYPE  LOCAL  DEFAULT  UND \n     1: 0000000000000000     0 SECTION LOCAL  DEFAULT    1 .text\n     2: 0000000000000000     0 SECTION LOCAL  DEFAULT    4 .ascend.stack.size.record\n     3: 0000000000003000     0 SECTION LOCAL  DEFAULT    2 .data\n     4: 0000000000000000     0 SECTION LOCAL  DEFAULT    5 .ascend.meta.RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e_0\n     5: 0000000000000000     0 SECTION LOCAL  DEFAULT    6 __CCE_KernelArgSize\n     6: 0000000000000000     0 SECTION LOCAL  DEFAULT    7 .comment\n     7: 0000000000000000  9736 FUNC    GLOBAL DEFAULT    1 RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e_0\n     8: 0000000000000000     8 OBJECT  WEAK   DEFAULT    8 g_sysWorkspaceReserved\n     9: 0000000000000008     8 OBJECT  WEAK   DEFAULT    8 g_vecTPipePtr\n    10: 0000000000003000   256 OBJECT  GLOBAL DEFAULT    2 g_opSystemRunCfg\n    11: 0000000000000010     8 OBJECT  WEAK   DEFAULT    8 _ZN7AscendC11g_kfcClientE\n    12: 0000000000000000     4 OBJECT  WEAK   DEFAULT    6 RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e_0__\n",
+  "api_symbols": "                 U NnopbaseAddInput\n                 U NnopbaseAddOutput\n                 w NnopbaseAddParamName\n                 U NnopbaseAddSupportList\n                 U NnopbaseAddTilingId\n                 U NnopbaseCreateExecutorSpace\n                 U NnopbaseGetExecutor\n                 w NnopbaseMatchArgs\n                 U NnopbaseMsprofSysTime\n                 U NnopbaseReportApiInfo\n                 U NnopbaseRunForWorkspace\n                 U NnopbaseRunWithWorkspace\n                 w NnopbaseSetMatchArgsFlag\n                 w _ITM_deregisterTMCloneTable\n                 w _ITM_registerTMCloneTable\n                 U _Unwind_Resume@GCC_3.0\n                 U _Z14NnopbaseOpLogEiPKc\n                 U _ZSt20__throw_length_errorPKc@GLIBCXX_3.4\n                 U _ZdlPvm@CXXABI_1.3.9\n                 U _Znwm@GLIBCXX_3.4\n                 U __cxa_atexit@GLIBC_2.17\n                 w __cxa_finalize@GLIBC_2.17\n                 w __gmon_start__\n                 U __gxx_personality_v0@CXXABI_1.3\n                 U __stack_chk_fail@GLIBC_2.17\n                 U __stack_chk_guard@GLIBC_2.17\n00000000000017c0 T aclnnRwkvReferenceWkv7\n00000000000010f0 T aclnnRwkvReferenceWkv7GetWorkspaceSize\n                 U memcpy@GLIBC_2.17\n"
+}

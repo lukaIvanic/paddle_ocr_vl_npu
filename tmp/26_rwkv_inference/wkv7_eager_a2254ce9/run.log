@@ -1,0 +1,32 @@
+Selected physical NPU 7 as logical npu:0 (health/idle check; not a reservation)
+Python: /usr/local/python3.12.13/bin/python3
+[1/2] c++ -MMD -MF bridge.o.d -DTORCH_EXTENSION_NAME=rwkv_reference_wkv7_bridge -DTORCH_API_INCLUDE_EXTENSION_H -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/acl/inc -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/include -isystem /usr/local/python3.12.13/lib/python3.12/site-packages/torch/include -isystem /usr/local/python3.12.13/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -isystem /usr/local/python3.12.13/include/python3.12 -fPIC -std=c++17 -O3 -std=c++17 -c /workspace/repos/rwkv-cpu-reference/26_rwkv_inference/wkv7_npu/bridge.cpp -o bridge.o 
+In file included from /usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/include/npu_cpp_extension.h:19,
+                 from /workspace/repos/rwkv-cpu-reference/26_rwkv_inference/wkv7_npu/bridge.cpp:4:
+/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/wkv7_npu/bridge.cpp: In function ‘Pair wkv7(const at::Tensor&, const at::Tensor&, const at::Tensor&, const at::Tensor&, const at::Tensor&, const at::Tensor&, const at::Tensor&)’:
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/utils/op_api_common_base.h:515:98: warning: capture of variable ‘opApiFuncAddr’ with non-automatic storage duration
+  515 |         auto acl_call = [converted_params, workspace_addr, workspace_size, acl_stream, executor, opApiFuncAddr]()->int {\
+      |                                                                                                  ^~~~~~~~~~~~~
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/utils/op_api_common_base.h:515:98: note: in definition of macro ‘EXEC_NPU_CMD_V1_EXT’
+  515 |         auto acl_call = [converted_params, workspace_addr, workspace_size, acl_stream, executor, opApiFuncAddr]()->int {\
+      |                                                                                                  ^~~~~~~~~~~~~
+/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/wkv7_npu/bridge.cpp:28:5: note: in expansion of macro ‘EXEC_NPU_CMD_EXT’
+   28 |     EXEC_NPU_CMD_EXT(aclnnRwkvReferenceWkv7, k, v, w, r, a, b, hi, out, ht);
+      |     ^~~~~~~~~~~~~~~~
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/utils/op_api_common_base.h:491:22: note: ‘void* opApiFuncAddr’ declared here
+  491 |         static void* opApiFuncAddr = nullptr;                                                                          \
+      |                      ^~~~~~~~~~~~~
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/utils/op_api_common_base.h:491:22: note: in definition of macro ‘EXEC_NPU_CMD_V1_EXT’
+  491 |         static void* opApiFuncAddr = nullptr;                                                                          \
+      |                      ^~~~~~~~~~~~~
+/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/wkv7_npu/bridge.cpp:28:5: note: in expansion of macro ‘EXEC_NPU_CMD_EXT’
+   28 |     EXEC_NPU_CMD_EXT(aclnnRwkvReferenceWkv7, k, v, w, r, a, b, hi, out, ht);
+      |     ^~~~~~~~~~~~~~~~
+[2/2] c++ bridge.o -shared -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib -ltorch_npu -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib -lc10 -ltorch_cpu -ltorch -ltorch_python -o rwkv_reference_wkv7_bridge.so
+Traceback (most recent call last):
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/probe_wkv7.py", line 166, in <module>
+    main()
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/probe_wkv7.py", line 110, in main
+    raise RuntimeError("Selected device is no longer healthy and free; rerun npu-setup")
+RuntimeError: Selected device is no longer healthy and free; rerun npu-setup
+[ERROR] 2026-10-06-09:33:54 (PID:28838, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception

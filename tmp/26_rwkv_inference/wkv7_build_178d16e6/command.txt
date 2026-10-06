@@ -1,0 +1,5 @@
+Source commit: 178d16e6676501957d6847e690b9258338319636
+Host: liteserver-c001-4
+Container: research_vllm_ascend_023_external_workspace
+Device: none; build only
+Exact command argv: ['bash', '--noprofile', '--norc', '-c', 'source /usr/local/Ascend/ascend-toolkit/set_env.sh && source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=1 && export TORCH_DEVICE_BACKEND_AUTOLOAD=0 && export PATH=/usr/local/python3.12.13/bin:$PATH && cd /workspace/repos/rwkv-cpu-reference && bash 26_rwkv_inference/wkv7_npu/build.sh /workspace/rwkv_reference/wkv7_build_178d16e6']

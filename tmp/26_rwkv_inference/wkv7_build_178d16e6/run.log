@@ -1,0 +1,199 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- set package config: INSTALL_PATH;/workspace/rwkv_reference/wkv7_build_178d16e6/
+-- Opbuild generating sources
+-- Opbuild generating sources - done
+INFO target name: cust_optiling
+INFO target name: cust_opapi
+INFO target name: cust_op_proto
+CMake Warning (policy) at /usr/local/Ascend/cann-9.0.1/compiler/tikcpp/ascendc_kernel_cmake/fwk_modules/func.cmake:1035 (install):
+  Policy CMP0177 is not set: install() DESTINATION paths are normalized.  Run
+  "cmake --help-policy CMP0177" for policy details.  Use the cmake_policy
+  command to set the policy and suppress this warning.
+Call Stack (most recent call first):
+  op_host/CMakeLists.txt:25 (npu_op_package_add)
+This warning is for project developers.  Use -Wno-author or -Wno-policy to
+suppress it.
+
+CMake Warning (policy) at /usr/local/Ascend/cann-9.0.1/compiler/tikcpp/ascendc_kernel_cmake/fwk_modules/func.cmake:1072 (install):
+  Policy CMP0177 is not set: install() DESTINATION paths are normalized.  Run
+  "cmake --help-policy CMP0177" for policy details.  Use the cmake_policy
+  command to set the policy and suppress this warning.
+Call Stack (most recent call first):
+  op_host/CMakeLists.txt:25 (npu_op_package_add)
+This warning is for project developers.  Use -Wno-author or -Wno-policy to
+suppress it.
+
+CMake Warning (policy) at /usr/local/Ascend/cann-9.0.1/compiler/tikcpp/ascendc_kernel_cmake/fwk_modules/func.cmake:1081 (install):
+  Policy CMP0177 is not set: install() DESTINATION paths are normalized.  Run
+  "cmake --help-policy CMP0177" for policy details.  Use the cmake_policy
+  command to set the policy and suppress this warning.
+Call Stack (most recent call first):
+  op_host/CMakeLists.txt:25 (npu_op_package_add)
+This warning is for project developers.  Use -Wno-author or -Wno-policy to
+suppress it.
+
+CMake Warning (policy) at /usr/local/Ascend/cann-9.0.1/compiler/tikcpp/ascendc_kernel_cmake/fwk_modules/func.cmake:1126 (install):
+  Policy CMP0177 is not set: install() DESTINATION paths are normalized.  Run
+  "cmake --help-policy CMP0177" for policy details.  Use the cmake_policy
+  command to set the policy and suppress this warning.
+Call Stack (most recent call first):
+  op_host/CMakeLists.txt:25 (npu_op_package_add)
+This warning is for project developers.  Use -Wno-author or -Wno-policy to
+suppress it.
+
+CMake Warning (policy) at /usr/local/Ascend/cann-9.0.1/compiler/tikcpp/ascendc_kernel_cmake/fwk_modules/func.cmake:1135 (install):
+  Policy CMP0177 is not set: install() DESTINATION paths are normalized.  Run
+  "cmake --help-policy CMP0177" for policy details.  Use the cmake_policy
+  command to set the policy and suppress this warning.
+Call Stack (most recent call first):
+  op_host/CMakeLists.txt:25 (npu_op_package_add)
+This warning is for project developers.  Use -Wno-author or -Wno-policy to
+suppress it.
+
+INFO target name: ascendc_kernels
+CMake Warning (policy) at /usr/local/Ascend/cann-9.0.1/compiler/tikcpp/ascendc_kernel_cmake/fwk_modules/func.cmake:1345 (install):
+  Policy CMP0177 is not set: install() DESTINATION paths are normalized.  Run
+  "cmake --help-policy CMP0177" for policy details.  Use the cmake_policy
+  command to set the policy and suppress this warning.
+Call Stack (most recent call first):
+  op_kernel/CMakeLists.txt:10 (npu_op_package_add)
+This warning is for project developers.  Use -Wno-author or -Wno-policy to
+suppress it.
+
+CMake Warning (policy) at /usr/local/Ascend/cann-9.0.1/compiler/tikcpp/ascendc_kernel_cmake/fwk_modules/func.cmake:1354 (install):
+  Policy CMP0177 is not set: install() DESTINATION paths are normalized.  Run
+  "cmake --help-policy CMP0177" for policy details.  Use the cmake_policy
+  command to set the policy and suppress this warning.
+Call Stack (most recent call first):
+  op_kernel/CMakeLists.txt:10 (npu_op_package_add)
+This warning is for project developers.  Use -Wno-author or -Wno-policy to
+suppress it.
+
+-- Configuring done (2.7s)
+-- Generating done (0.0s)
+CMake Warning (unused-cli):
+  Manually-specified variables were not used by the project:
+
+    ENABLE_TEST
+
+
+-- Build files have been written to: /workspace/rwkv_reference/wkv7_build_178d16e6
+[ 25%] Building CXX object op_host/CMakeFiles/cust_optiling.dir/rwkv_reference_wkv7.cpp.o
+[ 50%] Generating ../autogen/copy_kernel_src.timestamp
+[ 50%] Built target ascendc_kernels_copy_kernel_srcs
+[ 75%] Generating ascendc_kernels/tbe/op_info_cfg/ai_core/ascend910b/aic-ascend910b-ops-info.json
+
+
+==============check valid for ops info start==============
+==============check valid for ops info end================
+
+
+Compile op info cfg successfully.
+[ 75%] Built target ascendc_kernels_ops_info_gen_ascend910b
+[ 75%] Built target cust_optiling
+[100%] Linking CXX shared library libcust_opmaster_rt2.0.so
+[100%] Built target rwkv_reference_ascendc_cust_optiling
+/usr/local/Ascend/cann-9.0.1/aarch64-linux/tikcpp/ascendc_kernel_cmake/fwk_modules/util/ascendc_impl_build.py:226: SyntaxWarning: invalid escape sequence '\$'
+  pattern = r'\$\{{([^}}]+)\}}|\$([A-Za-z0-9_]+)'
+[ascend910b] Generating RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e ...
+[INFO] RUNTIME(28056,python3):2026-10-06-09:31:33.208.538 [task_fail_callback_data_manager.cc:93] 28056 TaskFailCallBackManager: Constructor.
+[INFO] RUNTIME(28056,python3):2026-10-06-09:31:33.208.582 [xpu_task_fail_callback_data_manager.cc:59] 28056 XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Constructor.
+Opc tool start working now, please wait for a moment.
+[INFO] RUNTIME(28056,python3):2026-10-06-09:31:44.053.443 [xpu_task_fail_callback_data_manager.cc:64] 28056 ~XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Destructor.
+[INFO] RUNTIME(28056,python3):2026-10-06-09:31:44.053.476 [task_fail_callback_data_manager.cc:98] 28056 ~TaskFailCallBackManager: Destructor.
+[INFO] ATRACE(28056,python3):2026-10-06-09:31:44.124.890 [stacktrace_signal.c:194](tid:28056) unregister all signal handlers, can not capture signal.
+[ascend910b] Generating RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e Done
+[100%] Built target RwkvReferenceWkv7_ascend910b
+[100%] Built target ascendc_kernels_ascendc_bin_ascend910b_gen_ops_config
+[100%] Built target binary
+[  9%] Generating scripts/install.sh, scripts/upgrade.sh, scripts/uninstall.sh
+[ 18%] Building CXX object op_host/CMakeFiles/cust_opapi.dir/__/autogen/aclnn_rwkv_reference_wkv7.cpp.o
+[ 27%] Building CXX object op_host/CMakeFiles/cust_op_proto.dir/rwkv_reference_wkv7.cpp.o
+[ 27%] Built target gen_version_info
+[ 36%] Building CXX object op_host/CMakeFiles/cust_op_proto.dir/__/autogen/op_proto.cc.o
+[ 36%] Built target modify_vendor
+[ 45%] Built target cust_optiling
+[ 54%] Built target ascendc_kernels_copy_kernel_srcs
+[ 63%] Generating ascendc_kernels/tbe/op_info_cfg/ai_core/npu_supported_ops.json
+/workspace/rwkv_reference/wkv7_build_178d16e6/autogen /workspace/rwkv_reference/wkv7_build_178d16e6/op_kernel/ascendc_kernels/tbe/op_info_cfg/ai_core
+[INFO] Succeeded generated /workspace/rwkv_reference/wkv7_build_178d16e6/op_kernel/ascendc_kernels/tbe/op_info_cfg/ai_core/npu_supported_ops.json
+[ 63%] Built target rwkv_reference_npu_supported_ops
+[ 72%] Built target rwkv_reference_ascendc_cust_optiling
+[ 81%] Built target ascendc_kernels_ops_info_gen_ascend910b
+[ 81%] Built target optiling_compat
+[ 81%] Built target cust_opapi
+[ 90%] Linking CXX shared library libcust_opapi.so
+[ 90%] Built target rwkv_reference_ascendc_cust_opapi
+[ 90%] Built target cust_op_proto
+[100%] Linking CXX shared library libcust_opsproto_rt2.0.so
+[100%] Built target rwkv_reference_ascendc_cust_op_proto
+Run CPack packaging tool...
+CPack: Create package using External
+CPack: Install projects
+CPack: - Run preinstall target for: opp
+CPack: - Install project: opp []
+CPack: Create package
+
+About to compress 1392 KB of data...
+Adding files to archive named "custom_opp_ubuntu_aarch64.run"...
+./help.info
+./install.sh
+./packages/vendors/rwkv_reference/framework/tensorflow/npu_supported_ops.json
+./packages/vendors/rwkv_reference/op_api/include/aclnn_rwkv_reference_wkv7.h
+./packages/vendors/rwkv_reference/op_api/lib/libcust_opapi.so
+./packages/vendors/rwkv_reference/op_impl/ai_core/tbe/config/ascend910b/aic-ascend910b-ops-info.json
+./packages/vendors/rwkv_reference/op_impl/ai_core/tbe/kernel/ascend910b/rwkv_reference_wkv7/RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e.json
+./packages/vendors/rwkv_reference/op_impl/ai_core/tbe/kernel/ascend910b/rwkv_reference_wkv7/RwkvReferenceWkv7_c5f7355810d2c242abfbeed5f2f03a4e.o
+./packages/vendors/rwkv_reference/op_impl/ai_core/tbe/kernel/config/ascend910b/binary_info_config.json
+./packages/vendors/rwkv_reference/op_impl/ai_core/tbe/kernel/config/ascend910b/rwkv_reference_wkv7.json
+./packages/vendors/rwkv_reference/op_impl/ai_core/tbe/op_tiling/lib/linux/aarch64/libcust_opmaster_rt2.0.so
+./packages/vendors/rwkv_reference/op_impl/ai_core/tbe/op_tiling/liboptiling.so
+./packages/vendors/rwkv_reference/op_impl/ai_core/tbe/rwkv_reference_impl/dynamic/rwkv_reference_wkv7.cpp
+./packages/vendors/rwkv_reference/op_impl/ai_core/tbe/rwkv_reference_impl/dynamic/rwkv_reference_wkv7.py
+./packages/vendors/rwkv_reference/op_proto/inc/op_proto.h
+./packages/vendors/rwkv_reference/op_proto/lib/linux/aarch64/libcust_opsproto_rt2.0.so
+./packages/vendors/rwkv_reference/version.info
+./uninstall.sh
+./upgrade.sh
+CRC: 1416123743
+SHA256: 67be61cd0479aefeafa0eabcb957635678794cf26e31f749c17aeab6693efda2
+Skipping md5sum at user request
+
+Self-extractable archive "custom_opp_ubuntu_aarch64.run" successfully created.
+Copy /workspace/rwkv_reference/wkv7_build_178d16e6//_CPack_Packages/Linux/External/custom_opp_ubuntu_aarch64.run/custom_opp_ubuntu_aarch64.run to /workspace/rwkv_reference/wkv7_build_178d16e6/
+Copy /workspace/rwkv_reference/wkv7_build_178d16e6//_CPack_Packages/Linux/External/custom_opp_ubuntu_aarch64.run/custom_opp_ubuntu_aarch64.run to /workspace/rwkv_reference/wkv7_build_178d16e6//
+CPack: - package: /workspace/rwkv_reference/wkv7_build_178d16e6/custom_opp_ubuntu_aarch64.run.json generated.
+CPack: - package: /workspace/rwkv_reference/wkv7_build_178d16e6/custom_opp_ubuntu_aarch64.run generated.
+[ops_custom] [2026-10-06 09:31:48] [INFO] create /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors.
+[ops_custom] [2026-10-06 09:31:48] [INFO] create /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference.
+[ops_custom] [2026-10-06 09:31:48] [INFO] upgrade framework
+[ops_custom] [2026-10-06 09:31:48] [INFO] create /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/framework.
+[ops_custom] [2026-10-06 09:31:48] [INFO] copy new ops framework files ......
+[ops_custom] [2026-10-06 09:31:48] [INFO] upgrade op proto
+[ops_custom] [2026-10-06 09:31:48] [INFO] create /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/op_proto.
+[ops_custom] [2026-10-06 09:31:48] [INFO] copy new ops op_proto files ......
+[ops_custom] [2026-10-06 09:31:48] [INFO] upgrade op impl
+[ops_custom] [2026-10-06 09:31:48] [INFO] create /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/op_impl.
+[ops_custom] [2026-10-06 09:31:48] [INFO] copy new ops op_impl files ......
+[ops_custom] [2026-10-06 09:31:48] [INFO] upgrade op api
+[ops_custom] [2026-10-06 09:31:48] [INFO] create /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/op_api.
+[ops_custom] [2026-10-06 09:31:48] [INFO] copy new ops op_api files ......
+[ops_custom] [2026-10-06 09:31:48] [INFO] upgrade uninstall
+[ops_custom] [2026-10-06 09:31:48] [INFO] copy new uninstall.sh files ......
+[ops_custom] [2026-10-06 09:31:48] [INFO] upgrade version.info
+[ops_custom] [2026-10-06 09:31:48] [INFO] copy new version.info files ......
+[ops_custom] [2026-10-06 09:31:48] [INFO] no need to upgrade custom.proto files
+[ops_custom] [2026-10-06 09:31:48] [INFO] using requirements: when custom module install finished or before you run the custom module, execute the command [ source /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/bin/set_env.bash ] to set the environment path
+SUCCESS
+26_rwkv_inference/wkv7_npu/build.sh: line 22: rg: command not found
