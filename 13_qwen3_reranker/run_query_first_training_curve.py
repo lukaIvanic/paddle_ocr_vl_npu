@@ -308,7 +308,9 @@ def main():
             print("UPDATE", json.dumps(row), flush=True)
             if step == 1:
                 result["training"]["optimizer_state_dtypes"] = sorted({str(v.dtype) for s in optimizer.state.values() for v in s.values() if isinstance(v, torch.Tensor)})
-            if args.mode == "curve" and (step in eval_steps or step == args.steps):
+            if args.mode == "pilot" and step == args.steps:
+                evaluate(step, pilot=True)
+            elif args.mode == "curve" and (step in eval_steps or step == args.steps):
                 evaluate(step)
             save(args.output / "result.json", result)
         else:
