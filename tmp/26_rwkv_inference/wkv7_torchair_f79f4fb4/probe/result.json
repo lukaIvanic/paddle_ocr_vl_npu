@@ -1,0 +1,75 @@
+{
+  "hostname": "liteserver-c001-4",
+  "machine": "aarch64",
+  "source_commit": "f79f4fb42e885054231f0f2df1200cfcc09f5481",
+  "script_sha256": "8a26a05e54aeb9fde06994b0b8cf97734504594a7316a7f5f168fd840a778cd2",
+  "physical_npu": "7",
+  "backend": "torchair",
+  "torchair_used": true,
+  "python_stock_fallback": false,
+  "same_name_override": false,
+  "shared_device": true,
+  "atol": 2e-05,
+  "rtol": 0.0002,
+  "cases": [
+    {
+      "batch": 1,
+      "heads": 12,
+      "length": 976,
+      "nonzero_initial_state": false,
+      "output": {
+        "allclose": true,
+        "max_abs": 1.4901161193847656e-08,
+        "mean_abs": 8.91373530542694e-10,
+        "sha256": "8e1470896b054a23cbab7a3c04b5517faf249e6de07cadfabd5ea6cfe17201ee"
+      },
+      "state": {
+        "allclose": true,
+        "max_abs": 1.4901161193847656e-08,
+        "mean_abs": 7.139682733914299e-10,
+        "sha256": "019f2e100e82eb2177ee77d2ecda83e95fe1c24bab2fd0a068bde20cd0da2c47"
+      },
+      "first_call_seconds": null,
+      "steady_host_seconds": null,
+      "repeat_bitwise_equal": true,
+      "split_continuation_passed": true,
+      "inputs_unchanged": true
+    },
+    {
+      "batch": 1,
+      "heads": 12,
+      "length": 976,
+      "nonzero_initial_state": true,
+      "output": {
+        "allclose": true,
+        "max_abs": 1.4901161193847656e-08,
+        "mean_abs": 8.919190386258435e-10,
+        "sha256": "767d42f008f27b437b1a149095549b5a0f24f6ef66a1bcf61635f325cf87d549"
+      },
+      "state": {
+        "allclose": true,
+        "max_abs": 1.4901161193847656e-08,
+        "mean_abs": 7.139682733914299e-10,
+        "sha256": "019f2e100e82eb2177ee77d2ecda83e95fe1c24bab2fd0a068bde20cd0da2c47"
+      },
+      "first_call_seconds": null,
+      "steady_host_seconds": null,
+      "repeat_bitwise_equal": true,
+      "split_continuation_passed": true,
+      "inputs_unchanged": true
+    }
+  ],
+  "all_checks_passed": true,
+  "inference_executed": true,
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "bridge_sha256": "80e4258485a052e3a5e8933e77d7abd43b692345da5e0d87e9ff98254fd83abe",
+  "dispatcher": "PrivateUse1: registered at /workspace/repos/rwkv-cpu-reference/26_rwkv_inference/wkv7_npu/bridge.cpp:41 [kernel]\nMeta: registered at /workspace/repos/rwkv-cpu-reference/26_rwkv_inference/wkv7_npu/bridge.cpp:42 [kernel]\nSparsePrivateUse1: registered at ../torch_npu/csrc/aten/VariableFallbackKernel.cpp:270 [backend fallback]\nBackendSelect: fallthrough registered at /pytorch/aten/src/ATen/core/BackendSelectFallbackKernel.cpp:3 [backend fallback]\nPython: registered at /pytorch/aten/src/ATen/core/PythonFallbackKernel.cpp:198 [backend fallback]\nFuncTorchDynamicLayerBackMode: registered at /pytorch/aten/src/ATen/functorch/DynamicLayer.cpp:477 [backend fallback]\nFunctionalize: registered at /pytorch/aten/src/ATen/FunctionalizeFallbackKernel.cpp:384 [backend fallback]\nNamed: registered at /pytorch/aten/src/ATen/core/NamedRegistrations.cpp:5 [backend fallback]\nConjugate: registered at /pytorch/aten/src/ATen/ConjugateFallback.cpp:17 [backend fallback]\nNegative: registered at /pytorch/aten/src/ATen/native/NegateFallback.cpp:18 [backend fallback]\nZeroTensor: registered at /pytorch/aten/src/ATen/ZeroTensorFallback.cpp:115 [backend fallback]\nADInplaceOrView: fallthrough registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:103 [backend fallback]\nAutogradOther: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:62 [backend fallback]\nAutogradCPU: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:66 [backend fallback]\nAutogradCUDA: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:74 [backend fallback]\nAutogradXLA: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:86 [backend fallback]\nAutogradMPS: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:94 [backend fallback]\nAutogradXPU: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:70 [backend fallback]\nAutogradHPU: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:107 [backend fallback]\nAutogradLazy: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:90 [backend fallback]\nAutogradMTIA: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:78 [backend fallback]\nAutogradMAIA: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:82 [backend fallback]\nAutogradPrivateUse1: registered at ../torch_npu/csrc/aten/VariableFallbackKernel.cpp:233 [backend fallback]\nAutogradMeta: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:98 [backend fallback]\nTracer: registered at /pytorch/torch/csrc/autograd/TraceTypeManual.cpp:296 [backend fallback]\nAutocastCPU: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:324 [backend fallback]\nAutocastMTIA: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:468 [backend fallback]\nAutocastMAIA: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:506 [backend fallback]\nAutocastXPU: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:544 [backend fallback]\nAutocastMPS: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:209 [backend fallback]\nAutocastCUDA: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:165 [backend fallback]\nAutocastPrivateUse1: fallthrough registered at ../torch_npu/csrc/aten/AutoCastOps.cpp:20 [backend fallback]\nFuncTorchBatched: registered at /pytorch/aten/src/ATen/functorch/LegacyBatchingRegistrations.cpp:727 [backend fallback]\nBatchedNestedTensor: registered at /pytorch/aten/src/ATen/functorch/LegacyBatchingRegistrations.cpp:754 [backend fallback]\nFuncTorchVmapMode: fallthrough registered at /pytorch/aten/src/ATen/functorch/VmapModeRegistrations.cpp:22 [backend fallback]\nBatched: registered at /pytorch/aten/src/ATen/LegacyBatchingRegistrations.cpp:1072 [backend fallback]\nVmapMode: fallthrough registered at /pytorch/aten/src/ATen/VmapModeRegistrations.cpp:32 [backend fallback]\nFuncTorchGradWrapper: registered at /pytorch/aten/src/ATen/functorch/TensorWrapper.cpp:210 [backend fallback]\nPythonTLSSnapshot: registered at /pytorch/aten/src/ATen/core/PythonFallbackKernel.cpp:206 [backend fallback]\nFuncTorchDynamicLayerFrontMode: registered at /pytorch/aten/src/ATen/functorch/DynamicLayer.cpp:473 [backend fallback]\nPreDispatch: registered at /pytorch/aten/src/ATen/core/PythonFallbackKernel.cpp:210 [backend fallback]\nPythonDispatcher: registered at /pytorch/aten/src/ATen/core/PythonFallbackKernel.cpp:202 [backend fallback]\n",
+  "device_status_before_inference": "NPU 0: busy HBM=56948/65536MB AICore=5% Health=OK\nNPU 1: busy HBM=56939/65536MB AICore=4% Health=OK\nNPU 2: busy HBM=56940/65536MB AICore=5% Health=OK\nNPU 3: busy HBM=56941/65536MB AICore=5% Health=OK\nNPU 4: busy HBM=56353/65536MB AICore=0% Health=Alarm\nNPU 5: busy HBM=56352/65536MB AICore=0% Health=Alarm\nNPU 6: busy HBM=56490/65536MB AICore=0% Health=OK\nNPU 7: busy HBM=56485/65536MB AICore=0% Health=OK\n",
+  "hbm_before_inference": {
+    "free_bytes": 9435635712,
+    "total_bytes": 65452113920
+  },
+  "device": "Ascend910B2",
+  "graph_cache": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/wkv7_torchair_f79f4fb4/probe/graph_cache"
+}

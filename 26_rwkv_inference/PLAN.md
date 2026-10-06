@@ -4,9 +4,10 @@ Agreed sequence, 2026-10-06. Start with correctness and accuracy on Ascend 910B2
 then decide whether larger evaluations need faster inference. This document is
 the experiment's single working document, including research findings, source
 provenance and reference scores. The server CPU environment and C runtime have
-been prepared, and the eight-case CPU FP32 smoke passed on 2026-10-06. No NPU
-inference or accuracy benchmarks have run yet; benchmark reference scores below
-remain upstream reports.
+been prepared, and the eight-case CPU FP32 smoke passed on 2026-10-06. Isolated
+NPU WKV-7 recurrence parity now passes in eager and TorchAir execution; full-model
+NPU parity and accuracy benchmarks remain pending. Reference benchmark scores
+below remain upstream reports.
 
 ## 0. Establish a server CPU reference
 
@@ -71,21 +72,22 @@ project's Apache-2.0 license. The kernel uses `[value,key]` state orientation an
 convention explicitly.
 
 The vector-only package compiled and installed privately using **CANN 9.0.1**;
-API symbols, source hashes, object and metadata checks passed. Its PyTorch bridge
-built/loaded with PrivateUse1 and Meta registration (**exit 0**, no inference).
-The first build script's final log check failed because `rg` was absent; this
-was fixed to `grep`, and the corrected symbol check passed. The numerical probe
-stopped before its first WKV call when NPU 7 became occupied during compilation.
-A subsequent selector check found no healthy free NPU. Runtime parity/speed and
-TorchAir integration are **pending**, not validated. Evidence is under
-[`wkv7_build_178d16e6`](../tmp/26_rwkv_inference/wkv7_build_178d16e6/),
-[`wkv7_bridge_a2254ce9`](../tmp/26_rwkv_inference/wkv7_bridge_a2254ce9/) and
-[`wkv7_eager_a2254ce9`](../tmp/26_rwkv_inference/wkv7_eager_a2254ce9/).
+API symbols, source hashes, object and metadata checks passed. On physical
+**Ascend 910B2 NPU 7**, `probe_wkv7.py` passed all **32 eager cases**: B1/B2,
+lengths 1/47/48/49/64/128/512/976 and zero/nonzero initial states. Complete outputs
+and final states matched independent CPU FP64 math with maximum absolute error
+**1.49e-8**. Repeat calls were bitwise identical; inputs were unchanged and
+split-sequence continuation passed. **TorchAir B1/T976** passed both initial-state
+cases, including comparison with eager; the saved graph contains the independent
+`RwkvReferenceWkv7` node. Evidence:
+[`eager`](../tmp/26_rwkv_inference/wkv7_shared_052a9fd4/),
+[`TorchAir`](../tmp/26_rwkv_inference/wkv7_torchair_f79f4fb4/) and
+[`package`](../tmp/26_rwkv_inference/wkv7_eager_a2254ce9/package_manifest.json).
 
-The next gate is `probe_wkv7.py`: compare complete outputs and final states with
-independent CPU FP64 math, including zero/nonzero states, tile boundaries,
-repeat calls, unchanged inputs and split continuation. Apply the parent
-custom-operator handbook: direct eager, then TorchAir, then real model forward.
+Luka explicitly authorized shared NPU 7 for correctness. Health was OK and free
+HBM was about 8.8 GiB before eager inference. Timing was skipped; this establishes
+isolated recurrence parity, not full-model accuracy or throughput. The next gate
+is the owned model's real forward against the eight saved CPU anchors.
 
 Start NanoBEIR evaluation on one NPU. If it is not fast enough, use **data
 parallelism**, with a complete model replica on each participating NPU and

@@ -1,0 +1,16 @@
+npu-status: no free NPU found
+Selector found no free device; using user-authorized shared NPU 7
+ninja: no work to do.
+Traceback (most recent call last):
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/probe_wkv7.py", line 208, in <module>
+    main()
+  File "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/probe_wkv7.py", line 153, in main
+    op = torchair.inference.cache_compile(forward, config=CompilerConfig(),
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/__init__.py", line 15, in cache_compile
+    return _cache_compile(func, config=config, dynamic=dynamic,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py", line 613, in cache_compile
+    raise ValueError(f"Only method can be cached now, got {func}")
+ValueError: Only method can be cached now, got <function main.<locals>.forward at 0xfffee45723e0>
+[ERROR] 2026-10-06-09:40:12 (PID:31243, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception
