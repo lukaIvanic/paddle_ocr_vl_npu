@@ -1,0 +1,5 @@
+source_commit=7aa1c786
+source_sha256=4e6a3953cf20aa5057ceed9865578060dfdd07c434bc19b6dddce1501bcd4d65
+lane=Mac CPU-only packing validation
+command=ssh -F /home/luka/.ssh/config -o BatchMode=yes mac 'python3 - --cpu-self-test' < 11_mineru_2_5_pro_inference/kv_cache_probe/probe_attention.py
+No model or NPU inference performed.

@@ -1,0 +1,1 @@
+CPU_SELF_TEST: five layouts pass roundtrip and independent coordinate checks; no NPU validation
