@@ -63,7 +63,10 @@ starting or modifying vLLM. It does not reproduce the engine scheduler or graphs
 There are two distinct questions: **logical element order** and **storage
 descriptor**. A blocked tensor with descriptor 2 is not evidence that format 29
 was exercised. The probe queries the actual NPU format and records it before
-and after attention. If the runtime does not retain the requested descriptor,
+and after attention. Ordinary rank-4 ND allocations can normalize to native
+NCHW descriptor 0 on torch-npu; this is accepted as the contiguous native control
+and still requires a bit-exact KV roundtrip. Requested NZ must remain descriptor
+29. If the runtime does not retain an acceptable descriptor,
 the case is `format_unavailable` and has no timing.
 
 The FIA five-dimensional blocked contract and the private operation's

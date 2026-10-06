@@ -204,7 +204,12 @@ def run_worker(args, case):
     result["cache_before_attention"] = {"key": tensor_info(kc, torch_npu),
                                          "value": tensor_info(vc, torch_npu)}
     args.output.write_text(json.dumps(result, indent=2) + "\n")
-    if any(int(torch_npu.get_npu_format(t)) != fmt for t in caches):
+    observed_formats = [int(torch_npu.get_npu_format(t)) for t in caches]
+    # torch-npu normalizes ordinary rank-4 ND allocations to native NCHW
+    # descriptor 0, preserving contiguous element order. Record that descriptor
+    # and verify every value in the subsequent KV roundtrip. NZ stays strict.
+    acceptable_formats = (0, 2) if fmt == 2 else (29,)
+    if any(value not in acceptable_formats for value in observed_formats):
         result["status"] = "format_unavailable"
         result["reason"] = "requested descriptor was not retained; no ND-as-NZ fallback"
         return result
