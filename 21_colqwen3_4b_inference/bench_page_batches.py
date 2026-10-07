@@ -176,21 +176,49 @@ def run(args, result):
         save()
         emit('batch_measurement', **item)
 
-    benchmark('original_manual_eager', [lambda row=row: model(**row) for row in rows], reference, 1)
-    benchmark('existing_optimized_eager', singles, optimized, 1)
+    if not args.skip_baselines:
+        benchmark('original_manual_eager', [lambda row=row: model(**row) for row in rows], reference, 1)
+        benchmark('existing_optimized_eager', singles, optimized, 1)
     compiler = StageCompiler(args.model, args.cache_root, emit)
     configure_compiler(compiler, Options())
     compiler.identity.update(internal_format=True,
         batch_source=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         contract='same_shape_real_pages_batched_vision_text_eager_per_page_preparation_v1')
-    for size in (1, 2, 4):
+    for size in args.batch_sizes:
         functions = [BatchForward(model, rows[i:i+size], patch, batched_vision, text)
                      for i in range(0, 4, size)]
         targets = [torch.cat(optimized[i:i+size]) for i in range(0, 4, size)]
         # Check independent page results before spending time compiling.
-        checks = [compare(fn(), target) for fn,target in zip(functions,targets)]
+        batch_outputs = [fn().cpu() for fn in functions]
+        checks = [diagnostics(out, target) for out,target in zip(batch_outputs,targets)]
         result.setdefault('batched_eager_vs_single', {})[str(size)] = checks
+        # Localize batch-size arithmetic changes using identical captured inputs.
+        prepared, vargs = functions[0].prepare()
+        together = batched_vision(*vargs)
+        separate = [vision(*(a[i] for a in vargs)) for i in range(size)]
+        vision_checks = [compare(together[j],torch.stack([v[j] for v in separate])) for j in range(4)]
+        ta = functions[0].text_inputs(prepared,together)
+        same_inputs_single_text = torch.cat([text(*(a[i:i+1].contiguous() for a in ta)) for i in range(size)])
+        text_check = diagnostics(text(*ta),same_inputs_single_text)
+        independence = None
+        if size > 1:
+            # Change the other pages' pixels but hold page zero exactly fixed.
+            changed_rows = [dict(row) for row in functions[0].rows]
+            for row in changed_rows[1:]:
+                row['pixel_values'] = torch.zeros_like(row['pixel_values'])
+            changed = BatchForward(model,changed_rows,patch,batched_vision,text)().cpu()
+            independence = compare(changed[:1],batch_outputs[0][:1])
+            if not independence['exact']:
+                raise RuntimeError('Changing batch partners changed page zero')
+        result.setdefault('batch_diagnostics',{})[str(size)] = dict(
+            vision_vs_individual=vision_checks, text_same_inputs_vs_individual=text_check,
+            page_zero_independent_of_partner_pixels=independence)
+        torch.save(batch_outputs,args.output_dir/f'batch{size}_eager_outputs.pt')
         save()
+        emit('batch_diagnostics',batch_size=size,checks=result['batch_diagnostics'][str(size)],
+             full_forward_vs_individual=checks)
+        if args.diagnostic_only:
+            continue
         if not all(c['passed'] for c in checks):
             raise RuntimeError('Batched eager versus single-page numerical check failed')
         benchmark('batched_optimized_eager', functions, targets, size)
@@ -217,6 +245,9 @@ def main():
     p.add_argument('--device', default='npu:0')
     p.add_argument('--warmups', type=int, default=5)
     p.add_argument('--repeats', type=int, default=20)
+    p.add_argument('--batch-sizes',type=int,nargs='+',choices=(1,2,4),default=[1,2,4])
+    p.add_argument('--skip-baselines',action='store_true')
+    p.add_argument('--diagnostic-only',action='store_true')
     args = p.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=False)
     result = dict(status='started', commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())
