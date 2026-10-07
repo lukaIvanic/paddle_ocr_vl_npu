@@ -66,11 +66,12 @@ class Engine:
         op=load_variant(a.vector_build,'aiv-fp32')
         for b in [*self.model.blocks,*self.ranker.blocks]:b.group_norm_impl='layer_norm';b.vector_variant=op;b.vector_dtype=torch.float32
         self.module=Continue(self.model).eval();self.eager=self.module.forward
+        self.batch_size=getattr(a,'batch_size',4)
         self.calls={};self.cache_root=a.output;self.head=compiled(self.ranker.forward,a.output/'head_cache')
         self.report=dict(checkpoint_sha256=eh,reranker_sha256=rh,physical_npu=os.environ['ASCEND_RT_VISIBLE_DEVICES'],device=torch.npu.get_device_name(0),dtype='FP16 dense; FP32 shifts/matrices',torch=torch.__version__,torch_npu=torch_npu.__version__)
-    def zero(self):return (torch.zeros(24,2,4,2048,device='npu'),torch.zeros(24,4,32,64,64,device='npu'))
+    def zero(self):return (torch.zeros(24,2,self.batch_size,2048,device='npu'),torch.zeros(24,self.batch_size,32,64,64,device='npu'))
     def states(self,rows,state=None,backend='torchair',document=False):
-        assert len(rows)==4 and all(rows)
+        assert len(rows)==self.batch_size and all(rows)
         state=self.zero() if state is None else state
         for offset in range(0,max(map(len,rows)),2048):
             parts=[x[offset:offset+2048] for x in rows];ls=[len(x) for x in parts]
@@ -96,8 +97,29 @@ def pack(state):
 
 
 def unpack(array):
-    v=torch.from_numpy(np.array(array,copy=True)).to('npu');n=24*2*2048
-    return (v[:,:n].reshape(4,24,2,2048).permute(1,2,0,3).contiguous(),v[:,n:].reshape(4,24,32,64,64).permute(1,0,2,3,4).contiguous())
+    return unpack_device(torch.from_numpy(np.array(array,copy=True)).to('npu'))
+
+
+def unpack_device(v):
+    n=24*2*2048;batch=v.shape[0]
+    return (v[:,:n].reshape(batch,24,2,2048).permute(1,2,0,3).contiguous(),v[:,n:].reshape(batch,24,32,64,64).permute(1,0,2,3,4).contiguous())
+
+
+class StateLoader:
+    """Gather once into reusable ordinary CPU memory; preserve blocking H2D."""
+    def __init__(self,cache,batch_size):
+        self.cache=cache
+        self.buffer=np.empty((batch_size,cache.shape[1]),dtype=np.float32)
+        self.tensor=torch.from_numpy(self.buffer)
+
+    def __call__(self,indices):
+        assert len(indices)==len(self.buffer)
+        with torch.profiler.record_function('rwkv.host_gather'):
+            for row,index in zip(self.buffer,indices):np.copyto(row,self.cache[index])
+        with torch.profiler.record_function('rwkv.state_h2d'):
+            v=self.tensor.to('npu')
+        with torch.profiler.record_function('rwkv.state_rearrange'):
+            return unpack_device(v)
 
 
 def load_task(a,name):
