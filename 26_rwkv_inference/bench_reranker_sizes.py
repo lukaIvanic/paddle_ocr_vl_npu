@@ -87,7 +87,7 @@ def worker(args):
                       hbm_before=dict(free_bytes=free, total_bytes=total), state_dtype='fp32')
         load_bridge(root/'wkv7_npu', args.reference_build); load_endpoint(args.build_root); register_converter()
         emb, rank, emb_sha, rank_sha, depth, width = pinned_pair(args)
-        dtype = {'fp16': torch.float16, 'fp32': torch.float32}[args.dtype]
+        dtype = {'fp16': torch.float16, 'bf16': torch.bfloat16, 'fp32': torch.float32}[args.dtype]
         model = Embedding(emb, 'npu:0', dtype, expected_sha256=emb_sha)
         ranker = Reranker(rank, 'npu:0', dtype, expected_sha256=rank_sha)
         assert (model.depth, model.width, ranker.depth, ranker.width) == (depth, width, depth, width)
@@ -222,10 +222,10 @@ def main():
     p.add_argument('--batch-size',type=int,choices=[1,4],default=4)
     p.add_argument('--exact-input-shape',action='store_true',help='B1 worker: compile the original token length without bucket padding')
     p.add_argument('--idle-wait-seconds',type=int,default=21600)
-    p.add_argument('--allow-shared-device',action='store_true',help='Explicit middle/largest-FP16 worker probe; reserve 2 GiB headroom and cap allocator at 6 GiB')
+    p.add_argument('--allow-shared-device',action='store_true',help='Explicit middle/largest-reduced-precision worker probe; reserve 2 GiB headroom and cap allocator at 6 GiB')
     p.add_argument('--worker',action='store_true');p.add_argument('--gate-only',action='store_true')
     p.add_argument('--size',choices=list(SIZES),default='base')
-    p.add_argument('--dtype',choices=['fp32','fp16'],default='fp32')
+    p.add_argument('--dtype',choices=['fp32','fp16','bf16'],default='fp32')
     p.add_argument('--bucket',type=int,choices=[512,2048],default=512)
     args=p.parse_args()
     if not 0<args.idle_wait_seconds<=86400 or not 3<=args.repeats<=100 or not set(args.devices).issubset({0,1,2,3,4,6,7}):p.error('Use 3..100 repeats and healthy idle devices 0/1/2/3/4/6/7')
@@ -233,8 +233,8 @@ def main():
         p.error('Exact input shape requires an explicit B1 worker')
     if args.batch_size!=4 and not args.worker:
         p.error('B1 is an explicit worker probe; the background matrix uses B4')
-    if args.allow_shared_device and (not args.worker or args.size=='tiny' or (args.size=='large' and args.dtype!='fp16')):
-        p.error('Shared-device mode requires an explicit middle or largest-FP16 worker')
+    if args.allow_shared_device and (not args.worker or args.size=='tiny' or (args.size=='large' and args.dtype=='fp32')):
+        p.error('Shared-device mode requires an explicit middle or largest-FP16/BF16 worker')
     worker(args) if args.worker else coordinate(args)
 
 
