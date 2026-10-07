@@ -1,0 +1,17 @@
+{
+  "model": "OpenSearch-AI/Ops-Colqwen3-4B",
+  "basis": "Exact local checkpoint used by the completed full HR run at e46aea34 on 910B2; hashes verified 2026-10-07.",
+  "files": {
+    "config.json": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b",
+    "preprocessor_config.json": "e119dd9df9b914988b6b1e957b7101bb28520362291447a84bffc5387f391af6",
+    "processing_ops_colqwen3.py": "e63d9b1fc6a56ddd9fa2c8e58536b8841a8900eee822ba92519384359f94ab2f",
+    "configuration_ops_colqwen3.py": "af9724e4d3023157c2f55d47284cc9a63b8ae4edd9acc71ed9b9107cb28f6491",
+    "modeling_ops_colqwen3.py": "c32bc4d39a30aff74acb068da4d830af1cdff1a4acaa11af9cee333cf7783346",
+    "tokenizer.json": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+    "tokenizer_config.json": "b77468628b7845f81d6705b8c68fe3ea2aca320204b0dcc5a1f2a9c0b506058c",
+    "special_tokens_map.json": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd",
+    "model.safetensors.index.json": "62ccf663cce2482ee0d3cf01f6b62e1f76d2a678f5008ac4251a0af4e231fde4",
+    "model-00001-of-00002.safetensors": "2905b909c01c687780409eadd4a3011543c47ef87df5f6257c1e70dfd1675f16",
+    "model-00002-of-00002.safetensors": "901e74232526c101dc88ce9d48cc77230507f47ed49d7ff0c76fe4fbebb20824"
+  }
+}
