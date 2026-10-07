@@ -275,6 +275,12 @@ def main():
                 evaluate(step, endpoint=step == args.steps or step in args.reserved_eval_steps)
             save(args.output / 'result.json', result)
         else:
+            if stream:
+                progress = read(args.teacher.parent / 'progress.json')
+                assert progress['status'] == 'completed' and progress['full_token_audit_passed']
+                assert progress['teacher_manifest_sha256'] == result['teacher_sha256']
+                assert progress['completed_groups'] == len(data['train'])
+                result['teacher_stream_full_token_audit_passed'] = True
             result['status'] = 'completed'
     except Exception as e:
         result.update(status='failed', error=repr(e))
