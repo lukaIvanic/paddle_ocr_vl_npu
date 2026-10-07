@@ -205,7 +205,7 @@ def worker(args):
                 for module in weights:module.keep_dense_outputs=args.retain_dense_outputs
                 for block in [*model.blocks,*ranker.blocks]:block.group_norm_impl=args.group_norm_impl
                 report['implementation_vs_default_state_diagnostics']=[metrics(a,b) for a,b in zip(eager,default_states)]
-                report['implementation_vs_default_logit_diagnostics']=dict(comparison=metrics(expected,default_logits),retained=expected.cpu().tolist(),default=default_logits.cpu().tolist())
+                report['implementation_vs_default_logit_diagnostics']=dict(comparison=metrics(expected,default_logits),candidate=expected.cpu().tolist(),default=default_logits.cpu().tolist())
                 save(args.output/'result.json',report)
                 report['implementation_vs_default_states']=[require_state(a,b,args.dtype) for a,b in zip(eager,default_states)]
                 report['implementation_vs_default_logits']=require(expected,default_logits,.02,.005)
@@ -267,28 +267,6 @@ def worker(args):
                 eager,expected=candidate,candidate_logits
                 del real
                 assert torch.equal(expected,ranker(backbone(ids,lengths)[1]))
-            if args.diagnose_matrix_compile:
-                assert args.recurrence == 'matrix'
-                from matrix_recurrence import DiagnosticScoring
-                full = DiagnosticScoring(backbone, ranker)
-                expected_diagnostic = full(ids, lengths)
-                names = [name for name, _ in full.selected.diagnostic_tensors]
-                print('DIAGNOSTIC_COMPILE_START', flush=True)
-                compiled_full = compiled(full.forward, args.output/'diagnostic_full_cache')
-                actual_diagnostic = compiled_full(ids, lengths)
-                torch.npu.synchronize()
-                rows = []
-                for name, actual_tensor, expected_tensor in zip(names, actual_diagnostic[2], expected_diagnostic[2]):
-                    rows.append(dict(name=name, shape=list(actual_tensor.shape),
-                        eager_nonfinite=int((~torch.isfinite(expected_tensor)).sum().cpu()),
-                        compiled_nonfinite=int((~torch.isfinite(actual_tensor)).sum().cpu()),
-                        comparison=metrics(actual_tensor, expected_tensor)))
-                report['matrix_compile_diagnostic'] = dict(scope='Complete real-input backbone and head with first-layer diagnostic outputs; compiler configuration unchanged. Instrumented correctness only, no speed result.',
-                    tensors=rows, logits=metrics(actual_diagnostic[0], expected_diagnostic[0]),
-                    states=[metrics(a,b) for a,b in zip(actual_diagnostic[1], expected_diagnostic[1])])
-                save(args.output/'matrix_compile_diagnostic.json', report['matrix_compile_diagnostic'])
-                report['all_checks_passed'] = all(row['comparison']['finite'] and row['comparison']['normalized_rmse'] <= .02 for row in rows)
-                return
             report['timings']['eager_total'] = measure(lambda: ranker(backbone(ids,lengths)[1]), args.repeats, args.batch_size)
             print('EAGER_TIMING', json.dumps(report['timings']['eager_total']), flush=True)
             save(args.output/'result.json', report)
@@ -417,7 +395,6 @@ def main():
     p.add_argument('--matrix-compute-dtype',choices=['fp32','fp16','bf16'],default='fp32')
     p.add_argument('--group-norm-impl',choices=['group_norm','layer_norm'],default='group_norm',help='Equivalent per-head LayerNorm plus original affine; benchmark opt-in')
     p.add_argument('--retain-dense-outputs',action='store_true',help='Experimental FP16 linear outputs; cast to FP32 only where required by vector recurrence')
-    p.add_argument('--diagnose-matrix-compile',action='store_true',help='Full-scoring numerical diagnosis with first-layer outputs, no timing')
     p.add_argument('--profile-invalid-compile',action='store_true',help='Diagnostic full-forward capture; invalid output is never accepted for speed')
     p.add_argument('--profile',action='store_true',help='Explicit B1/B4 worker: eager and optional compiled CPU/NPU traces with shapes')
     p.add_argument('--profile-data',type=Path)
