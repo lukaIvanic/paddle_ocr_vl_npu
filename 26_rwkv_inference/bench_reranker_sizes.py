@@ -3,6 +3,7 @@ import argparse
 import gc
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -57,6 +58,65 @@ def cpu_gate(args, model, ranker, tokens):
     return row
 
 
+def profile_pipeline(args, report, cases, static_tokens, encode, head, ids, lengths):
+    """Warm real-pair IO/CPU/transfers plus separate compiled-forward traces."""
+    from run_reranker_buckets import profile
+    from run_cpu_reference import CReference
+    from run_reranker_smoke import PREFIX, SUFFIX
+    from run_nanoscidocs_reranker import DATA_SHA256
+    report['profile_source_sha256']={n:sha256(Path(__file__).parent/n) for n in ['run_reranker_buckets.py','run_cpu_reference.py','run_nanoscidocs_reranker.py']}
+    report['profile_parser_sha256']=sha256(Path(__file__).parents[1]/'05_full_recognizer_optimizations/parse_npu_profile.py')
+    assert sha256(args.profile_data)==DATA_SHA256
+    before=time.perf_counter()
+    data=json.loads(args.profile_data.read_text())
+    corpus={r['_id']:r['text'].strip() for r in data['corpus']}
+    queries={r['_id']:r['text'] for r in data['queries']}
+    case=cases[0]
+    fixture=args.output/'pipeline_pair.json'
+    save(fixture,dict(query=queries[case['query_id']],document=corpus[case['document_id']]))
+    tokenizer=CReference(args.runtime,4)
+    report['pipeline_setup_seconds']=time.perf_counter()-before
+    def prepare():
+        with torch.profiler.record_function('rwkv.disk_read_pair'):
+            pair=json.loads(fixture.read_text())
+        with torch.profiler.record_function('rwkv.cpu_tokenize'):
+            tokens=(tokenizer.tokenize(PREFIX.format(**pair)+SUFFIX.format(**pair)).tolist()+[65535])[-2048:]
+        with torch.profiler.record_function('rwkv.cpu_batch_prepare'):
+            cpu_ids=torch.tensor([tokens+[0]*(static_tokens-len(tokens))],dtype=torch.long)
+            cpu_lengths=torch.tensor([len(tokens)],dtype=torch.int32)
+        return cpu_ids,cpu_lengths
+    def forward(ni,lens):
+        with torch.profiler.record_function('rwkv.torchair_backbone'):
+            states=encode(ni,lens)
+        with torch.profiler.record_function('rwkv.torchair_head'):
+            return head(states[1])
+    def pipeline():
+        cpu_ids,cpu_lengths=prepare()
+        with torch.profiler.record_function('rwkv.h2d'):
+            ni=cpu_ids.to('npu');lens=cpu_lengths.to('npu')
+        logits=forward(ni,lens)
+        with torch.profiler.record_function('rwkv.d2h_scores'):
+            values=logits.cpu().tolist()
+        with torch.profiler.record_function('rwkv.disk_write_scores'):
+            save(args.output/'pipeline_score.json',values)
+        return values
+    try:
+        ci,cl=prepare()
+        assert ci.tolist()==ids.cpu().tolist() and cl.tolist()==lengths.cpu().tolist(), 'Real-text tokenizer differs from validated input'
+        expected=head(encode(ids,lengths)[1]).cpu().tolist()
+        assert pipeline()==expected
+        report['timings']['pipeline_total']=measure(pipeline,args.repeats,1)
+        report['pipeline_scope']='Warm filesystem read of one real NanoSCIDOCS pair, CPU tokenization/batch construction, synchronous pageable H2D, uncached TorchAir backbone/head, D2H scalar scores, JSON write without fsync. Excludes startup, dataset indexing, tokenizer initialization, compilation and profiling. Device-event elapsed can include CPU gaps.'
+        report['profiles']={}
+        for label,call in [('forward',lambda:forward(ids,lengths)),('pipeline',pipeline)]:
+            print('PROFILE_START',label,flush=True)
+            report['profiles'][label]=profile(call,args.output/('profile_'+label),'rwkv.'+label)
+            save(args.output/'result.json',report)
+            print('PROFILE_DONE',label,flush=True)
+        assert pipeline()==expected, 'Profiling changed scores'
+    finally:tokenizer.close()
+
+
 def worker(args):
     args.output.mkdir(parents=True, exist_ok=False)
     root = Path(__file__).parent; start = time.perf_counter()
@@ -88,8 +148,11 @@ def worker(args):
         load_bridge(root/'wkv7_npu', args.reference_build); load_endpoint(args.build_root); register_converter()
         emb, rank, emb_sha, rank_sha, depth, width = pinned_pair(args)
         dtype = {'fp16': torch.float16, 'bf16': torch.bfloat16, 'fp32': torch.float32}[args.dtype]
+        before=time.perf_counter()
         model = Embedding(emb, 'npu:0', dtype, expected_sha256=emb_sha)
         ranker = Reranker(rank, 'npu:0', dtype, expected_sha256=rank_sha)
+        torch.npu.synchronize()
+        report['checkpoint_hash_load_convert_h2d_seconds']=time.perf_counter()-before
         assert (model.depth, model.width, ranker.depth, ranker.width) == (depth, width, depth, width)
         assert all(0 <= i < model.depth for i in ranker.layer_indices)
         report.update(checkpoint_sha256=emb_sha, reranker_sha256=rank_sha,
@@ -131,6 +194,15 @@ def worker(args):
             if args.backend=='raw_eager':
                 report['all_checks_passed']=True
                 return
+            if args.warm_cache_from:
+                prior=json.loads((args.warm_cache_from/'result.json').read_text())
+                assert prior['all_checks_passed'] and prior['dtype']==args.dtype and prior['batch_size']==args.batch_size and prior['static_tokens']==static_tokens
+                assert prior['checkpoint_sha256']==emb_sha and prior['reranker_sha256']==rank_sha
+                for n in ['local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','probe_reranker_endpoint.py','wkv7_endpoint.py']:
+                    assert prior['source_sha256'][n]==report['source_sha256'][n]
+                before=time.perf_counter()
+                for n in ['backbone_cache','head_cache']:shutil.copytree(args.warm_cache_from/n,args.output/n)
+                report['copy_private_graph_cache_seconds']=time.perf_counter()-before
             before=time.perf_counter();print('COMPILE_START',args.size,args.dtype,args.bucket,flush=True)
             encode=compiled(backbone.forward,args.output/'backbone_cache'); head=compiled(ranker.forward,args.output/'head_cache')
             actual=encode(ids,lengths); logits=head(actual[1]); torch.npu.synchronize()
@@ -145,6 +217,7 @@ def worker(args):
             report['timings']['torchair_total']=measure(lambda:head(encode(ids,lengths)[1]),args.repeats,args.batch_size)
             report['timings']['torchair_head_only']=measure(lambda:head(fixed),args.repeats,args.batch_size)
             assert torch.equal(head(encode(ids,lengths)[1]),logits)
+            if args.profile:profile_pipeline(args,report,cases,static_tokens,encode,head,ids,lengths)
             report['all_checks_passed']=True
             print('TIMINGS',json.dumps(report['timings']),flush=True)
     except Exception as e:
@@ -225,6 +298,10 @@ def main():
         p.add_argument('--'+n,type=Path,required=True)
     p.add_argument('--devices',nargs='+',type=int,default=[7,6,4,3,2,1,0])
     p.add_argument('--repeats',type=int,default=10)
+    p.add_argument('--profile',action='store_true',help='Explicit B1 worker: compiled forward and real-pair pipeline CPU/NPU traces')
+    p.add_argument('--profile-data',type=Path)
+    p.add_argument('--runtime',type=Path)
+    p.add_argument('--warm-cache-from',type=Path)
     p.add_argument('--backend',choices=['torchair','raw_eager'],default='torchair')
     p.add_argument('--batch-size',type=int,choices=[1,4],default=4)
     p.add_argument('--exact-input-shape',action='store_true',help='B1 worker: compile the original token length without bucket padding')
@@ -242,6 +319,9 @@ def main():
         p.error('B1 is an explicit worker probe; the background matrix uses B4')
     if args.allow_shared_device and (not args.worker or args.size=='tiny' or (args.size=='large' and args.dtype=='fp32')):
         p.error('Shared-device mode requires an explicit middle or largest-FP16/BF16 worker')
+    if args.profile and (not args.worker or args.batch_size!=1 or args.backend!='torchair' or not args.profile_data or not args.runtime):
+        p.error('Profiling requires explicit B1 TorchAir worker, --profile-data and --runtime')
+    if args.warm_cache_from and not args.worker:p.error('Warm cache is for an explicit worker')
     worker(args) if args.worker else coordinate(args)
 
 
