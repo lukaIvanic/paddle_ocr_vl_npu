@@ -46,6 +46,23 @@ saves, with 22.04 GiB peak allocated NPU memory. All five evaluated nonzero
 checkpoints remain on the server, including model/optimizer/RNG state. This run
 does not benchmark cached-document inference.
 
+## Higher-learning-rate contents swap
+
+The next matched arm restarts from the same released 0.6B weights and fresh
+optimizer, retaining the data order, query-first 4B targets, contents-swapped
+prompt, 50 updates and five-step warmup/linear decay. Only the peak learning rate
+changes from 1e-6 to 1e-5. Evaluate at 0, 1, 3, 10, 25 and 50; compare against
+both the original query-first reference and the completed 1e-6 swap.
+
+Pass the peak learning rate as the optional fifth launcher argument:
+
+```bash
+bash 13_qwen3_reranker/run_margin_distillation_experiment.sh \
+  /workspace/results/qwen_margin_distill/data_fast/dataset.json.gz \
+  /workspace/results/qwen_margin_distill/npu/contents_swap_lr1e5_RUN_COMMIT \
+  contents_swapped /workspace/results/qwen_margin_distill/npu/d66b8e89 1e-5
+```
+
 ## Query-first pilot
 
 This experiment adapts Qwen3-Reranker-0.6B to a frozen Qwen3-Reranker-4B's
