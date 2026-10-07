@@ -13,6 +13,7 @@ from margin_distillation import (agreement, benchmark_metrics, lr_at,
                                 validate_teacher_inputs)
 
 from bge_baseline import loss_and_score_gradient, PIN
+from bge_filtered_runtime import update_windows, filtered_reference_baseline, validation_objective
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
@@ -27,6 +28,7 @@ def main():
     p.add_argument('--profile-updates', type=int, default=3)
     p.add_argument('--profile-eval', action='store_true', help='Time unchanged-weight evaluation during optimizer-free profiling')
     p.add_argument('--queries-per-update', type=int, default=32)
+    p.add_argument('--batch-schedule', choices=['contiguous', 'contiguous_partial', 'retained_original_slots'], default='contiguous')
     p.add_argument('--learning-rate', type=float, default=1e-5)
     p.add_argument('--wall-time-limit', type=float, default=2400)
     p.add_argument('--student-order', choices=['query_first', 'contents_swapped', 'document_first'], default='query_first')
@@ -103,13 +105,17 @@ def main():
     if args.query_first_reference:
         reference = read(args.query_first_reference)
         assert reference['status'] == 'completed'
-        assert reference['dataset_sha256'] == result['dataset_sha256']
         assert reference['model_sha256'] == result['model_sha256']
         assert reference['recipe']['prompt_order'] == 'query_first'
-        assert reference['lengths'] == canonical_lengths
-        assert reference['teacher_sha256'] == digest(args.teacher)
         result['query_first_reference_sha256'] = digest(args.query_first_reference)
-        result['query_first_baseline'] = reference['evaluations']['0']
+        if reference['dataset_sha256'] == result['dataset_sha256']:
+            assert reference['lengths'] == canonical_lengths
+            assert reference['teacher_sha256'] == digest(args.teacher)
+            result['query_first_baseline'] = reference['evaluations']['0']
+        else:
+            result['query_first_baseline'] = filtered_reference_baseline(
+                data, reference, digest(args.query_first_reference), teacher, canonical_lengths)
+            result['reference_comparison_scope'] = 'Same benchmark queries and released initialization; prior query-first training included groups removed by the disclosed length filter.'
     result['teacher_sha256'] = digest(args.teacher)
     result['control_sha256'] = digest(args.control)
     result['recipe'] = {'loss': 'BGE supervised group CE + teacher-distribution CE, weights 1:1, mean query groups',
@@ -124,7 +130,10 @@ def main():
     by_group = collections.defaultdict(list)
     for r in records['train']:
         by_group[r['group_id']].append(r)
-    assert len(data['train']) >= args.steps * args.queries_per_update
+    windows = update_windows(data['train'], args.steps, args.queries_per_update, args.batch_schedule)
+    result['training_group_counts_per_update'] = [len(w) for w in windows]
+    if args.batch_schedule == 'retained_original_slots':
+        assert data['derivation']['kind'] == 'whole_group_length_filter'
     assert all(len(g['documents']) == 8 for g in data['train'])
 
     def checkpoint(step):
@@ -171,6 +180,7 @@ def main():
                 'agreement': agreement(data['validation'], val, teacher['scores']['validation']),
                 'seconds': {'benchmark': seconds, 'validation': val_s},
                 'benchmark_scores': scores, 'validation_scores': val}
+        item['validation_objective'] = validation_objective(val, teacher['scores']['validation'])
         item['trajectory_108'] = item['benchmark']
         if endpoint or step == 0:
             rs, rt = runtime.score(model, records['reserved_benchmark'], 'reserved_benchmark')
@@ -185,7 +195,7 @@ def main():
         print('EVALUATION', json.dumps({'step': step,
               'trajectory_108': item['trajectory_108']['suite_macro_ndcg10'],
               'baseline_endpoint_180': item.get('baseline_endpoint_180', {}).get('suite_macro_ndcg10'),
-              'agreement': item['agreement'], 'seconds': item['seconds']}), flush=True)
+              'agreement': item['agreement'], 'validation_objective': item['validation_objective'], 'seconds': item['seconds']}), flush=True)
         if 'query_first_baseline' in result:
             original = result['query_first_baseline']['benchmark']['suite_macro_ndcg10']
             print('QUERY_FIRST_COMPARISON', json.dumps({'step': step,
@@ -209,7 +219,7 @@ def main():
             learning_rate = lr_at(step, args.steps, args.learning_rate, args.schedule)
             for param_group in optimizer.param_groups:
                 param_group['lr'] = learning_rate
-            window = data['train'][(step-1)*args.queries_per_update:step*args.queries_per_update]
+            window = windows[step - 1]
             total_loss = torch.zeros((), device=runtime.device)
             micros = 0
             for group in window:
@@ -222,12 +232,12 @@ def main():
                         values[[r['candidate'] for r in micro]] = z
                 target = torch.tensor(teacher['scores']['train'][group['id']], device=runtime.device)
                 loss, gradient = loss_and_score_gradient(values, target)
-                total_loss += loss.detach() / args.queries_per_update
+                total_loss += loss.detach() / len(window)
                 for micro in microplan:
                     z = runtime.logits(model, micro)
                     indices = [r['candidate'] for r in micro]
                     assert torch.equal(z.detach(), values[indices]), 'Replay must be deterministic'
-                    (z * (gradient[indices] / args.queries_per_update)).sum().backward()
+                    (z * (gradient[indices] / len(window))).sum().backward()
                     micros += 1
             norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0, error_if_nonfinite=True)
             if args.mode != 'profile': optimizer.step()
