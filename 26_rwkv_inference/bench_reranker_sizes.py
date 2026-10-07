@@ -140,7 +140,7 @@ def worker(args):
         physical_npu=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), shared_device=args.allow_shared_device, all_checks_passed=False,
         backend=args.backend, scope='Prepared device inputs; uncached backbone plus state-readout head. Synchronized steady calls exclude CPU checks, compile, input transfers and tokenization.',
         recurrence=args.recurrence, matrix_chunk_size=args.matrix_chunk_size,
-        matrix_compute_dtype=args.matrix_compute_dtype, state_gate='FP16 state normalized RMSE <=0.002; FP32 allclose atol0.02/rtol0.005; all scores allclose atol0.02/rtol0.005; not a full-suite accuracy claim', timings={})
+        matrix_compute_dtype=args.matrix_compute_dtype, retain_dense_outputs=args.retain_dense_outputs, state_gate='FP16 state normalized RMSE <=0.002; FP32 allclose atol0.02/rtol0.005; all scores allclose atol0.02/rtol0.005; not a full-suite accuracy claim', timings={})
     try:
         import torch_npu
         torch.set_num_threads(4)
@@ -165,6 +165,10 @@ def worker(args):
         before=time.perf_counter()
         model = Embedding(emb, 'npu:0', dtype, expected_sha256=emb_sha)
         ranker = Reranker(rank, 'npu:0', dtype, expected_sha256=rank_sha)
+        if args.retain_dense_outputs:
+            assert args.dtype == 'fp16', 'Retained-output experiment is FP16 only'
+            for weights in [model, *model.blocks, ranker, *ranker.blocks]:
+                weights.keep_dense_outputs = True
         torch.npu.synchronize()
         report['checkpoint_hash_load_convert_h2d_seconds']=time.perf_counter()-before
         assert (model.depth, model.width, ranker.depth, ranker.width) == (depth, width, depth, width)
@@ -388,6 +392,7 @@ def main():
     p.add_argument('--recurrence',choices=['vector','matrix'],default='vector')
     p.add_argument('--matrix-chunk-size',type=int,choices=[16,32,64,128],default=64)
     p.add_argument('--matrix-compute-dtype',choices=['fp32','fp16','bf16'],default='fp32')
+    p.add_argument('--retain-dense-outputs',action='store_true',help='Experimental FP16 linear outputs; cast to FP32 only where required by vector recurrence')
     p.add_argument('--diagnose-matrix-compile',action='store_true',help='Full-scoring numerical diagnosis with first-layer outputs, no timing')
     p.add_argument('--profile-invalid-compile',action='store_true',help='Diagnostic full-forward capture; invalid output is never accepted for speed')
     p.add_argument('--profile',action='store_true',help='Explicit B1/B4 worker: eager and optional compiled CPU/NPU traces with shapes')
