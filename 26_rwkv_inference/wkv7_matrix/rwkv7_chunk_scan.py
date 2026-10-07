@@ -482,9 +482,11 @@ def rwkv7_chunk_scan(
             wy_flat,
             compute_dtype,
         )
-        transition = transition + torch.diag_embed(
-            end_decay.reshape(groups, width)
-        )
+        # TorchAir 2.10 has no aten.diag_embed converter. This diagonal mask
+        # has identical FP32 values and lowers through supported multiply.
+        transition = transition + end_decay.reshape(groups, 1, width) * torch.eye(
+            width, device=state.device, dtype=torch.float32
+        )[None]
         output_base = _cube_bmm(
             output_weights_flat,
             values_zero_state,
