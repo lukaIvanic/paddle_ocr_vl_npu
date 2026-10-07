@@ -1,5 +1,10 @@
 # MinerU FP16 decode-attention KV-cache probe: 310P handoff
 
+**Historical compatibility probe only.** For performance work use
+[`../FULL_MODEL_KV_310P_HANDOFF.md`](../FULL_MODEL_KV_310P_HANDOFF.md),
+which measures real crop generation inside the complete compiled decoder.
+Do not interpret this isolated eager probe as full-model speed.
+
 This is the complete task brief for an agent with no conversation history.
 Use this file and the adjacent code. You do not need access to the authoring
 machine, Mac sessions, the 910B host, model weights, crops, or datasets.

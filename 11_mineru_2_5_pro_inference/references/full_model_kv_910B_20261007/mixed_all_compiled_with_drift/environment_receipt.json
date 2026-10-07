@@ -1,0 +1,15 @@
+{
+  "python": "3.12.13 (main, May 15 2026, 02:51:13) [GCC 11.4.0]",
+  "interpreter": "/usr/local/python3.12.13/bin/python3",
+  "packages": {
+    "torch": "2.10.0+cpu",
+    "torch-npu": "2.10.0",
+    "transformers": "5.5.4",
+    "torchair": "no standalone distribution (TorchAir may be bundled)",
+    "Pillow": "12.2.0"
+  },
+  "bundled_torchair_cache_compiler": {
+    "path": "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py",
+    "sha256": "d2878e1e36725f77ab12928798f26fb36d4b1f985952f915f93d847927a31c7e"
+  }
+}

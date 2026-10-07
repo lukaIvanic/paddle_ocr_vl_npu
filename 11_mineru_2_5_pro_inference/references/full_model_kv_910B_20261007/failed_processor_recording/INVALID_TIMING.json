@@ -1,0 +1,6 @@
+{
+  "valid": false,
+  "reason": "Initialization failed before inference: Transformers SizeDict was not JSON serializable; size cap assignment also required SizeDict support",
+  "fixed_in_commit": "41f9f9cc",
+  "no_throughput_samples": true
+}

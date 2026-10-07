@@ -1,0 +1,125 @@
+{
+  "scope": "complete compiled decoder; Level1 shapes/formats outside throughput",
+  "records": [
+    {
+      "file": "profile_fia_blocked_nd_batch0/liteserver-c001-4_28860_20261007111923666_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "Data": 39,
+        "Add": 208,
+        "BroadcastTo": 32,
+        "Cast": 48,
+        "Range": 8,
+        "FloorMod": 8,
+        "FloorDiv": 8,
+        "GatherElements": 8,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "SplitVD": 400,
+        "ApplyRotaryPosEmb": 192,
+        "Pack": 8,
+        "ScatterNdUpdate": 384,
+        "OnesLike": 8,
+        "FusedInferAttentionScore": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "AutomaticBufferFusionOp": 192,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "FusedInferAttentionScore",
+          "shapes": "\"4,1,896;128,2,4,128,16;128,2,4,128,16;4;4;4,32\"",
+          "formats": "ND;ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_nodes": []
+    },
+    {
+      "file": "profile_fia_nd_batch0/liteserver-c001-4_28860_20261007111917646_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "Data": 200,
+        "Add": 208,
+        "BroadcastTo": 8,
+        "Cast": 40,
+        "FloorDiv": 8,
+        "GatherElements": 8,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "FloorMod": 8,
+        "Pack": 8,
+        "SplitVD": 400,
+        "ScatterNdUpdate": 384,
+        "ApplyRotaryPosEmb": 192,
+        "OnesLike": 8,
+        "FusedInferAttentionScore": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "AutomaticBufferFusionOp": 192,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "FusedInferAttentionScore",
+          "shapes": "\"4,1,896;128,128,128;128,128,128;4;4;4,32\"",
+          "formats": "ND;ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_nodes": []
+    },
+    {
+      "file": "profile_increfa_nd_batch0/liteserver-c001-4_28860_20261007111911751_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "SplitVD": 400,
+        "Add": 16,
+        "BroadcastTo": 16,
+        "Cast": 48,
+        "Range": 16,
+        "LessEqual": 8,
+        "AutomaticBufferFusionOp": 208,
+        "Scatter": 384,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "ApplyRotaryPosEmb": 192,
+        "Less": 200,
+        "MaskedFill": 8,
+        "IncreFlashAttention": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8,
+        "Data": 7
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "IncreFlashAttention",
+          "shapes": "\"4,14,1,64;4,2,4096,64;4,2,4096,64;4,14,1,4096;4,1,1,4096\"",
+          "formats": "ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_nodes": []
+    }
+  ]
+}

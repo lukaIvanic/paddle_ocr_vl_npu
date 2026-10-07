@@ -1,0 +1,31 @@
+{
+  "scope": "full compiled decoder; processed profiler names, level0 control trace",
+  "records": [
+    {
+      "file": "profile_increfa_nd_batch0/liteserver-c001-4_11431_20261007110937935_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "IncreFlashAttention": 192,
+        "Scatter": 384,
+        "MatMul": 776,
+        "ArgMax": 8,
+        "TransData": 0
+      },
+      "distinct_attention_nodes": 24,
+      "inferred_matmuls_per_step": 97.0
+    },
+    {
+      "file": "profile_increfa_nd_batch1/liteserver-c001-4_11431_20261007110946831_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "IncreFlashAttention": 192,
+        "Scatter": 384,
+        "MatMul": 776,
+        "ArgMax": 8,
+        "TransData": 0
+      },
+      "distinct_attention_nodes": 24,
+      "inferred_matmuls_per_step": 97.0
+    }
+  ]
+}

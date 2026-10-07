@@ -1,0 +1,10 @@
+{
+  "samples_checked": 50,
+  "token_counts_recomputed": true,
+  "forward_calls_and_raw_slots_verified": true,
+  "zero_new_graphs_and_recompile_warnings": true,
+  "cache_formats_retained": true,
+  "native_reference_and_eos_pass": true,
+  "candidate_drift_retained_with_timing": true,
+  "full_model_profiles_checked": 10
+}

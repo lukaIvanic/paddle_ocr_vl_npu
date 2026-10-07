@@ -1,0 +1,32 @@
+{
+  "status": "initializing",
+  "args": {
+    "model": "/workspace/models/MinerU2.5-Pro-2605-1.2B",
+    "manifest": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/crops/hotswap_100_manifest.json",
+    "limit": 8,
+    "crop_ids": "hotswap_001_code_txt_p0001_box_id_3,hotswap_002_code_txt_p1474_11,hotswap_003_equation_isolated_p0000_box_id_1,hotswap_004_equation_isolated_p0036_box_id_9,hotswap_038_table_p0010_box_id_1,hotswap_039_table_p0243_box_id_1,hotswap_057_text_block_p0000_box_id_0,hotswap_058_text_block_p0062_box_id_8",
+    "batch_size": 4,
+    "max_new_tokens": 1024,
+    "cache_length": 4096,
+    "block_size": 128,
+    "repeats": 5,
+    "warmup_steps": 5,
+    "variants": "increfa_nd,fia_nd,fia_blocked_nd,increfa_nz,fia_nz,paged_nd,paged_nz",
+    "chip": "910B",
+    "output": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/full_model_final_910B_20261007T112205Z_f17c2c2d/summary.json",
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/full_model_final_910B_20261007T112205Z_f17c2c2d/compile_cache",
+    "max_pixels": 602112,
+    "profile": true
+  },
+  "repo_commit": "f17c2c2db903692ecf4ec783a19bd077479f9c57",
+  "script_sha256": "047e11d8915ebb989d53d5fbbd1d82a9837d27a7777635b67b4ccd2831cd5060",
+  "measurement": "Useful post-prefill non-EOS tokens / synchronized full-model generation wall time; host EOS/token copies included; compile/prefill/reset excluded",
+  "reference": "Production full MinerU static decoder, raw eager, identical real vision/text prefill",
+  "no_eos_fill_tokens_counted": true,
+  "device_name": "Ascend910B2",
+  "visible_devices": "3",
+  "torch_version": "2.10.0+cpu",
+  "torch_npu_version": "2.10.0",
+  "cann_home": "/usr/local/Ascend/cann-9.0.0",
+  "hostname": "liteserver-c001-4"
+}

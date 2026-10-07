@@ -2,7 +2,8 @@
 
 This supersedes the isolated eager probe as the performance experiment.
 The old `kv_cache_probe/` remains compatibility evidence. Development source
-is on `codex/mineru-full-model-kv-benchmark`; 910B validation is in progress.
+is on `codex/mineru-full-model-kv-benchmark`; recorded 910B results are linked
+below.
 
 ## Measured workload
 
@@ -52,16 +53,23 @@ TorchAir recompilation warnings; either occurring invalidates the measurement.
 The existing production flat decoder runs raw eager from the identical real
 prefill to establish each crop's greedy sequence through EOS or the cap. It is
 a fidelity control, not a throughput competitor. Every compiled variant must
-match that complete sequence before timing, and each timed repeat is checked
-again. Token-accounting unit tests separately verify that EOS and inactive
-slots cannot inflate the primary metric.
+report its complete sequence comparison before timing; each timed repeat is
+checked again. Exact greedy equality is a fidelity result, not a performance
+gate for candidate variants. The native control must match. Candidate timings
+remain visible alongside token edit distance, common prefix, decoded text, EOS
+and length-cap changes. Small numerical drift can change a greedy continuation;
+inspect the actual outputs instead of equating any mismatch with broken inference.
+Token-accounting tests separately verify that EOS and inactive slots cannot
+inflate the primary metric.
 
 Each K/V allocation records its logical shape and actual storage descriptor.
 Prefill conversion must preserve every logical value. Requested NZ must really
 be descriptor 29, including after timed generation. Native controls allow
-descriptor 0 or 2 as observed on this runtime. Errors, wrong tokens or descriptor
-changes invalidate timings for that variant. A compiler may insert internal
-TransData or choose a different internal layout; retained external NZ alone
+descriptor 0 or 2 as observed on this runtime. Runtime errors, compilation during
+the timer or descriptor changes invalidate timings. Token differences are
+reported separately and do not suppress candidate measurements. Rates from substantially different generated lengths and EOS
+behavior describe different output workloads; they are not an equal-work speedup.
+A compiler may insert internal TransData or choose a different internal layout; retained external NZ alone
 does not prove that attention consumed NZ inside the graph. Inspect the full
 model profiler before attributing a speed difference to attention's NZ reads.
 
@@ -103,7 +111,7 @@ From the fetched container checkout:
 source npu-setup
 export MODEL=/workspace/models/MinerU2.5-Pro-2605-1.2B
 export PYTHON=/usr/local/python3.12.13/bin/python3
-CHIP=910B MANIFEST="$PWD/crops/manifest.json" LIMIT=2 BATCH_SIZE=1 \
+CROP_IDS= CHIP=910B MANIFEST="$PWD/crops/manifest.json" LIMIT=2 BATCH_SIZE=1 \
   MAX_NEW_TOKENS=256 REPEATS=2 VARIANTS=increfa_nd PROFILE=1 \
   RUN_NAME=full_model_control bash 11_mineru_2_5_pro_inference/run_full_model_kv.sh
 ```
@@ -112,7 +120,7 @@ After the full-model control passes, use real mixed crops and larger cohorts:
 
 ```bash
 export CROP_IDS=hotswap_001_code_txt_p0001_box_id_3,hotswap_002_code_txt_p1474_11,hotswap_003_equation_isolated_p0000_box_id_1,hotswap_004_equation_isolated_p0036_box_id_9,hotswap_038_table_p0010_box_id_1,hotswap_039_table_p0243_box_id_1,hotswap_057_text_block_p0000_box_id_0,hotswap_058_text_block_p0062_box_id_8
-CHIP=910B LIMIT=8 BATCH_SIZE=4 MAX_NEW_TOKENS=512 REPEATS=5 PROFILE=1 \
+CHIP=910B LIMIT=8 BATCH_SIZE=4 MAX_NEW_TOKENS=1024 REPEATS=5 PROFILE=1 \
   VARIANTS=increfa_nd,fia_nd,fia_blocked_nd \
   RUN_NAME=full_model_native bash 11_mineru_2_5_pro_inference/run_full_model_kv.sh
 ```
@@ -122,10 +130,10 @@ crops; filenames and hashes are saved. `CROP_IDS` must list exactly `LIMIT`
 distinct IDs present in the selected manifest. Without it the manifest prefix
 is used; the hot-swap manifest's first eight crops are code/formula only.
 
-Then request the actual NZ descriptors, preserving rejected variants:
+Then request the actual NZ descriptors, preserving timings and fidelity separately:
 
 ```bash
-CHIP=910B LIMIT=8 BATCH_SIZE=4 MAX_NEW_TOKENS=512 REPEATS=5 \
+CHIP=910B LIMIT=8 BATCH_SIZE=4 MAX_NEW_TOKENS=1024 REPEATS=5 \
   VARIANTS=increfa_nd,increfa_nz,fia_blocked_nd,fia_nz \
   RUN_NAME=full_model_formats bash 11_mineru_2_5_pro_inference/run_full_model_kv.sh
 ```
@@ -133,7 +141,8 @@ CHIP=910B LIMIT=8 BATCH_SIZE=4 MAX_NEW_TOKENS=512 REPEATS=5 \
 `PROFILE=1` profiles eight advancing complete decoder forwards outside the
 throughput window. Inspect the exported operator/kernel traces to verify all
 24 layers, LM head and the selected attention path ran. Exit 2 preserves any
-unsupported or incorrect variant; it must not be mistaken for all-pass validation.
+unsupported operator or failed timing/format gate. Token drift alone does not
+set exit 2; check the separate fidelity fields even when timing status is passed.
 The run directory contains command, commit, exit code, occupancy snapshots,
 summary, log and optional profiler trace. Timeout defaults to 1800 seconds;
 stop all benchmark progression after a timeout or device error.
@@ -151,3 +160,11 @@ An unsupported NZ contract on 910B is not 310P validation. A full-graph compiler
 rejection on either chip is a compiler/API compatibility result, not a kernel
 speed measurement. Do not freeze lengths, fall back to eager, or substitute
 native storage to make a requested NZ graph appear to pass.
+
+## Recorded validation
+
+The [910B2 evidence and results](references/full_model_kv_910B_20261007/RESULTS.md)
+include B1 control, mixed real B4 crops, complete-graph profiler audits,
+quantified candidate token drift and explicitly discarded early runs.
+Use the [self-contained 310P handoff](FULL_MODEL_KV_310P_HANDOFF.md) for transfer;
+it rediscovers that server rather than assuming the 910B environment.

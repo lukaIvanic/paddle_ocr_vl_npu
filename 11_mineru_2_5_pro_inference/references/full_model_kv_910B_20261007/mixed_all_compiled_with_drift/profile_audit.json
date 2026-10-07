@@ -1,0 +1,457 @@
+{
+  "scope": "full 24-layer compiled decoder; Level1 formats/shapes; outside throughput",
+  "records": [
+    {
+      "file": "profile_fia_blocked_nd_batch0/liteserver-c001-4_54346_20261007113952005_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "Data": 39,
+        "Add": 208,
+        "BroadcastTo": 32,
+        "Cast": 48,
+        "Range": 8,
+        "FloorMod": 8,
+        "FloorDiv": 8,
+        "GatherElements": 8,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "SplitVD": 400,
+        "ApplyRotaryPosEmb": 192,
+        "Pack": 8,
+        "ScatterNdUpdate": 384,
+        "OnesLike": 8,
+        "FusedInferAttentionScore": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "AutomaticBufferFusionOp": 192,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "FusedInferAttentionScore",
+          "shapes": "\"4,1,896;128,2,4,128,16;128,2,4,128,16;4;4;4,32\"",
+          "formats": "ND;ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_contracts": [],
+      "attention_device_duration_us": 2946.356,
+      "attention_wait_us": 32642.494
+    },
+    {
+      "file": "profile_fia_blocked_nd_batch4/liteserver-c001-4_54346_20261007114340362_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "Add": 208,
+        "BroadcastTo": 32,
+        "Cast": 48,
+        "Range": 8,
+        "FloorMod": 8,
+        "FloorDiv": 8,
+        "GatherElements": 8,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "SplitVD": 400,
+        "ApplyRotaryPosEmb": 192,
+        "Pack": 8,
+        "ScatterNdUpdate": 384,
+        "OnesLike": 8,
+        "FusedInferAttentionScore": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "AutomaticBufferFusionOp": 192,
+        "Data": 15,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "FusedInferAttentionScore",
+          "shapes": "\"4,1,896;128,2,4,128,16;128,2,4,128,16;4;4;4,32\"",
+          "formats": "ND;ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_contracts": [],
+      "attention_device_duration_us": 2959.902,
+      "attention_wait_us": 32653.743
+    },
+    {
+      "file": "profile_fia_nd_batch0/liteserver-c001-4_54346_20261007113945799_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "Data": 200,
+        "Add": 208,
+        "BroadcastTo": 8,
+        "Cast": 40,
+        "FloorDiv": 8,
+        "GatherElements": 8,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "FloorMod": 8,
+        "Pack": 8,
+        "SplitVD": 400,
+        "ScatterNdUpdate": 384,
+        "ApplyRotaryPosEmb": 192,
+        "OnesLike": 8,
+        "FusedInferAttentionScore": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "AutomaticBufferFusionOp": 192,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "FusedInferAttentionScore",
+          "shapes": "\"4,1,896;128,128,128;128,128,128;4;4;4,32\"",
+          "formats": "ND;ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_contracts": [],
+      "attention_device_duration_us": 3663.429,
+      "attention_wait_us": 35419.556
+    },
+    {
+      "file": "profile_fia_nd_batch4/liteserver-c001-4_54346_20261007114333134_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "Data": 200,
+        "Add": 208,
+        "BroadcastTo": 8,
+        "Cast": 40,
+        "FloorDiv": 8,
+        "GatherElements": 8,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "FloorMod": 8,
+        "Pack": 8,
+        "SplitVD": 400,
+        "ScatterNdUpdate": 384,
+        "ApplyRotaryPosEmb": 192,
+        "OnesLike": 8,
+        "FusedInferAttentionScore": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "AutomaticBufferFusionOp": 192,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "FusedInferAttentionScore",
+          "shapes": "\"4,1,896;128,128,128;128,128,128;4;4;4,32\"",
+          "formats": "ND;ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_contracts": [],
+      "attention_device_duration_us": 3629.266,
+      "attention_wait_us": 33295.441
+    },
+    {
+      "file": "profile_fia_nz_batch0/liteserver-c001-4_54346_20261007114004242_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "Data": 39,
+        "Add": 208,
+        "BroadcastTo": 32,
+        "Cast": 48,
+        "Range": 8,
+        "FloorMod": 8,
+        "FloorDiv": 8,
+        "GatherElements": 8,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "SplitVD": 400,
+        "ApplyRotaryPosEmb": 192,
+        "Pack": 8,
+        "TransData": 384,
+        "ScatterNdUpdate": 384,
+        "OnesLike": 8,
+        "FusedInferAttentionScore": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "AutomaticBufferFusionOp": 192,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "FusedInferAttentionScore",
+          "shapes": "\"4,1,896;128,2,4,128,16;128,2,4,128,16;4;4;4,32\"",
+          "formats": "ND;ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_contracts": [
+        {
+          "input_format": "FRACTAL_NZ",
+          "output_format": "ND",
+          "input_shapes": "\"128,8,1,8,16,16\"",
+          "output_shapes": "\"128,8,128,16\""
+        }
+      ],
+      "attention_device_duration_us": 2797.667,
+      "attention_wait_us": 32215.48
+    },
+    {
+      "file": "profile_fia_nz_batch4/liteserver-c001-4_54346_20261007114354608_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "Add": 208,
+        "BroadcastTo": 32,
+        "Cast": 48,
+        "Range": 8,
+        "FloorMod": 8,
+        "FloorDiv": 8,
+        "GatherElements": 8,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "SplitVD": 400,
+        "ApplyRotaryPosEmb": 192,
+        "Pack": 8,
+        "TransData": 384,
+        "ScatterNdUpdate": 384,
+        "OnesLike": 8,
+        "FusedInferAttentionScore": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "AutomaticBufferFusionOp": 192,
+        "Data": 15,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "FusedInferAttentionScore",
+          "shapes": "\"4,1,896;128,2,4,128,16;128,2,4,128,16;4;4;4,32\"",
+          "formats": "ND;ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_contracts": [
+        {
+          "input_format": "FRACTAL_NZ",
+          "output_format": "ND",
+          "input_shapes": "\"128,8,1,8,16,16\"",
+          "output_shapes": "\"128,8,128,16\""
+        }
+      ],
+      "attention_device_duration_us": 2891.554,
+      "attention_wait_us": 32342.647
+    },
+    {
+      "file": "profile_increfa_nd_batch0/liteserver-c001-4_54346_20261007113939675_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "SplitVD": 400,
+        "Add": 16,
+        "BroadcastTo": 16,
+        "Cast": 48,
+        "Range": 16,
+        "LessEqual": 8,
+        "AutomaticBufferFusionOp": 208,
+        "Scatter": 384,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "ApplyRotaryPosEmb": 192,
+        "Less": 200,
+        "MaskedFill": 8,
+        "IncreFlashAttention": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8,
+        "Data": 7
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "IncreFlashAttention",
+          "shapes": "\"4,14,1,64;4,2,4096,64;4,2,4096,64;4,14,1,4096;4,1,1,4096\"",
+          "formats": "ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_contracts": [],
+      "attention_device_duration_us": 4597.959,
+      "attention_wait_us": 229.166
+    },
+    {
+      "file": "profile_increfa_nd_batch4/liteserver-c001-4_54346_20261007114326833_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "Data": 8,
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "SplitVD": 400,
+        "Add": 16,
+        "BroadcastTo": 16,
+        "Cast": 48,
+        "Range": 16,
+        "LessEqual": 8,
+        "AutomaticBufferFusionOp": 208,
+        "Scatter": 384,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "ApplyRotaryPosEmb": 192,
+        "Less": 200,
+        "MaskedFill": 8,
+        "IncreFlashAttention": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "IncreFlashAttention",
+          "shapes": "\"4,14,1,64;4,2,4096,64;4,2,4096,64;4,14,1,4096;4,1,1,4096\"",
+          "formats": "ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_contracts": [],
+      "attention_device_duration_us": 4672.595,
+      "attention_wait_us": 234.397
+    },
+    {
+      "file": "profile_increfa_nz_batch0/liteserver-c001-4_54346_20261007113958124_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "Data": 8,
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "SplitVD": 400,
+        "Add": 16,
+        "BroadcastTo": 16,
+        "Cast": 48,
+        "Range": 16,
+        "LessEqual": 8,
+        "AutomaticBufferFusionOp": 208,
+        "TransData": 384,
+        "Scatter": 384,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "ApplyRotaryPosEmb": 192,
+        "Less": 200,
+        "MaskedFill": 8,
+        "IncreFlashAttention": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "IncreFlashAttention",
+          "shapes": "\"4,14,1,64;4,2,4096,64;4,2,4096,64;4,14,1,4096;4,1,1,4096\"",
+          "formats": "ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_contracts": [
+        {
+          "input_format": "FRACTAL_NZ",
+          "output_format": "ND",
+          "input_shapes": "\"4,2,4,256,16,16\"",
+          "output_shapes": "\"4,2,4096,64\""
+        }
+      ],
+      "attention_device_duration_us": 4913.434,
+      "attention_wait_us": 230.54500000000002
+    },
+    {
+      "file": "profile_increfa_nz_batch4/liteserver-c001-4_54346_20261007114347482_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "profile_steps": 8,
+      "kernel_counts": {
+        "Data": 8,
+        "GatherV2": 112,
+        "RmsNorm": 8,
+        "MatMulV2": 192,
+        "SplitVD": 400,
+        "Add": 16,
+        "BroadcastTo": 16,
+        "Cast": 48,
+        "Range": 16,
+        "LessEqual": 8,
+        "AutomaticBufferFusionOp": 208,
+        "TransData": 384,
+        "Scatter": 384,
+        "Mul": 24,
+        "ConcatV2D": 24,
+        "Cos": 8,
+        "Sin": 8,
+        "ApplyRotaryPosEmb": 192,
+        "Less": 200,
+        "MaskedFill": 8,
+        "IncreFlashAttention": 192,
+        "MatMul": 584,
+        "InplaceAddRmsNorm": 384,
+        "ArgMaxWithValue": 8,
+        "NotEqual": 8
+      },
+      "attention_node_count": 24,
+      "attention_input_contracts": [
+        {
+          "type": "IncreFlashAttention",
+          "shapes": "\"4,14,1,64;4,2,4096,64;4,2,4096,64;4,14,1,4096;4,1,1,4096\"",
+          "formats": "ND;ND;ND;ND;ND"
+        }
+      ],
+      "transdata_contracts": [
+        {
+          "input_format": "FRACTAL_NZ",
+          "output_format": "ND",
+          "input_shapes": "\"4,2,4,256,16,16\"",
+          "output_shapes": "\"4,2,4096,64\""
+        }
+      ],
+      "attention_device_duration_us": 5061.675,
+      "attention_wait_us": 228.644
+    }
+  ]
+}

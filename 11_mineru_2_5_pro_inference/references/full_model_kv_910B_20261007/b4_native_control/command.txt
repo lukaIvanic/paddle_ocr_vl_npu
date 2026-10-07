@@ -1,0 +1,4 @@
+commit=79c6539e217b0b70a85bc9e220fc9c71c916ee13
+hostname=liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=2
+command=/usr/local/python3.12.13/bin/python3 /workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/11_mineru_2_5_pro_inference/bench_full_model_kv.py --model /workspace/models/MinerU2.5-Pro-2605-1.2B --manifest /workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/crops/hotswap_100_manifest.json --limit 4 --batch-size 4 --max-new-tokens 512 --cache-length 4096 --block-size 128 --repeats 3 --warmup-steps 5 --variants increfa_nd\,fia_nd\,fia_blocked_nd --chip 910B --output /workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/full_model_native_fixed_910B_20261007T111718Z_79c6539e/summary.json --cache-dir /workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/full_model_native_fixed_910B_20261007T111718Z_79c6539e/compile_cache --profile 

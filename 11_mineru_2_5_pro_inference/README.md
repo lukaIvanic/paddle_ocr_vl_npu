@@ -8,8 +8,11 @@ It is not a full-model throughput benchmark.
 EOS-aware generation with complete static TorchAir decoder graphs. Real
 vision/text prefill supplies the KV, and useful post-prefill tokens/s includes
 the full 24-layer decoder, cache writes, LM head, sampling and host completion
-handling. This replacement is under 910B validation; no new performance result
-is claimed until the recorded correctness and throughput runs pass.
+handling. See the [measurement contract](FULL_MODEL_KV_BENCHMARK.md),
+[recorded 910B2 results](references/full_model_kv_910B_20261007/RESULTS.md),
+and [self-contained 310P handoff](FULL_MODEL_KV_310P_HANDOFF.md). Candidate
+timings and token drift are reported separately; no isolated attention result
+is treated as full-model performance.
 
 This experiment is the current custom MinerU2.5-Pro implementation transferred
 from the standalone `mineru_25_pro_npu` repository at commit `b08ae14`. The

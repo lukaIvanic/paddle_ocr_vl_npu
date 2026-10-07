@@ -1,0 +1,6 @@
+{
+  "timing_valid": false,
+  "reason": "Shared Python code object across variants caused TorchAir cache-invalidation/recompilation warnings during alternating runs. Worker stopped intentionally; timings discarded. Fixed in 79c6539e; corrected run has zero new graphs and recompile warnings in every timed sample.",
+  "original_exit_code": 143,
+  "compressed_log": "run.log.gz"
+}
