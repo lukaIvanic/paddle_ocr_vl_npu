@@ -59,7 +59,7 @@ def cpu_gate(args, model, ranker, tokens):
 
 
 def profile_pipeline(args, report, cases, static_tokens, encode, head, ids, lengths):
-    """Warm real-pair IO/CPU/transfers plus separate compiled-forward traces."""
+    """Warm real-batch pipeline and device-input forward traces for each backend."""
     from run_reranker_buckets import profile
     from run_cpu_reference import CReference
     from run_reranker_smoke import PREFIX, SUFFIX
@@ -71,24 +71,25 @@ def profile_pipeline(args, report, cases, static_tokens, encode, head, ids, leng
     data=json.loads(args.profile_data.read_text())
     corpus={r['_id']:r['text'].strip() for r in data['corpus']}
     queries={r['_id']:r['text'] for r in data['queries']}
-    case=cases[0]
-    fixture=args.output/'pipeline_pair.json'
-    save(fixture,dict(query=queries[case['query_id']],document=corpus[case['document_id']]))
+    fixture=args.output/'pipeline_pairs.json'
+    save(fixture,[dict(query=queries[c['query_id']],document=corpus[c['document_id']]) for c in cases])
+    backend=report['profiling_backend']
     tokenizer=CReference(args.runtime,4)
     report['pipeline_setup_seconds']=time.perf_counter()-before
     def prepare():
         with torch.profiler.record_function('rwkv.disk_read_pair'):
-            pair=json.loads(fixture.read_text())
+            pairs=json.loads(fixture.read_text())
         with torch.profiler.record_function('rwkv.cpu_tokenize'):
-            tokens=(tokenizer.tokenize(PREFIX.format(**pair)+SUFFIX.format(**pair)).tolist()+[65535])[-2048:]
+            rows=[(tokenizer.tokenize(PREFIX.format(**pair)+SUFFIX.format(**pair)).tolist()+[65535])[-2048:] for pair in pairs]
         with torch.profiler.record_function('rwkv.cpu_batch_prepare'):
-            cpu_ids=torch.tensor([tokens+[0]*(static_tokens-len(tokens))],dtype=torch.long)
-            cpu_lengths=torch.tensor([len(tokens)],dtype=torch.int32)
+            assert all(len(tokens)<=static_tokens for tokens in rows)
+            cpu_ids=torch.tensor([tokens+[0]*(static_tokens-len(tokens)) for tokens in rows],dtype=torch.long)
+            cpu_lengths=torch.tensor([len(tokens) for tokens in rows],dtype=torch.int32)
         return cpu_ids,cpu_lengths
     def forward(ni,lens):
-        with torch.profiler.record_function('rwkv.torchair_backbone'):
+        with torch.profiler.record_function('rwkv.'+backend+'_backbone'):
             states=encode(ni,lens)
-        with torch.profiler.record_function('rwkv.torchair_head'):
+        with torch.profiler.record_function('rwkv.'+backend+'_head'):
             return head(states[1])
     def pipeline():
         cpu_ids,cpu_lengths=prepare()
@@ -105,12 +106,14 @@ def profile_pipeline(args, report, cases, static_tokens, encode, head, ids, leng
         assert ci.tolist()==ids.cpu().tolist() and cl.tolist()==lengths.cpu().tolist(), 'Real-text tokenizer differs from validated input'
         expected=head(encode(ids,lengths)[1]).cpu().tolist()
         assert pipeline()==expected
-        report['timings']['pipeline_total']=measure(pipeline,args.repeats,1)
-        report['pipeline_scope']='Warm filesystem read of one real NanoSCIDOCS pair, CPU tokenization/batch construction, synchronous pageable H2D, uncached TorchAir backbone/head, D2H scalar scores, JSON write without fsync. Excludes startup, dataset indexing, tokenizer initialization, compilation and profiling. Device-event elapsed can include CPU gaps.'
-        report['profiles']={}
+        report['timings'][backend+'_pipeline_total']=measure(pipeline,args.repeats,len(cases))
+        report['pipeline_scope']='Warm filesystem read of a real NanoSCIDOCS batch, CPU tokenization/batch construction, synchronous pageable H2D, uncached selected-backend backbone/head, D2H scores, JSON write without fsync. Excludes startup, dataset indexing, tokenizer initialization, compilation and profiling. Device-event elapsed can include CPU gaps.'
+        report.setdefault('profiles',{})
         for label,call in [('forward',lambda:forward(ids,lengths)),('pipeline',pipeline)]:
             print('PROFILE_START',label,flush=True)
-            report['profiles'][label]=profile(call,args.output/('profile_'+label),'rwkv.'+label)
+            key=backend+'_'+label
+            report['profiles'][key]=profile(call,args.output/('profile_'+key),'rwkv.'+key,
+                warmup_iterations=args.profile_warmup,active_iterations=args.profile_active)
             save(args.output/'result.json',report)
             print('PROFILE_DONE',label,flush=True)
         assert pipeline()==expected, 'Profiling changed scores'
@@ -191,6 +194,9 @@ def worker(args):
             report['timings']['eager_total'] = measure(lambda: ranker(backbone(ids,lengths)[1]), args.repeats, args.batch_size)
             print('EAGER_TIMING', json.dumps(report['timings']['eager_total']), flush=True)
             save(args.output/'result.json', report)
+            if args.profile:
+                report['profiling_backend']='raw_eager'
+                profile_pipeline(args,report,cases,static_tokens,backbone,ranker,ids,lengths)
             if args.backend=='raw_eager':
                 report['all_checks_passed']=True
                 return
@@ -217,7 +223,9 @@ def worker(args):
             report['timings']['torchair_total']=measure(lambda:head(encode(ids,lengths)[1]),args.repeats,args.batch_size)
             report['timings']['torchair_head_only']=measure(lambda:head(fixed),args.repeats,args.batch_size)
             assert torch.equal(head(encode(ids,lengths)[1]),logits)
-            if args.profile:profile_pipeline(args,report,cases,static_tokens,encode,head,ids,lengths)
+            if args.profile:
+                report['profiling_backend']='torchair'
+                profile_pipeline(args,report,cases,static_tokens,encode,head,ids,lengths)
             report['all_checks_passed']=True
             print('TIMINGS',json.dumps(report['timings']),flush=True)
     except Exception as e:
@@ -298,8 +306,10 @@ def main():
         p.add_argument('--'+n,type=Path,required=True)
     p.add_argument('--devices',nargs='+',type=int,default=[7,6,4,3,2,1,0])
     p.add_argument('--repeats',type=int,default=10)
-    p.add_argument('--profile',action='store_true',help='Explicit B1 worker: compiled forward and real-pair pipeline CPU/NPU traces')
+    p.add_argument('--profile',action='store_true',help='Explicit B1/B4 worker: eager and optional compiled CPU/NPU traces with shapes')
     p.add_argument('--profile-data',type=Path)
+    p.add_argument('--profile-warmup',type=int,default=5)
+    p.add_argument('--profile-active',type=int,default=2)
     p.add_argument('--runtime',type=Path)
     p.add_argument('--warm-cache-from',type=Path)
     p.add_argument('--backend',choices=['torchair','raw_eager'],default='torchair')
@@ -319,8 +329,10 @@ def main():
         p.error('B1 is an explicit worker probe; the background matrix uses B4')
     if args.allow_shared_device and (not args.worker or args.size=='tiny' or (args.size=='large' and args.dtype=='fp32')):
         p.error('Shared-device mode requires an explicit middle or largest-FP16/BF16 worker')
-    if args.profile and (not args.worker or args.batch_size!=1 or args.backend!='torchair' or not args.profile_data or not args.runtime):
-        p.error('Profiling requires explicit B1 TorchAir worker, --profile-data and --runtime')
+    if args.profile and (not args.worker or args.gate_only or not args.profile_data or not args.runtime):
+        p.error('Profiling requires explicit B1/B4 worker, --profile-data and --runtime')
+    if not 3<=args.profile_warmup<=20 or not 2<=args.profile_active<=5:
+        p.error('Use profile warmup 3..20 and active 2..5')
     if args.warm_cache_from and not args.worker:p.error('Warm cache is for an explicit worker')
     worker(args) if args.worker else coordinate(args)
 
