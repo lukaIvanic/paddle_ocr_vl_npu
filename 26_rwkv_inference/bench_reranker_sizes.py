@@ -60,7 +60,7 @@ def cpu_gate(args, model, ranker, tokens):
 def worker(args):
     args.output.mkdir(parents=True, exist_ok=False)
     root = Path(__file__).parent; start = time.perf_counter()
-    report = dict(size=args.size, dtype=args.dtype, batch_size=1 if args.gate_only else 4, gate_only=args.gate_only, bucket=args.bucket,
+    report = dict(size=args.size, dtype=args.dtype, batch_size=1 if args.gate_only else args.batch_size, gate_only=args.gate_only, bucket=args.bucket,
         source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
         source_sha256={n: sha256(root/n) for n in ['bench_reranker_sizes.py', 'local_modeling_rwkv_embedding.py',
             'local_modeling_rwkv_reranker.py', 'probe_reranker_endpoint.py', 'run_reranker_smoke.py', 'wkv7_endpoint.py']},
@@ -97,8 +97,8 @@ def worker(args):
                                         heads=model.heads, head_size=64, selected_layers=ranker.layer_indices))
         case_dir = args.cases_root/f'reranker_b1_t{args.bucket}_cold_ea9aa394/probe'
         assert json.loads((case_dir/'result.json').read_text())['all_checks_passed']
-        cases = json.loads((case_dir/'inputs.json').read_text())[:4]
-        assert len(cases)==4 and all(16 <= len(c['input_ids']) <= args.bucket and c['input_ids'][-1]==65535 for c in cases)
+        cases = json.loads((case_dir/'inputs.json').read_text())[:args.batch_size]
+        assert len(cases)==args.batch_size and all(16 <= len(c['input_ids']) <= args.bucket and c['input_ids'][-1]==65535 for c in cases)
         report['cases_sha256'] = sha256(case_dir/'inputs.json')
         with torch.inference_mode():
             report['cpu_gate'] = cpu_gate(args, model, ranker, cases[0]['input_ids'])
@@ -123,7 +123,7 @@ def worker(args):
             del singles, state
             assert torch.equal(expected, ranker(backbone(ids,lengths)[1]))
             report['raw_checks_passed']=True
-            report['timings']['eager_total'] = measure(lambda: ranker(backbone(ids,lengths)[1]), args.repeats, 4)
+            report['timings']['eager_total'] = measure(lambda: ranker(backbone(ids,lengths)[1]), args.repeats, args.batch_size)
             print('EAGER_TIMING', json.dumps(report['timings']['eager_total']), flush=True)
             save(args.output/'result.json', report)
             before=time.perf_counter();print('COMPILE_START',args.size,args.dtype,args.bucket,flush=True)
@@ -134,8 +134,8 @@ def worker(args):
             report['compiled_logits_vs_eager']=require(logits,expected,.02,.005)
             assert torch.equal(head(encode(ids,lengths)[1]),logits)
             fixed=actual[1].clone().contiguous()
-            report['timings']['torchair_total']=measure(lambda:head(encode(ids,lengths)[1]),args.repeats,4)
-            report['timings']['torchair_head_only']=measure(lambda:head(fixed),args.repeats,4)
+            report['timings']['torchair_total']=measure(lambda:head(encode(ids,lengths)[1]),args.repeats,args.batch_size)
+            report['timings']['torchair_head_only']=measure(lambda:head(fixed),args.repeats,args.batch_size)
             assert torch.equal(head(encode(ids,lengths)[1]),logits)
             report['all_checks_passed']=True
             print('TIMINGS',json.dumps(report['timings']),flush=True)
@@ -178,7 +178,7 @@ def coordinate(args):
         matrix=[('tiny','fp32',512,True)]+[(size,dtype,T,False)
             for size in ['base','large'] for dtype in ['fp32','fp16'] for T in [512,2048]]
         for size,dtype,T,gate in matrix:
-            name=f'{size}_{dtype}_b4_t{T}'
+            name=f'{size}_{dtype}_b{args.batch_size}_t{T}'
             report.update(status='waiting_for_idle_npu',active=name);persist()
             device=free_device(args);out=args.output/name
             argv=[sys.executable,'-u',str(Path(__file__).resolve()),*sys.argv[1:],
@@ -217,16 +217,19 @@ def main():
         p.add_argument('--'+n,type=Path,required=True)
     p.add_argument('--devices',nargs='+',type=int,default=[7,6,4,3,2,1,0])
     p.add_argument('--repeats',type=int,default=10)
+    p.add_argument('--batch-size',type=int,choices=[1,4],default=4)
     p.add_argument('--idle-wait-seconds',type=int,default=21600)
-    p.add_argument('--allow-shared-device',action='store_true',help='Explicit middle-model worker probe only; reserve 2 GiB headroom and cap allocator at 6 GiB')
+    p.add_argument('--allow-shared-device',action='store_true',help='Explicit middle/largest-FP16 worker probe; reserve 2 GiB headroom and cap allocator at 6 GiB')
     p.add_argument('--worker',action='store_true');p.add_argument('--gate-only',action='store_true')
     p.add_argument('--size',choices=list(SIZES),default='base')
     p.add_argument('--dtype',choices=['fp32','fp16'],default='fp32')
     p.add_argument('--bucket',type=int,choices=[512,2048],default=512)
     args=p.parse_args()
     if not 0<args.idle_wait_seconds<=86400 or not 3<=args.repeats<=100 or not set(args.devices).issubset({0,1,2,3,4,6,7}):p.error('Use 3..100 repeats and healthy idle devices 0/1/2/3/4/6/7')
-    if args.allow_shared_device and (not args.worker or args.size!='base'):
-        p.error('Shared-device mode is limited to an explicit middle-model worker')
+    if args.batch_size!=4 and not args.worker:
+        p.error('B1 is an explicit worker probe; the background matrix uses B4')
+    if args.allow_shared_device and (not args.worker or args.size=='tiny' or (args.size=='large' and args.dtype!='fp16')):
+        p.error('Shared-device mode requires an explicit middle or largest-FP16 worker')
     worker(args) if args.worker else coordinate(args)
 
 
