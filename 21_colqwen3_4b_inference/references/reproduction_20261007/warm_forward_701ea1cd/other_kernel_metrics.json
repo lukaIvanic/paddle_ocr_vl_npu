@@ -1,0 +1,134 @@
+{
+  "pipe": {
+    "source": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/torchair/output/profiles/pipe/raw/liteserver-c001-4_7875_20261007104425958_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+    "profile_steps": 3,
+    "types": [
+      {
+        "type": "MaskedScatter",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 2.2067573333333335,
+        "duration_weighted_metrics": {
+          "aiv_vec_ratio": 0.045,
+          "aiv_scalar_ratio": 0.925,
+          "aiv_mte2_ratio": 0.028,
+          "aiv_mte3_ratio": 0.001
+        }
+      },
+      {
+        "type": "Square",
+        "count_per_forward": 145.0,
+        "ms_per_forward": 2.2256816666666666,
+        "duration_weighted_metrics": {
+          "aiv_vec_ratio": 0.3021340398334892,
+          "aiv_scalar_ratio": 0.06131107817904477,
+          "aiv_mte2_ratio": 0.3799687999706457,
+          "aiv_mte3_ratio": 0.014603526260493976
+        }
+      },
+      {
+        "type": "Transpose",
+        "count_per_forward": 268.0,
+        "ms_per_forward": 3.4939356666666668,
+        "duration_weighted_metrics": {
+          "aiv_vec_ratio": 0.06111721261419906,
+          "aiv_scalar_ratio": 0.060776432727677576,
+          "aiv_mte2_ratio": 0.37262284804518914,
+          "aiv_mte3_ratio": 0.225288177029018
+        }
+      },
+      {
+        "type": "SplitVD",
+        "count_per_forward": 192.0,
+        "ms_per_forward": 3.2125653333333335,
+        "duration_weighted_metrics": {
+          "aiv_vec_ratio": 0.11270425888096075,
+          "aiv_scalar_ratio": 0.029627731980755564,
+          "aiv_mte2_ratio": 0.43063183410225847,
+          "aiv_mte3_ratio": 0.5056428400522283
+        }
+      },
+      {
+        "type": "AutomaticBufferFusionOp",
+        "count_per_forward": 349.0,
+        "ms_per_forward": 4.010145333333333,
+        "duration_weighted_metrics": {
+          "aiv_vec_ratio": 0.3688259260096642,
+          "aiv_scalar_ratio": 0.03795115413938448,
+          "aiv_mte2_ratio": 0.409295621871061,
+          "aiv_mte3_ratio": 0.21803920007554176
+        }
+      }
+    ]
+  },
+  "memory": {
+    "source": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/torchair/output/profiles/memory/raw/liteserver-c001-4_7875_20261007104437518_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+    "profile_steps": 3,
+    "types": [
+      {
+        "type": "MaskedScatter",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 2.2086573333333335,
+        "duration_weighted_metrics": {
+          "aiv_ub_read_bw(GB/s)": 4.363664854605482,
+          "aiv_ub_write_bw(GB/s)": 7.563663813248834,
+          "aiv_main_mem_read_bw(GB/s)": 0.014000000000000002,
+          "aiv_main_mem_write_bw(GB/s)": 0.0009999999999999998,
+          "aiv_l2_read_bw(GB/s)": 0.0,
+          "aiv_l2_write_bw(GB/s)": 0.0
+        }
+      },
+      {
+        "type": "Square",
+        "count_per_forward": 145.0,
+        "ms_per_forward": 2.2255606666666665,
+        "duration_weighted_metrics": {
+          "aiv_ub_read_bw(GB/s)": 34.37871015079047,
+          "aiv_ub_write_bw(GB/s)": 46.926707440761746,
+          "aiv_main_mem_read_bw(GB/s)": 0.3002532504917862,
+          "aiv_main_mem_write_bw(GB/s)": 0.00243778346789618,
+          "aiv_l2_read_bw(GB/s)": 0.0,
+          "aiv_l2_write_bw(GB/s)": 0.0
+        }
+      },
+      {
+        "type": "Transpose",
+        "count_per_forward": 268.0,
+        "ms_per_forward": 3.486205,
+        "duration_weighted_metrics": {
+          "aiv_ub_read_bw(GB/s)": 29.298910932374888,
+          "aiv_ub_write_bw(GB/s)": 29.332761849824283,
+          "aiv_main_mem_read_bw(GB/s)": 0.2919462162054918,
+          "aiv_main_mem_write_bw(GB/s)": 0.2967215916256598,
+          "aiv_l2_read_bw(GB/s)": 0.0,
+          "aiv_l2_write_bw(GB/s)": 0.0
+        }
+      },
+      {
+        "type": "SplitVD",
+        "count_per_forward": 192.0,
+        "ms_per_forward": 3.215665333333333,
+        "duration_weighted_metrics": {
+          "aiv_ub_read_bw(GB/s)": 74.68956927037183,
+          "aiv_ub_write_bw(GB/s)": 74.57106366251215,
+          "aiv_main_mem_read_bw(GB/s)": 0.9049354433234968,
+          "aiv_main_mem_write_bw(GB/s)": 0.8990536694531646,
+          "aiv_l2_read_bw(GB/s)": 0.0,
+          "aiv_l2_write_bw(GB/s)": 0.0
+        }
+      },
+      {
+        "type": "AutomaticBufferFusionOp",
+        "count_per_forward": 349.0,
+        "ms_per_forward": 4.009512666666667,
+        "duration_weighted_metrics": {
+          "aiv_ub_read_bw(GB/s)": 70.08340425810685,
+          "aiv_ub_write_bw(GB/s)": 63.330902276735536,
+          "aiv_main_mem_read_bw(GB/s)": 0.3720909625093257,
+          "aiv_main_mem_write_bw(GB/s)": 0.16172686389651011,
+          "aiv_l2_read_bw(GB/s)": 0.0,
+          "aiv_l2_write_bw(GB/s)": 0.0
+        }
+      }
+    ]
+  }
+}

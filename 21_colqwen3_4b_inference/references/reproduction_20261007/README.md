@@ -47,6 +47,11 @@ page forward; it is not a new full-corpus quality evaluation.
 
 ## What the separate profiles show
 
+The follow-up [compiled other-kernel investigation](OTHER_KERNELS.md) maps the
+complete remaining 33.627 ms to normalization, rotary, layout/split, activation,
+scatter and preparation work using full fused names and shapes, with counter
+evidence and concrete controlled probes.
+
 Each lane has separate CPU/NPU pipe and memory captures, with three warmed
 forwards per capture, input shapes and CPU call stacks, named forward sections,
 CANN CSVs and Chrome traces. The runner follows the established patterns in

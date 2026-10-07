@@ -1,0 +1,3223 @@
+{
+  "torchair": {
+    "source": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/torchair/output/profiles/pipe/raw/liteserver-c001-4_7875_20261007104425958_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+    "profile_steps": 3,
+    "groups": [
+      {
+        "type": "PromptFlashAttention",
+        "input_shapes": "1,16,5040,64;1,16,5040,64;1,16,5040,64",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "1,16,5040,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 31.10337433333333,
+        "names": [
+          "PromptFlashAttention"
+        ]
+      },
+      {
+        "type": "MatMul",
+        "input_shapes": "1274,2560;19456,2560",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1274,19456",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 16.591538999999997,
+        "names": [
+          "MatMul"
+        ]
+      },
+      {
+        "type": "PromptFlashAttention",
+        "input_shapes": "1,32,1274,128;1,8,1274,128;1,8,1274,128;1,1,1274,1274",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+        "output_shapes": "1,32,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 10.874899,
+        "names": [
+          "PromptFlashAttention"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "1274,9728;2560,9728",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 9.447286666666667,
+        "names": [
+          "MatMul_to_v"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "1274,2560;6144,2560",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1274,6144",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 5.286785333333332,
+        "names": [
+          "MatMul_to_v"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "1274,4096;2560,4096",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 4.200051666666666,
+        "names": [
+          "MatMul_to_v"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "5040,4096;1024,4096;1024",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 3.463089333333334,
+        "names": [
+          "MatMulV_to_v"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "5040,1024;4096,1024;4096",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,4096",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 3.308053333333333,
+        "names": [
+          "MatMulV_to_v"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "5040,1024;3072,1024;3072",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,3072",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 2.5000769999999997,
+        "names": [
+          "MatMulV_to_v"
+        ]
+      },
+      {
+        "type": "MaskedScatter",
+        "input_shapes": "1,1274,2560;1,1274,2560;1260,2560",
+        "input_dtypes": "FLOAT16;BOOL;FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 2.206757333333333,
+        "names": [
+          "aclnnInplaceMaskedScatter_MaskedScatterAiCore_MaskedScatter"
+        ]
+      },
+      {
+        "type": "GeluV2",
+        "input_shapes": "5040,4096",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "5040,4096",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 1.8852240000000002,
+        "names": [
+          "GeluV"
+        ]
+      },
+      {
+        "type": "AutomaticBufferFusionOp",
+        "input_shapes": "1,1274,9728;1,1274,9728",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,9728",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 1.7274020000000003,
+        "names": [
+          "SwishMul"
+        ]
+      },
+      {
+        "type": "ReduceMeanD",
+        "input_shapes": "5040,1024",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 96.0,
+        "ms_per_forward": 1.4446106666666665,
+        "names": [
+          "ReduceMean"
+        ]
+      },
+      {
+        "type": "SplitVD",
+        "input_shapes": "1,1274,19456",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,9728;1,1274,9728",
+        "output_dtypes": "FLOAT16;FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 1.3030386666666662,
+        "names": [
+          "SplitV"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "5040,16,64;5040,1,64",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 96.0,
+        "ms_per_forward": 1.1742623333333326,
+        "names": [
+          "Mul"
+        ]
+      },
+      {
+        "type": "Square",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 1.1333276666666663,
+        "names": [
+          "Pow/SquareReduceMean"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "1,1274,2560;1,1274,1",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 1.1103620000000003,
+        "names": [
+          "MulCast"
+        ]
+      },
+      {
+        "type": "MatMulV2",
+        "input_shapes": "5040,1024;1024,1024;1024",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 0.9935600000000001,
+        "names": [
+          "MatMulV"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "1,1274,2560;1,1274,2560",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,2560;1,1274,2560",
+        "output_dtypes": "FLOAT16;FLOAT",
+        "count_per_forward": 71.0,
+        "ms_per_forward": 0.9533316666666665,
+        "names": [
+          "AddCast"
+        ]
+      },
+      {
+        "type": "Sub",
+        "input_shapes": "5040,1024;5040,1",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,1024;5040,1024",
+        "output_dtypes": "FLOAT;FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.9527103333333338,
+        "names": [
+          "SubPow/Square"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "5040,16,64;3",
+        "input_dtypes": "FLOAT16;INT32",
+        "output_shapes": "16,5040,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 72.0,
+        "ms_per_forward": 0.86491,
+        "names": [
+          "Transpose"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "5040,1024;5040,1",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.783357333333333,
+        "names": [
+          "MulCast"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "2560;1,1274,2560",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 0.7646453333333332,
+        "names": [
+          "Mul"
+        ]
+      },
+      {
+        "type": "SplitVD",
+        "input_shapes": "5040,16,64",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,16,32;5040,16,32",
+        "output_dtypes": "FLOAT;FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.7499206666666665,
+        "names": [
+          "SplitV"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "5040,1024;5040,1024",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024;5040,1024",
+        "output_dtypes": "FLOAT16;FLOAT",
+        "count_per_forward": 44.0,
+        "ms_per_forward": 0.7378613333333335,
+        "names": [
+          "AddCast"
+        ]
+      },
+      {
+        "type": "ConcatV2D",
+        "input_shapes": "5040,16,32;5040,16,32",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.7079826666666668,
+        "names": [
+          "ConcatV"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "1274,8,128;3",
+        "input_dtypes": "FLOAT16;INT32",
+        "output_shapes": "8,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 72.0,
+        "ms_per_forward": 0.7011510000000003,
+        "names": [
+          "Transpose"
+        ]
+      },
+      {
+        "type": "Square",
+        "input_shapes": "1,1274,32,128",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,32,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.699687,
+        "names": [
+          "Pow/SquareReduceMean"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "5040,16,64;5040,16,64",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.698314,
+        "names": [
+          "AddCast"
+        ]
+      },
+      {
+        "type": "AutomaticBufferFusionOp",
+        "input_shapes": "5040,1024;1024;1024",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.6894516666666667,
+        "names": [
+          "MulAdd"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "1260,4096;4096,4096;4096",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "1260,4096",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 4.0,
+        "ms_per_forward": 0.685994,
+        "names": [
+          "aclnnAddmm_MatMulVCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "1,1274,32,128;1,1274,32,1",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,32,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.627231,
+        "names": [
+          "MulCast"
+        ]
+      },
+      {
+        "type": "AutomaticBufferFusionOp",
+        "input_shapes": "1,32,1274,128;1,1,1274,128;1,32,1274,128;1,1,1274,128",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "1,32,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.6025180000000001,
+        "names": [
+          "MulMulAdd"
+        ]
+      },
+      {
+        "type": "Unpack",
+        "input_shapes": "3,5040,16,64",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "5040,16,64;5040,16,64;5040,16,64",
+        "output_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 0.6015989999999997,
+        "names": [
+          "Unpack"
+        ]
+      },
+      {
+        "type": "SplitVD",
+        "input_shapes": "1,1274,6144",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,4096;1,1274,1024;1,1274,1024",
+        "output_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.566744,
+        "names": [
+          "SplitV"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "32,1274,128;3",
+        "input_dtypes": "FLOAT16;INT32",
+        "output_shapes": "1274,32,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.5530166666666666,
+        "names": [
+          "Transpose"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "5040,3,16,64;4",
+        "input_dtypes": "FLOAT16;INT64",
+        "output_shapes": "3,5040,16,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 0.5078496666666668,
+        "names": [
+          "Reshape/ConfusionTranspose/Transpose"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "1274,32,128;3",
+        "input_dtypes": "FLOAT16;INT32",
+        "output_shapes": "32,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.4988750000000001,
+        "names": [
+          "Transpose"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,32,128",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,32,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.4971563333333334,
+        "names": [
+          "Cast"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "5040,16,64",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.49188966666666695,
+        "names": [
+          "Cast"
+        ]
+      },
+      {
+        "type": "Neg",
+        "input_shapes": "5040,16,32",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,16,32",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.47552366666666657,
+        "names": [
+          "Neg"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "1260,4096;2560,4096;2560",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "1260,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 4.0,
+        "ms_per_forward": 0.473503,
+        "names": [
+          "aclnnAddmm_MatMulVCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "AutomaticBufferFusionOp",
+        "input_shapes": "1,8,1274,128;1,1,1274,128;1,8,1274,128;1,1,1274,128",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "1,8,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.41719533333333325,
+        "names": [
+          "MulMulAdd"
+        ]
+      },
+      {
+        "type": "ConcatV2D",
+        "input_shapes": "1,32,1274,64;1,32,1274,64",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,32,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.4167636666666667,
+        "names": [
+          "ConcatV"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "128;1,1274,32,128",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,32,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.40276966666666664,
+        "names": [
+          "Mul"
+        ]
+      },
+      {
+        "type": "Square",
+        "input_shapes": "1,1274,8,128",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,8,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.39266699999999993,
+        "names": [
+          "Pow/SquareReduceMean"
+        ]
+      },
+      {
+        "type": "SplitVD",
+        "input_shapes": "1,32,1274,128",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,32,1274,64;1,32,1274,64",
+        "output_dtypes": "FLOAT16;FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.39070866666666676,
+        "names": [
+          "SplitV"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "1,1274,8,128;1,1274,8,1",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,8,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.39026133333333335,
+        "names": [
+          "MulCast"
+        ]
+      },
+      {
+        "type": "Neg",
+        "input_shapes": "1,32,1274,64",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,32,1274,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.37851300000000004,
+        "names": [
+          "Neg"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,8,128",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,8,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.3353766666666666,
+        "names": [
+          "Cast"
+        ]
+      },
+      {
+        "type": "ViewCopy",
+        "input_shapes": "81536;3;3;1;1,1274,20;3;3;1",
+        "input_dtypes": "FLOAT;INT64;INT64;INT64;FLOAT;INT64;INT64;INT64",
+        "output_shapes": "81536",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.32990033333333335,
+        "names": [
+          "aclnnInplaceCopy_ViewCopyAiCpu_ViewCopy"
+        ]
+      },
+      {
+        "type": "Neg",
+        "input_shapes": "1,8,1274,64",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,8,1274,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.315264,
+        "names": [
+          "Neg"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "16,5040,64;3",
+        "input_dtypes": "FLOAT16;INT64",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 0.3146460000000001,
+        "names": [
+          "Reshape/ConfusionTranspose/Transpose"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "128;1,1274,8,128",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,8,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.3086323333333332,
+        "names": [
+          "Mul"
+        ]
+      },
+      {
+        "type": "AutomaticBufferFusionOp",
+        "input_shapes": "1,1274,32,1;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,32,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.2659263333333334,
+        "names": [
+          "AddRsqrt"
+        ]
+      },
+      {
+        "type": "ConcatV2D",
+        "input_shapes": "1,8,1274,64;1,8,1274,64",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,8,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.23703866666666662,
+        "names": [
+          "ConcatV"
+        ]
+      },
+      {
+        "type": "SplitVD",
+        "input_shapes": "1,8,1274,128",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,8,1274,64;1,8,1274,64",
+        "output_dtypes": "FLOAT16;FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.20215333333333335,
+        "names": [
+          "SplitV"
+        ]
+      },
+      {
+        "type": "LayerNormV3",
+        "input_shapes": "1260,4096;4096;4096",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "1260,4096;1260,1;1260,1",
+        "output_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "count_per_forward": 3.0,
+        "ms_per_forward": 0.17993000000000003,
+        "names": [
+          "aclnnLayerNormWithImplMode_LayerNormVWithImplMode_LayerNormV"
+        ]
+      },
+      {
+        "type": "AutomaticBufferFusionOp",
+        "input_shapes": "1,1274,1;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 0.11066866666666668,
+        "names": [
+          "AddRsqrt"
+        ]
+      },
+      {
+        "type": "AutomaticBufferFusionOp",
+        "input_shapes": "1,1274,8,1;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,8,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.10881499999999995,
+        "names": [
+          "AddRsqrt"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "5040,1024;5040,1024",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 8.0,
+        "ms_per_forward": 0.098495,
+        "names": [
+          "Add",
+          "aclnnAdd_AddAiCore_Add"
+        ]
+      },
+      {
+        "type": "Index",
+        "input_shapes": "84,16;1;3;5040,2",
+        "input_dtypes": "FLOAT;INT64;INT64;INT64",
+        "output_shapes": "5040,2,16",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.09760866666666668,
+        "names": [
+          "aclnnIndex_IndexAiCore_Index"
+        ]
+      },
+      {
+        "type": "Gelu",
+        "input_shapes": "1260,4096",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1260,4096",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 4.0,
+        "ms_per_forward": 0.09749533333333334,
+        "names": [
+          "aclnnGelu_Gelu_Gelu"
+        ]
+      },
+      {
+        "type": "MatMulV2",
+        "input_shapes": "1274,2560;2560,2560;2560",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.09249533333333333,
+        "names": [
+          "aclnnAddmm_MatMulCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "AutomaticBufferFusionOp",
+        "input_shapes": "5040,1;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.08816833333333333,
+        "names": [
+          "AddRsqrt"
+        ]
+      },
+      {
+        "type": "LayerNormV3",
+        "input_shapes": "5040,1024;1024;1024",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024;5040,1;5040,1",
+        "output_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.081755,
+        "names": [
+          "aclnnLayerNormWithImplMode_LayerNormVWithImplMode_LayerNormV"
+        ]
+      },
+      {
+        "type": "GatherV2",
+        "input_shapes": "151936,2560;1,1274;1",
+        "input_dtypes": "FLOAT16;INT64;INT64",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.06329433333333334,
+        "names": [
+          "aclnnEmbedding_GatherVAiCore_GatherV"
+        ]
+      },
+      {
+        "type": "MatMulV2",
+        "input_shapes": "5040,1536;1024,1536;1024",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.05923433333333333,
+        "names": [
+          "aclnnAddmm_MatMulCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "GreaterEqual",
+        "input_shapes": "1274,1;1,1274",
+        "input_dtypes": "INT64;INT64",
+        "output_shapes": "1274,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.05660766666666667,
+        "names": [
+          "aclnnGeTensor_GreaterEqual_GreaterEqual"
+        ]
+      },
+      {
+        "type": "IndexPutV2",
+        "input_shapes": "1,1274,2560;1260,2560;2;2;1260;1260",
+        "input_dtypes": "FLOAT16;FLOAT16;INT64;INT64;INT64;INT64",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 3.0,
+        "ms_per_forward": 0.05496033333333333,
+        "names": [
+          "aclnnIndexPutImpl_IndexPutV_IndexPutV"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "5040,1024",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 4.0,
+        "ms_per_forward": 0.04908799999999999,
+        "names": [
+          "Cast"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "5040,1536",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,1536",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.04639433333333334,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "1,1274,2560;1,1274,2560",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 3.0,
+        "ms_per_forward": 0.041274333333333336,
+        "names": [
+          "Add"
+        ]
+      },
+      {
+        "type": "GatherV2",
+        "input_shapes": "2304,1024;4,5040;1",
+        "input_dtypes": "FLOAT16;INT64;INT64",
+        "output_shapes": "4,5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.034321000000000004,
+        "names": [
+          "aclnnEmbedding_GatherVAiCore_GatherV"
+        ]
+      },
+      {
+        "type": "MemSet",
+        "input_shapes": "N/A",
+        "input_dtypes": "N/A",
+        "output_shapes": "N/A",
+        "output_dtypes": "N/A",
+        "count_per_forward": 3.0,
+        "ms_per_forward": 0.030173666666666668,
+        "names": [
+          "aclnnNonzeroV_NonzeroAiCore_MemSet"
+        ]
+      },
+      {
+        "type": "RealDiv",
+        "input_shapes": "1,1274,2560;1,1274,1",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.029514000000000002,
+        "names": [
+          "aclnnDiv_RealDivAiCore_RealDiv"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "4,5040,1024;4,5040,1",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "4,5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.02906066666666667,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "ZerosLike",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 3.0,
+        "ms_per_forward": 0.025001,
+        "names": [
+          "aclnnInplaceZero_ZerosLikeAiCore_ZerosLike"
+        ]
+      },
+      {
+        "type": "SelectV2",
+        "input_shapes": "1,1,1274,1274;;",
+        "input_dtypes": "BOOL;FLOAT;FLOAT",
+        "output_shapes": "1,1,1274,1274",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.022414,
+        "names": [
+          "aclnnSWhere_SelectVAiCore_SelectV"
+        ]
+      },
+      {
+        "type": "LpNormV2",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,1",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.022080333333333334,
+        "names": [
+          "aclnnLinalgVectorNorm_LpNormV_LpNormV"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "20,1274;2",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "1274,20",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.021460333333333335,
+        "names": [
+          "aclnnInplaceCopy_TransposeAiCore_Transpose"
+        ]
+      },
+      {
+        "type": "ZerosLike",
+        "input_shapes": "1,1,5040,5040",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1,5040,5040",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.019594,
+        "names": [
+          "aclnnInplaceZero_ZerosLikeAiCore_ZerosLike"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "1,1274,2560;1,1274,1",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.01882033333333333,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "LogicalAnd",
+        "input_shapes": "1,1,1274,1274;1,1,1,1274",
+        "input_dtypes": "BOOL;BOOL",
+        "output_shapes": "1,1,1274,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.01745366666666667,
+        "names": [
+          "aclnnBitwiseAndTensor_LogicalAndAiCore_LogicalAnd"
+        ]
+      },
+      {
+        "type": "ReduceAny",
+        "input_shapes": "1,1,1274,1274;1",
+        "input_dtypes": "BOOL;INT64",
+        "output_shapes": "1,1,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.01705366666666667,
+        "names": [
+          "aclnnAny_ReduceAny_ReduceAny"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "42,2,30,2,1024;5",
+        "input_dtypes": "FLOAT16;INT64",
+        "output_shapes": "42,30,2,2,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.016680333333333332,
+        "names": [
+          "aclnnInplaceCopy_TransposeAiCore_Transpose"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "INT32",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.015633666666666667,
+        "names": [
+          "aclnnInplaceMaskedScatter_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "64,1274;2",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "1274,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.015346666666666666,
+        "names": [
+          "aclnnInplaceCopy_TransposeAiCore_Transpose"
+        ]
+      },
+      {
+        "type": "NonZero",
+        "input_shapes": "1,1274",
+        "input_dtypes": "BOOL",
+        "output_shapes": "2,1260",
+        "output_dtypes": "INT64",
+        "count_per_forward": 3.0,
+        "ms_per_forward": 0.015080000000000001,
+        "names": [
+          "aclnnNonzeroV_NonzeroAiCore_NonZero"
+        ]
+      },
+      {
+        "type": "BroadcastTo",
+        "input_shapes": "1,1274,1;3",
+        "input_dtypes": "INT32;INT64",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "INT32",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.014053666666666667,
+        "names": [
+          "aclnnInplaceMaskedScatter_BroadcastToAiCore_BroadcastTo"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "1,1274,2560;1,1274,2560",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.013240333333333335,
+        "names": [
+          "AddCast"
+        ]
+      },
+      {
+        "type": "Cos",
+        "input_shapes": "5040,64",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.013113666666666664,
+        "names": [
+          "aclnnCos_CosAiCore_Cos"
+        ]
+      },
+      {
+        "type": "Sin",
+        "input_shapes": "5040,64",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.012967,
+        "names": [
+          "aclnnSin_SinAiCore_Sin"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.012940333333333333,
+        "names": [
+          "Cast"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "84,1;16",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "84,16",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.012414,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "TensorMove",
+        "input_shapes": "5040,1024",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.012027000000000001,
+        "names": [
+          "aclnnCat_TensorMoveAiCore_TensorMove"
+        ]
+      },
+      {
+        "type": "Equal",
+        "input_shapes": "1,1274;",
+        "input_dtypes": "INT64;INT64",
+        "output_shapes": "1,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 4.0,
+        "ms_per_forward": 0.011627666666666665,
+        "names": [
+          "aclnnEqScalar_EqualAiCore_Equal"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "3,1,64,1;3,1,1,1274",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "3,1,64,1274",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.011460666666666668,
+        "names": [
+          "aclnnMatmul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,128",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.011300333333333332,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "TensorMove",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.011280333333333333,
+        "names": [
+          "aclnnInplaceCopy_TensorMoveAiCore_TensorMove"
+        ]
+      },
+      {
+        "type": "Cos",
+        "input_shapes": "1,1274,128",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.011066666666666666,
+        "names": [
+          "aclnnCos_CosAiCore_Cos"
+        ]
+      },
+      {
+        "type": "Sin",
+        "input_shapes": "1,1274,128",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.010719999999999999,
+        "names": [
+          "aclnnSin_SinAiCore_Sin"
+        ]
+      },
+      {
+        "type": "Tile",
+        "input_shapes": "5040,1024;2",
+        "input_dtypes": "FLOAT16;INT64",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.01068,
+        "names": [
+          "aclnnRepeat_TileAiCore_Tile"
+        ]
+      },
+      {
+        "type": "Less",
+        "input_shapes": "1,1,1274,1274;",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1,1274,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.01064,
+        "names": [
+          "aclnnLtScalar_LessAiCore_Less"
+        ]
+      },
+      {
+        "type": "Data",
+        "input_shapes": "N/A",
+        "input_dtypes": "N/A",
+        "output_shapes": "N/A",
+        "output_dtypes": "N/A",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.009367,
+        "names": [
+          "UpdateModelParam_static_bin"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1,1274,1274",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1,1274,1274",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.008913666666666667,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1260,1",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1260,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 6.0,
+        "ms_per_forward": 0.00882,
+        "names": [
+          "aclnnLayerNormWithImplMode_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Slice",
+        "input_shapes": "64,3822;2;2",
+        "input_dtypes": "FLOAT;INT64;INT64",
+        "output_shapes": "20,1274",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.00858,
+        "names": [
+          "aclnnInplaceCopy_SliceAiCore_Slice"
+        ]
+      },
+      {
+        "type": "Range",
+        "input_shapes": ";;",
+        "input_dtypes": "INT64;INT64;INT64",
+        "output_shapes": "1274",
+        "output_dtypes": "INT64",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.00854,
+        "names": [
+          "aclnnArange_ArangeAiCore_Range"
+        ]
+      },
+      {
+        "type": "LogicalNot",
+        "input_shapes": "1,1,1274,1274",
+        "input_dtypes": "BOOL",
+        "output_shapes": "1,1,1274,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.008466666666666666,
+        "names": [
+          "aclnnBitwiseNot_LogicalNotAiCore_LogicalNot"
+        ]
+      },
+      {
+        "type": "Range",
+        "input_shapes": ";;",
+        "input_dtypes": "DOUBLE;DOUBLE;DOUBLE",
+        "output_shapes": "84",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.008086666666666667,
+        "names": [
+          "aclnnArange_ArangeAiCore_Range"
+        ]
+      },
+      {
+        "type": "ConcatD",
+        "input_shapes": "1,1274,64;1,1274,64",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.007967000000000002,
+        "names": [
+          "aclnnCat_ConcatD_ConcatD"
+        ]
+      },
+      {
+        "type": "ReduceSum",
+        "input_shapes": "1,1274;2",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.005986666666666667,
+        "names": [
+          "aclnnReduceSum_ReduceSumOpAiCore_ReduceSum"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,1",
+        "input_dtypes": "INT64",
+        "output_shapes": "1,1274,1",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.005986666666666667,
+        "names": [
+          "aclnnMul_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "ConcatD",
+        "input_shapes": "5040,32;5040,32",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.005606666666666667,
+        "names": [
+          "aclnnCat_ConcatD_ConcatD"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "5040,1",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "5040,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.004226666666666666,
+        "names": [
+          "aclnnLayerNormWithImplMode_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "ReduceAny",
+        "input_shapes": "1,1274;2",
+        "input_dtypes": "BOOL;INT64",
+        "output_shapes": "",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0033203333333333336,
+        "names": [
+          "aclnnAny_ReduceAny_ReduceAny"
+        ]
+      },
+      {
+        "type": "ReduceAll",
+        "input_shapes": "1,1274;2",
+        "input_dtypes": "BOOL;INT64",
+        "output_shapes": "",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.003293333333333333,
+        "names": [
+          "aclnnAll_ReduceAll_ReduceAll"
+        ]
+      },
+      {
+        "type": "ReduceAll",
+        "input_shapes": "1,1,1274;3",
+        "input_dtypes": "BOOL;INT64",
+        "output_shapes": "",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.003,
+        "names": [
+          "aclnnAll_ReduceAll_ReduceAll"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "3,1,1,1274",
+        "input_dtypes": "INT64",
+        "output_shapes": "3,1,1,1274",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0027533333333333333,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Fill",
+        "input_shapes": "1;",
+        "input_dtypes": "INT64;FLOAT",
+        "output_shapes": "1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.002593333333333333,
+        "names": [
+          "aclnnInplaceFillScalar_FillAiCore_Fill"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274",
+        "input_dtypes": "BOOL",
+        "output_shapes": "1,1274",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0022066666666666667,
+        "names": [
+          "aclnnReduceSum_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1,1,1274",
+        "input_dtypes": "INT64",
+        "output_shapes": "1,1,1,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0021466666666666665,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,1",
+        "input_dtypes": "BOOL",
+        "output_shapes": "1,1274,1",
+        "output_dtypes": "INT32",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0017266666666666665,
+        "names": [
+          "aclnnInplaceMaskedScatter_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "BroadcastTo",
+        "input_shapes": "1,1,64,1;4",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "3,1,64,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0017133333333333332,
+        "names": [
+          "aclnnMatmul_BroadcastToAiCore_BroadcastTo"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "",
+        "output_dtypes": "INT64",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.00156,
+        "names": [
+          "aclnnReduceSum_CastAiCore_Cast"
+        ]
+      }
+    ]
+  },
+  "raw_eager": {
+    "source": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output/profiles/pipe/raw/liteserver-c001-4_7223_20261007104259534_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+    "profile_steps": 3,
+    "groups": [
+      {
+        "type": "PromptFlashAttention",
+        "input_shapes": "1,16,5040,64;1,16,5040,64;1,16,5040,64;;",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;INT64;INT64",
+        "output_shapes": "1,16,5040,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 31.272873333333354,
+        "names": [
+          "InnerPromptFlashAttention_PromptFlashAttention_PromptFlashAttention"
+        ]
+      },
+      {
+        "type": "MatMulV2",
+        "input_shapes": "1274,2560;19456,2560",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1274,19456",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 16.44882933333333,
+        "names": [
+          "aclnnMatmul_MatMulCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "PromptFlashAttention",
+        "input_shapes": "1,32,1274,128;1,8,1274,128;1,8,1274,128;1,1,1274,1274;;",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL;INT64;INT64",
+        "output_shapes": "1,32,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 10.961331666666663,
+        "names": [
+          "InnerPromptFlashAttention_PromptFlashAttention_PromptFlashAttention"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "1274,9728;2560,9728",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 9.743306666666665,
+        "names": [
+          "aclnnMatmul_MatMulVCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "1274,2560;6144,2560",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1274,6144",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 5.8292856666666655,
+        "names": [
+          "aclnnMatmul_MatMulVCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "1274,4096;2560,4096",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 4.209498666666665,
+        "names": [
+          "aclnnMatmul_MatMulVCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "5040,1024;4096,1024;4096",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,4096",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 3.4784293333333336,
+        "names": [
+          "aclnnAddmm_MatMulVCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "5040,4096;1024,4096;1024",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 3.4425223333333332,
+        "names": [
+          "aclnnAddmm_MatMulVCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "5040,1024;3072,1024;3072",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,3072",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 2.759548999999999,
+        "names": [
+          "aclnnAddmm_MatMulVCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "5040,16,64;5040,1,64",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 96.0,
+        "ms_per_forward": 2.5890320000000013,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "ReduceMean",
+        "input_shapes": "5040,1024;1",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "5040,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 96.0,
+        "ms_per_forward": 2.326036000000001,
+        "names": [
+          "aclnnMean_ReduceMeanAiCore_ReduceMean"
+        ]
+      },
+      {
+        "type": "MaskedScatter",
+        "input_shapes": "1,1274,2560;1,1274,2560;1260,2560",
+        "input_dtypes": "FLOAT16;BOOL;FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 2.2137643333333337,
+        "names": [
+          "aclnnInplaceMaskedScatter_MaskedScatterAiCore_MaskedScatter"
+        ]
+      },
+      {
+        "type": "GeluV2",
+        "input_shapes": "5040,4096",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "5040,4096",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 1.9037860000000004,
+        "names": [
+          "aclnnGeluV_GeluV_GeluV"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "1,1274,2560;1,1274,1",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 1.758550666666667,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Slice",
+        "input_shapes": "5040,16,64;3;3",
+        "input_dtypes": "FLOAT;INT64;INT64",
+        "output_shapes": "5040,16,32",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 96.0,
+        "ms_per_forward": 1.5695510000000001,
+        "names": [
+          "aclnnCat_SliceAiCore_Slice",
+          "aclnnNeg_SliceAiCore_Slice"
+        ]
+      },
+      {
+        "type": "ReduceMean",
+        "input_shapes": "1,1274,2560;1",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "1,1274,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 1.562793333333333,
+        "names": [
+          "aclnnMean_ReduceMeanAiCore_ReduceMean"
+        ]
+      },
+      {
+        "type": "Pows",
+        "input_shapes": "1,1274,2560;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 1.3970293333333335,
+        "names": [
+          "aclnnPowTensorScalar_PowsAiCore_Pows"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "1274,32,128;3",
+        "input_dtypes": "FLOAT16;INT64",
+        "output_shapes": "32,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 1.3873259999999996,
+        "names": [
+          "aclnnMul_TransposeAiCore_Transpose"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "5040,1024;5040,1",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 1.3451623333333338,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "32,1274,128;3",
+        "input_dtypes": "FLOAT16;INT64",
+        "output_shapes": "1274,32,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 1.2606363333333328,
+        "names": [
+          "aclnnInplaceCopy_TransposeAiCore_Transpose"
+        ]
+      },
+      {
+        "type": "Swish",
+        "input_shapes": "1,1274,9728",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,9728",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 1.256519333333333,
+        "names": [
+          "aclnnSilu_SiluAiCore_Swish"
+        ]
+      },
+      {
+        "type": "Sub",
+        "input_shapes": "5040,1024;5040,1",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 1.2530526666666664,
+        "names": [
+          "aclnnSub_SubAiCore_Sub"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "5040,16,64;3",
+        "input_dtypes": "FLOAT16;INT64",
+        "output_shapes": "16,5040,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 1.224880666666667,
+        "names": [
+          "aclnnInplaceCopy_TransposeAiCore_Transpose"
+        ]
+      },
+      {
+        "type": "Slice",
+        "input_shapes": "1274,19456;2;2",
+        "input_dtypes": "FLOAT16;INT64;INT64",
+        "output_shapes": "1274,9728",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 72.0,
+        "ms_per_forward": 1.1663016666666668,
+        "names": [
+          "aclnnMul_SliceAiCore_Slice",
+          "aclnnSilu_SliceAiCore_Slice"
+        ]
+      },
+      {
+        "type": "Pows",
+        "input_shapes": "5040,1024;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 1.1614563333333332,
+        "names": [
+          "aclnnPowTensorScalar_PowsAiCore_Pows"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "1,32,1274,128;1,1,1274,128",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,32,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 72.0,
+        "ms_per_forward": 1.1114563333333334,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "1,1274,2560;1,1274,2560",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 75.0,
+        "ms_per_forward": 1.099978333333333,
+        "names": [
+          "aclnnAdd_AddAiCore_Add"
+        ]
+      },
+      {
+        "type": "MatMulV2",
+        "input_shapes": "5040,1024;1024,1024;1024",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 1.0698203333333338,
+        "names": [
+          "aclnnAddmm_MatMulCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "1274,8,128;3",
+        "input_dtypes": "FLOAT16;INT64",
+        "output_shapes": "8,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 1.0165733333333336,
+        "names": [
+          "aclnnMul_TransposeAiCore_Transpose"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "5040,16,64",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 96.0,
+        "ms_per_forward": 1.0026816666666658,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "2560;1,1274,2560",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 0.9833056666666667,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Pows",
+        "input_shapes": "1,1274,32,128;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,32,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.9784583333333334,
+        "names": [
+          "aclnnPowTensorScalar_PowsAiCore_Pows"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "1,1274,32,128;1,1274,32,1",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,32,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.9766456666666666,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Slice",
+        "input_shapes": "5040,48,64;3;3",
+        "input_dtypes": "FLOAT16;INT64;INT64",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 96.0,
+        "ms_per_forward": 0.970129666666667,
+        "names": [
+          "aclnnInplaceCopy_SliceAiCore_Slice"
+        ]
+      },
+      {
+        "type": "AsStrided",
+        "input_shapes": "5218304;4;4;1",
+        "input_dtypes": "FLOAT16;INT64;INT64;INT64",
+        "output_shapes": "1,32,1274,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 72.0,
+        "ms_per_forward": 0.9529533333333331,
+        "names": [
+          "aclnnCat_AsStridedAiCore_AsStrided",
+          "aclnnNeg_AsStridedAiCore_AsStrided"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 0.840912,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "5040,16,64;5040,16,64",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.8243073333333331,
+        "names": [
+          "aclnnAdd_AddAiCore_Add"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 0.7919899999999997,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "ReduceMean",
+        "input_shapes": "1,1274,32,128;1",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "1,1274,32,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.7834739999999997,
+        "names": [
+          "aclnnMean_ReduceMeanAiCore_ReduceMean"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "5040,1024;5040,1024",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 52.0,
+        "ms_per_forward": 0.7621626666666669,
+        "names": [
+          "aclnnAdd_AddAiCore_Add"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "1,1274,9728;1,1274,9728",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,9728",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.7232500000000002,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "ConcatD",
+        "input_shapes": "5040,16,32;5040,16,32",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.7228666666666667,
+        "names": [
+          "aclnnCat_ConcatD_ConcatD"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "5040,1024;1024",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.7041666666666667,
+        "names": [
+          "aclnnAdd_AddAiCore_Add"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "16,5040,64;3",
+        "input_dtypes": "FLOAT16;INT64",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 0.6964096666666667,
+        "names": [
+          "aclnnInplaceCopy_TransposeAiCore_Transpose"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "5040,1024",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.690231,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "1260,4096;4096,4096;4096",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "1260,4096",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 4.0,
+        "ms_per_forward": 0.6895200000000001,
+        "names": [
+          "aclnnAddmm_MatMulVCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "AsStrided",
+        "input_shapes": "1304576;4;4;1",
+        "input_dtypes": "FLOAT16;INT64;INT64;INT64",
+        "output_shapes": "1,8,1274,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 72.0,
+        "ms_per_forward": 0.6789926666666666,
+        "names": [
+          "aclnnCat_AsStridedAiCore_AsStrided",
+          "aclnnNeg_AsStridedAiCore_AsStrided"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "5040,1024;1024",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.6758739999999998,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Pows",
+        "input_shapes": "1,1274,8,128;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,8,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.6639249999999998,
+        "names": [
+          "aclnnPowTensorScalar_PowsAiCore_Pows"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,32,128",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,32,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.6427590000000002,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "1,1274,8,128;1,1274,8,1",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,8,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.6408853333333333,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "5040,1024",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.6133270000000001,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "5040,16,64",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,16,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.5946663333333333,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "ReduceMean",
+        "input_shapes": "1,1274,8,128;1",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "1,1274,8,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.5302616666666667,
+        "names": [
+          "aclnnMean_ReduceMeanAiCore_ReduceMean"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "1,32,1274,128;1,32,1274,128",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,32,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.5064306666666667,
+        "names": [
+          "aclnnAdd_AddAiCore_Add"
+        ]
+      },
+      {
+        "type": "Neg",
+        "input_shapes": "5040,16,32",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,16,32",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.5038626666666667,
+        "names": [
+          "aclnnNeg_NegAiCore_Neg"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "128;1,1274,32,128",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,32,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.5021843333333336,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "1,8,1274,128;1,1,1274,128",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,8,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 72.0,
+        "ms_per_forward": 0.4886496666666667,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,32,128",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,32,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.4821953333333332,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "MatMulV3",
+        "input_shapes": "1260,4096;2560,4096;2560",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "1260,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 4.0,
+        "ms_per_forward": 0.47311633333333336,
+        "names": [
+          "aclnnAddmm_MatMulVCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "Slice",
+        "input_shapes": "1274,48,128;3;3",
+        "input_dtypes": "FLOAT16;INT64;INT64",
+        "output_shapes": "1274,32,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.468578,
+        "names": [
+          "aclnnInplaceCopy_SliceAiCore_Slice"
+        ]
+      },
+      {
+        "type": "AsStrided",
+        "input_shapes": "15482880;4;4;1",
+        "input_dtypes": "FLOAT16;INT64;INT64;INT64",
+        "output_shapes": "1,16,5040,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 24.0,
+        "ms_per_forward": 0.46838966666666676,
+        "names": [
+          "aclnnInplaceCopy_AsStridedAiCore_AsStrided"
+        ]
+      },
+      {
+        "type": "ConcatD",
+        "input_shapes": "1,32,1274,64;1,32,1274,64",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,32,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.4645376666666666,
+        "names": [
+          "aclnnCat_ConcatD_ConcatD"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "128;1,1274,8,128",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,8,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.3838220000000002,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,8,128",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,8,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.3802676666666668,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Neg",
+        "input_shapes": "1,32,1274,64",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,32,1274,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.3685736666666665,
+        "names": [
+          "aclnnNeg_NegAiCore_Neg"
+        ]
+      },
+      {
+        "type": "ViewCopy",
+        "input_shapes": "81536;3;3;1;1,1274,20;3;3;1",
+        "input_dtypes": "FLOAT;INT64;INT64;INT64;FLOAT;INT64;INT64;INT64",
+        "output_shapes": "81536",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.35970033333333334,
+        "names": [
+          "aclnnInplaceCopy_ViewCopyAiCpu_ViewCopy"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "1,8,1274,128;1,8,1274,128",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,8,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.3540533333333332,
+        "names": [
+          "aclnnAdd_AddAiCore_Add"
+        ]
+      },
+      {
+        "type": "Neg",
+        "input_shapes": "1,8,1274,64",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,8,1274,64",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.3510200000000002,
+        "names": [
+          "aclnnNeg_NegAiCore_Neg"
+        ]
+      },
+      {
+        "type": "Slice",
+        "input_shapes": "1274,48,128;3;3",
+        "input_dtypes": "FLOAT16;INT64;INT64",
+        "output_shapes": "1274,8,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.3471483333333334,
+        "names": [
+          "aclnnInplaceCopy_SliceAiCore_Slice"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,8,128",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,8,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.331944,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "AsStrided",
+        "input_shapes": "7827456;4;4;1",
+        "input_dtypes": "FLOAT16;INT64;INT64;INT64",
+        "output_shapes": "1,8,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.29772533333333334,
+        "names": [
+          "aclnnInplaceCopy_AsStridedAiCore_AsStrided"
+        ]
+      },
+      {
+        "type": "Rsqrt",
+        "input_shapes": "1,1274,32,1",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,32,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.28823933333333346,
+        "names": [
+          "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+        ]
+      },
+      {
+        "type": "ConcatD",
+        "input_shapes": "1,8,1274,64;1,8,1274,64",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,8,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.26527966666666664,
+        "names": [
+          "aclnnCat_ConcatD_ConcatD"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "1,1274,32,1;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,32,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.21737833333333334,
+        "names": [
+          "aclnnAdds_AddAiCore_Add"
+        ]
+      },
+      {
+        "type": "LayerNormV3",
+        "input_shapes": "1260,4096;4096;4096",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "1260,4096;1260,1;1260,1",
+        "output_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "count_per_forward": 3.0,
+        "ms_per_forward": 0.18204366666666666,
+        "names": [
+          "aclnnLayerNormWithImplMode_LayerNormVWithImplMode_LayerNormV"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "1,1274,1;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 0.12490200000000003,
+        "names": [
+          "aclnnAdds_AddAiCore_Add"
+        ]
+      },
+      {
+        "type": "Rsqrt",
+        "input_shapes": "1,1274,1",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 73.0,
+        "ms_per_forward": 0.11825733333333342,
+        "names": [
+          "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+        ]
+      },
+      {
+        "type": "Rsqrt",
+        "input_shapes": "1,1274,8,1",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,8,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.10538933333333328,
+        "names": [
+          "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+        ]
+      },
+      {
+        "type": "Rsqrt",
+        "input_shapes": "5040,1",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.10529466666666669,
+        "names": [
+          "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+        ]
+      },
+      {
+        "type": "Index",
+        "input_shapes": "84,16;1;3;5040,2",
+        "input_dtypes": "FLOAT;INT64;INT64;INT64",
+        "output_shapes": "5040,2,16",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.10481566666666667,
+        "names": [
+          "aclnnIndex_IndexAiCore_Index"
+        ]
+      },
+      {
+        "type": "Gelu",
+        "input_shapes": "1260,4096",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1260,4096",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 4.0,
+        "ms_per_forward": 0.10265533333333335,
+        "names": [
+          "aclnnGelu_Gelu_Gelu"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "5040,1;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 48.0,
+        "ms_per_forward": 0.09524299999999998,
+        "names": [
+          "aclnnAdds_AddAiCore_Add"
+        ]
+      },
+      {
+        "type": "MatMulV2",
+        "input_shapes": "1274,2560;2560,2560;2560",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.08886866666666667,
+        "names": [
+          "aclnnAddmm_MatMulCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "Add",
+        "input_shapes": "1,1274,8,1;",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,8,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 36.0,
+        "ms_per_forward": 0.0886486666666667,
+        "names": [
+          "aclnnAdds_AddAiCore_Add"
+        ]
+      },
+      {
+        "type": "LayerNormV3",
+        "input_shapes": "5040,1024;1024;1024",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024;5040,1;5040,1",
+        "output_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.06669466666666667,
+        "names": [
+          "aclnnLayerNormWithImplMode_LayerNormVWithImplMode_LayerNormV"
+        ]
+      },
+      {
+        "type": "GatherV2",
+        "input_shapes": "151936,2560;1,1274;1",
+        "input_dtypes": "FLOAT16;INT64;INT64",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.061234666666666666,
+        "names": [
+          "aclnnEmbedding_GatherVAiCore_GatherV"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "5040,1536",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,1536",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.06115466666666667,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "IndexPutV2",
+        "input_shapes": "1,1274,2560;1260,2560;2;2;1260;1260",
+        "input_dtypes": "FLOAT16;FLOAT16;INT64;INT64;INT64;INT64",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 3.0,
+        "ms_per_forward": 0.06103466666666668,
+        "names": [
+          "aclnnIndexPutImpl_IndexPutV_IndexPutV"
+        ]
+      },
+      {
+        "type": "MatMulV2",
+        "input_shapes": "5040,1536;1024,1536;1024",
+        "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.05978766666666667,
+        "names": [
+          "aclnnAddmm_MatMulCommon_MatMulV"
+        ]
+      },
+      {
+        "type": "GreaterEqual",
+        "input_shapes": "1274,1;1,1274",
+        "input_dtypes": "INT64;INT64",
+        "output_shapes": "1274,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.05815433333333333,
+        "names": [
+          "aclnnGeTensor_GreaterEqual_GreaterEqual"
+        ]
+      },
+      {
+        "type": "GatherV2",
+        "input_shapes": "2304,1024;4,5040;1",
+        "input_dtypes": "FLOAT16;INT64;INT64",
+        "output_shapes": "4,5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.033667333333333334,
+        "names": [
+          "aclnnEmbedding_GatherVAiCore_GatherV"
+        ]
+      },
+      {
+        "type": "MemSet",
+        "input_shapes": "N/A",
+        "input_dtypes": "N/A",
+        "output_shapes": "N/A",
+        "output_dtypes": "N/A",
+        "count_per_forward": 3.0,
+        "ms_per_forward": 0.032481666666666666,
+        "names": [
+          "aclnnNonzeroV_NonzeroAiCore_MemSet"
+        ]
+      },
+      {
+        "type": "RealDiv",
+        "input_shapes": "1,1274,2560;1,1274,1",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.029267666666666664,
+        "names": [
+          "aclnnDiv_RealDivAiCore_RealDiv"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "4,5040,1024;4,5040,1",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "4,5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.028774,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "LpNormV2",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,1",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.025247333333333333,
+        "names": [
+          "aclnnLinalgVectorNorm_LpNormV_LpNormV"
+        ]
+      },
+      {
+        "type": "ZerosLike",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 3.0,
+        "ms_per_forward": 0.023334333333333332,
+        "names": [
+          "aclnnInplaceZero_ZerosLikeAiCore_ZerosLike"
+        ]
+      },
+      {
+        "type": "ZerosLike",
+        "input_shapes": "1,1,5040,5040",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1,5040,5040",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.022220999999999998,
+        "names": [
+          "aclnnInplaceZero_ZerosLikeAiCore_ZerosLike"
+        ]
+      },
+      {
+        "type": "SelectV2",
+        "input_shapes": "1,1,1274,1274;;",
+        "input_dtypes": "BOOL;FLOAT;FLOAT",
+        "output_shapes": "1,1,1274,1274",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.022213333333333335,
+        "names": [
+          "aclnnSWhere_SelectVAiCore_SelectV"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "1,1274,2560;1,1274,1",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.020827,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "20,1274;2",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "1274,20",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.02080066666666667,
+        "names": [
+          "aclnnInplaceCopy_TransposeAiCore_Transpose"
+        ]
+      },
+      {
+        "type": "ReduceAny",
+        "input_shapes": "1,1,1274,1274;1",
+        "input_dtypes": "BOOL;INT64",
+        "output_shapes": "1,1,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.020693666666666666,
+        "names": [
+          "aclnnAny_ReduceAny_ReduceAny"
+        ]
+      },
+      {
+        "type": "LogicalAnd",
+        "input_shapes": "1,1,1274,1274;1,1,1,1274",
+        "input_dtypes": "BOOL;BOOL",
+        "output_shapes": "1,1,1274,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.017799999999999996,
+        "names": [
+          "aclnnBitwiseAndTensor_LogicalAndAiCore_LogicalAnd"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "42,2,30,2,1024;5",
+        "input_dtypes": "FLOAT16;INT64",
+        "output_shapes": "42,30,2,2,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.017153666666666668,
+        "names": [
+          "aclnnInplaceCopy_TransposeAiCore_Transpose"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "84,1;16",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "84,16",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.016867333333333335,
+        "names": [
+          "aclnnMul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "INT32",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.01644,
+        "names": [
+          "aclnnInplaceMaskedScatter_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "NonZero",
+        "input_shapes": "1,1274",
+        "input_dtypes": "BOOL",
+        "output_shapes": "2,1260",
+        "output_dtypes": "INT64",
+        "count_per_forward": 3.0,
+        "ms_per_forward": 0.015453333333333333,
+        "names": [
+          "aclnnNonzeroV_NonzeroAiCore_NonZero"
+        ]
+      },
+      {
+        "type": "Transpose",
+        "input_shapes": "64,1274;2",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "1274,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.015313666666666668,
+        "names": [
+          "aclnnInplaceCopy_TransposeAiCore_Transpose"
+        ]
+      },
+      {
+        "type": "Cos",
+        "input_shapes": "5040,64",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.014533666666666667,
+        "names": [
+          "aclnnCos_CosAiCore_Cos"
+        ]
+      },
+      {
+        "type": "Sin",
+        "input_shapes": "5040,64",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "5040,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.014313333333333332,
+        "names": [
+          "aclnnSin_SinAiCore_Sin"
+        ]
+      },
+      {
+        "type": "BroadcastTo",
+        "input_shapes": "1,1274,1;3",
+        "input_dtypes": "INT32;INT64",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "INT32",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.013640000000000001,
+        "names": [
+          "aclnnInplaceMaskedScatter_BroadcastToAiCore_BroadcastTo"
+        ]
+      },
+      {
+        "type": "Mul",
+        "input_shapes": "3,1,64,1;3,1,1,1274",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "3,1,64,1274",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.012987333333333335,
+        "names": [
+          "aclnnMatmul_MulAiCore_Mul"
+        ]
+      },
+      {
+        "type": "TensorMove",
+        "input_shapes": "5040,1024",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.012413333333333334,
+        "names": [
+          "aclnnCat_TensorMoveAiCore_TensorMove"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,128",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,128",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.012220000000000002,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Cos",
+        "input_shapes": "1,1274,128",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.012180333333333333,
+        "names": [
+          "aclnnCos_CosAiCore_Cos"
+        ]
+      },
+      {
+        "type": "Sin",
+        "input_shapes": "1,1274,128",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1274,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.011973333333333334,
+        "names": [
+          "aclnnSin_SinAiCore_Sin"
+        ]
+      },
+      {
+        "type": "Less",
+        "input_shapes": "1,1,1274,1274;",
+        "input_dtypes": "FLOAT16;FLOAT16",
+        "output_shapes": "1,1,1274,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.011900333333333334,
+        "names": [
+          "aclnnLtScalar_LessAiCore_Less"
+        ]
+      },
+      {
+        "type": "Tile",
+        "input_shapes": "5040,1024;2",
+        "input_dtypes": "FLOAT16;INT64",
+        "output_shapes": "5040,1024",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.011293666666666667,
+        "names": [
+          "aclnnRepeat_TileAiCore_Tile"
+        ]
+      },
+      {
+        "type": "TensorMove",
+        "input_shapes": "1,1274,2560",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1,1274,2560",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.010913666666666667,
+        "names": [
+          "aclnnInplaceCopy_TensorMoveAiCore_TensorMove"
+        ]
+      },
+      {
+        "type": "Equal",
+        "input_shapes": "1,1274;",
+        "input_dtypes": "INT64;INT64",
+        "output_shapes": "1,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 4.0,
+        "ms_per_forward": 0.010373666666666666,
+        "names": [
+          "aclnnEqScalar_EqualAiCore_Equal"
+        ]
+      },
+      {
+        "type": "LogicalNot",
+        "input_shapes": "1,1,1274,1274",
+        "input_dtypes": "BOOL",
+        "output_shapes": "1,1,1274,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.009973333333333334,
+        "names": [
+          "aclnnBitwiseNot_LogicalNotAiCore_LogicalNot"
+        ]
+      },
+      {
+        "type": "Range",
+        "input_shapes": ";;",
+        "input_dtypes": "INT64;INT64;INT64",
+        "output_shapes": "1274",
+        "output_dtypes": "INT64",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.009707,
+        "names": [
+          "aclnnArange_ArangeAiCore_Range"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1,1274,1274",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "1,1,1274,1274",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.009486999999999999,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1260,1",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "1260,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 6.0,
+        "ms_per_forward": 0.008973333333333333,
+        "names": [
+          "aclnnLayerNormWithImplMode_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Range",
+        "input_shapes": ";;",
+        "input_dtypes": "DOUBLE;DOUBLE;DOUBLE",
+        "output_shapes": "84",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.00892,
+        "names": [
+          "aclnnArange_ArangeAiCore_Range"
+        ]
+      },
+      {
+        "type": "Slice",
+        "input_shapes": "64,3822;2;2",
+        "input_dtypes": "FLOAT;INT64;INT64",
+        "output_shapes": "20,1274",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.008586666666666668,
+        "names": [
+          "aclnnInplaceCopy_SliceAiCore_Slice"
+        ]
+      },
+      {
+        "type": "ConcatD",
+        "input_shapes": "1,1274,64;1,1274,64",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "1,1274,128",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0074803333333333345,
+        "names": [
+          "aclnnCat_ConcatD_ConcatD"
+        ]
+      },
+      {
+        "type": "ReduceSum",
+        "input_shapes": "1,1274;2",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.006606999999999999,
+        "names": [
+          "aclnnReduceSum_ReduceSumOpAiCore_ReduceSum"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,1",
+        "input_dtypes": "INT64",
+        "output_shapes": "1,1274,1",
+        "output_dtypes": "FLOAT16",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.005847,
+        "names": [
+          "aclnnMul_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "ConcatD",
+        "input_shapes": "5040,32;5040,32",
+        "input_dtypes": "FLOAT;FLOAT",
+        "output_shapes": "5040,64",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.005260000000000001,
+        "names": [
+          "aclnnCat_ConcatD_ConcatD"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "5040,1",
+        "input_dtypes": "FLOAT16",
+        "output_shapes": "5040,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.004227000000000001,
+        "names": [
+          "aclnnLayerNormWithImplMode_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "ReduceAny",
+        "input_shapes": "1,1274;2",
+        "input_dtypes": "BOOL;INT64",
+        "output_shapes": "",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0033,
+        "names": [
+          "aclnnAny_ReduceAny_ReduceAny"
+        ]
+      },
+      {
+        "type": "ReduceAll",
+        "input_shapes": "1,1274;2",
+        "input_dtypes": "BOOL;INT64",
+        "output_shapes": "",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.00324,
+        "names": [
+          "aclnnAll_ReduceAll_ReduceAll"
+        ]
+      },
+      {
+        "type": "ReduceAll",
+        "input_shapes": "1,1,1274;3",
+        "input_dtypes": "BOOL;INT64",
+        "output_shapes": "",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.00302,
+        "names": [
+          "aclnnAll_ReduceAll_ReduceAll"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "3,1,1,1274",
+        "input_dtypes": "INT64",
+        "output_shapes": "3,1,1,1274",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0028866666666666667,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Fill",
+        "input_shapes": "1;",
+        "input_dtypes": "INT64;FLOAT",
+        "output_shapes": "1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 2.0,
+        "ms_per_forward": 0.0026999999999999997,
+        "names": [
+          "aclnnInplaceFillScalar_FillAiCore_Fill"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274",
+        "input_dtypes": "BOOL",
+        "output_shapes": "1,1274",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.00218,
+        "names": [
+          "aclnnReduceSum_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1,1,1274",
+        "input_dtypes": "INT64",
+        "output_shapes": "1,1,1,1274",
+        "output_dtypes": "BOOL",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0021333333333333334,
+        "names": [
+          "aclnnInplaceCopy_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "BroadcastTo",
+        "input_shapes": "1,1,64,1;4",
+        "input_dtypes": "FLOAT;INT64",
+        "output_shapes": "3,1,64,1",
+        "output_dtypes": "FLOAT",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0017133333333333332,
+        "names": [
+          "aclnnMatmul_BroadcastToAiCore_BroadcastTo"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "1,1274,1",
+        "input_dtypes": "BOOL",
+        "output_shapes": "1,1274,1",
+        "output_dtypes": "INT32",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.00164,
+        "names": [
+          "aclnnInplaceMaskedScatter_CastAiCore_Cast"
+        ]
+      },
+      {
+        "type": "Cast",
+        "input_shapes": "",
+        "input_dtypes": "FLOAT",
+        "output_shapes": "",
+        "output_dtypes": "INT64",
+        "count_per_forward": 1.0,
+        "ms_per_forward": 0.0013866666666666667,
+        "names": [
+          "aclnnReduceSum_CastAiCore_Cast"
+        ]
+      }
+    ]
+  }
+}
