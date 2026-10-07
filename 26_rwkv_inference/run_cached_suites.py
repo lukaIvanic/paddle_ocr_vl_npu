@@ -130,7 +130,7 @@ def score_pairs(a,e,cache,pairs,check=False):
     for pair in pairs:grouped[capacity(len(pair[1]))].append(pair)
     output=[];stats=[]
     for cap,group in sorted(grouped.items()):
-        batch=min(64,max(4,4096//min(cap,2048)))
+        batch=min(a.max_score_batch,max(4,4096//min(cap,2048)))
         pipe=Pipeline(e,cache,batch,set(map(int,a.local_cpus.split(','))),query_capacity=cap)
         batches=[];real=[]
         for offset in range(0,len(group),batch):
@@ -207,9 +207,9 @@ def nano(a):
                 current.append(value);prior.append(metric(j['labels'],ref));delta.extend(abs(x-y) for x,y in zip(values,ref))
             row=dict(task=name,queries=len(current),pairs=len(pairs),ndcg=100*np.mean(current),previous_ndcg=100*np.mean(prior),
                 delta_pp=100*(np.mean(current)-np.mean(prior)),max_logit_delta=max(delta),state_builder_check=state_check,timing=timing)
-            assert abs(row['delta_pp'])<=.2,(name,row)
             results.append(row);save(a.output/(name+'.scores.json'),scored);emit('NANO_TASK',row)
             save(a.output/'result.json',dict(**identity(),tasks=results,all_checks_passed=False))
+            assert abs(row['delta_pp'])<=.2,(name,row)
     save(a.output/'result.json',dict(**identity(),tasks=results,all_checks_passed=True))
 
 
@@ -293,6 +293,7 @@ def main():
     p.add_argument('--suite',choices=['english','chinese']);p.add_argument('--worker-index',type=int,choices=[0,1])
     p.add_argument('--local-cpus',default=','.join(map(str,range(24,40))))
     p.add_argument('--document-block',type=int,default=4096)
+    p.add_argument('--max-score-batch',type=int,choices=[4,16,32,64],default=32)
     a=p.parse_args();globals()[a.mode.replace('-','_')](a)
 
 
