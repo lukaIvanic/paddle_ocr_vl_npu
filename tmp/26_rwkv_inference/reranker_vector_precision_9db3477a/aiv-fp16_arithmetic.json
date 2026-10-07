@@ -1,0 +1,34 @@
+{
+  "variant": "aiv-fp16",
+  "seed": 713,
+  "shape": [
+    3,
+    2,
+    53,
+    64
+  ],
+  "lengths": [
+    53,
+    31,
+    0
+  ],
+  "output_vs_fp64": {
+    "max_abs": 0.0001459084451198578,
+    "normalized_rmse": 0.0008767281542532146,
+    "finite": true
+  },
+  "state_vs_fp64": {
+    "max_abs": 0.00010193884372711182,
+    "normalized_rmse": 0.0001584208512213081,
+    "finite": true
+  },
+  "continuation": {
+    "max_abs": 0.0,
+    "normalized_rmse": 0.0,
+    "finite": true
+  },
+  "zero_length_state_exact": true,
+  "zero_length_output_zero": true,
+  "scope": "Synthetic correctness only; never a latency benchmark",
+  "all_checks_passed": true
+}

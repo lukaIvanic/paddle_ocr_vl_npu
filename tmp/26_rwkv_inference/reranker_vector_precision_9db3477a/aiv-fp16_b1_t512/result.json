@@ -1,0 +1,32 @@
+{
+  "size": "large",
+  "dtype": "fp16",
+  "batch_size": 1,
+  "gate_only": false,
+  "bucket": 512,
+  "source_commit": "9db3477a8386217d7269cc3e4e87866cf9ce03f9",
+  "source_sha256": {
+    "bench_reranker_sizes.py": "43eec2336ffb48777784a66393cd9033e00dd82cb41f6eb149fb0fb56fb586a8",
+    "local_modeling_rwkv_embedding.py": "2ae777fe3e571edfa7288052072ea8336aab550cf9df49989ed72e0a74c0ad3e",
+    "local_modeling_rwkv_reranker.py": "62d3ce3f2f5d8a54924794422778fc61827962e41c0d4cd2d62591b9dfeb5896",
+    "probe_reranker_endpoint.py": "a7a65478cdb8bb5fd6e0f3c17a5d719fa24fdf158fbaefce012c09e4068ebbfb",
+    "run_reranker_smoke.py": "91c62ae2fb96f0745eb0fea42d742b10ddf48323c9b7b76ca9ab987d5d5ecaf9",
+    "wkv7_endpoint.py": "73b1b8f8b7ac791c60efdadba6fae8e81bff2b850b14904ea3628f7e54160647",
+    "wkv7_vector_variants.py": "5a0a290042a441115c7566c2d751375f7bc1e77786d0d7a771f2804ed3ef0577"
+  },
+  "physical_npu": "2",
+  "shared_device": false,
+  "all_checks_passed": false,
+  "backend": "torchair",
+  "scope": "Prepared device inputs; uncached backbone plus state-readout head. Synchronized steady calls exclude CPU checks, compile, input transfers and tokenization.",
+  "vector_variant": "aiv-fp16",
+  "recurrence": "vector",
+  "matrix_chunk_size": 64,
+  "matrix_compute_dtype": "fp32",
+  "retain_dense_outputs": false,
+  "group_norm_impl": "layer_norm",
+  "state_gate": "FP16 state normalized RMSE <=0.002; FP32 allclose atol0.02/rtol0.005; all scores allclose atol0.02/rtol0.005; not a full-suite accuracy claim",
+  "timings": {},
+  "error": "AssertionError: NPU 2: busy HBM=3565/65536MB AICore=0% Health=OK",
+  "total_seconds": 7.682059219994699
+}

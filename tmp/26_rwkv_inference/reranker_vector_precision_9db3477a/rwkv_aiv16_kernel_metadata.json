@@ -1,0 +1,180 @@
+[
+  {
+    "path": "/workspace/rwkv_reference/rwkv_aiv16_9db3477a/install/vendors/rwkv_aiv16/op_impl/ai_core/tbe/kernel/ascend910b/rwkv_aiv16_wkv7/RwkvAiv16Wkv7_4f9359e5e86476619c77a9e2ad61f103.json",
+    "metadata": {
+      "binFileName": "RwkvAiv16Wkv7_4f9359e5e86476619c77a9e2ad61f103",
+      "binFileSuffix": ".o",
+      "blockDim": -1,
+      "coreType": "VectorCore",
+      "core_type": "AIV",
+      "intercoreSync": 0,
+      "kernelName": "RwkvAiv16Wkv7_4f9359e5e86476619c77a9e2ad61f103",
+      "magic": "RT_DEV_BINARY_MAGIC_ELF_AIVEC",
+      "memoryStamping": [],
+      "opParaSize": 40,
+      "parameters": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "sha256": "d956cda5707d87eed6d129f489c4ab9f271187845ac6f4bbae4040d679bfa972",
+      "workspace": {
+        "num": 1,
+        "size": [
+          -1
+        ],
+        "type": [
+          0
+        ]
+      },
+      "kernelList": [
+        {
+          "kernelName": "RwkvAiv16Wkv7_4f9359e5e86476619c77a9e2ad61f103_0"
+        }
+      ],
+      "optionalInputMode": "gen_placeholder",
+      "optionalOutputMode": "gen_placeholder",
+      "supportSuperKernel": 1,
+      "compileInfo": {},
+      "supportInfo": {
+        "implMode": "high_performance",
+        "int64Mode": false,
+        "simplifiedKeyMode": 0,
+        "simplifiedKey": [
+          "RwkvAiv16Wkv7/d=0,p=1/1,2/1,2/1,2/1,2/1,2/1,2/1,2/3,2/1,2/1,2",
+          "RwkvAiv16Wkv7/d=0,p=0/1,2/1,2/1,2/1,2/1,2/1,2/1,2/3,2/1,2/1,2",
+          "RwkvAiv16Wkv7/d=1,p=1/1,2/1,2/1,2/1,2/1,2/1,2/1,2/3,2/1,2/1,2",
+          "RwkvAiv16Wkv7/d=1,p=0/1,2/1,2/1,2/1,2/1,2/1,2/1,2/3,2/1,2/1,2"
+        ],
+        "optionalInputMode": "gen_placeholder",
+        "optionalOutputMode": "gen_placeholder",
+        "staticKey": "4dce275aca53fed645cc21d986d1c4d5f3ee662c9618d7b68e08f9f8910981e4,70367145984db1db290e33af2000ca6a453c777a5c7501ba7fba7c4ddae350e8",
+        "inputs": [
+          {
+            "name": "k",
+            "index": 0,
+            "dtype": "float16",
+            "format": "ND",
+            "paramType": "required",
+            "shape": [
+              -2
+            ],
+            "format_match_mode": "FormatAgnostic"
+          },
+          {
+            "name": "v",
+            "index": 1,
+            "dtype": "float16",
+            "format": "ND",
+            "paramType": "required",
+            "shape": [
+              -2
+            ],
+            "format_match_mode": "FormatAgnostic"
+          },
+          {
+            "name": "w",
+            "index": 2,
+            "dtype": "float16",
+            "format": "ND",
+            "paramType": "required",
+            "shape": [
+              -2
+            ],
+            "format_match_mode": "FormatAgnostic"
+          },
+          {
+            "name": "r",
+            "index": 3,
+            "dtype": "float16",
+            "format": "ND",
+            "paramType": "required",
+            "shape": [
+              -2
+            ],
+            "format_match_mode": "FormatAgnostic"
+          },
+          {
+            "name": "a",
+            "index": 4,
+            "dtype": "float16",
+            "format": "ND",
+            "paramType": "required",
+            "shape": [
+              -2
+            ],
+            "format_match_mode": "FormatAgnostic"
+          },
+          {
+            "name": "b",
+            "index": 5,
+            "dtype": "float16",
+            "format": "ND",
+            "paramType": "required",
+            "shape": [
+              -2
+            ],
+            "format_match_mode": "FormatAgnostic"
+          },
+          {
+            "name": "hi",
+            "index": 6,
+            "dtype": "float16",
+            "format": "ND",
+            "paramType": "required",
+            "shape": [
+              -2
+            ],
+            "format_match_mode": "FormatAgnostic"
+          },
+          {
+            "name": "lengths",
+            "index": 7,
+            "dtype": "int32",
+            "format": "ND",
+            "paramType": "required",
+            "shape": [
+              -2
+            ],
+            "format_match_mode": "FormatAgnostic"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "o",
+            "index": 0,
+            "dtype": "float16",
+            "format": "ND",
+            "paramType": "required",
+            "shape": [
+              -2
+            ],
+            "format_match_mode": "FormatAgnostic"
+          },
+          {
+            "name": "ho",
+            "index": 1,
+            "dtype": "float16",
+            "format": "ND",
+            "paramType": "required",
+            "shape": [
+              -2
+            ],
+            "format_match_mode": "FormatAgnostic"
+          }
+        ],
+        "opMode": "dynamic",
+        "deterministic": "ignore"
+      },
+      "filePath": "ascend910b/rwkv_aiv16_wkv7/RwkvAiv16Wkv7_4f9359e5e86476619c77a9e2ad61f103.json"
+    }
+  }
+]

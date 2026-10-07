@@ -1,0 +1,64 @@
+{
+  "variant": "aiv-fp32",
+  "endpoint_base": {
+    "base": {
+      "base_sources": {
+        "CMakeLists.txt": "5cda934c63a9a15640d308184db571e82f3bf1e90b9a5247d0746c1046c8f6ac",
+        "bridge.cpp": "5271b6f98b63da8e2d790f4154bab9a7d8c156f15ba261ffe6e80e8a591ab987",
+        "LICENSE": "97e7afb9392d7c7f940607b30319a0501d9c2f8429f15c5f87ff944b1bcb73d6",
+        "build.sh": "c220cb882fede343af63ad7ac41153f13d0bc6182c4af8ae4155ef5ba4e47e30",
+        "op_host/CMakeLists.txt": "54aa68b551a22faf57476b414e03643b0a433545239c329bf603ccf9c4d674b6",
+        "op_host/rwkv_reference_wkv7_tiling.h": "5227e65c2b4f1e2067a44d120cfb6746de70ea4684d9d0fa8ccb01350cd4ee40",
+        "op_host/rwkv_reference_wkv7.cpp": "0f88cbf1fa7f96edfad7cd20e5b26be40081f218403c1a11f5a0fcdff3ab5a20",
+        "op_kernel/CMakeLists.txt": "5f228bd04aae822f620be2230fcf2494c325b0ea74e6bf26ae66a1f1390462cd",
+        "op_kernel/rwkv_reference_wkv7.cpp": "543380c5a32b26fc3ef7d5f2fce762e41f9066753dd76503e92508f91b5420ed"
+      },
+      "identities": {
+        "pytorch": "rwkv_endpoint::wkv7",
+        "GE_CANN": "RwkvEndpointWkv7",
+        "aclnn": "aclnnRwkvEndpointWkv7",
+        "kernel": "rwkv_endpoint_wkv7",
+        "vendor": "rwkv_endpoint"
+      },
+      "contract": {
+        "inputs": "Existing contiguous FP32 [B,H,T<=2048,64] tensors and FP32 [B,H,64,64] initial state; int32 NPU lengths[B], caller guarantees 0<=length<=T",
+        "outputs": "FP32 [B,H,T,64], valid prefix matches reference; trailing outputs zero. FP32 [B,H,64,64] state after length updates. No mutation.",
+        "device": "Ascend 910B2",
+        "model": "B1 initially; lengths>=1; terminal EOS included in length",
+        "adaptation": "Skip recurrence updates in each tile at positions >= length; keep original padded strides. Read length on device per head. Original operator remains unchanged."
+      }
+    },
+    "generated_sha256": {
+      "CMakeLists.txt": "5cda934c63a9a15640d308184db571e82f3bf1e90b9a5247d0746c1046c8f6ac",
+      "bridge.cpp": "155cf1612e61f16de9adcf0ff4031346839d36647fde50ebdf0c8886578064d3",
+      "LICENSE": "97e7afb9392d7c7f940607b30319a0501d9c2f8429f15c5f87ff944b1bcb73d6",
+      "build.sh": "6c6d35f6b8ea1270a7a139909dbbc24452fea6c13351fb62117a76292feee328",
+      "op_host/CMakeLists.txt": "54aa68b551a22faf57476b414e03643b0a433545239c329bf603ccf9c4d674b6",
+      "op_host/rwkv_endpoint_wkv7_tiling.h": "75098fdab99bd05e037a6c63f1988c67ee2ab44eec7c2b4f9fef33e34e259c91",
+      "op_host/rwkv_endpoint_wkv7.cpp": "04f9bb1aa4e265f9cab01055648a82f27508d6f49a23b06ca2ec1a67f14ed749",
+      "op_kernel/CMakeLists.txt": "5f228bd04aae822f620be2230fcf2494c325b0ea74e6bf26ae66a1f1390462cd",
+      "op_kernel/rwkv_endpoint_wkv7.cpp": "29eaa0014dddaa238db9771b78c0f3fcb913c9293c2501c8cd56d341deb41626"
+    }
+  },
+  "identities": {
+    "pytorch": "rwkv_aiv32::wkv7",
+    "ge": "RwkvAiv32Wkv7",
+    "aclnn": "aclnnRwkvAiv32Wkv7",
+    "kernel": "rwkv_aiv32_wkv7",
+    "vendor": "rwkv_aiv32"
+  },
+  "contract": "Contiguous [B,H,T<=2048,64], state [B,H,64,64], int32 lengths[B]; endpoint semantics; Ascend910B2",
+  "precision": "all recurrence tensors and arithmetic FP32",
+  "launch": "GetCoreNumAiv() instead of generic GetCoreNum(); same token/head algorithm",
+  "generated_sha256": {
+    "CMakeLists.txt": "5cda934c63a9a15640d308184db571e82f3bf1e90b9a5247d0746c1046c8f6ac",
+    "bridge.cpp": "13f5a0117c178a278a6546f7a33c495d0eda3210149adc21ba52c07070698874",
+    "LICENSE": "97e7afb9392d7c7f940607b30319a0501d9c2f8429f15c5f87ff944b1bcb73d6",
+    "build.sh": "d8996089791286c22d8c45e43543d3537fed5657541255a8ccf68113718bab8b",
+    "op_host/CMakeLists.txt": "54aa68b551a22faf57476b414e03643b0a433545239c329bf603ccf9c4d674b6",
+    "op_host/rwkv_aiv32_wkv7_tiling.h": "7c278bb1584000419fc09086420c75171b3a2e30de65df63dea059383a77c017",
+    "op_host/rwkv_aiv32_wkv7.cpp": "6a100ee9ada5eb92b7d44dfa6b753e5a26872ed36bd30b902d177772f5726eb5",
+    "op_kernel/CMakeLists.txt": "5f228bd04aae822f620be2230fcf2494c325b0ea74e6bf26ae66a1f1390462cd",
+    "op_kernel/rwkv_aiv32_wkv7.cpp": "1d9cd4be16c5f52c3619525dd6a0b20a461b09686bd8a50039b751c4166d2cf3"
+  }
+}

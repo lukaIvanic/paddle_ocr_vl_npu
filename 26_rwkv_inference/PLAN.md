@@ -378,8 +378,8 @@ PyTorch CPU/NPU traces record shapes after five external + one profiler warmups,
 two active calls; forward/pipeline captured separately and all parity checks pass.
 T512/T2048 clean eager **190/694 ms**, TorchAir **214/810 ms**. Endpoint WKV
 launches **48 eager / 24 compiled vector blocks**, same shapes/dtypes; device time
-**42/170 ms eager / 84/340 ms compiled**. Core-count cause/fix remains untested;
-no batch-size or precision conclusion. Shape/stack recording inflates eager host
+**42/170 ms eager / 84/340 ms compiled**. The explicit vector-core launch test below subsequently resolves this
+core-count discrepancy. Shape/stack recording inflates eager host
 trace time; use clean latency. [`Shapes, CSVs, hashes and accounting`](../tmp/26_rwkv_inference/reranker_largest_profile_b4_57c83b92/profile_comparison.json).
 
 
@@ -405,6 +405,28 @@ five external + one profiler warmups and two active calls. Pipeline includes war
 file read, tokenization/preparation, H2D, full scoring, D2H and JSON write;
 setup/compile/profiling are excluded. No isolated timing comparisons.
 [Matched inputs, numerical gates, kernel shapes, commands and hashes](../tmp/26_rwkv_inference/reranker_fp16_full_comparison/summary.json).
+
+
+**Vector launch and recurrence precision, 2026-10-07:** independent operator
+variants use `GetCoreNumAiv()` instead of generic `GetCoreNum()`; TorchAir
+configuration is unchanged. Largest pair, FP16 dense/64-channel LayerNorm,
+real B4/T2048, NPU1: the FP32 variant restores **48 compiled vector blocks**,
+reducing recurrence **340→170 ms**, and has exact state/logit parity with stock.
+Fresh stock control is **452/580 ms eager/compiled**; corrected FP32
+recurrence is **459/412 ms**, a 29% compiled pipeline time reduction. FP16 recurrence
+(inputs, state, vector arithmetic, reductions and output; surrounding model
+kept fixed) takes **430/379 ms**, with recurrence **141 ms**. Thus FP16 adds
+about 8% compiled pipeline time reduction after fixing launch geometry.
+However, B4 state normalized RMSE **0.02765** and maximum logit delta **0.17969**
+fail the unchanged numerical gates. B1/T512 logit delta **0.01172** passes its
+score gate but state RMSE **0.00561** fails. Each variant has exact eager/compiled
+agreement; full-model padding, row isolation and continuation pass. Independent
+FP64-formula, zero-length and nonzero-state checks pass for both kernels.
+These are numerical checks, not a ranking-quality evaluation; FP16 remains a
+diagnostic opt-in. `bench_reranker_sizes.py` with `--vector-variant aiv-fp32|aiv-fp16`
+and `--vector-build PATH` selects the independently built package from
+`wkv7_vector_variants.py`; original packages/defaults remain intact.
+[Measurements, precision/shape/block evidence and provenance](../tmp/26_rwkv_inference/reranker_vector_precision_9db3477a/summary.json).
 
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,

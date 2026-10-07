@@ -1,0 +1,12 @@
+{
+  "install/vendors/rwkv_aiv32/framework/tensorflow/npu_supported_ops.json": "7c52c1e0244907466a8200135df5ba2536d2d3c7806a1208afd3b3cb32e2e5ca",
+  "install/vendors/rwkv_aiv32/op_proto/lib/linux/aarch64/libcust_opsproto_rt2.0.so": "aa79689497bcceaf657f3cbfe028493d46e082de5198617b89cc0790a7f0504c",
+  "install/vendors/rwkv_aiv32/op_impl/ai_core/tbe/op_tiling/liboptiling.so": "7d1e31071df3c68ae34e131954e9ca06955eb08f915c1ff9bf71e17ded305dba",
+  "install/vendors/rwkv_aiv32/op_impl/ai_core/tbe/kernel/ascend910b/rwkv_aiv32_wkv7/RwkvAiv32Wkv7_8dcabbee6c9e0ec47e067a00c67af663.json": "884b05dd7f98b30d3bdf1c3930390f074de31656361943701f6501f5ef0a5d9a",
+  "install/vendors/rwkv_aiv32/op_impl/ai_core/tbe/kernel/ascend910b/rwkv_aiv32_wkv7/RwkvAiv32Wkv7_8dcabbee6c9e0ec47e067a00c67af663.o": "7a6f624ec5803da5c976ec2fb7989c396b5642916618a77133b61c44fc5e4f75",
+  "install/vendors/rwkv_aiv32/op_impl/ai_core/tbe/kernel/config/ascend910b/binary_info_config.json": "4608a4ce7abc045b280a787b1c94e30a611dce9ecb8d11045a6dfe27addb968c",
+  "install/vendors/rwkv_aiv32/op_impl/ai_core/tbe/kernel/config/ascend910b/rwkv_aiv32_wkv7.json": "599987a0cdc9f0a485074f04541400f4f2441d4102f6815f30f3befebe9387bf",
+  "install/vendors/rwkv_aiv32/op_impl/ai_core/tbe/config/ascend910b/aic-ascend910b-ops-info.json": "e1f52edd50c34f259e6f0f9d3f1020892c4db8b1df4e024d914e7a10ddf08a39",
+  "install/vendors/rwkv_aiv32/op_impl/ai_core/tbe/op_tiling/lib/linux/aarch64/libcust_opmaster_rt2.0.so": "7d1e31071df3c68ae34e131954e9ca06955eb08f915c1ff9bf71e17ded305dba",
+  "install/vendors/rwkv_aiv32/op_api/lib/libcust_opapi.so": "ee1e531b6af8091333336a3194ee8622de037feeed5738dc2e03ba6821e577f0"
+}

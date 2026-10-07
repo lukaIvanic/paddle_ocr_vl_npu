@@ -139,7 +139,7 @@ def worker(args):
             'local_modeling_rwkv_reranker.py', 'probe_reranker_endpoint.py', 'run_reranker_smoke.py', 'wkv7_endpoint.py', 'wkv7_vector_variants.py']},
         physical_npu=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), shared_device=args.allow_shared_device, all_checks_passed=False,
         backend=args.backend, scope='Prepared device inputs; uncached backbone plus state-readout head. Synchronized steady calls exclude CPU checks, compile, input transfers and tokenization.',
-        vector_variant=args.vector_variant, recurrence=args.recurrence, matrix_chunk_size=args.matrix_chunk_size,
+        vector_variant=args.vector_variant, recurrence_internal_dtype=('fp16' if args.vector_variant=='aiv-fp16' else 'fp32'), recurrence=args.recurrence, matrix_chunk_size=args.matrix_chunk_size,
         matrix_compute_dtype=args.matrix_compute_dtype, retain_dense_outputs=args.retain_dense_outputs, group_norm_impl=args.group_norm_impl, state_gate='FP16 state normalized RMSE <=0.002; FP32 allclose atol0.02/rtol0.005; all scores allclose atol0.02/rtol0.005; not a full-suite accuracy claim', timings={})
     try:
         import torch_npu
@@ -465,7 +465,7 @@ def main():
     if not 3<=args.profile_warmup<=20 or not 2<=args.profile_active<=5:
         p.error('Use profile warmup 3..20 and active 2..5')
     if args.warm_cache_from and not args.worker:p.error('Warm cache is for an explicit worker')
-    if args.vector_variant != 'stock' and (not args.vector_build or args.recurrence != 'vector' or args.warm_cache_from or args.gate_only):
+    if args.vector_variant != 'stock' and (not args.worker or not args.vector_build or args.recurrence != 'vector' or args.warm_cache_from or args.gate_only):
         p.error('Vector variants require a build, vector recurrence and fresh full-model run')
     if args.recurrence == 'matrix' and (not args.worker or args.gate_only or args.warm_cache_from):
         p.error('Matrix path requires an explicit full-model worker and fresh private caches')
