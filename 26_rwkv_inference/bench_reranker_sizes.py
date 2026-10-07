@@ -218,7 +218,19 @@ def worker(args):
                 matrix_dtype={'fp32':torch.float32,'fp16':torch.float16,'bf16':torch.bfloat16}[args.matrix_compute_dtype]
                 for block in model.blocks:
                     block.matrix_recurrence=MatrixRecurrence(args.matrix_chunk_size,matrix_dtype)
+                first_recurrence=model.blocks[0].matrix_recurrence
+                first_recurrence.capture_diagnostics=True
+                first_recurrence.diagnostic_tensors=[]
                 candidate=backbone(ids,lengths);candidate_logits=ranker(candidate[1])
+                report['matrix_first_layer_finiteness']=[]
+                for name,value in first_recurrence.diagnostic_tensors:
+                    cpu=value.detach().float().cpu();finite=torch.isfinite(cpu)
+                    finite_values=cpu[finite]
+                    report['matrix_first_layer_finiteness'].append(dict(name=name,shape=list(cpu.shape),
+                        nonfinite=int((~finite).sum()),elements=cpu.numel(),
+                        max_finite_abs=float(finite_values.abs().max()) if finite_values.numel() else None))
+                first_recurrence.capture_diagnostics=False
+                first_recurrence.diagnostic_tensors=[]
                 report['matrix_vs_vector_state_diagnostics']=[metrics(a,b) for a,b in zip(candidate,eager)]
                 report['matrix_vs_vector_logit_diagnostics']=dict(comparison=metrics(candidate_logits,expected),actual=candidate_logits.cpu().tolist(),expected=expected.cpu().tolist())
                 save(args.output/'result.json',report)
