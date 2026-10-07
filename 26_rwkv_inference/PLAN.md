@@ -550,6 +550,16 @@ estimate, not full-suite accuracy; **do not launch**, optimize/re-estimate first
 RWKV retains its released last-2048 input cap versus Qwen's 8192; track truncation.
 [`Audits, timings, failure/retry provenance and estimate scope`](../tmp/26_rwkv_inference/qwen_suite_probe_67a5f3be/runtime_estimate.json).
 
+**Updated projection after optimized NanoBEIR**, 2026-10-07: map the same
+3,600-pair suite sample's actual batch lengths to measured `afde9124` B4 timings
+within T512/T2048. Estimated total one/two-NPU time: **English 12.9/6.5 h**,
+**Chinese 78.3/39.4 h**, including estimated preparation/setup/output overhead.
+These are length-based projections, not new suite timing measurements; two
+queries/task and ideal balanced replica scaling remain limitations. A 30%
+planning allowance is not a confidence interval. No caching or tighter buckets
+are assumed; the combined one-hour gate still fails, so no full run is launched.
+[Calculation, sampled lengths and source hashes](../tmp/26_rwkv_inference/qwen_suite_reestimate_afde9124/runtime_estimate.json).
+
 ## Boundaries and evidence
 
 Proceed one verified step at a time. Luka subsequently authorized the single

@@ -1,0 +1,16 @@
+{
+  "source_commit": "3941e0f9b0f973490996670730b5858deb4842d2",
+  "source_sha256": {
+    "tmp/26_rwkv_inference/qwen_suite_probe_67a5f3be/runtime_estimate.json": "18d0917765c56de4ac28a9b4f8f3561be09b2e503ed149a511b19b31bc537d75",
+    "tmp/26_rwkv_inference/qwen_suite_probe_67a5f3be/prepared/audit.json": "7606a078d2f47df421d7b2f55f731fd9fc031bc528d751afc3832dd6e8aeae13",
+    "tmp/26_rwkv_inference/qwen_suite_probe_67a5f3be/sample_index.json": "14fdcf42c31daea88b68ffd01b22815067ab87a78c549bc7855840bf2418a1ab",
+    "tmp/26_rwkv_inference/nanobeir_large_bucketed_afde9124/probe/result.json": "0dd8b14a4e2f5f9a5655ffb9a525a53dca79dd1c5f1043c060ca22438a8c8930",
+    "tmp/26_rwkv_inference/nanobeir_large_bucketed_afde9124/probe/worker_1/batch_timings.jsonl.gz": "d50b2468428040205f21e5fd29eca9a03ec69bb85c340730e246f5d2f4329502",
+    "tmp/26_rwkv_inference/nanobeir_large_bucketed_afde9124/probe/worker_0/batch_timings.jsonl.gz": "e80cedb2fa39ae013163a8cf8bacb574d6caa41b7c8a36ea57670baaf737d599"
+  },
+  "artifact_sha256": {
+    "sample_lengths.json": "53288ab9e673700ad52c05c09d1514a4f83024d0b35d093731761592cce707fc",
+    "recalculate.py": "96454165005ffba251861a710f074d5fa6c95b2b034c638b52d03743b7045b71",
+    "runtime_estimate.json": "0f188c94757a4310fe7ee519a553e84db8a003274cd0243efdfbe71f716976aa"
+  }
+}

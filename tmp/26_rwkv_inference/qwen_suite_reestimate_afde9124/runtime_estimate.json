@@ -1,0 +1,252 @@
+{
+  "method": "Interpolate median measured B4 batch time by exact prepared length within each of T512/T2048; multiply by observed NanoBEIR scoring-loop/timed-batch ratio. Apply to two saved real top-100 queries per task and expand by full query count. This is a cross-workload estimate, not a new MTEB timing run.",
+  "source_run": "afde9124",
+  "sample_source": "67a5f3be",
+  "scoring_loop_ratio": 1.0018058331065807,
+  "tasks": [
+    {
+      "task": "ArguAna",
+      "suite": "english",
+      "pairs": 140600,
+      "estimated_scoring_seconds": 8971.104137119295,
+      "cpu_prepare_seconds": 53.89828591728292,
+      "sample_query_projected_seconds": [
+        7.256054741008291,
+        5.505117573528401
+      ],
+      "sample_fraction_t2048": 0.82
+    },
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "suite": "english",
+      "pairs": 159500,
+      "estimated_scoring_seconds": 4842.3252882205215,
+      "cpu_prepare_seconds": 26.338992622841033,
+      "sample_query_projected_seconds": [
+        2.1747748010415466,
+        3.897106438106443
+      ],
+      "sample_fraction_t2048": 0.16
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "suite": "english",
+      "pairs": 107200,
+      "estimated_scoring_seconds": 7317.120581819061,
+      "cpu_prepare_seconds": 24.890462483395822,
+      "sample_query_projected_seconds": [
+        7.286804042245392,
+        6.36454032682002
+      ],
+      "sample_fraction_t2048": 0.8
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "suite": "english",
+      "pairs": 100000,
+      "estimated_scoring_seconds": 7739.105198261505,
+      "cpu_prepare_seconds": 40.746834994934034,
+      "sample_query_projected_seconds": [
+        7.457878213574695,
+        8.020332182948316
+      ],
+      "sample_fraction_t2048": 1.0
+    },
+    {
+      "task": "FEVERHardNegatives",
+      "suite": "english",
+      "pairs": 100000,
+      "estimated_scoring_seconds": 5926.499287431799,
+      "cpu_prepare_seconds": 33.492429996840656,
+      "sample_query_projected_seconds": [
+        7.6724350993203885,
+        4.1805634755432095
+      ],
+      "sample_fraction_t2048": 0.66
+    },
+    {
+      "task": "FiQA2018",
+      "suite": "english",
+      "pairs": 64800,
+      "estimated_scoring_seconds": 3125.9604642229137,
+      "cpu_prepare_seconds": 15.287049003643915,
+      "sample_query_projected_seconds": [
+        7.3069160757657,
+        2.341110048379095
+      ],
+      "sample_fraction_t2048": 0.48
+    },
+    {
+      "task": "HotpotQAHardNegatives",
+      "suite": "english",
+      "pairs": 100000,
+      "estimated_scoring_seconds": 2219.223593471168,
+      "cpu_prepare_seconds": 16.006514997570775,
+      "sample_query_projected_seconds": [
+        2.2604717565597596,
+        2.177975430382576
+      ],
+      "sample_fraction_t2048": 0.0
+    },
+    {
+      "task": "SCIDOCS",
+      "suite": "english",
+      "pairs": 100000,
+      "estimated_scoring_seconds": 5022.071838360193,
+      "cpu_prepare_seconds": 28.629309992538765,
+      "sample_query_projected_seconds": [
+        4.592250529289265,
+        5.451893147431122
+      ],
+      "sample_fraction_t2048": 0.48
+    },
+    {
+      "task": "TRECCOVID",
+      "suite": "english",
+      "pairs": 5000,
+      "estimated_scoring_seconds": 246.59602455838575,
+      "cpu_prepare_seconds": 1.3230572498287074,
+      "sample_query_projected_seconds": [
+        5.906686693165066,
+        3.9571542891703646
+      ],
+      "sample_fraction_t2048": 0.48
+    },
+    {
+      "task": "Touche2020Retrieval.v3",
+      "suite": "english",
+      "pairs": 4900,
+      "estimated_scoring_seconds": 465.99687996029826,
+      "cpu_prepare_seconds": 2.7188762300647795,
+      "sample_query_projected_seconds": [
+        9.343974403397809,
+        9.676306411308243
+      ],
+      "sample_fraction_t2048": 1.0
+    },
+    {
+      "task": "VideoRetrieval",
+      "suite": "chinese",
+      "pairs": 100000,
+      "estimated_scoring_seconds": 3237.324509775125,
+      "cpu_prepare_seconds": 8.356940001249313,
+      "sample_query_projected_seconds": [
+        1.773584173671465,
+        4.701064845878785
+      ],
+      "sample_fraction_t2048": 0.16
+    },
+    {
+      "task": "MedicalRetrieval",
+      "suite": "chinese",
+      "pairs": 100000,
+      "estimated_scoring_seconds": 4607.480254847813,
+      "cpu_prepare_seconds": 10.36904999637045,
+      "sample_query_projected_seconds": [
+        5.268921982530844,
+        3.9460385271647813
+      ],
+      "sample_fraction_t2048": 0.48
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "suite": "chinese",
+      "pairs": 698000,
+      "estimated_scoring_seconds": 14735.615647631703,
+      "cpu_prepare_seconds": 69.13229322890402,
+      "sample_query_projected_seconds": [
+        2.038250600523078,
+        2.1839888400590715
+      ],
+      "sample_fraction_t2048": 0.0
+    },
+    {
+      "task": "CmedqaRetrieval",
+      "suite": "chinese",
+      "pairs": 399900,
+      "estimated_scoring_seconds": 15543.914236530885,
+      "cpu_prepare_seconds": 46.662311493557354,
+      "sample_query_projected_seconds": [
+        3.8131934484028336,
+        3.9607071450109617
+      ],
+      "sample_fraction_t2048": 0.32
+    },
+    {
+      "task": "DuRetrieval",
+      "suite": "chinese",
+      "pairs": 200000,
+      "estimated_scoring_seconds": 13871.079549998674,
+      "cpu_prepare_seconds": 37.090790006914176,
+      "sample_query_projected_seconds": [
+        9.153018477786812,
+        4.718061072211862
+      ],
+      "sample_fraction_t2048": 0.66
+    },
+    {
+      "task": "CovidRetrieval",
+      "suite": "chinese",
+      "pairs": 94900,
+      "estimated_scoring_seconds": 9465.584091004288,
+      "cpu_prepare_seconds": 43.90559412904986,
+      "sample_query_projected_seconds": [
+        9.941895006026593,
+        10.006648916005625
+      ],
+      "sample_fraction_t2048": 1.0
+    },
+    {
+      "task": "EcomRetrieval",
+      "suite": "chinese",
+      "pairs": 100000,
+      "estimated_scoring_seconds": 1751.208609998639,
+      "cpu_prepare_seconds": 5.3956999981892295,
+      "sample_query_projected_seconds": [
+        1.7590193644616572,
+        1.7433978555356209
+      ],
+      "sample_fraction_t2048": 0.0
+    },
+    {
+      "task": "T2Retrieval",
+      "suite": "chinese",
+      "pairs": 2281200,
+      "estimated_scoring_seconds": 217061.77040233978,
+      "cpu_prepare_seconds": 1235.2866808245017,
+      "sample_query_projected_seconds": [
+        9.97865216725203,
+        9.051837960955911
+      ],
+      "sample_fraction_t2048": 1.0
+    }
+  ],
+  "suites": {
+    "english": {
+      "pairs": 882000,
+      "one_npu_scoring_hours": 12.743334248173651,
+      "two_npu_scoring_hours": 6.371667124086826,
+      "estimated_overhead_seconds": 472.80531351894024,
+      "one_npu_total_hours": 12.874669057484468,
+      "two_npu_total_hours": 6.503001933397642,
+      "two_npu_planning_30pct_hours": 8.453902513416935
+    },
+    "chinese": {
+      "pairs": 3974000,
+      "one_npu_scoring_hours": 77.85388258392415,
+      "two_npu_scoring_hours": 38.92694129196207,
+      "estimated_overhead_seconds": 1647.1629127987544,
+      "one_npu_total_hours": 78.31142783747936,
+      "two_npu_total_hours": 39.384486545517284,
+      "two_npu_planning_30pct_hours": 51.199832509172474
+    }
+  },
+  "limitations": [
+    "Only two sampled queries per task; 30% planning allowance is not a confidence interval.",
+    "Two-NPU estimate assumes balanced independent model replicas and ideal inference scaling.",
+    "Latest measured kernel/runtime timings come from NanoBEIR, mapped by shape; no new MTEB/C-MTEB inference was executed.",
+    "FP16 dense projections, FP32 recurrence, LayerNorm, B4, unchanged TorchAir configuration, T512/T2048. No document caching.",
+    "CPU preparation extrapolated from prior suite sample; audit from prior measured full audit, setup from latest run, plus an unmeasured 60-second output/metric allowance per suite. CPU work not assumed to overlap.",
+    "Released RWKV last2048 truncation and per-query logical B32 padding retained, unlike Qwen8192."
+  ]
+}
