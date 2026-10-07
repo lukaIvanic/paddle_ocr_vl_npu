@@ -1,22 +1,9 @@
 import pathlib,sys,unittest
 sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[1]))
-from margin_distillation import (lr_at,margin_loss_and_score_gradient,benchmark_metrics,
-                                agreement,validate_teacher_inputs)
+from margin_distillation import lr_at,margin_loss_and_score_gradient,benchmark_metrics,agreement
 
 
 class MarginTest(unittest.TestCase):
-    def test_swap_keeps_teacher_fingerprint_and_rejects_truncation(self):
-        teacher={'train':{'pairs':8,'truncated':0,'tokens':100,'token_ids_sha256':'canonical'}}
-        student={'train':{'pairs':8,'truncated':0,'tokens':101,'token_ids_sha256':'swapped'}}
-        validate_teacher_inputs(teacher,teacher,student,'contents_swapped')
-        with self.assertRaises(AssertionError):
-            validate_teacher_inputs(teacher,student,student,'contents_swapped')
-        with self.assertRaises(AssertionError):
-            validate_teacher_inputs(teacher,teacher,teacher,'contents_swapped')
-        with self.assertRaises(AssertionError):
-            validate_teacher_inputs(teacher,teacher,{'train':student['train']|{'truncated':1}},'contents_swapped')
-        validate_teacher_inputs(teacher,teacher,teacher,'query_first')
-
     def test_all_pair_gradient_and_offset_invariance(self):
         import torch
         s=torch.tensor([1.,-2.,3.,.2],requires_grad=True)

@@ -39,8 +39,6 @@ class TrainingSmokeDataTest(unittest.TestCase):
                          "<Instruct>: task\n<Document>: passage\n<Query>: question")
         self.assertEqual(body("task", "question", "passage", "query_first"),
                          "<Instruct>: task\n<Query>: question\n<Document>: passage")
-        self.assertEqual(body("task", "question", "passage", "contents_swapped"),
-                         "<Instruct>: task\n<Query>: passage\n<Document>: question")
 
     def test_ranking_uses_logit_differences(self):
         groups = [{"documents": ["positive", "negative", "negative"]}]

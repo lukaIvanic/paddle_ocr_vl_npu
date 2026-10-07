@@ -9,8 +9,7 @@ import time
 import json
 
 from distill_runtime import Runtime, read, digest, model_manifest, save, plans
-from margin_distillation import (agreement, benchmark_metrics, lr_at,
-                                margin_loss_and_score_gradient, validate_teacher_inputs)
+from margin_distillation import agreement, benchmark_metrics, lr_at, margin_loss_and_score_gradient
 
 
 def main():
@@ -26,14 +25,7 @@ def main():
     p.add_argument('--queries-per-update', type=int, default=32)
     p.add_argument('--learning-rate', type=float, default=1e-6)
     p.add_argument('--wall-time-limit', type=float, default=2400)
-    p.add_argument('--student-order', choices=['query_first', 'contents_swapped'], default='query_first')
-    p.add_argument('--query-first-reference', type=Path,
-                   help='Completed query-first student result.json supplying the original baseline')
     args = p.parse_args()
-    if args.mode == 'teacher':
-        assert args.student_order == 'query_first', 'Teacher targets remain query first'
-    if args.student_order == 'contents_swapped':
-        assert args.query_first_reference, 'Contents swap requires the original query-first reference'
     started = time.monotonic()
     args.output.mkdir(parents=True, exist_ok=True)
     data = read(args.dataset)
@@ -41,14 +33,8 @@ def main():
     torch = runtime.torch
     import torch_npu
     import transformers
-    sections = ['train', 'validation', 'benchmark', 'reserved_benchmark']
-    if args.student_order != 'query_first':
-        for s in sections:
-            runtime.records(data[s], s)
-    canonical_lengths = dict(runtime.lengths)
-    records = {s: runtime.records(data[s], s, args.student_order) for s in sections}
-    if args.student_order == 'query_first':
-        canonical_lengths = dict(runtime.lengths)
+    records = {s: runtime.records(data[s], s) for s in
+               ['train', 'validation', 'benchmark', 'reserved_benchmark']}
     model = runtime.load(args.model)
     result = {'status': 'running', 'dataset_sha256': digest(args.dataset),
               'model_sha256': model_manifest(args.model), 'lengths': runtime.lengths,
@@ -86,27 +72,15 @@ def main():
     assert args.teacher and args.control
     control = read(args.control)
     assert control['passed'], 'Implementation control must pass before training'
-    assert control.get('prompt_order', 'query_first') == args.student_order, 'Control format differs'
     teacher = read(args.teacher)
     assert teacher['dataset_sha256'] == result['dataset_sha256']
-    validate_teacher_inputs(teacher['lengths'], canonical_lengths, runtime.lengths, args.student_order)
-    result['teacher_query_first_lengths'] = canonical_lengths
-    if args.query_first_reference:
-        reference = read(args.query_first_reference)
-        assert reference['status'] == 'completed'
-        assert reference['dataset_sha256'] == result['dataset_sha256']
-        assert reference['model_sha256'] == result['model_sha256']
-        assert reference['recipe']['prompt_order'] == 'query_first'
-        assert reference['lengths'] == canonical_lengths
-        assert reference['teacher_sha256'] == digest(args.teacher)
-        result['query_first_reference_sha256'] = digest(args.query_first_reference)
-        result['query_first_baseline'] = reference['evaluations']['0']
+    assert teacher['lengths'] == runtime.lengths, 'Teacher/student tokenization or truncation differs'
     result['teacher_sha256'] = digest(args.teacher)
     result['control_sha256'] = digest(args.control)
     result['recipe'] = {'loss': 'mean all unordered within-query Margin-MSE pairs, equal query weights',
         'optimizer': 'fresh NpuFusedAdamW, betas0.9/0.999, eps1e-8, weight_decay0',
         'gradient_clip': 1.0, 'microbatch_max': 4, 'train_token_budget': 8192,
-        'padding': 'left, microbatch max rounded up to128', 'prompt_order': args.student_order,
+        'padding': 'left, microbatch max rounded up to128', 'prompt_order': 'query_first',
         'score_gradient_replay': 'deterministic no-grad pass followed by microbatch backward',
         'weights': 'FP32', 'autocast': 'BF16', 'warmup_updates': 5}
     optimizer = torch_npu.optim.NpuFusedAdamW(model.parameters(), lr=args.learning_rate,
@@ -157,12 +131,6 @@ def main():
         save(args.output / 'result.json', result)
         print('EVALUATION', json.dumps({'step': step, 'suite': item['benchmark']['suite_macro_ndcg10'],
               'agreement': item['agreement'], 'seconds': item['seconds']}), flush=True)
-        if 'query_first_baseline' in result:
-            original = result['query_first_baseline']['benchmark']['suite_macro_ndcg10']
-            print('QUERY_FIRST_COMPARISON', json.dumps({'step': step,
-                  'original': original,
-                  'delta_ndcg_points': {lang: 100 * (value-original[lang]) for lang, value in
-                                       item['benchmark']['suite_macro_ndcg10'].items()}}), flush=True)
         assert seconds + val_s < 180, 'Frequent evaluation exceeds three-minute budget; resize fixture before training'
 
     try:

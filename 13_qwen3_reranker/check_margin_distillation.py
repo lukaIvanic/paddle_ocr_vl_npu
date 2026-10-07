@@ -13,14 +13,13 @@ def main():
     p.add_argument('--model', type=Path, required=True)
     p.add_argument('--dataset', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
-    p.add_argument('--student-order', choices=['query_first', 'contents_swapped'], default='query_first')
     args = p.parse_args()
     runtime = Runtime(args.model)
     torch = runtime.torch
     import torch_npu
     from transformers import AutoModelForCausalLM
     data = read(args.dataset)
-    rows = runtime.records(data['validation'], 'control', args.student_order)
+    rows = runtime.records(data['validation'], 'control')
     # Real examples with unequal lengths, small enough for HF eager backward.
     group = next(g for g in data['validation'] if
                  max(len(r['ids']) for r in rows if r['group_id'] == g['id']) <= 512)
@@ -29,8 +28,7 @@ def main():
     target = torch.tensor([2., -.5, 1., -2.], device=runtime.device)
     keys = ['embed_tokens.weight', 'layers.0.self_attn.q_proj.weight',
             'layers.27.self_attn.q_proj.weight']
-    result = {'passed': False, 'prompt_order': args.student_order,
-              'group_id': group['id'], 'lengths': [len(r['ids']) for r in selected],
+    result = {'passed': False, 'group_id': group['id'], 'lengths': [len(r['ids']) for r in selected],
               'dtype': 'FP32 parameters, BF16 autocast', 'runs': {}}
     baseline = None
     for mode in ['hf', 'eager', 'fusion_attention', 'replay']:

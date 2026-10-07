@@ -11,12 +11,10 @@ def normalize(text):
 
 
 def body(instruction, query, document, order):
-    if order == "contents_swapped":
-        query, document = document, query
     fields = [f"<Query>: {query}", f"<Document>: {document}"]
     if order == "document_first":
         fields.reverse()
-    elif order not in {"query_first", "contents_swapped"}:
+    elif order != "query_first":
         raise ValueError(order)
     return "\n".join([f"<Instruct>: {instruction}"] + fields)
 
