@@ -188,10 +188,14 @@ def nano(a):
                 pairs.extend((index[d],data['queries'][q],q,d) for d in j['corpus_ids'])
             # Check the document-state builder used by the full suites against
             # accepted cache rows, including long-prefix continuation.
-            selected=sorted(docs,key=lambda d:len(data['documents'][d]))
-            ds=[selected[i] for i in [0,len(selected)//2,len(selected)-2,len(selected)-1]]
-            fresh=pack(e.states([data['documents'][d] for d in ds],document=True))
-            state_check=require(torch.from_numpy(fresh),torch.from_numpy(np.array(cache[[index[d] for d in ds]])),.02,.005)
+            state_check=[]
+            longest=max(range(len(docs)),key=lambda i:len(data['documents'][docs[i]]))
+            for offset in sorted({0,(len(docs)//2)//4*4,longest//4*4,(len(docs)-1)//4*4}):
+                ds=docs[offset:offset+4];rows=[data['documents'][d] for d in ds]
+                rows+=rows[-1:]*(4-len(rows))
+                fresh=pack(e.states(rows,document=True))[:len(ds)]
+                state_check.append(require(torch.from_numpy(fresh),
+                    torch.from_numpy(np.array(cache[offset:offset+len(ds)])),.02,.005))
             scored,timing=score_pairs(a,e,cache,pairs,check=True)
             got=defaultdict(dict)
             for q,d,s in scored:assert d not in got[q];got[q][d]=s
