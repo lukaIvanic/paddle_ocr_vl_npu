@@ -24,15 +24,17 @@ class Gather:
         self.local_cpus=local_cpus;self.pool=None
         affinity=os.sched_getaffinity(0)
         try:
-            if method=='local_rows':os.sched_setaffinity(0,local_cpus)
+            if method.startswith('local_'):os.sched_setaffinity(0,local_cpus)
             self.buffer=np.empty((batch,cache.shape[1]),dtype=np.float32) if shared_buffer is None else shared_buffer
             self.buffer.fill(0)  # First-touch before timing, same for every method.
         finally:os.sched_setaffinity(0,affinity)
         self.tensor=torch.from_numpy(self.buffer)
         self.indices=torch.empty(batch,dtype=torch.long)
         if method=='torch_index':self.source=torch.from_numpy(self.plain)
-        if method.startswith('threads'):
-            self.workers=int(method[7:]);self.pool=ThreadPoolExecutor(self.workers)
+        if 'threads' in method:
+            self.workers=int(method.split('threads')[1])
+            initialize=(lambda:os.sched_setaffinity(0,local_cpus)) if method.startswith('local_') else None
+            self.pool=ThreadPoolExecutor(self.workers,initializer=initialize)
         self.memmove=ctypes.CDLL(None).memmove
         self.memmove.argtypes=[ctypes.c_void_p,ctypes.c_void_p,ctypes.c_size_t]
         self.memmove.restype=ctypes.c_void_p
@@ -90,7 +92,7 @@ def main():
     batches=[pairs[i:i+a.batch_size] for i in range(0,len(pairs),a.batch_size)]
     e=Engine(a);local_cpus=set(map(int,a.local_cpus.split(',')))
     shared=np.empty((a.batch_size,cache.shape[1]),dtype=np.float32);shared.fill(0)
-    loaders={m:Gather(cache,a.batch_size,m,local_cpus,None if m=='local_rows' else shared) for m in a.methods}
+    loaders={m:Gather(cache,a.batch_size,m,local_cpus,None if m.startswith('local_') else shared) for m in a.methods}
     emit('CONFIG',dict(batch=a.batch_size,pairs=len(pairs),methods=a.methods,torch_threads=torch.get_num_threads(),cpu_affinity=sorted(os.sched_getaffinity(0)),numpy=np.__version__,source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),no_overlap=True))
     gather_stats=collections.defaultdict(list)
     def pipeline(batch,backend,method):
