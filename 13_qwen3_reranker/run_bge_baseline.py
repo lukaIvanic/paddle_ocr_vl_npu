@@ -13,7 +13,7 @@ from margin_distillation import (agreement, benchmark_metrics, lr_at,
                                 validate_teacher_inputs)
 
 from bge_baseline import loss_and_score_gradient, PIN
-from bge_filtered_runtime import update_windows, filtered_reference_baseline, validation_objective
+from bge_filtered_runtime import update_windows, filtered_reference_baseline, validation_objective, expanded_reference_baseline
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
@@ -25,6 +25,8 @@ def main():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--schedule', choices=['constant', 'warmup_linear'], default='constant')
     p.add_argument('--steps', type=int, default=50)
+    p.add_argument('--eval-steps', type=int, nargs='+', default=[0,1,3,10,25,50])
+    p.add_argument('--query-first-reference-dataset', type=Path)
     p.add_argument('--profile-updates', type=int, default=3)
     p.add_argument('--profile-eval', action='store_true', help='Time unchanged-weight evaluation during optimizer-free profiling')
     p.add_argument('--queries-per-update', type=int, default=32)
@@ -37,6 +39,7 @@ def main():
     p.add_argument('--reserved-eval-steps', type=int, nargs='*', default=[],
                    help='Additional evaluated updates receiving the reserved panel')
     args = p.parse_args()
+    eval_steps = sorted(set([0,args.steps]+[s for s in args.eval_steps if 0 <= s <= args.steps]))
     if args.mode == 'teacher':
         assert args.student_order == 'query_first', 'Teacher targets remain query first'
     if args.student_order != 'query_first':
@@ -112,10 +115,20 @@ def main():
             assert reference['lengths'] == canonical_lengths
             assert reference['teacher_sha256'] == digest(args.teacher)
             result['query_first_baseline'] = reference['evaluations']['0']
+        elif data.get('derivation', {}).get('kind') == 'expanded_bge_length_filter':
+            assert args.query_first_reference_dataset
+            assert digest(args.query_first_reference_dataset) == reference['dataset_sha256'] == data['derivation']['reference_dataset_sha256']
+            result['query_first_baseline'] = expanded_reference_baseline(data, read(args.query_first_reference_dataset), reference, canonical_lengths, teacher)
+            result['reference_comparison_scope'] = 'Released-weight reference uses identical held-out inputs; training sample and budget are expanded.'
         else:
             result['query_first_baseline'] = filtered_reference_baseline(
                 data, reference, digest(args.query_first_reference), teacher, canonical_lengths)
             result['reference_comparison_scope'] = 'Same benchmark queries and released initialization; prior query-first training included groups removed by the disclosed length filter.'
+    stream = None
+    if 'stream' in teacher:
+        from bge_teacher_stream import TeacherStream
+        stream = TeacherStream(args.teacher, teacher, data['train'])
+        result['teacher_stream_chunks_consumed'] = stream.consumed
     result['teacher_sha256'] = digest(args.teacher)
     result['control_sha256'] = digest(args.control)
     result['recipe'] = {'loss': 'BGE supervised group CE + teacher-distribution CE, weights 1:1, mean query groups',
@@ -133,7 +146,7 @@ def main():
     windows = update_windows(data['train'], args.steps, args.queries_per_update, args.batch_schedule)
     result['training_group_counts_per_update'] = [len(w) for w in windows]
     if args.batch_schedule == 'retained_original_slots':
-        assert data['derivation']['kind'] == 'whole_group_length_filter'
+        assert data['derivation']['kind'] in ('whole_group_length_filter','expanded_bge_length_filter')
     assert all(len(g['documents']) == 8 for g in data['train'])
 
     def checkpoint(step):
@@ -149,7 +162,8 @@ def main():
                                'steps': args.steps, 'peak_lr': args.learning_rate, 'warmup': 5},
                  'rng': torch.get_rng_state(), 'npu_rng': torch.npu.get_rng_state(),
                  'dataset_sha256': result['dataset_sha256'], 'teacher_sha256': result['teacher_sha256'],
-                 'training_order_ids': [g['id'] for g in data['train']], 'config': result['config']}
+                 'training_order_ids': [g['id'] for g in data['train']], 'config': result['config'],
+                 'teacher_stream_chunks_consumed':dict(stream.consumed) if stream else None}
         path = args.output / f'checkpoint_{step:03d}.pt'
         torch.save(state, path.with_suffix('.partial'))
         path.with_suffix('.partial').replace(path)
@@ -166,7 +180,7 @@ def main():
     assert len(data['reserved_benchmark']) == len(reserved_keys) == 72
     assert not frequent_keys & reserved_keys
     result['evaluation_panels'] = {
-        'trajectory_108': {'queries': 108, 'steps': [0, 1, 3, 10, 25, 50]},
+        'trajectory_108': {'queries': 108, 'steps': eval_steps},
         'baseline_endpoint_180': {'queries': 180, 'steps': [0, args.steps]},
         'membership_sha256': hashlib.sha256(json.dumps(
             {'frequent': sorted(frequent_keys), 'reserved': sorted(reserved_keys)}
@@ -210,7 +224,10 @@ def main():
         for step in range(1, args.steps + 1):
             if time.monotonic() - started > args.wall_time_limit:
                 result['status'] = 'time_limit'
-                if args.mode != 'profile': checkpoint(step - 1)
+                if args.mode != 'profile':
+                    checkpoint(step - 1)
+                    evaluate(step - 1, endpoint=True)
+                    result['evaluation_panels']['baseline_endpoint_180']['actual_endpoint_step'] = step - 1
                 break
             begin = time.monotonic()
             # This checkpoint has no dropout: eval mode retains full autograd.
@@ -230,7 +247,8 @@ def main():
                     for micro in microplan:
                         z = runtime.logits(model, micro)
                         values[[r['candidate'] for r in micro]] = z
-                target = torch.tensor(teacher['scores']['train'][group['id']], device=runtime.device)
+                target_values = stream.get(group['id']) if stream else teacher['scores']['train'][group['id']]
+                target = torch.tensor(target_values, device=runtime.device)
                 loss, gradient = loss_and_score_gradient(values, target)
                 total_loss += loss.detach() / len(window)
                 for micro in microplan:
@@ -252,7 +270,7 @@ def main():
                     result['status'] = 'profile_completed_no_optimizer_updates'
                     break
                 continue
-            if step in {1, 3, 10, 25, 50} or step == args.steps:
+            if step in eval_steps:
                 checkpoint(step)
                 evaluate(step, endpoint=step == args.steps or step in args.reserved_eval_steps)
             save(args.output / 'result.json', result)
