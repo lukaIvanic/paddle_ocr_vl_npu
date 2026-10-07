@@ -21,6 +21,8 @@ class TeacherStream:
   self.group_chunk={g['id']:i//size for i,g in enumerate(groups)}
   self.signatures={g['id']:group_signature(g) for g in groups}
  def get(self,key):
+  failure=self.path.parent/'failure.json'
+  if failure.exists():raise RuntimeError(f'Teacher failed: {read(failure)}')
   index=self.group_chunk[key]
   if index not in self.cache:
    path=self.directory/f'{index:06d}.json';started=time.monotonic();last_log=0
