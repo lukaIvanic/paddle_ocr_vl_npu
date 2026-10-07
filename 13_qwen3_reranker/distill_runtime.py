@@ -80,7 +80,7 @@ class Runtime:
         return model
 
     def logits(self, model, rows, hf=False):
-        from local_modeling_qwen3_reranker import build_left_padded_causal_bool_mask
+        from local_modeling_qwen3_reranker import build_left_padded_causal_bool_mask, build_left_padded_causal_mask
         import torch.nn.functional as F
         length = math.ceil(max(len(r['ids']) for r in rows) / 128) * 128
         x = self.tokenizer.pad({'input_ids': [r['ids'] for r in rows]}, padding='max_length',
@@ -91,7 +91,9 @@ class Runtime:
             if hf:
                 z = model(**x, position_ids=pos, use_cache=False, logits_to_keep=1).logits[:, -1, self.answers]
             else:
-                mask = build_left_padded_causal_bool_mask(x['attention_mask'])
+                mask = (build_left_padded_causal_mask(x['attention_mask'], model.embed_tokens.weight.dtype)
+                        if model.attention_impl == 'eager'
+                        else build_left_padded_causal_bool_mask(x['attention_mask']))
                 h = model.forward_hidden_states_prepared(x['input_ids'], pos, mask)
                 z = F.linear(h[:, -1], model.lm_head.weight[self.answers])
         return z.float()[:, 1] - z.float()[:, 0]
