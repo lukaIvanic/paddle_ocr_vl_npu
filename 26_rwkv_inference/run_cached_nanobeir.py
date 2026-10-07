@@ -66,7 +66,7 @@ class Engine:
         op=load_variant(a.vector_build,'aiv-fp32')
         for b in [*self.model.blocks,*self.ranker.blocks]:b.group_norm_impl='layer_norm';b.vector_variant=op;b.vector_dtype=torch.float32
         self.module=Continue(self.model).eval();self.eager=self.module.forward
-        self.call=compiled(self.module.forward,a.output/'continuation_cache');self.head=compiled(self.ranker.forward,a.output/'head_cache')
+        self.calls={};self.cache_root=a.output;self.head=compiled(self.ranker.forward,a.output/'head_cache')
         self.report=dict(checkpoint_sha256=eh,reranker_sha256=rh,physical_npu=os.environ['ASCEND_RT_VISIBLE_DEVICES'],device=torch.npu.get_device_name(0),dtype='FP16 dense; FP32 shifts/matrices',torch=torch.__version__,torch_npu=torch_npu.__version__)
     def zero(self):return (torch.zeros(24,2,4,2048,device='npu'),torch.zeros(24,4,32,64,64,device='npu'))
     def states(self,rows,state=None,backend='torchair',document=False):
@@ -78,7 +78,9 @@ class Engine:
             T=next(t for t in choices if t>=max(ls))
             ids=torch.tensor([x+[0]*(T-len(x)) for x in parts],dtype=torch.long,device='npu')
             lens=torch.tensor([max(1,L) for L in ls],dtype=torch.int32,device='npu')
-            got=(self.call if backend=='torchair' else self.eager)(ids,lens,*state)
+            if backend=='torchair' and T not in self.calls:
+                self.calls[T]=compiled(self.module.forward,self.cache_root/f'continuation_t{T}')
+            got=(self.calls[T] if backend=='torchair' else self.eager)(ids,lens,*state)
             if min(ls)==0:
                 active=torch.tensor([L>0 for L in ls],device='npu')
                 state=(torch.where(active[None,None,:,None],got[0],state[0]),torch.where(active[None,:,None,None,None],got[1],state[1]))
