@@ -102,11 +102,64 @@ def load_variant(build, variant):
     return op
 
 
+def check_arithmetic(build, variant, output):
+    """Correctness only: FP64 formula, zero length and nonzero continuation."""
+    import torch
+    import torch_npu
+    from run_reranker_smoke import metrics
+    torch.set_num_threads(4)
+    torch.npu.set_device(0)
+    torch.npu.set_compile_mode(jit_compile=False)
+    op=load_variant(build,variant)
+    dtype=torch.float16 if variant=='aiv-fp16' else torch.float32
+    generator=torch.Generator().manual_seed(713)
+    shape=(3,2,53,64)
+    xs=[torch.randn(shape,generator=generator)*.1 for _ in range(6)]
+    xs[2]=-torch.rand(shape,generator=generator)*.4-.03
+    xs=[x.to(dtype) for x in xs]
+    state=(torch.randn((3,2,64,64),generator=generator)*.1).to(dtype)
+    lengths=torch.tensor([53,31,0],dtype=torch.int32)
+    # CPU FP64 directly implements S <- S exp(w) + (S a)b^T + v k^T.
+    k,v,w,r,a,b=[x.double() for x in xs]
+    expected=state.double().clone(); y=torch.zeros(shape,dtype=torch.float64)
+    for t in range(shape[2]):
+        active=(lengths>t)[:,None,None,None]
+        update=(expected*w[:,:,t,None,:].exp()
+                + (expected@a[:,:,t,:,None])*b[:,:,t,None,:]
+                + v[:,:,t,:,None]*k[:,:,t,None,:])
+        expected=torch.where(active,update,expected)
+        y[:,:,t]=torch.where(active.squeeze(-1),(expected@r[:,:,t,:,None]).squeeze(-1),0.)
+    inputs=[x.npu() for x in xs];initial=state.npu();lens=lengths.npu()
+    actual,final=op(*inputs,initial,lens)
+    split=17
+    prefix=[x[:,:,:split].contiguous() for x in inputs]
+    suffix=[x[:,:,split:].contiguous() for x in inputs]
+    _,mid=op(*prefix,initial,lens.clamp(max=split))
+    _,continued=op(*suffix,mid,(lens-split).clamp(min=0))
+    row=dict(variant=variant,seed=713,shape=list(shape),lengths=lengths.tolist(),
+        output_vs_fp64=metrics(actual,y),state_vs_fp64=metrics(final,expected),
+        continuation=metrics(continued,final),zero_length_state_exact=torch.equal(final[2].cpu(),state[2]),
+        zero_length_output_zero=bool((actual[2]==0).all().cpu()),
+        scope='Synthetic correctness only; never a latency benchmark')
+    row['all_checks_passed']=(row['output_vs_fp64']['finite'] and row['state_vs_fp64']['finite']
+        and row['output_vs_fp64']['normalized_rmse']<.005
+        and row['state_vs_fp64']['normalized_rmse']<.005
+        and row['continuation']['max_abs']==0
+        and row['zero_length_state_exact'] and row['zero_length_output_zero'])
+    output.write_text(json.dumps(row,indent=2)+'\n')
+    print(json.dumps(row),flush=True)
+    assert row['all_checks_passed'],row
+
+
 if __name__ == '__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--build-root',type=Path,required=True)
     p.add_argument('--variant',choices=IDENTITIES,required=True)
+    p.add_argument('--check-output',type=Path,help='Run correctness only against the existing build')
     args=p.parse_args()
-    assert not args.build_root.exists(), 'Use a fresh build directory'
-    source=prepare(args.build_root,args.variant)
-    subprocess.run(['bash',str(source/'build.sh'),str(args.build_root)],check=True)
+    if args.check_output:
+        check_arithmetic(args.build_root,args.variant,args.check_output)
+    else:
+        assert not args.build_root.exists(), 'Use a fresh build directory'
+        source=prepare(args.build_root,args.variant)
+        subprocess.run(['bash',str(source/'build.sh'),str(args.build_root)],check=True)
