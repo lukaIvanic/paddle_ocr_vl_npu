@@ -1,0 +1,12 @@
+{
+  "runs": [
+    {
+      "result_path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_larger_speed_88054dcc/probe/large_fp32_b4_t512/result.json",
+      "result_sha256": "69039ae7d6465288f236a4f09af5e858d0ec28b93e9d63f9522912c2000576a5"
+    },
+    {
+      "result_path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_larger_speed_88054dcc/probe/large_fp32_b4_t2048/result.json",
+      "result_sha256": "a340afec0680d7b5428cfd472bac9c56daff9bd474f369eb67d090922764ba04"
+    }
+  ]
+}

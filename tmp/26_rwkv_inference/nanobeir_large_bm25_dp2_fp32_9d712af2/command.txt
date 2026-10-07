@@ -1,0 +1,21 @@
+{
+  "source_commit": "9d712af2bd734e231aa38a9511607a88d0e4c9a2",
+  "source_checkout": "/workspace/repos/rwkv-nanobeir-large-9d712af2",
+  "utc_started": "2026-10-07T09:33:34.968326+00:00",
+  "physical_npus": [
+    1,
+    2
+  ],
+  "host": "liteserver-c001-4",
+  "container": "research_vllm_ascend_023_external_workspace",
+  "argv": [
+    "bash",
+    "-c",
+    "source /usr/local/bin/npu-setup && export TORCH_DEVICE_BACKEND_AUTOLOAD=0 OMP_NUM_THREADS=1 ASCEND_RT_VISIBLE_DEVICES=1; source /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/bin/set_env.bash && source /workspace/rwkv_reference/wkv7_endpoint_d7348673/install/vendors/rwkv_endpoint/bin/set_env.bash && export PATH=/usr/local/python3.12.13/bin:$PATH && cd /workspace/repos/rwkv-nanobeir-large-9d712af2 && exec /workspace/venvs/rwkv_cpu_py312/bin/python -u /workspace/repos/rwkv-nanobeir-large-9d712af2/26_rwkv_inference/run_nanobeir_reranker.py --size large --inference-backend raw_eager --protocol bm25-positives --dtype fp32 --devices 1 2 --reranker /workspace/rwkv_reference/models/rwkv1b3-reranker.pth --checkpoint /workspace/rwkv_reference/models/rwkv1b4-emb-curriculum.pth --runtime /workspace/rwkv_reference/runtime --upstream /workspace/rwkv_reference/upstream/reranker --build-root /workspace/rwkv_reference/wkv7_endpoint_d7348673 --reference-build /workspace/rwkv_reference/wkv7_build_178d16e6 --data-root /workspace/rwkv_reference/nanobeir_bm25_v5_1_2 --candidates-root /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_eager_b4_fp16_c3166fd1/probe --batch-evidence /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_large_bm25_dp2_fp32_9d712af2/batch_gate.json --warm-cache-from /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_larger_speed_88054dcc/probe/large_fp32_b4_t512 --prepared-reference /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_base_bm25_dp2_fp32_acbedbc3/probe --short-batch-seconds 0.1909257249935763 --long-intercept-seconds 0.023207223326608073 --long-per-token-seconds 0.0003275751985682973 --output /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/nanobeir_large_bm25_dp2_fp32_9d712af2/probe"
+  ],
+  "cost_model": {
+    "short": 0.1909257249935763,
+    "intercept": 0.023207223326608073,
+    "slope": 0.0003275751985682973
+  }
+}

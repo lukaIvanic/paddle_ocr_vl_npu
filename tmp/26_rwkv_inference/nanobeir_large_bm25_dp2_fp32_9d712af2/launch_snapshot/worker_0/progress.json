@@ -1,0 +1,10 @@
+{
+  "done": 817,
+  "total": 28867,
+  "elapsed_seconds": 47.62566196000262,
+  "pairs_per_second": 17.154617203770098,
+  "forward_and_transfer_seconds": 47.54796247011109,
+  "estimated_remaining_seconds": 1545.1107229092588,
+  "task": "NanoSCIDOCSRetrieval",
+  "queries": 8
+}

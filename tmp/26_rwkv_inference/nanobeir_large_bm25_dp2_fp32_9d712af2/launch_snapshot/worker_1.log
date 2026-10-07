@@ -1,0 +1,28 @@
+[1/2] c++ -MMD -MF bridge.o.d -DTORCH_EXTENSION_NAME=rwkv_reference_wkv7_bridge -DTORCH_API_INCLUDE_EXTENSION_H -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/acl/inc -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/include -isystem /usr/local/python3.12.13/lib/python3.12/site-packages/torch/include -isystem /usr/local/python3.12.13/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -isystem /usr/local/python3.12.13/include/python3.12 -fPIC -std=c++17 -O3 -std=c++17 -c /workspace/repos/rwkv-nanobeir-large-9d712af2/26_rwkv_inference/wkv7_npu/bridge.cpp -o bridge.o 
+In file included from /usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/include/npu_cpp_extension.h:19,
+                 from /workspace/repos/rwkv-nanobeir-large-9d712af2/26_rwkv_inference/wkv7_npu/bridge.cpp:4:
+/workspace/repos/rwkv-nanobeir-large-9d712af2/26_rwkv_inference/wkv7_npu/bridge.cpp: In function ‘Pair wkv7(const at::Tensor&, const at::Tensor&, const at::Tensor&, const at::Tensor&, const at::Tensor&, const at::Tensor&, const at::Tensor&)’:
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/utils/op_api_common_base.h:515:98: warning: capture of variable ‘opApiFuncAddr’ with non-automatic storage duration
+  515 |         auto acl_call = [converted_params, workspace_addr, workspace_size, acl_stream, executor, opApiFuncAddr]()->int {\
+      |                                                                                                  ^~~~~~~~~~~~~
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/utils/op_api_common_base.h:515:98: note: in definition of macro ‘EXEC_NPU_CMD_V1_EXT’
+  515 |         auto acl_call = [converted_params, workspace_addr, workspace_size, acl_stream, executor, opApiFuncAddr]()->int {\
+      |                                                                                                  ^~~~~~~~~~~~~
+/workspace/repos/rwkv-nanobeir-large-9d712af2/26_rwkv_inference/wkv7_npu/bridge.cpp:28:5: note: in expansion of macro ‘EXEC_NPU_CMD_EXT’
+   28 |     EXEC_NPU_CMD_EXT(aclnnRwkvReferenceWkv7, k, v, w, r, a, b, hi, out, ht);
+      |     ^~~~~~~~~~~~~~~~
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/utils/op_api_common_base.h:491:22: note: ‘void* opApiFuncAddr’ declared here
+  491 |         static void* opApiFuncAddr = nullptr;                                                                          \
+      |                      ^~~~~~~~~~~~~
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/op-plugin/op_plugin/utils/op_api_common_base.h:491:22: note: in definition of macro ‘EXEC_NPU_CMD_V1_EXT’
+  491 |         static void* opApiFuncAddr = nullptr;                                                                          \
+      |                      ^~~~~~~~~~~~~
+/workspace/repos/rwkv-nanobeir-large-9d712af2/26_rwkv_inference/wkv7_npu/bridge.cpp:28:5: note: in expansion of macro ‘EXEC_NPU_CMD_EXT’
+   28 |     EXEC_NPU_CMD_EXT(aclnnRwkvReferenceWkv7, k, v, w, r, a, b, hi, out, ht);
+      |     ^~~~~~~~~~~~~~~~
+[2/2] c++ bridge.o -shared -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib -ltorch_npu -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib -lc10 -ltorch_cpu -ltorch -ltorch_python -o rwkv_reference_wkv7_bridge.so
+ninja: no work to do.
+PREFLIGHT {"task": "NanoSCIDOCSRetrieval", "query_id": "a352061134daa2c47861b8c4216ee5482a93be1d", "offset": 32, "length": 349, "backend": "raw_eager_exact_length", "logits": [-5.978794574737549, -5.063931465148926, -8.9673490524292, -3.9530258178710938], "reference_logits": [-5.978794574737549, -5.063931465148926, -8.9673490524292, -3.9530258178710938], "batch_vs_single": {"max_abs": 6.9141387939453125e-06, "normalized_rmse": 8.659962418278155e-07, "finite": true}, "backend_vs_exact_eager": {"max_abs": 0.0, "normalized_rmse": 0.0, "finite": true}}
+PREFLIGHT {"task": "NanoSCIDOCSRetrieval", "query_id": "a352061134daa2c47861b8c4216ee5482a93be1d", "offset": 0, "length": 1242, "backend": "raw_eager_exact_length", "logits": [4.1169304847717285, -5.517318248748779, -1.4325973987579346, -3.9010660648345947], "reference_logits": [4.1169304847717285, -5.517318248748779, -1.4325973987579346, -3.9010660648345947], "batch_vs_single": {"max_abs": 8.58306884765625e-06, "normalized_rmse": 1.3774371154795517e-06, "finite": true}, "backend_vs_exact_eager": {"max_abs": 0.0, "normalized_rmse": 0.0, "finite": true}}
+PREFLIGHT {"task": "NanoSCIDOCSRetrieval", "query_id": "a352061134daa2c47861b8c4216ee5482a93be1d", "offset": 100, "length": 318, "backend": "raw_eager_exact_length", "logits": [-5.065433502197266, -8.558694839477539, -8.558696746826172, -8.558696746826172], "reference_logits": [-5.065433502197266, -8.558694839477539, -8.558696746826172, -8.558696746826172], "batch_vs_single": {"max_abs": 5.7220458984375e-06, "normalized_rmse": 5.45348427749559e-07, "finite": true}, "backend_vs_exact_eager": {"max_abs": 0.0, "normalized_rmse": 0.0, "finite": true}}
+PROGRESS {"done": 102, "total": 28821, "elapsed_seconds": 6.621521769993706, "pairs_per_second": 15.40431392406295, "forward_and_transfer_seconds": 6.607961449975846, "estimated_remaining_seconds": 1593.5467469282366, "task": "NanoSCIDOCSRetrieval", "queries": 1}
