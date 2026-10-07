@@ -5,9 +5,9 @@
   "files": {
     "rwkv7_chunk_scan.py": {
       "upstream_path": "perf/rwkv7_chunk_scan.py",
-      "sha256": "5252c3caa72bdf9880695e5355226ba8d3a1a1b164e3b3853145cc7cd7cdcfd3",
+      "sha256": "7e25ab00144e977d263f81908b2b86b9a3e4ad9d83804af0a5ce6004085f754a",
       "modifications": [
-        "Replace dense-summary diag_embed by equivalent FP32 identity-mask multiplication; installed TorchAir lacks aten.diag_embed converter."
+        "Replace dense-summary diag_embed by equivalent FP32 index-equality identity-mask multiplication; installed TorchAir lacks aten.diag_embed and aten.eye converters."
       ],
       "upstream_sha256": "fc7a8c4486a1a5bfe8cc3aecc6e1b88655c28d0b64bc6c4177c1b4bb2f476167"
     },
