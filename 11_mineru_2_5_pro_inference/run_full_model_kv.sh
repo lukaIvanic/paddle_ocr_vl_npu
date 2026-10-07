@@ -19,6 +19,7 @@ command=("$PYTHON" "$script_dir/bench_full_model_kv.py" --model "$MODEL"
   --variants "${VARIANTS:-increfa_nd,fia_nd,fia_blocked_nd,increfa_nz,fia_nz}"
   --chip "$CHIP" --output "$run_dir/summary.json" --cache-dir "$run_dir/compile_cache")
 if [[ "${PROFILE:-0}" == 1 ]]; then command+=(--profile); fi
+if [[ -n "${CROP_IDS:-}" ]]; then command+=(--crop-ids "$CROP_IDS"); fi
 {
   echo "commit=$commit"
   echo "hostname=$(hostname)"

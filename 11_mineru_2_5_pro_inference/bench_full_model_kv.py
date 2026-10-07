@@ -52,6 +52,7 @@ def args_parser():
     p.add_argument("--model", type=Path, required=True)
     p.add_argument("--manifest", type=Path, default=Path(__file__).parents[1]/"crops/hotswap_100_manifest.json")
     p.add_argument("--limit", type=int, default=8)
+    p.add_argument("--crop-ids", help="Explicit comma-separated real manifest IDs, in cohort order")
     p.add_argument("--batch-size", type=int, default=4)
     p.add_argument("--max-new-tokens", type=int, default=512)
     p.add_argument("--cache-length", type=int, default=4096)
@@ -112,7 +113,12 @@ def run(args, report):
     if report["model_layers"] != 24:
         raise RuntimeError("Benchmark requires the checkpoint's complete 24-layer decoder")
     eos = int(model.config.eos_token_id)
-    manifest = json.loads(args.manifest.read_text())[:args.limit]
+    all_entries = json.loads(args.manifest.read_text())
+    if args.crop_ids:
+        by_id = {entry["id"]:entry for entry in all_entries}
+        manifest = [by_id[key] for key in args.crop_ids.split(",")]
+    else:
+        manifest = all_entries[:args.limit]
     if len(manifest) != args.limit:
         raise ValueError("Manifest has fewer real crops than --limit")
     if len({item["file"] for item in manifest}) != args.limit:
@@ -121,7 +127,7 @@ def run(args, report):
     for entry in manifest:
         path = (args.manifest.parent / entry["file"]).resolve()
         kind = entry["category_type"]
-        block_type = "table" if "table" in kind else "equation" if ("equation" in kind or "formula" in kind) else "text"
+        block_type = "table" if kind == "table" else "equation" if ("equation" in kind or "formula" in kind) else "chart" if kind.startswith("chart") else "text"
         prompt = select_prompt(block_type)
         with Image.open(path) as image:
             image = get_rgb_image(image).copy()

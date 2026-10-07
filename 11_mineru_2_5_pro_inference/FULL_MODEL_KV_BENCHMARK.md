@@ -111,10 +111,16 @@ CHIP=910B MANIFEST="$PWD/crops/manifest.json" LIMIT=2 BATCH_SIZE=1 \
 After the full-model control passes, use real mixed crops and larger cohorts:
 
 ```bash
+export CROP_IDS=hotswap_001_code_txt_p0001_box_id_3,hotswap_002_code_txt_p1474_11,hotswap_003_equation_isolated_p0000_box_id_1,hotswap_004_equation_isolated_p0036_box_id_9,hotswap_038_table_p0010_box_id_1,hotswap_039_table_p0243_box_id_1,hotswap_057_text_block_p0000_box_id_0,hotswap_058_text_block_p0062_box_id_8
 CHIP=910B LIMIT=8 BATCH_SIZE=4 MAX_NEW_TOKENS=512 REPEATS=5 PROFILE=1 \
   VARIANTS=increfa_nd,fia_nd,fia_blocked_nd \
   RUN_NAME=full_model_native bash 11_mineru_2_5_pro_inference/run_full_model_kv.sh
 ```
+
+The explicit cohort includes two code, two formula, two table and two text
+crops; filenames and hashes are saved. `CROP_IDS` must list exactly `LIMIT`
+distinct IDs present in the selected manifest. Without it the manifest prefix
+is used; the hot-swap manifest's first eight crops are code/formula only.
 
 Then request the actual NZ descriptors, preserving rejected variants:
 
