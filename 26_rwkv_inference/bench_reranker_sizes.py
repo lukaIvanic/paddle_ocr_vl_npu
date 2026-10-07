@@ -130,7 +130,8 @@ def worker(args):
         physical_npu=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), shared_device=args.allow_shared_device, all_checks_passed=False,
         backend=args.backend, scope='Prepared device inputs; uncached backbone plus state-readout head. Synchronized steady calls exclude CPU checks, compile, input transfers and tokenization.',
         recurrence=args.recurrence, matrix_chunk_size=args.matrix_chunk_size,
-        matrix_compute_dtype=args.matrix_compute_dtype, timings={})
+        matrix_compute_dtype=args.matrix_compute_dtype, ge_precision=args.ge_precision,
+        ge_optimization_level=args.ge_optimization_level, timings={})
     try:
         import torch_npu
         torch.set_num_threads(4)
@@ -237,12 +238,22 @@ def worker(args):
                 for n in ['backbone_cache','head_cache']:shutil.copytree(args.warm_cache_from/n,args.output/n)
                 report['copy_private_graph_cache_seconds']=time.perf_counter()-before
             before=time.perf_counter();print('COMPILE_START',args.size,args.dtype,args.bucket,flush=True)
-            encode=compiled(backbone.forward,args.output/'backbone_cache'); head=compiled(ranker.forward,args.output/'head_cache')
+            encode=compiled(backbone.forward,args.output/'backbone_cache',args.ge_precision,args.ge_optimization_level); head=compiled(ranker.forward,args.output/'head_cache',args.ge_precision,args.ge_optimization_level)
             actual=encode(ids,lengths); logits=head(actual[1]); torch.npu.synchronize()
             report['compile_and_first_call_seconds']=time.perf_counter()-before
             report['compiled_state_diagnostics']=[metrics(a,b) for a,b in zip(actual,eager)]
             report['compiled_logit_diagnostics']=dict(metrics(logits,expected),actual=logits.cpu().tolist(),expected=expected.cpu().tolist())
+            report['compiled_layer_diagnostics']=[dict(layer=i,
+                shifts=metrics(actual[0][i],eager[0][i]),
+                matrix=metrics(actual[1][i],eager[1][i])) for i in range(depth)]
             save(args.output/'result.json',report)
+            if args.profile_invalid_compile and not report['compiled_logit_diagnostics']['finite']:
+                from run_reranker_buckets import profile
+                report['invalid_compiled_profile']=profile(lambda:head(encode(ids,lengths)[1]),
+                    args.output/'profile_invalid_torchair_forward','rwkv.invalid_torchair_forward',
+                    warmup_iterations=args.profile_warmup,active_iterations=args.profile_active)
+                report['invalid_compiled_profile']['valid_for_speed_comparison']=False
+                save(args.output/'result.json',report)
             report['compiled_states_vs_eager']=[require(a,b,.02,.005) for a,b in zip(actual,eager)]
             report['compiled_logits_vs_eager']=require(logits,expected,.02,.005)
             assert torch.equal(head(encode(ids,lengths)[1]),logits)
@@ -338,6 +349,9 @@ def main():
     p.add_argument('--recurrence',choices=['vector','matrix'],default='vector')
     p.add_argument('--matrix-chunk-size',type=int,choices=[16,32,64,128],default=64)
     p.add_argument('--matrix-compute-dtype',choices=['fp32','bf16'],default='fp32')
+    p.add_argument('--ge-precision',choices=['must_keep_origin_dtype','force_fp32'])
+    p.add_argument('--ge-optimization-level',choices=['O1','O3'],default='O3')
+    p.add_argument('--profile-invalid-compile',action='store_true',help='Diagnostic full-forward capture; invalid output is never accepted for speed')
     p.add_argument('--profile',action='store_true',help='Explicit B1/B4 worker: eager and optional compiled CPU/NPU traces with shapes')
     p.add_argument('--profile-data',type=Path)
     p.add_argument('--profile-warmup',type=int,default=5)
