@@ -1,0 +1,647 @@
+{
+  "raw_csv": "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/baseline/torchair/output/profiles/pipe/raw/liteserver-c001-4_91490_20261007121237723_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+  "isolated_text_checks_passed": true,
+  "kernel_count_per_forward": 1449.0,
+  "kernel_sum_ms_per_forward": 61.79277366666667,
+  "groups": [
+    {
+      "type": "MatMul",
+      "input_shapes": "1274,2560;19456,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,19456",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 16.610590666666674,
+      "normalized_names": [
+        "MatMul"
+      ],
+      "name_examples": [
+        "MatMul_2",
+        "MatMul_6"
+      ]
+    },
+    {
+      "type": "PromptFlashAttention",
+      "input_shapes": "1,32,1274,128;1,8,1274,128;1,8,1274,128;1,1,1274,1274",
+      "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+      "output_shapes": "1,32,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 10.846949666666667,
+      "normalized_names": [
+        "PromptFlashAttention"
+      ],
+      "name_examples": [
+        "PromptFlashAttention",
+        "PromptFlashAttention_1"
+      ]
+    },
+    {
+      "type": "MatMulV3",
+      "input_shapes": "1274,9728;2560,9728",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 9.38541333333333,
+      "normalized_names": [
+        "MatMul_to_v"
+      ],
+      "name_examples": [
+        "MatMul_3_to_v3",
+        "MatMul_7_to_v3"
+      ]
+    },
+    {
+      "type": "MatMulV3",
+      "input_shapes": "1274,2560;6144,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,6144",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 5.275565666666664,
+      "normalized_names": [
+        "MatMul_to_v"
+      ],
+      "name_examples": [
+        "MatMul_to_v3",
+        "MatMul_4_to_v3"
+      ]
+    },
+    {
+      "type": "MatMulV3",
+      "input_shapes": "1274,4096;2560,4096",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 4.1977786666666645,
+      "normalized_names": [
+        "MatMul_to_v"
+      ],
+      "name_examples": [
+        "MatMul_1_to_v3",
+        "MatMul_5_to_v3"
+      ]
+    },
+    {
+      "type": "AutomaticBufferFusionOp",
+      "input_shapes": "1,1274,9728;1,1274,9728",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,9728",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 1.591172666666668,
+      "normalized_names": [
+        "SwishMul"
+      ],
+      "name_examples": [
+        "SwishMul_12",
+        "Swish_1Mul_25"
+      ]
+    },
+    {
+      "type": "SplitVD",
+      "input_shapes": "1,1274,19456",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,9728;1,1274,9728",
+      "output_dtypes": "FLOAT16;FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 1.2815450000000002,
+      "normalized_names": [
+        "SplitV"
+      ],
+      "name_examples": [
+        "SplitV_3",
+        "SplitV_7"
+      ]
+    },
+    {
+      "type": "Square",
+      "input_shapes": "1,1274,2560",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 1.0373673333333338,
+      "normalized_names": [
+        "Pow/SquareReduceMean"
+      ],
+      "name_examples": [
+        "Pow/SquareReduceMean",
+        "Pow_3/SquareReduceMean_3"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "1,1274,2560;1,1274,1",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.9888873333333332,
+      "normalized_names": [
+        "MulCast"
+      ],
+      "name_examples": [
+        "MulCast_2",
+        "Mul_10Cast_20"
+      ]
+    },
+    {
+      "type": "Add",
+      "input_shapes": "1,1274,2560;1,1274,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,2560;1,1274,2560",
+      "output_dtypes": "FLOAT16;FLOAT",
+      "count_per_forward": 71.0,
+      "ms_per_forward": 0.8792036666666673,
+      "normalized_names": [
+        "AddCast"
+      ],
+      "name_examples": [
+        "Add_5Cast_18",
+        "Add_8Cast_23"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "2560;1,1274,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.6732009999999999,
+      "normalized_names": [
+        "Mul"
+      ],
+      "name_examples": [
+        "Mul_1",
+        "Mul_11"
+      ]
+    },
+    {
+      "type": "Square",
+      "input_shapes": "1,1274,32,128",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,32,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.6655586666666665,
+      "normalized_names": [
+        "Pow/SquareReduceMean"
+      ],
+      "name_examples": [
+        "Pow_1/SquareReduceMean_1",
+        "Pow_5/SquareReduceMean_5"
+      ]
+    },
+    {
+      "type": "Transpose",
+      "input_shapes": "1274,8,128;3",
+      "input_dtypes": "FLOAT16;INT32",
+      "output_shapes": "8,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 72.0,
+      "ms_per_forward": 0.6606636666666672,
+      "normalized_names": [
+        "Transpose"
+      ],
+      "name_examples": [
+        "Transpose_3",
+        "Transpose_2"
+      ]
+    },
+    {
+      "type": "Transpose",
+      "input_shapes": "32,1274,128;3",
+      "input_dtypes": "FLOAT16;INT32",
+      "output_shapes": "1274,32,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.6274260000000002,
+      "normalized_names": [
+        "Transpose"
+      ],
+      "name_examples": [
+        "Transpose_4",
+        "Transpose_12"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "1,1274,32,128;1,1274,32,1",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.6141270000000003,
+      "normalized_names": [
+        "MulCast"
+      ],
+      "name_examples": [
+        "Mul_2Cast_6",
+        "Mul_15Cast_29"
+      ]
+    },
+    {
+      "type": "AutomaticBufferFusionOp",
+      "input_shapes": "1,32,1274,128;1,1,1274,128;1,32,1274,128;1,1,1274,128",
+      "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+      "output_shapes": "1,32,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.5789173333333332,
+      "normalized_names": [
+        "MulMulAdd"
+      ],
+      "name_examples": [
+        "Mul_6Mul_7Add_3",
+        "Mul_19Mul_20Add_12"
+      ]
+    },
+    {
+      "type": "SplitVD",
+      "input_shapes": "1,1274,6144",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,4096;1,1274,1024;1,1274,1024",
+      "output_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.560744,
+      "normalized_names": [
+        "SplitV"
+      ],
+      "name_examples": [
+        "SplitV",
+        "SplitV_4"
+      ]
+    },
+    {
+      "type": "Transpose",
+      "input_shapes": "1274,32,128;3",
+      "input_dtypes": "FLOAT16;INT32",
+      "output_shapes": "32,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.5244506666666666,
+      "normalized_names": [
+        "Transpose"
+      ],
+      "name_examples": [
+        "Transpose_1",
+        "Transpose_9"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,32,128",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.42684199999999994,
+      "normalized_names": [
+        "Cast"
+      ],
+      "name_examples": [
+        "Cast_4",
+        "Cast_27"
+      ]
+    },
+    {
+      "type": "Square",
+      "input_shapes": "1,1274,8,128",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,8,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.3907086666666668,
+      "normalized_names": [
+        "Pow/SquareReduceMean"
+      ],
+      "name_examples": [
+        "Pow_2/SquareReduceMean_2",
+        "Pow_6/SquareReduceMean_6"
+      ]
+    },
+    {
+      "type": "ConcatV2D",
+      "input_shapes": "1,32,1274,64;1,32,1274,64",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,32,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.3784546666666667,
+      "normalized_names": [
+        "ConcatV"
+      ],
+      "name_examples": [
+        "ConcatV2",
+        "ConcatV2_2"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "128;1,1274,32,128",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.3773863333333334,
+      "normalized_names": [
+        "Mul"
+      ],
+      "name_examples": [
+        "Mul_3",
+        "Mul_16"
+      ]
+    },
+    {
+      "type": "SplitVD",
+      "input_shapes": "1,32,1274,128",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,32,1274,64;1,32,1274,64",
+      "output_dtypes": "FLOAT16;FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.35827333333333333,
+      "normalized_names": [
+        "SplitV"
+      ],
+      "name_examples": [
+        "SplitV_1",
+        "SplitV_5"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "1,1274,8,128;1,1274,8,1",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.3543729999999999,
+      "normalized_names": [
+        "MulCast"
+      ],
+      "name_examples": [
+        "Mul_4Cast_10",
+        "Mul_17Cast_33"
+      ]
+    },
+    {
+      "type": "AutomaticBufferFusionOp",
+      "input_shapes": "1,8,1274,128;1,1,1274,128;1,8,1274,128;1,1,1274,128",
+      "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+      "output_shapes": "1,8,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.33761400000000014,
+      "normalized_names": [
+        "MulMulAdd"
+      ],
+      "name_examples": [
+        "Mul_8Mul_9Add_4",
+        "Mul_21Mul_22Add_13"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,8,128",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.3305006666666667,
+      "normalized_names": [
+        "Cast"
+      ],
+      "name_examples": [
+        "Cast_8",
+        "Cast_31"
+      ]
+    },
+    {
+      "type": "Neg",
+      "input_shapes": "1,32,1274,64",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,32,1274,64",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.30584,
+      "normalized_names": [
+        "Neg"
+      ],
+      "name_examples": [
+        "Neg",
+        "Neg_2"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "128;1,1274,8,128",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.2952996666666666,
+      "normalized_names": [
+        "Mul"
+      ],
+      "name_examples": [
+        "Mul_5",
+        "Mul_18"
+      ]
+    },
+    {
+      "type": "Neg",
+      "input_shapes": "1,8,1274,64",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,8,1274,64",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.27755233333333323,
+      "normalized_names": [
+        "Neg"
+      ],
+      "name_examples": [
+        "Neg_1",
+        "Neg_3"
+      ]
+    },
+    {
+      "type": "AutomaticBufferFusionOp",
+      "input_shapes": "1,1274,32,1;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,32,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.2604716666666667,
+      "normalized_names": [
+        "AddRsqrt"
+      ],
+      "name_examples": [
+        "Add_1Rsqrt_1",
+        "Add_10Rsqrt_5"
+      ]
+    },
+    {
+      "type": "ConcatV2D",
+      "input_shapes": "1,8,1274,64;1,8,1274,64",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,8,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.21592466666666665,
+      "normalized_names": [
+        "ConcatV"
+      ],
+      "name_examples": [
+        "ConcatV2_1",
+        "ConcatV2_3"
+      ]
+    },
+    {
+      "type": "SplitVD",
+      "input_shapes": "1,8,1274,128",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,8,1274,64;1,8,1274,64",
+      "output_dtypes": "FLOAT16;FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.19801833333333335,
+      "normalized_names": [
+        "SplitV"
+      ],
+      "name_examples": [
+        "SplitV_2",
+        "SplitV_6"
+      ]
+    },
+    {
+      "type": "AutomaticBufferFusionOp",
+      "input_shapes": "1,1274,1;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.1076213333333333,
+      "normalized_names": [
+        "AddRsqrt"
+      ],
+      "name_examples": [
+        "AddRsqrt",
+        "Add_6Rsqrt_3"
+      ]
+    },
+    {
+      "type": "AutomaticBufferFusionOp",
+      "input_shapes": "1,1274,8,1;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,8,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.10698900000000001,
+      "normalized_names": [
+        "AddRsqrt"
+      ],
+      "name_examples": [
+        "Add_2Rsqrt_2",
+        "Add_11Rsqrt_6"
+      ]
+    },
+    {
+      "type": "Add",
+      "input_shapes": "1,1274,2560;1,1274,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 3.0,
+      "ms_per_forward": 0.037253999999999995,
+      "normalized_names": [
+        "Add"
+      ],
+      "name_examples": [
+        "Add_7",
+        "Add_16"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,2560",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 1.0,
+      "ms_per_forward": 0.014594000000000001,
+      "normalized_names": [
+        "Cast"
+      ],
+      "name_examples": [
+        "Cast"
+      ]
+    },
+    {
+      "type": "Add",
+      "input_shapes": "1,1274,2560;1,1274,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 1.0,
+      "ms_per_forward": 0.013627,
+      "normalized_names": [
+        "AddCast"
+      ],
+      "name_examples": [
+        "Add_290Cast_828"
+      ]
+    },
+    {
+      "type": "Data",
+      "input_shapes": "N/A",
+      "input_dtypes": "N/A",
+      "output_shapes": "N/A",
+      "output_dtypes": "N/A",
+      "count_per_forward": 1.0,
+      "ms_per_forward": 0.005866666666666667,
+      "normalized_names": [
+        "UpdateModelParam_static_bin"
+      ],
+      "name_examples": [
+        "UpdateModelParam_static_bin"
+      ]
+    }
+  ],
+  "semantic_categories": {
+    "matrix_projections": {
+      "ms_per_forward": 35.469348333333336,
+      "kernels_per_forward": 144.0
+    },
+    "attention": {
+      "ms_per_forward": 10.846949666666667,
+      "kernels_per_forward": 36.0
+    },
+    "rmsnorm_excluding_shared_residual_cast": {
+      "ms_per_forward": 6.643927666666667,
+      "kernels_per_forward": 653.0
+    },
+    "layout_and_projection_split": {
+      "ms_per_forward": 3.654829333333334,
+      "kernels_per_forward": 216.0
+    },
+    "rotary": {
+      "ms_per_forward": 2.6505946666666667,
+      "kernels_per_forward": 288.0
+    },
+    "silu_gate_multiply": {
+      "ms_per_forward": 1.591172666666668,
+      "kernels_per_forward": 36.0
+    },
+    "residual_deepstack_add_shared_norm_cast": {
+      "ms_per_forward": 0.9300846666666673,
+      "kernels_per_forward": 75.0
+    },
+    "other": {
+      "ms_per_forward": 0.005866666666666667,
+      "kernels_per_forward": 1.0
+    }
+  }
+}

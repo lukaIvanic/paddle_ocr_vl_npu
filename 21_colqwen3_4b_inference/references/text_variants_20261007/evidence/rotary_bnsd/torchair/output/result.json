@@ -1,0 +1,692 @@
+{
+  "status": "completed",
+  "command": [
+    "21_colqwen3_4b_inference/profile_warm_text.py",
+    "--model",
+    "/workspace/models/Ops-Colqwen3-4B",
+    "--anchor",
+    "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt",
+    "--frozen-inputs",
+    "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/text_inputs.pt",
+    "--variant",
+    "rotary_bnsd",
+    "--execution",
+    "torchair",
+    "--diagnostic-parity",
+    "--output-dir",
+    "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/rotary_bnsd/torchair/output",
+    "--cache-root",
+    "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/cache/rotary_bnsd",
+    "--warmups",
+    "5",
+    "--repeats",
+    "30",
+    "--profile-steps",
+    "3",
+    "--metrics",
+    "pipe"
+  ],
+  "host": "liteserver-c001-4",
+  "commit": "3e026452ae3073f49c82a406264887562ab350a5",
+  "physical_npu": "0",
+  "execution": "torchair",
+  "scope": "Isolated warmed ColQwen text transformer forward on one real B1 page.\n\nOnly the 36 text layers, DeepStack additions and final RMSNorm are timed/profiled.\nHidden states, cos/sin, causal mask and three DeepStack tensors are prepared once\nand resident on NPU. Vision, mergers, token embedding/image insertion, rotary\ninitialization, retrieval projection, transfers, compile and validation are outside\nthe measured window. Eager exports a frozen input/reference snapshot; compiled\nloads that exact snapshot in a separate process. No generation or KV cache.\n",
+  "warmups": 5,
+  "repeats": 30,
+  "profile_steps": 3,
+  "device": "Ascend910B2",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0",
+  "internal_format": true,
+  "input_identity": {
+    "model": "/workspace/models/Ops-Colqwen3-4B",
+    "config_sha256": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b",
+    "weights": {
+      "model-00001-of-00002.safetensors": [
+        4990494880,
+        1783252895994272661
+      ],
+      "model-00002-of-00002.safetensors": [
+        3898332680,
+        1783252504999640161
+      ]
+    },
+    "anchor_sha256": "8d138a0027a412a0aca9dad339b5022cc1e89c08238380b95f4e7ba8ceb521f0",
+    "options": {
+      "fused_projections": true,
+      "weight_format": "native",
+      "gqa": "native",
+      "vision_norm": "manual_fp32"
+    },
+    "source": {
+      "local_modeling_colqwen3.py": "d4a4cfec360aa1801fc68c5acd2bed0f2ed443353dbd2ac24f7a9f91d928d79f",
+      "optimized_prefill.py": "27e9fffc1e3a4d88debd3bec8b6e9116885d216288ce886ca8f2d0c2f6385218",
+      "prepared_prefill.py": "b284e2a2e285a0722c201da7225c1f3bbbbb5a54e5902e1c71479b4a2b513beb",
+      "patch_embedding.py": "19c466a2eb8b0601c62531601981de7f68cd8def36db407f96cb4eeee0435f6d"
+    }
+  },
+  "variant": {
+    "name": "rotary_bnsd",
+    "layout": "BNSD",
+    "rotary": "rotary_mul",
+    "swiglu": false
+  },
+  "variant_source_sha256": "25b46e22b5bce811ebca2435802f55f7cf61e7d89376158003b3a68763909289",
+  "runner_source_sha256": "a69544e34dd920e19cfd779e3c869e8b6aba3dcfa7a8e633df0fac384d860af4",
+  "setup_validation": {
+    "reference_vs_hf": {
+      "shape": [
+        1,
+        1274,
+        2560
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000001665,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "optimized_vs_reference": {
+      "shape": [
+        1,
+        1274,
+        2560
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 0.091552734375,
+      "mean_abs": 0.0003692941681947559,
+      "rmse": 0.001322649884968996,
+      "cosine": 0.9977607602912022,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": false
+    }
+  },
+  "frozen_inputs": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/text_inputs.pt",
+  "frozen_inputs_sha256": "494513b62d9046cbe71d434d3b217542dc02ba465aea7d7b143037c5e302b5ae",
+  "text_tokens": 1274,
+  "batch_size": 1,
+  "text_layers": 36,
+  "text_input_shapes": [
+    [
+      1,
+      1274,
+      2560
+    ],
+    [
+      1,
+      1274,
+      128
+    ],
+    [
+      1,
+      1274,
+      128
+    ],
+    [
+      1,
+      1,
+      1274,
+      1274
+    ],
+    [
+      1,
+      1274,
+      2560
+    ],
+    [
+      1,
+      1274,
+      2560
+    ],
+    [
+      1,
+      1274,
+      2560
+    ]
+  ],
+  "text_input_dtypes": [
+    "torch.float16",
+    "torch.float16",
+    "torch.float16",
+    "torch.bool",
+    "torch.float16",
+    "torch.float16",
+    "torch.float16"
+  ],
+  "candidate_eager_vs_frozen": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": false,
+    "max_abs": 0.666015625,
+    "mean_abs": 0.010420129634439945,
+    "rmse": 0.01716955006122589,
+    "cosine": 0.9999825637093098,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": false
+  },
+  "cache_records": [
+    {
+      "stage": "candidate_text",
+      "path": "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/cache/rotary_bnsd/candidate_text_0e73f84ab9a69bb604923329",
+      "om_present_before": false,
+      "signature": {
+        "stage": "candidate_text",
+        "inputs": [
+          {
+            "shape": [
+              1,
+              1274,
+              2560
+            ],
+            "stride": [
+              3261440,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              1274,
+              128
+            ],
+            "stride": [
+              163072,
+              128,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              1274,
+              128
+            ],
+            "stride": [
+              163072,
+              128,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              1,
+              1274,
+              1274
+            ],
+            "stride": [
+              1623076,
+              1623076,
+              1274,
+              1
+            ],
+            "dtype": "torch.bool"
+          },
+          {
+            "shape": [
+              1,
+              1274,
+              2560
+            ],
+            "stride": [
+              3261440,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              1274,
+              2560
+            ],
+            "stride": [
+              3261440,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              1274,
+              2560
+            ],
+            "stride": [
+              3261440,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          }
+        ],
+        "model_dir": "/workspace/models/Ops-Colqwen3-4B",
+        "model_config": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b",
+        "weight_files": {
+          "model-00001-of-00002.safetensors": [
+            4990494880,
+            1783252895994272661
+          ],
+          "model-00002-of-00002.safetensors": [
+            3898332680,
+            1783252504999640161
+          ]
+        },
+        "source": {
+          "prepared_prefill.py": "b284e2a2e285a0722c201da7225c1f3bbbbb5a54e5902e1c71479b4a2b513beb",
+          "local_modeling_colqwen3.py": "d4a4cfec360aa1801fc68c5acd2bed0f2ed443353dbd2ac24f7a9f91d928d79f",
+          "config.py": "a7e0cc96ec0dd0ea187c4cee098c4f71d7f3c76fb77f8f1b01dcaf131bff4a19",
+          "compile_fusion_switch.json": "cd94bbb201dd46042ef7044e809ee644b9675f7706b0d5ec9b2ebd678d2b0395"
+        },
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "device": "Ascend910B2",
+        "contract": "b1_exact_manual_bmm_fp32softmax_native_weights_geluv2_tanh_v2",
+        "optimized_options": {
+          "fused_projections": true,
+          "weight_format": "native",
+          "gqa": "native",
+          "vision_norm": "manual_fp32"
+        },
+        "optimized_source": "27e9fffc1e3a4d88debd3bec8b6e9116885d216288ce886ca8f2d0c2f6385218",
+        "internal_format": true,
+        "text_variant": {
+          "name": "rotary_bnsd",
+          "layout": "BNSD",
+          "rotary": "rotary_mul",
+          "swiglu": false
+        },
+        "variant_source_sha256": "25b46e22b5bce811ebca2435802f55f7cf61e7d89376158003b3a68763909289"
+      },
+      "wrapper_s": 0.0006979399913689122
+    }
+  ],
+  "before_profile": {
+    "wall_ms": {
+      "count": 30,
+      "mean": 61.03142433275934,
+      "p50": 60.97838500136277,
+      "p90": 61.11730399570661,
+      "p99": 61.708055791968945,
+      "min": 60.93315000180155,
+      "max": 61.87595998926554
+    },
+    "device_interval_ms": {
+      "count": 30,
+      "mean": 60.84707730611165,
+      "p50": 60.83310127258301,
+      "p90": 60.885890579223634,
+      "p99": 61.09608875274658,
+      "min": 60.65317916870117,
+      "max": 61.13246154785156
+    },
+    "wall_samples_ms": [
+      61.87595998926554,
+      61.01683000451885,
+      60.99036999512464,
+      60.97730000328738,
+      60.96278999757487,
+      60.95692000235431,
+      61.0444399935659,
+      60.95060000370722,
+      60.96597999567166,
+      60.98485999973491,
+      61.013489990727976,
+      60.954669999773614,
+      60.946130004595034,
+      60.94869000662584,
+      61.17565999738872,
+      60.96981999871787,
+      61.01848999969661,
+      61.027920004562475,
+      61.110819995519705,
+      60.97946999943815,
+      60.97711999609601,
+      60.99712000286672,
+      60.976879991358146,
+      60.95739999727812,
+      60.93315000180155,
+      60.977109998930246,
+      60.94542999926489,
+      61.01266000769101,
+      61.29697999858763,
+      60.997670007054694
+    ],
+    "device_samples_ms": [
+      60.65317916870117,
+      60.87746047973633,
+      60.836219787597656,
+      60.84197998046875,
+      60.83721923828125,
+      60.794639587402344,
+      60.85683822631836,
+      60.83134078979492,
+      60.82297897338867,
+      60.82386016845703,
+      60.8742790222168,
+      60.81803894042969,
+      60.81074142456055,
+      60.800140380859375,
+      61.00703811645508,
+      60.81521987915039,
+      60.85139846801758,
+      60.834861755371094,
+      60.961761474609375,
+      60.85007858276367,
+      60.83858108520508,
+      60.826961517333984,
+      60.828819274902344,
+      60.82754135131836,
+      60.795780181884766,
+      60.852840423583984,
+      60.818359375,
+      60.824119567871094,
+      61.13246154785156,
+      60.86758041381836
+    ]
+  },
+  "vs_frozen_eager": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": true,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rmse": 0.0,
+    "cosine": 1.0000000000001767,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": true
+  },
+  "vs_candidate_eager": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": false,
+    "max_abs": 0.666015625,
+    "mean_abs": 0.010420129634439945,
+    "rmse": 0.01716955006122589,
+    "cosine": 0.9999825637093098,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": false
+  },
+  "adoption_eligible": false,
+  "profiles": {
+    "pipe": {
+      "profiled_wall_ms": {
+        "count": 3,
+        "mean": 63.16191333462484,
+        "p50": 63.38572000095155,
+        "p90": 63.84800000523683,
+        "p99": 63.952013006201014,
+        "min": 62.13644999661483,
+        "max": 63.963570006308146
+      },
+      "diagnostic_only": true,
+      "parser_command": [
+        "/workspace/venvs/colqwen3_hf_py312/bin/python",
+        "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/parse_npu_profile.py",
+        "--profile-dir",
+        "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/rotary_bnsd/torchair/output/profiles/pipe/raw",
+        "--topn",
+        "40",
+        "--out-json",
+        "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/rotary_bnsd/torchair/output/profiles/pipe/parsed.json",
+        "--out-md",
+        "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/rotary_bnsd/torchair/output/profiles/pipe/parsed.md",
+        "--skip-trace"
+      ],
+      "parsed_json": "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/rotary_bnsd/torchair/output/profiles/pipe/parsed.json",
+      "parsed_markdown": "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/rotary_bnsd/torchair/output/profiles/pipe/parsed.md",
+      "kernel_accounting": {
+        "kernel_rows": 3699,
+        "profile_steps": 3,
+        "kernel_duration_sum_ms_per_forward": 60.71241800000001,
+        "interval_union_ms": 182.06175,
+        "interval_envelope_ms": 187.256,
+        "uncovered_envelope_ms": 5.19425,
+        "timeline_scope": "All captured task intervals; gaps include boundaries between forwards. No claim of pure compute utilization or CPU causality.",
+        "top_types": [
+          {
+            "type": "MatMulV3",
+            "count": 324,
+            "duration_us": 56594.099000000024,
+            "duration_ms_per_forward": 18.864699666666674,
+            "count_per_forward": 108.0,
+            "kernel_sum_percent": 31.072225893995316
+          },
+          {
+            "type": "MatMul",
+            "count": 108,
+            "duration_us": 49830.17100000001,
+            "duration_ms_per_forward": 16.610057000000005,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 27.358582555549017
+          },
+          {
+            "type": "PromptFlashAttention",
+            "count": 108,
+            "duration_us": 32427.190000000002,
+            "duration_ms_per_forward": 10.809063333333334,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 17.80371082129085
+          },
+          {
+            "type": "Mul",
+            "count": 870,
+            "duration_us": 10181.520999999999,
+            "duration_ms_per_forward": 3.393840333333333,
+            "count_per_forward": 290.0,
+            "kernel_sum_percent": 5.590026629038778
+          },
+          {
+            "type": "Square",
+            "count": 435,
+            "duration_us": 6823.4940000000015,
+            "duration_ms_per_forward": 2.2744980000000004,
+            "count_per_forward": 145.0,
+            "kernel_sum_percent": 3.746347246456236
+          },
+          {
+            "type": "AutomaticBufferFusionOp",
+            "count": 543,
+            "duration_us": 6176.6,
+            "duration_ms_per_forward": 2.058866666666667,
+            "count_per_forward": 181.0,
+            "kernel_sum_percent": 3.39117883044399
+          },
+          {
+            "type": "Transpose",
+            "count": 432,
+            "duration_us": 5568.137999999995,
+            "duration_ms_per_forward": 1.8560459999999985,
+            "count_per_forward": 144.0,
+            "kernel_sum_percent": 3.0571109851035723
+          },
+          {
+            "type": "SplitVD",
+            "count": 216,
+            "duration_us": 5545.897999999995,
+            "duration_ms_per_forward": 1.8486326666666648,
+            "count_per_forward": 72.0,
+            "kernel_sum_percent": 3.044900413399224
+          },
+          {
+            "type": "RotaryMul",
+            "count": 216,
+            "duration_us": 3637.2909999999983,
+            "duration_ms_per_forward": 1.2124303333333328,
+            "count_per_forward": 72.0,
+            "kernel_sum_percent": 1.9970055110197271
+          },
+          {
+            "type": "Add",
+            "count": 225,
+            "duration_us": 2871.1200000000026,
+            "duration_ms_per_forward": 0.9570400000000009,
+            "count_per_forward": 75.0,
+            "kernel_sum_percent": 1.5763496686954566
+          },
+          {
+            "type": "Cast",
+            "count": 219,
+            "duration_us": 2463.751999999997,
+            "duration_ms_per_forward": 0.8212506666666658,
+            "count_per_forward": 73.0,
+            "kernel_sum_percent": 1.3526897687828308
+          },
+          {
+            "type": "Data",
+            "count": 3,
+            "duration_us": 17.98,
+            "duration_ms_per_forward": 0.005993333333333333,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.009871676225007762
+          }
+        ]
+      },
+      "replay_parity": {
+        "shape": [
+          1,
+          1274,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000001767,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      }
+    }
+  },
+  "after_profile": {
+    "wall_ms": {
+      "count": 30,
+      "mean": 61.08321300028668,
+      "p50": 61.01489499997115,
+      "p90": 61.067025996453594,
+      "p99": 62.308649601909565,
+      "min": 60.954259999562055,
+      "max": 62.62989999959245
+    },
+    "device_interval_ms": {
+      "count": 30,
+      "mean": 60.91368052164714,
+      "p50": 60.853919982910156,
+      "p90": 60.9051929473877,
+      "p99": 61.970453033447264,
+      "min": 60.780521392822266,
+      "max": 62.24742126464844
+    },
+    "wall_samples_ms": [
+      62.62989999959245,
+      61.52214000758249,
+      61.049399999319576,
+      61.03127999813296,
+      60.954259999562055,
+      61.016539999400266,
+      61.07257000985555,
+      61.05440000828821,
+      60.988700002781115,
+      60.98758000007365,
+      61.02577999990899,
+      61.06640999496449,
+      60.991359991021454,
+      61.04001999483444,
+      61.01325000054203,
+      61.01073999889195,
+      61.00703000265639,
+      60.99264998920262,
+      60.99346000701189,
+      61.02426000870764,
+      61.0319499974139,
+      60.998989996733144,
+      60.98033000307623,
+      61.02305000240449,
+      60.97423000028357,
+      61.027100004139356,
+      60.98893999296706,
+      60.98768999800086,
+      60.98612000641879,
+      61.0262599948328
+    ],
+    "device_samples_ms": [
+      62.24742126464844,
+      61.2923583984375,
+      60.89133834838867,
+      60.873939514160156,
+      60.780521392822266,
+      60.846500396728516,
+      60.9044189453125,
+      60.91215896606445,
+      60.8403205871582,
+      60.83810043334961,
+      60.88890075683594,
+      60.85847854614258,
+      60.83435821533203,
+      60.88507843017578,
+      60.868980407714844,
+      60.86119842529297,
+      60.862220764160156,
+      60.84387969970703,
+      60.835079193115234,
+      60.84135818481445,
+      60.86928176879883,
+      60.83769989013672,
+      60.79698181152344,
+      60.837440490722656,
+      60.80741882324219,
+      60.87255859375,
+      60.84328079223633,
+      60.83053970336914,
+      60.849361419677734,
+      60.8592414855957
+    ]
+  },
+  "final_replay_parity": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": true,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rmse": 0.0,
+    "cosine": 1.0000000000001767,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": true
+  },
+  "finite": true
+}

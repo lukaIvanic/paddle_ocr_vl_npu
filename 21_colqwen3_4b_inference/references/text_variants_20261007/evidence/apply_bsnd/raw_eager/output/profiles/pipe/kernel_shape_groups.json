@@ -1,0 +1,550 @@
+{
+  "raw_csv": "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/apply_bsnd/raw_eager/output/profiles/pipe/raw/liteserver-c001-4_100161_20261007121945351_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+  "isolated_text_checks_passed": true,
+  "kernel_count_per_forward": 1703.0,
+  "kernel_sum_ms_per_forward": 70.11907233333334,
+  "groups": [
+    {
+      "type": "MatMulV2",
+      "input_shapes": "1274,2560;19456,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,19456",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 16.776914999999995,
+      "normalized_names": [
+        "aclnnMatmul_MatMulCommon_MatMulV"
+      ],
+      "name_examples": [
+        "aclnnMatmul_MatMulCommon_MatMulV2"
+      ]
+    },
+    {
+      "type": "PromptFlashAttention",
+      "input_shapes": "1,1274,32,128;1,1274,8,128;1,1274,8,128;1,1,1274,1274;;",
+      "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL;INT64;INT64",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 12.035368000000004,
+      "normalized_names": [
+        "InnerPromptFlashAttention_PromptFlashAttention_PromptFlashAttention"
+      ],
+      "name_examples": [
+        "InnerPromptFlashAttention_PromptFlashAttention_PromptFlashAttention"
+      ]
+    },
+    {
+      "type": "MatMulV3",
+      "input_shapes": "1274,9728;2560,9728",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 9.656243999999997,
+      "normalized_names": [
+        "aclnnMatmul_MatMulVCommon_MatMulV"
+      ],
+      "name_examples": [
+        "aclnnMatmul_MatMulV3Common_MatMulV3"
+      ]
+    },
+    {
+      "type": "MatMulV3",
+      "input_shapes": "1274,2560;6144,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,6144",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 5.719195333333334,
+      "normalized_names": [
+        "aclnnMatmul_MatMulVCommon_MatMulV"
+      ],
+      "name_examples": [
+        "aclnnMatmul_MatMulV3Common_MatMulV3"
+      ]
+    },
+    {
+      "type": "MatMulV3",
+      "input_shapes": "1274,4096;2560,4096",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 4.200529000000001,
+      "normalized_names": [
+        "aclnnMatmul_MatMulVCommon_MatMulV"
+      ],
+      "name_examples": [
+        "aclnnMatmul_MatMulV3Common_MatMulV3"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "1,1274,2560;1,1274,1",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 1.7313746666666656,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Pows",
+      "input_shapes": "1,1274,2560;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 1.6512070000000005,
+      "normalized_names": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ],
+      "name_examples": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ]
+    },
+    {
+      "type": "ReduceMean",
+      "input_shapes": "1,1274,2560;1",
+      "input_dtypes": "FLOAT;INT64",
+      "output_shapes": "1,1274,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 1.6062256666666674,
+      "normalized_names": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ],
+      "name_examples": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ]
+    },
+    {
+      "type": "Swish",
+      "input_shapes": "1,1274,9728",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,9728",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 1.2905250000000008,
+      "normalized_names": [
+        "aclnnSilu_SiluAiCore_Swish"
+      ],
+      "name_examples": [
+        "aclnnSilu_SiluAiCore_Swish"
+      ]
+    },
+    {
+      "type": "Slice",
+      "input_shapes": "1274,19456;2;2",
+      "input_dtypes": "FLOAT16;INT64;INT64",
+      "output_shapes": "1274,9728",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 72.0,
+      "ms_per_forward": 1.1440529999999989,
+      "normalized_names": [
+        "aclnnMul_SliceAiCore_Slice",
+        "aclnnSilu_SliceAiCore_Slice"
+      ],
+      "name_examples": [
+        "aclnnSilu_SliceAiCore_Slice",
+        "aclnnMul_SliceAiCore_Slice"
+      ]
+    },
+    {
+      "type": "Pows",
+      "input_shapes": "1,1274,32,128;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 1.011956333333333,
+      "normalized_names": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ],
+      "name_examples": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "1,1274,32,128;1,1274,32,1",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 1.0088593333333338,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Add",
+      "input_shapes": "1,1274,2560;1,1274,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 75.0,
+      "ms_per_forward": 0.9896006666666667,
+      "normalized_names": [
+        "aclnnAdd_AddAiCore_Add"
+      ],
+      "name_examples": [
+        "aclnnAdd_AddAiCore_Add"
+      ]
+    },
+    {
+      "type": "ApplyRotaryPosEmb",
+      "input_shapes": "1,1274,32,128;1,1274,8,128;1,1274,1,128;1,1274,1,128",
+      "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,32,128;1,1274,8,128",
+      "output_dtypes": "FLOAT16;FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.9336856666666666,
+      "normalized_names": [
+        "ApplyRotaryPosEmb"
+      ],
+      "name_examples": [
+        "ApplyRotaryPosEmb"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "2560;1,1274,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.9157446666666671,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,2560",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.7989356666666667,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "ReduceMean",
+      "input_shapes": "1,1274,32,128;1",
+      "input_dtypes": "FLOAT;INT64",
+      "output_shapes": "1,1274,32,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.7977383333333332,
+      "normalized_names": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ],
+      "name_examples": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "1,1274,8,128;1,1274,8,1",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.7230746666666663,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,2560",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.7194940000000002,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "Pows",
+      "input_shapes": "1,1274,8,128;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.715788333333333,
+      "normalized_names": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ],
+      "name_examples": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "1,1274,9728;1,1274,9728",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,9728",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.6568053333333334,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Slice",
+      "input_shapes": "1274,48,128;3;3",
+      "input_dtypes": "FLOAT16;INT64;INT64",
+      "output_shapes": "1274,8,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 72.0,
+      "ms_per_forward": 0.6072653333333329,
+      "normalized_names": [
+        "aclnnInplaceCopy_SliceAiCore_Slice"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_SliceAiCore_Slice"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,32,128",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.5958103333333336,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "ReduceMean",
+      "input_shapes": "1,1274,8,128;1",
+      "input_dtypes": "FLOAT;INT64",
+      "output_shapes": "1,1274,8,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.5719106666666669,
+      "normalized_names": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ],
+      "name_examples": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "128;1,1274,32,128",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.4516473333333335,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,32,128",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.43491266666666667,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "Slice",
+      "input_shapes": "1274,48,128;3;3",
+      "input_dtypes": "FLOAT16;INT64;INT64",
+      "output_shapes": "1274,32,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.41380799999999995,
+      "normalized_names": [
+        "aclnnInplaceCopy_SliceAiCore_Slice"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_SliceAiCore_Slice"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,8,128",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.3596736666666665,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "128;1,1274,8,128",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.3576736666666667,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,8,128",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.29997166666666664,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "Add",
+      "input_shapes": "1,1274,32,1;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,32,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.2647416666666667,
+      "normalized_names": [
+        "aclnnAdds_AddAiCore_Add"
+      ],
+      "name_examples": [
+        "aclnnAdds_AddAiCore_Add"
+      ]
+    },
+    {
+      "type": "Rsqrt",
+      "input_shapes": "1,1274,32,1",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,32,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.25563999999999987,
+      "normalized_names": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ],
+      "name_examples": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ]
+    },
+    {
+      "type": "Add",
+      "input_shapes": "1,1274,1;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.1242476666666666,
+      "normalized_names": [
+        "aclnnAdds_AddAiCore_Add"
+      ],
+      "name_examples": [
+        "aclnnAdds_AddAiCore_Add"
+      ]
+    },
+    {
+      "type": "Rsqrt",
+      "input_shapes": "1,1274,1",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.11450100000000003,
+      "normalized_names": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ],
+      "name_examples": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ]
+    },
+    {
+      "type": "Rsqrt",
+      "input_shapes": "1,1274,8,1",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,8,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.09604800000000002,
+      "normalized_names": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ],
+      "name_examples": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ]
+    },
+    {
+      "type": "Add",
+      "input_shapes": "1,1274,8,1;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,8,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.08790099999999999,
+      "normalized_names": [
+        "aclnnAdds_AddAiCore_Add"
+      ],
+      "name_examples": [
+        "aclnnAdds_AddAiCore_Add"
+      ]
+    }
+  ]
+}

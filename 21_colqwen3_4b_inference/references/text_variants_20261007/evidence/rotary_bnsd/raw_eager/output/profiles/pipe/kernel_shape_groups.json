@@ -1,0 +1,625 @@
+{
+  "raw_csv": "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/rotary_bnsd/raw_eager/output/profiles/pipe/raw/liteserver-c001-4_96361_20261007121527745_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+  "isolated_text_checks_passed": true,
+  "kernel_count_per_forward": 1847.0,
+  "kernel_sum_ms_per_forward": 74.002276,
+  "groups": [
+    {
+      "type": "MatMulV2",
+      "input_shapes": "1274,2560;19456,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,19456",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 16.772451000000004,
+      "normalized_names": [
+        "aclnnMatmul_MatMulCommon_MatMulV"
+      ],
+      "name_examples": [
+        "aclnnMatmul_MatMulCommon_MatMulV2"
+      ]
+    },
+    {
+      "type": "PromptFlashAttention",
+      "input_shapes": "1,32,1274,128;1,8,1274,128;1,8,1274,128;1,1,1274,1274;;",
+      "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL;INT64;INT64",
+      "output_shapes": "1,32,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 11.205531333333333,
+      "normalized_names": [
+        "InnerPromptFlashAttention_PromptFlashAttention_PromptFlashAttention"
+      ],
+      "name_examples": [
+        "InnerPromptFlashAttention_PromptFlashAttention_PromptFlashAttention"
+      ]
+    },
+    {
+      "type": "MatMulV3",
+      "input_shapes": "1274,9728;2560,9728",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 9.663884333333332,
+      "normalized_names": [
+        "aclnnMatmul_MatMulVCommon_MatMulV"
+      ],
+      "name_examples": [
+        "aclnnMatmul_MatMulV3Common_MatMulV3"
+      ]
+    },
+    {
+      "type": "MatMulV3",
+      "input_shapes": "1274,2560;6144,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,6144",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 5.71679,
+      "normalized_names": [
+        "aclnnMatmul_MatMulVCommon_MatMulV"
+      ],
+      "name_examples": [
+        "aclnnMatmul_MatMulV3Common_MatMulV3"
+      ]
+    },
+    {
+      "type": "MatMulV3",
+      "input_shapes": "1274,4096;2560,4096",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 4.216298,
+      "normalized_names": [
+        "aclnnMatmul_MatMulVCommon_MatMulV"
+      ],
+      "name_examples": [
+        "aclnnMatmul_MatMulV3Common_MatMulV3"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "1,1274,2560;1,1274,1",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 1.7193233333333326,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Pows",
+      "input_shapes": "1,1274,2560;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 1.6146620000000005,
+      "normalized_names": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ],
+      "name_examples": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ]
+    },
+    {
+      "type": "ReduceMean",
+      "input_shapes": "1,1274,2560;1",
+      "input_dtypes": "FLOAT;INT64",
+      "output_shapes": "1,1274,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 1.5284819999999992,
+      "normalized_names": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ],
+      "name_examples": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ]
+    },
+    {
+      "type": "Transpose",
+      "input_shapes": "1274,32,128;3",
+      "input_dtypes": "FLOAT16;INT64",
+      "output_shapes": "32,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 1.3467566666666668,
+      "normalized_names": [
+        "aclnnInplaceCopy_TransposeAiCore_Transpose"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_TransposeAiCore_Transpose"
+      ]
+    },
+    {
+      "type": "Transpose",
+      "input_shapes": "32,1274,128;3",
+      "input_dtypes": "FLOAT16;INT64",
+      "output_shapes": "1274,32,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 1.3333213333333336,
+      "normalized_names": [
+        "aclnnInplaceCopy_TransposeAiCore_Transpose"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_TransposeAiCore_Transpose"
+      ]
+    },
+    {
+      "type": "Swish",
+      "input_shapes": "1,1274,9728",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,9728",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 1.2715856666666663,
+      "normalized_names": [
+        "aclnnSilu_SiluAiCore_Swish"
+      ],
+      "name_examples": [
+        "aclnnSilu_SiluAiCore_Swish"
+      ]
+    },
+    {
+      "type": "Slice",
+      "input_shapes": "1274,19456;2;2",
+      "input_dtypes": "FLOAT16;INT64;INT64",
+      "output_shapes": "1274,9728",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 72.0,
+      "ms_per_forward": 1.1717799999999994,
+      "normalized_names": [
+        "aclnnMul_SliceAiCore_Slice",
+        "aclnnSilu_SliceAiCore_Slice"
+      ],
+      "name_examples": [
+        "aclnnSilu_SliceAiCore_Slice",
+        "aclnnMul_SliceAiCore_Slice"
+      ]
+    },
+    {
+      "type": "Pows",
+      "input_shapes": "1,1274,32,128;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 1.0864076666666667,
+      "normalized_names": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ],
+      "name_examples": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "1,1274,32,128;1,1274,32,1",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 1.011134,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "RotaryPositionEmbedding",
+      "input_shapes": "1,32,1274,128;1,1,1274,128;1,1,1274,128",
+      "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+      "output_shapes": "1,32,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.9883949999999997,
+      "normalized_names": [
+        "aclnnRotaryPositionEmbeddingV_RotaryPositionEmbedding_RotaryPositionEmbedding"
+      ],
+      "name_examples": [
+        "aclnnRotaryPositionEmbeddingV2_RotaryPositionEmbedding_RotaryPositionEmbedding"
+      ]
+    },
+    {
+      "type": "Add",
+      "input_shapes": "1,1274,2560;1,1274,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 75.0,
+      "ms_per_forward": 0.94438,
+      "normalized_names": [
+        "aclnnAdd_AddAiCore_Add"
+      ],
+      "name_examples": [
+        "aclnnAdd_AddAiCore_Add"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "2560;1,1274,2560",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.9231766666666664,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,2560",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.8731710000000003,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "Transpose",
+      "input_shapes": "1274,8,128;3",
+      "input_dtypes": "FLOAT16;INT64",
+      "output_shapes": "8,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.8728073333333336,
+      "normalized_names": [
+        "aclnnInplaceCopy_TransposeAiCore_Transpose"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_TransposeAiCore_Transpose"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,2560",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,2560",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.783089333333333,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "Pows",
+      "input_shapes": "1,1274,8,128;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.7776286666666665,
+      "normalized_names": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ],
+      "name_examples": [
+        "aclnnPowTensorScalar_PowsAiCore_Pows"
+      ]
+    },
+    {
+      "type": "ReduceMean",
+      "input_shapes": "1,1274,32,128;1",
+      "input_dtypes": "FLOAT;INT64",
+      "output_shapes": "1,1274,32,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.7630943333333333,
+      "normalized_names": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ],
+      "name_examples": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ]
+    },
+    {
+      "type": "RotaryPositionEmbedding",
+      "input_shapes": "1,8,1274,128;1,1,1274,128;1,1,1274,128",
+      "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+      "output_shapes": "1,8,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.712349333333333,
+      "normalized_names": [
+        "aclnnRotaryPositionEmbeddingV_RotaryPositionEmbedding_RotaryPositionEmbedding"
+      ],
+      "name_examples": [
+        "aclnnRotaryPositionEmbeddingV2_RotaryPositionEmbedding_RotaryPositionEmbedding"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "1,1274,8,128;1,1274,8,1",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.7084423333333337,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "1,1274,9728;1,1274,9728",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,9728",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.6591110000000001,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,32,128",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.6308136666666668,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,32,128",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.5304906666666669,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "ReduceMean",
+      "input_shapes": "1,1274,8,128;1",
+      "input_dtypes": "FLOAT;INT64",
+      "output_shapes": "1,1274,8,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.5125623333333335,
+      "normalized_names": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ],
+      "name_examples": [
+        "aclnnMean_ReduceMeanAiCore_ReduceMean"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "128;1,1274,32,128",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,32,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.45906866666666696,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Slice",
+      "input_shapes": "1274,48,128;3;3",
+      "input_dtypes": "FLOAT16;INT64;INT64",
+      "output_shapes": "1274,32,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.4402629999999999,
+      "normalized_names": [
+        "aclnnInplaceCopy_SliceAiCore_Slice"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_SliceAiCore_Slice"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,8,128",
+      "input_dtypes": "FLOAT16",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.3993676666666668,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "Mul",
+      "input_shapes": "128;1,1274,8,128",
+      "input_dtypes": "FLOAT16;FLOAT16",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.36669733333333326,
+      "normalized_names": [
+        "aclnnMul_MulAiCore_Mul"
+      ],
+      "name_examples": [
+        "aclnnMul_MulAiCore_Mul"
+      ]
+    },
+    {
+      "type": "Slice",
+      "input_shapes": "1274,48,128;3;3",
+      "input_dtypes": "FLOAT16;INT64;INT64",
+      "output_shapes": "1274,8,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.3429476666666667,
+      "normalized_names": [
+        "aclnnInplaceCopy_SliceAiCore_Slice"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_SliceAiCore_Slice"
+      ]
+    },
+    {
+      "type": "AsStrided",
+      "input_shapes": "7827456;4;4;1",
+      "input_dtypes": "FLOAT16;INT64;INT64;INT64",
+      "output_shapes": "1,8,1274,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.3391609999999999,
+      "normalized_names": [
+        "aclnnInplaceCopy_AsStridedAiCore_AsStrided"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_AsStridedAiCore_AsStrided"
+      ]
+    },
+    {
+      "type": "Cast",
+      "input_shapes": "1,1274,8,128",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,8,128",
+      "output_dtypes": "FLOAT16",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.33010033333333355,
+      "normalized_names": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ],
+      "name_examples": [
+        "aclnnInplaceCopy_CastAiCore_Cast"
+      ]
+    },
+    {
+      "type": "Rsqrt",
+      "input_shapes": "1,1274,32,1",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,32,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.28445233333333325,
+      "normalized_names": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ],
+      "name_examples": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ]
+    },
+    {
+      "type": "Add",
+      "input_shapes": "1,1274,32,1;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,32,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.2622049999999999,
+      "normalized_names": [
+        "aclnnAdds_AddAiCore_Add"
+      ],
+      "name_examples": [
+        "aclnnAdds_AddAiCore_Add"
+      ]
+    },
+    {
+      "type": "Add",
+      "input_shapes": "1,1274,1;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.12692199999999998,
+      "normalized_names": [
+        "aclnnAdds_AddAiCore_Add"
+      ],
+      "name_examples": [
+        "aclnnAdds_AddAiCore_Add"
+      ]
+    },
+    {
+      "type": "Rsqrt",
+      "input_shapes": "1,1274,1",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 73.0,
+      "ms_per_forward": 0.12087566666666669,
+      "normalized_names": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ],
+      "name_examples": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ]
+    },
+    {
+      "type": "Rsqrt",
+      "input_shapes": "1,1274,8,1",
+      "input_dtypes": "FLOAT",
+      "output_shapes": "1,1274,8,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.10416166666666665,
+      "normalized_names": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ],
+      "name_examples": [
+        "aclnnRsqrt_RsqrtAiCore_Rsqrt"
+      ]
+    },
+    {
+      "type": "Add",
+      "input_shapes": "1,1274,8,1;",
+      "input_dtypes": "FLOAT;FLOAT",
+      "output_shapes": "1,1274,8,1",
+      "output_dtypes": "FLOAT",
+      "count_per_forward": 36.0,
+      "ms_per_forward": 0.0881346666666667,
+      "normalized_names": [
+        "aclnnAdds_AddAiCore_Add"
+      ],
+      "name_examples": [
+        "aclnnAdds_AddAiCore_Add"
+      ]
+    }
+  ]
+}

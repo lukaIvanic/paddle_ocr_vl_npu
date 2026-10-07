@@ -1,0 +1,41 @@
+Selected physical NPU 1 as logical npu:0
+Python: /usr/local/python3.12.13/bin/python3
+Using explicitly user-reserved physical NPU 0
+START baseline raw_eager
+FINISH baseline raw_eager exit=0
+START baseline torchair
+FINISH baseline torchair exit=0
+START bsnd raw_eager
+FINISH bsnd raw_eager exit=0
+START bsnd torchair
+FINISH bsnd torchair exit=0
+START rotary_bnsd raw_eager
+FINISH rotary_bnsd raw_eager exit=0
+START rotary_bnsd torchair
+FINISH rotary_bnsd torchair exit=0
+START apply_bnsd raw_eager
+FINISH apply_bnsd raw_eager exit=0
+START apply_bnsd torchair
+FINISH apply_bnsd torchair exit=0
+START apply_bsnd raw_eager
+FINISH apply_bsnd raw_eager exit=0
+START apply_bsnd torchair
+FINISH apply_bsnd torchair exit=0
+START swiglu raw_eager
+FINISH swiglu raw_eager exit=0
+START swiglu torchair
+FINISH swiglu torchair exit=0
+START apply_bsnd_swiglu raw_eager
+FINISH apply_bsnd_swiglu raw_eager exit=0
+START apply_bsnd_swiglu torchair
+FINISH apply_bsnd_swiglu torchair exit=0
+START baseline_end torchair
+FINISH baseline_end torchair exit=0
+TEXT_VARIANT baseline {"raw_eager": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 78.0327143339188, "p50": 77.97333499911474, "p90": 78.17568800965091, "p99": 79.24134559536469, "min": 77.77066000562627, "max": 80.18780000566039}, "adoption_eligible": true, "latency_reduction_vs_initial_control_percent": null}, "torchair": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 61.87100849880759, "p50": 61.80095999297919, "p90": 62.02383300696965, "p99": 62.96405460379901, "min": 61.73339999804739, "max": 62.99536000005901}, "adoption_eligible": true, "latency_reduction_vs_initial_control_percent": 0.0}}
+TEXT_VARIANT bsnd {"raw_eager": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 74.49060366755778, "p50": 74.42321000416996, "p90": 74.70747500046855, "p99": 75.88571290310938, "min": 74.09970999287907, "max": 76.82421999925282}, "adoption_eligible": true, "latency_reduction_vs_initial_control_percent": null}, "torchair": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 62.335328165985025, "p50": 62.228319999121595, "p90": 62.56291300524026, "p99": 63.50463240596582, "min": 62.109489997965284, "max": 63.70325000898447}, "adoption_eligible": true, "latency_reduction_vs_initial_control_percent": -0.750464035488263}}
+TEXT_VARIANT rotary_bnsd {"raw_eager": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 74.9272003347869, "p50": 74.877135004499, "p90": 75.14845299738226, "p99": 75.95333360586665, "min": 74.63464999455027, "max": 76.37811001040973}, "adoption_eligible": false, "latency_reduction_vs_initial_control_percent": null}, "torchair": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 61.05731866652301, "p50": 60.99739500496071, "p90": 61.07639500842197, "p99": 62.185075393499574, "min": 60.93315000180155, "max": 62.62989999959245}, "adoption_eligible": false, "latency_reduction_vs_initial_control_percent": 1.3151391128532586}}
+TEXT_VARIANT apply_bnsd {"raw_eager": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 73.43264950007627, "p50": 73.36724000924733, "p90": 73.57078399509192, "p99": 74.64466119694407, "min": 73.20629998866934, "max": 75.55993999994826}, "adoption_eligible": true, "latency_reduction_vs_initial_control_percent": null}, "torchair": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 60.57022350069019, "p50": 60.20169000112219, "p90": 61.240619998716284, "p99": 61.43305740435608, "min": 60.08651999582071, "max": 61.53344000631478}, "adoption_eligible": true, "latency_reduction_vs_initial_control_percent": 2.102414409719}}
+TEXT_VARIANT apply_bsnd {"raw_eager": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 71.12027133286271, "p50": 70.97752999834483, "p90": 71.18714601092506, "p99": 74.28431039443238, "min": 70.74996001028921, "max": 76.06164999015164}, "adoption_eligible": true, "latency_reduction_vs_initial_control_percent": null}, "torchair": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 59.722742333542556, "p50": 59.665005006536376, "p90": 59.78608299192274, "p99": 60.996149401617004, "min": 59.52653000713326, "max": 61.452419991837814}, "adoption_eligible": true, "latency_reduction_vs_initial_control_percent": 3.4721693041522617}}
+TEXT_VARIANT swiglu {"raw_eager": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 76.78112200034472, "p50": 76.07127499068156, "p90": 76.72995000175433, "p99": 88.70240299584107, "min": 75.871509994613, "max": 95.0002399913501}, "adoption_eligible": false, "latency_reduction_vs_initial_control_percent": null}, "torchair": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 60.743364501346754, "p50": 60.686410004564095, "p90": 60.83987999300007, "p99": 61.84197189693805, "min": 60.582999998587184, "max": 62.04055999114644}, "adoption_eligible": false, "latency_reduction_vs_initial_control_percent": 1.822572517922616}}
+TEXT_VARIANT apply_bsnd_swiglu {"raw_eager": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 69.50023333289816, "p50": 69.44745499640703, "p90": 69.64834500249708, "p99": 70.5061417008983, "min": 69.29998000850901, "max": 71.30817000870593}, "adoption_eligible": false, "latency_reduction_vs_initial_control_percent": null}, "torchair": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 58.88928466641422, "p50": 58.852615002251696, "p90": 58.91816400544485, "p99": 59.93754079740029, "min": 58.766319998539984, "max": 60.24131999583915}, "adoption_eligible": false, "latency_reduction_vs_initial_control_percent": 4.819258493985656}}
+TEXT_VARIANT baseline_end {"torchair": {"status": "completed", "warm_wall_ms": {"count": 60, "mean": 62.76297516766741, "p50": 62.6902950098156, "p90": 62.97541099775117, "p99": 63.78383810209925, "min": 62.56740000389982, "max": 64.00296998617705}, "adoption_eligible": true, "latency_reduction_vs_initial_control_percent": -1.441655293006927}}

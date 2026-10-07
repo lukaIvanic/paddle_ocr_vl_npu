@@ -1,0 +1,7 @@
+	NPU ID                         : 0
+	Chip Count                     : 1
+
+	Get pid name failed.
+	Process id:635074  Process name:                  Process memory(MB):17767
+	Chip ID                        : 0
+

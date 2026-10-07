@@ -1,0 +1,4 @@
+3e026452ae3073f49c82a406264887562ab350a5
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=0
+/workspace/venvs/colqwen3_hf_py312/bin/python -u 21_colqwen3_4b_inference/profile_warm_text.py --model /workspace/models/Ops-Colqwen3-4B --anchor tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt --frozen-inputs tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/text_inputs.pt --variant apply_bnsd --execution raw_eager --diagnostic-parity --output-dir tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/apply_bnsd/raw_eager/output --cache-root tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/cache/apply_bnsd --warmups 5 --repeats 30 --profile-steps 3 --metrics pipe 

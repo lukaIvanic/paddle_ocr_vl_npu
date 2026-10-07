@@ -1,0 +1,115 @@
+{
+  "kernel_rows": 4347,
+  "profile_steps": 3,
+  "kernel_duration_sum_ms_per_forward": 61.792773666666676,
+  "interval_union_ms": 185.297,
+  "interval_envelope_ms": 188.327,
+  "uncovered_envelope_ms": 3.03,
+  "timeline_scope": "All captured task intervals; gaps include boundaries between forwards. No claim of pure compute utilization or CPU causality.",
+  "top_types": [
+    {
+      "type": "MatMulV3",
+      "count": 324,
+      "duration_us": 56576.273,
+      "duration_ms_per_forward": 18.85875766666667,
+      "count_per_forward": 108.0,
+      "kernel_sum_percent": 30.519357762442993
+    },
+    {
+      "type": "MatMul",
+      "count": 108,
+      "duration_us": 49831.77200000002,
+      "duration_ms_per_forward": 16.610590666666674,
+      "count_per_forward": 36.0,
+      "kernel_sum_percent": 26.88112166039092
+    },
+    {
+      "type": "PromptFlashAttention",
+      "count": 108,
+      "duration_us": 32540.849000000002,
+      "duration_ms_per_forward": 10.846949666666667,
+      "count_per_forward": 36.0,
+      "kernel_sum_percent": 17.553751066717236
+    },
+    {
+      "type": "Mul",
+      "count": 870,
+      "duration_us": 9909.823000000008,
+      "duration_ms_per_forward": 3.303274333333336,
+      "count_per_forward": 290.0,
+      "kernel_sum_percent": 5.3457291804903155
+    },
+    {
+      "type": "AutomaticBufferFusionOp",
+      "count": 759,
+      "duration_us": 8948.357999999997,
+      "duration_ms_per_forward": 2.9827859999999986,
+      "count_per_forward": 253.0,
+      "kernel_sum_percent": 4.827078998088453
+    },
+    {
+      "type": "SplitVD",
+      "count": 432,
+      "duration_us": 7195.741999999992,
+      "duration_ms_per_forward": 2.398580666666664,
+      "count_per_forward": 144.0,
+      "kernel_sum_percent": 3.881652375090824
+    },
+    {
+      "type": "Square",
+      "count": 435,
+      "duration_us": 6280.904000000006,
+      "duration_ms_per_forward": 2.0936346666666688,
+      "count_per_forward": 145.0,
+      "kernel_sum_percent": 3.38815454046539
+    },
+    {
+      "type": "Transpose",
+      "count": 432,
+      "duration_us": 5437.6209999999965,
+      "duration_ms_per_forward": 1.8125403333333323,
+      "count_per_forward": 144.0,
+      "kernel_sum_percent": 2.9332561491912506
+    },
+    {
+      "type": "Add",
+      "count": 225,
+      "duration_us": 2790.2540000000026,
+      "duration_ms_per_forward": 0.9300846666666676,
+      "count_per_forward": 75.0,
+      "kernel_sum_percent": 1.5051673706765325
+    },
+    {
+      "type": "Cast",
+      "count": 219,
+      "duration_us": 2315.8099999999995,
+      "duration_ms_per_forward": 0.7719366666666665,
+      "count_per_forward": 73.0,
+      "kernel_sum_percent": 1.2492345315825786
+    },
+    {
+      "type": "ConcatV2D",
+      "count": 216,
+      "duration_us": 1783.1379999999995,
+      "duration_ms_per_forward": 0.5943793333333331,
+      "count_per_forward": 72.0,
+      "kernel_sum_percent": 0.9618913314033086
+    },
+    {
+      "type": "Neg",
+      "count": 216,
+      "duration_us": 1750.1770000000013,
+      "duration_ms_per_forward": 0.5833923333333338,
+      "count_per_forward": 72.0,
+      "kernel_sum_percent": 0.9441109351724041
+    },
+    {
+      "type": "Data",
+      "count": 3,
+      "duration_us": 17.6,
+      "duration_ms_per_forward": 0.005866666666666667,
+      "count_per_forward": 1.0,
+      "kernel_sum_percent": 0.009494098287792779
+    }
+  ]
+}

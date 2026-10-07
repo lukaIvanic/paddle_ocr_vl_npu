@@ -1,0 +1,35 @@
+{
+  "checked_at_utc": "2026-10-07T12:27:16.060984+00:00",
+  "service": "clef-flash vLLM reservation on physical NPU 0 / port 18123",
+  "service_left_running": true,
+  "matrix_exit": 0,
+  "before": {
+    "vllm:num_requests_running{engine=\"0\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:num_requests_waiting{engine=\"0\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:num_requests_waiting_by_reason{engine=\"0\",model_name=\"clef-flash\",reason=\"capacity\"}": 0.0,
+    "vllm:num_requests_waiting_by_reason{engine=\"0\",model_name=\"clef-flash\",reason=\"deferred\"}": 0.0,
+    "vllm:prompt_tokens_total{engine=\"0\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:generation_tokens_total{engine=\"0\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:request_success_total{engine=\"0\",finished_reason=\"stop\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:request_success_total{engine=\"0\",finished_reason=\"length\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:request_success_total{engine=\"0\",finished_reason=\"abort\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:request_success_total{engine=\"0\",finished_reason=\"error\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:request_success_total{engine=\"0\",finished_reason=\"repetition\",model_name=\"clef-flash\"}": 0.0
+  },
+  "after": {
+    "vllm:num_requests_running{engine=\"0\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:num_requests_waiting{engine=\"0\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:num_requests_waiting_by_reason{engine=\"0\",model_name=\"clef-flash\",reason=\"capacity\"}": 0.0,
+    "vllm:num_requests_waiting_by_reason{engine=\"0\",model_name=\"clef-flash\",reason=\"deferred\"}": 0.0,
+    "vllm:prompt_tokens_total{engine=\"0\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:generation_tokens_total{engine=\"0\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:request_success_total{engine=\"0\",finished_reason=\"stop\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:request_success_total{engine=\"0\",finished_reason=\"length\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:request_success_total{engine=\"0\",finished_reason=\"abort\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:request_success_total{engine=\"0\",finished_reason=\"error\",model_name=\"clef-flash\"}": 0.0,
+    "vllm:request_success_total{engine=\"0\",finished_reason=\"repetition\",model_name=\"clef-flash\"}": 0.0
+  },
+  "changed": {},
+  "limitation": "vLLM counters check the reservation service; they do not prove absence of unrelated activity on the shared host.",
+  "no_observed_reservation_activity": true
+}

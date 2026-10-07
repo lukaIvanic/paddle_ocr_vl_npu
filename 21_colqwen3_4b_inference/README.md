@@ -644,11 +644,16 @@ captures passing text-only isolation checks. See the
 The user-requested text-only lab also exposes opt-in `--variant` candidates:
 BSND layout, native RotaryMul, joint ApplyRotary before BNSD/BSND attention,
 native packed SwiGLU, and their combination. Norms, native projection weights,
-MRoPE factors and DeepStack semantics stay unchanged. These implementations
-require new NPU validation; the previously measured baseline remains the control.
+MRoPE factors and DeepStack semantics stay unchanged. The full matrix has now
+run on **910B2 physical NPU 0**, B1/FP16/S1274: the fresh baseline averages
+**78.033 ms raw eager / 61.871 ms TorchAir**. Joint ApplyRotary + BSND is the
+fastest bit-exact candidate. A same-process alternating confirmation measures
+**63.110 → 60.248 ms**, a **4.54% compiled latency reduction**. Separate
+RotaryMul fails eager/compiled consistency; SwiGLU changes the hidden states
+beyond the unchanged numerical tolerance.
 
 `run_text_variants.sh` runs separate eager/compiled captures on one selected
 card, with a repeated compiled baseline to check drift. The numerical gate
 remains atol=0.002/rtol=0.002; `--diagnostic-parity` retains rejected candidates
 for profiling while marking them ineligible for adoption. See the
-[protocol and current execution status](references/text_variants_20261007/README.md).
+[measured matrix, kernel attribution and confirmation evidence](references/text_variants_20261007/README.md).

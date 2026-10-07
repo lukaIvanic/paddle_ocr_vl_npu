@@ -1,0 +1,548 @@
+{
+  "status": "completed",
+  "command": [
+    "21_colqwen3_4b_inference/profile_warm_text.py",
+    "--model",
+    "/workspace/models/Ops-Colqwen3-4B",
+    "--anchor",
+    "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt",
+    "--frozen-inputs",
+    "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/text_inputs.pt",
+    "--variant",
+    "apply_bsnd_swiglu",
+    "--execution",
+    "raw_eager",
+    "--diagnostic-parity",
+    "--output-dir",
+    "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/apply_bsnd_swiglu/raw_eager/output",
+    "--cache-root",
+    "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/cache/apply_bsnd_swiglu",
+    "--warmups",
+    "5",
+    "--repeats",
+    "30",
+    "--profile-steps",
+    "3",
+    "--metrics",
+    "pipe"
+  ],
+  "host": "liteserver-c001-4",
+  "commit": "3e026452ae3073f49c82a406264887562ab350a5",
+  "physical_npu": "0",
+  "execution": "raw_eager",
+  "scope": "Isolated warmed ColQwen text transformer forward on one real B1 page.\n\nOnly the 36 text layers, DeepStack additions and final RMSNorm are timed/profiled.\nHidden states, cos/sin, causal mask and three DeepStack tensors are prepared once\nand resident on NPU. Vision, mergers, token embedding/image insertion, rotary\ninitialization, retrieval projection, transfers, compile and validation are outside\nthe measured window. Eager exports a frozen input/reference snapshot; compiled\nloads that exact snapshot in a separate process. No generation or KV cache.\n",
+  "warmups": 5,
+  "repeats": 30,
+  "profile_steps": 3,
+  "device": "Ascend910B2",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0",
+  "internal_format": true,
+  "input_identity": {
+    "model": "/workspace/models/Ops-Colqwen3-4B",
+    "config_sha256": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b",
+    "weights": {
+      "model-00001-of-00002.safetensors": [
+        4990494880,
+        1783252895994272661
+      ],
+      "model-00002-of-00002.safetensors": [
+        3898332680,
+        1783252504999640161
+      ]
+    },
+    "anchor_sha256": "8d138a0027a412a0aca9dad339b5022cc1e89c08238380b95f4e7ba8ceb521f0",
+    "options": {
+      "fused_projections": true,
+      "weight_format": "native",
+      "gqa": "native",
+      "vision_norm": "manual_fp32"
+    },
+    "source": {
+      "local_modeling_colqwen3.py": "d4a4cfec360aa1801fc68c5acd2bed0f2ed443353dbd2ac24f7a9f91d928d79f",
+      "optimized_prefill.py": "27e9fffc1e3a4d88debd3bec8b6e9116885d216288ce886ca8f2d0c2f6385218",
+      "prepared_prefill.py": "b284e2a2e285a0722c201da7225c1f3bbbbb5a54e5902e1c71479b4a2b513beb",
+      "patch_embedding.py": "19c466a2eb8b0601c62531601981de7f68cd8def36db407f96cb4eeee0435f6d"
+    }
+  },
+  "variant": {
+    "name": "apply_bsnd_swiglu",
+    "layout": "BSND",
+    "rotary": "apply",
+    "swiglu": true
+  },
+  "variant_source_sha256": "25b46e22b5bce811ebca2435802f55f7cf61e7d89376158003b3a68763909289",
+  "runner_source_sha256": "a69544e34dd920e19cfd779e3c869e8b6aba3dcfa7a8e633df0fac384d860af4",
+  "setup_validation": {
+    "reference_vs_hf": {
+      "shape": [
+        1,
+        1274,
+        2560
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000001665,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "optimized_vs_reference": {
+      "shape": [
+        1,
+        1274,
+        2560
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 0.091552734375,
+      "mean_abs": 0.0003692941681947559,
+      "rmse": 0.001322649884968996,
+      "cosine": 0.9977607602912022,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": false
+    }
+  },
+  "frozen_inputs": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/text_inputs.pt",
+  "frozen_inputs_sha256": "494513b62d9046cbe71d434d3b217542dc02ba465aea7d7b143037c5e302b5ae",
+  "text_tokens": 1274,
+  "batch_size": 1,
+  "text_layers": 36,
+  "text_input_shapes": [
+    [
+      1,
+      1274,
+      2560
+    ],
+    [
+      1,
+      1274,
+      128
+    ],
+    [
+      1,
+      1274,
+      128
+    ],
+    [
+      1,
+      1,
+      1274,
+      1274
+    ],
+    [
+      1,
+      1274,
+      2560
+    ],
+    [
+      1,
+      1274,
+      2560
+    ],
+    [
+      1,
+      1274,
+      2560
+    ]
+  ],
+  "text_input_dtypes": [
+    "torch.float16",
+    "torch.float16",
+    "torch.float16",
+    "torch.bool",
+    "torch.float16",
+    "torch.float16",
+    "torch.float16"
+  ],
+  "candidate_eager_vs_frozen": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": false,
+    "max_abs": 0.65625,
+    "mean_abs": 0.01042198482900858,
+    "rmse": 0.016542958095669746,
+    "cosine": 0.9999838133036015,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": false
+  },
+  "before_profile": {
+    "wall_ms": {
+      "count": 30,
+      "mean": 69.47205966619852,
+      "p50": 69.45651000569342,
+      "p90": 69.56398399925092,
+      "p99": 69.67423139620223,
+      "min": 69.35374000750016,
+      "max": 69.68592999328393
+    },
+    "device_interval_ms": {
+      "count": 30,
+      "mean": 69.31698226928711,
+      "p50": 69.31599807739258,
+      "p90": 69.41429595947265,
+      "p99": 69.49673683166503,
+      "min": 68.82795715332031,
+      "max": 69.50779724121094
+    },
+    "wall_samples_ms": [
+      69.68592999328393,
+      69.45494000683539,
+      69.4865200057393,
+      69.46583998796996,
+      69.40906999807339,
+      69.45808000455145,
+      69.42417999380268,
+      69.43441000476014,
+      69.46370999503415,
+      69.50644998869393,
+      69.44988999748603,
+      69.35374000750016,
+      69.44501999532804,
+      69.4734300050186,
+      69.44267000653781,
+      69.51892000506632,
+      69.39781999972183,
+      69.42683999659494,
+      69.37466000090353,
+      69.38450000598095,
+      69.59461999940686,
+      69.5605799992336,
+      69.39780000539031,
+      69.64559000334702,
+      69.42451999930199,
+      69.51198000751901,
+      69.49451999389566,
+      69.42916999105364,
+      69.50686998607125,
+      69.53952000185382
+    ],
+    "device_samples_ms": [
+      68.82795715332031,
+      69.31909942626953,
+      69.35533905029297,
+      69.32707977294922,
+      69.2699203491211,
+      69.3310775756836,
+      69.30126190185547,
+      69.30258178710938,
+      69.33612060546875,
+      69.37805938720703,
+      69.31289672851562,
+      69.22144317626953,
+      69.31121826171875,
+      69.34676361083984,
+      69.30271911621094,
+      69.39473724365234,
+      69.25263977050781,
+      69.30449676513672,
+      69.23979949951172,
+      69.26586151123047,
+      69.46965789794922,
+      69.4349365234375,
+      69.26866149902344,
+      69.50779724121094,
+      69.29768371582031,
+      69.38369750976562,
+      69.36319732666016,
+      69.29666137695312,
+      69.37409973144531,
+      69.41200256347656
+    ]
+  },
+  "vs_frozen_eager": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": false,
+    "max_abs": 0.65625,
+    "mean_abs": 0.01042198482900858,
+    "rmse": 0.016542958095669746,
+    "cosine": 0.9999838133036015,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": false
+  },
+  "vs_candidate_eager": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": true,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rmse": 0.0,
+    "cosine": 1.0000000000001745,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": true
+  },
+  "adoption_eligible": false,
+  "profiles": {
+    "pipe": {
+      "profiled_wall_ms": {
+        "count": 3,
+        "mean": 378.62074333437096,
+        "p50": 376.8485500040697,
+        "p90": 381.18133400857914,
+        "p99": 382.15621040959377,
+        "min": 376.74914998933673,
+        "max": 382.2645300097065
+      },
+      "diagnostic_only": true,
+      "parser_command": [
+        "/workspace/venvs/colqwen3_hf_py312/bin/python",
+        "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/parse_npu_profile.py",
+        "--profile-dir",
+        "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/apply_bsnd_swiglu/raw_eager/output/profiles/pipe/raw",
+        "--topn",
+        "40",
+        "--out-json",
+        "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/apply_bsnd_swiglu/raw_eager/output/profiles/pipe/parsed.json",
+        "--out-md",
+        "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/apply_bsnd_swiglu/raw_eager/output/profiles/pipe/parsed.md",
+        "--skip-trace"
+      ],
+      "parsed_json": "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/apply_bsnd_swiglu/raw_eager/output/profiles/pipe/parsed.json",
+      "parsed_markdown": "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/apply_bsnd_swiglu/raw_eager/output/profiles/pipe/parsed.md",
+      "kernel_accounting": {
+        "kernel_rows": 4785,
+        "profile_steps": 3,
+        "kernel_duration_sum_ms_per_forward": 68.723627,
+        "interval_union_ms": 206.15575,
+        "interval_envelope_ms": 1135.3755,
+        "uncovered_envelope_ms": 929.21975,
+        "timeline_scope": "All captured task intervals; gaps include boundaries between forwards. No claim of pure compute utilization or CPU causality.",
+        "top_types": [
+          {
+            "type": "MatMulV3",
+            "count": 324,
+            "duration_us": 59603.80700000001,
+            "duration_ms_per_forward": 19.867935666666668,
+            "count_per_forward": 108.0,
+            "kernel_sum_percent": 28.909905565180182
+          },
+          {
+            "type": "MatMulV2",
+            "count": 108,
+            "duration_us": 50401.152,
+            "duration_ms_per_forward": 16.800384,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 24.446299960274217
+          },
+          {
+            "type": "PromptFlashAttention",
+            "count": 108,
+            "duration_us": 35862.712999999996,
+            "duration_ms_per_forward": 11.954237666666666,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 17.394654776684977
+          },
+          {
+            "type": "Mul",
+            "count": 870,
+            "duration_us": 15681.306999999999,
+            "duration_ms_per_forward": 5.227102333333333,
+            "count_per_forward": 290.0,
+            "kernel_sum_percent": 7.605975646968303
+          },
+          {
+            "type": "Pows",
+            "count": 435,
+            "duration_us": 10042.441999999997,
+            "duration_ms_per_forward": 3.347480666666666,
+            "count_per_forward": 145.0,
+            "kernel_sum_percent": 4.870931312555238
+          },
+          {
+            "type": "Cast",
+            "count": 870,
+            "duration_us": 9110.096999999996,
+            "duration_ms_per_forward": 3.0366989999999987,
+            "count_per_forward": 290.0,
+            "kernel_sum_percent": 4.418711777246563
+          },
+          {
+            "type": "ReduceMean",
+            "count": 435,
+            "duration_us": 8923.555,
+            "duration_ms_per_forward": 2.9745183333333336,
+            "count_per_forward": 145.0,
+            "kernel_sum_percent": 4.328232462662853
+          },
+          {
+            "type": "SwiGlu",
+            "count": 108,
+            "duration_us": 4926.394,
+            "duration_ms_per_forward": 1.6421313333333334,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 2.389471285229654
+          },
+          {
+            "type": "Add",
+            "count": 660,
+            "duration_us": 4423.7260000000015,
+            "duration_ms_per_forward": 1.4745753333333338,
+            "count_per_forward": 220.0,
+            "kernel_sum_percent": 2.1456599392423423
+          },
+          {
+            "type": "Slice",
+            "count": 324,
+            "duration_us": 3006.8040000000015,
+            "duration_ms_per_forward": 1.0022680000000004,
+            "count_per_forward": 108.0,
+            "kernel_sum_percent": 1.4584038179475023
+          },
+          {
+            "type": "ApplyRotaryPosEmb",
+            "count": 108,
+            "duration_us": 2836.0629999999996,
+            "duration_ms_per_forward": 0.9453543333333332,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 1.3755885342508674
+          },
+          {
+            "type": "Rsqrt",
+            "count": 435,
+            "duration_us": 1352.821,
+            "duration_ms_per_forward": 0.4509403333333333,
+            "count_per_forward": 145.0,
+            "kernel_sum_percent": 0.6561649217573067
+          }
+        ]
+      },
+      "replay_parity": {
+        "shape": [
+          1,
+          1274,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000001745,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      }
+    }
+  },
+  "after_profile": {
+    "wall_ms": {
+      "count": 30,
+      "mean": 69.52840699959779,
+      "p50": 69.42840500414604,
+      "p90": 69.71572300244588,
+      "p99": 70.91395270486828,
+      "min": 69.29998000850901,
+      "max": 71.30817000870593
+    },
+    "device_interval_ms": {
+      "count": 30,
+      "mean": 69.36533660888672,
+      "p50": 69.28467178344727,
+      "p90": 69.51900100708008,
+      "p99": 70.56769287109375,
+      "min": 69.14337921142578,
+      "max": 70.87940216064453
+    },
+    "wall_samples_ms": [
+      71.30817000870593,
+      69.71470000280533,
+      69.72492999921087,
+      69.62940999073908,
+      69.57400999090169,
+      69.67313999484759,
+      69.39505999616813,
+      69.32172999950126,
+      69.3701999989571,
+      69.48366000142414,
+      69.46099999186117,
+      69.43427999794949,
+      69.36768000014126,
+      69.38391999574378,
+      69.47481000679545,
+      69.30614000884816,
+      69.40700999984983,
+      69.48541999736335,
+      69.39412000065204,
+      69.40933999430854,
+      69.29998000850901,
+      69.94879999547265,
+      69.3980299984105,
+      69.46461999905296,
+      69.4225300103426,
+      69.43440000759438,
+      69.36235999455675,
+      69.47145999583881,
+      69.326099997852,
+      69.4052000035299
+    ],
+    "device_samples_ms": [
+      70.87940216064453,
+      69.52906036376953,
+      69.51788330078125,
+      69.41221618652344,
+      69.36312103271484,
+      69.4760971069336,
+      69.23735809326172,
+      69.18224334716797,
+      69.21389770507812,
+      69.30342102050781,
+      69.3204574584961,
+      69.2900619506836,
+      69.2086181640625,
+      69.25521850585938,
+      69.30697631835938,
+      69.14337921142578,
+      69.25382232666016,
+      69.35018157958984,
+      69.24955749511719,
+      69.26899719238281,
+      69.17082214355469,
+      69.8045425415039,
+      69.26348114013672,
+      69.31974029541016,
+      69.27928161621094,
+      69.31580352783203,
+      69.23755645751953,
+      69.34400177001953,
+      69.19062042236328,
+      69.27227783203125
+    ]
+  },
+  "final_replay_parity": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": true,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rmse": 0.0,
+    "cosine": 1.0000000000001745,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": true
+  },
+  "finite": true
+}

@@ -1,0 +1,5 @@
+{
+  "out_json": "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/apply_bnsd/torchair/output/profiles/pipe/parsed.json",
+  "out_md": "tmp/21_colqwen3_4b_inference/text_variants_npu0_20261007_3e026452/apply_bnsd/torchair/output/profiles/pipe/parsed.md",
+  "runs": 1
+}
