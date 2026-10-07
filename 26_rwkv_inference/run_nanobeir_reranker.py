@@ -266,9 +266,11 @@ def worker(args):
         report.update(size=args.size,checkpoint_sha256=emb_sha,reranker_sha256=rank_sha,source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())
         backbone=Backbone(model).eval()
         jobs=json.loads((args.output/f'jobs_{i}.json').read_text())
-        # Each process owns fresh copies; no shared TorchAir cache writers.
-        for n in ['backbone_cache','head_cache']:shutil.copytree(args.warm_cache_from/n,out/n)
-        encode=compiled(backbone.forward,out/'backbone_cache');head=compiled(ranker.forward,out/'head_cache')
+        # Each compiled process owns fresh copies; eager execution needs no cache.
+        if args.inference_backend=='hybrid':
+            for n in ['backbone_cache','head_cache']:shutil.copytree(args.warm_cache_from/n,out/n)
+            encode=compiled(backbone.forward,out/'backbone_cache');head=compiled(ranker.forward,out/'head_cache')
+        report['inference_backend']=args.inference_backend
         loaded={}
         def rows(job,offset):
             name=job['task']
@@ -282,6 +284,9 @@ def worker(args):
             return np.stack(arrays)
         def score(cpu_ids):
             L=cpu_ids.shape[1]
+            if args.inference_backend=='raw_eager':
+                ni=torch.from_numpy(cpu_ids.astype(np.int64)).to('npu')
+                return ranker(model.encode_states(ni)[1][1]),'raw_eager_exact_length'
             if L<=512:
                 padded=np.pad(cpu_ids,((0,0),(0,512-L)))
                 ni=torch.from_numpy(padded.astype(np.int64)).to('npu');lens=torch.full((4,),L,dtype=torch.int32,device='npu')
@@ -350,7 +355,7 @@ def coordinate(args):
         batch_cost_model=dict(short_batch_seconds=args.short_batch_seconds,long_intercept_seconds=args.long_intercept_seconds,long_per_token_seconds=args.long_per_token_seconds),
         dense_dtype=args.dtype,state_dtype='fp32',logical_batch_size=32,outer_batch_size=None if args.protocol=='bm25-positives' else 128,device_batch_size=4,
         preparation=('Per-query positives first followed by BM25 nonpositive texts; B32 padding reset per query; last2048/EOS; sklearn tie-averaged NDCG.' if args.protocol=='bm25-positives' else 'Task-wide query order and saved candidate rank order; pinned wrapper B32 left padding/last2048/EOS; additional right padding only for compiled T512.'),
-        backend_policy='TorchAir T512 for prepared length<=512; exact-length raw eager for longer inputs',
+        inference_backend=args.inference_backend,backend_policy=('Exact-length raw eager for all inputs' if args.inference_backend=='raw_eager' else 'TorchAir T512 for prepared length<=512; exact-length raw eager for longer inputs'),
         protocol=args.protocol,candidate_source=str(args.data_root if args.protocol=='bm25-positives' else args.candidates_root),document_caching=False,task_results=[],all_checks_passed=False)
     children=[]
     try:
@@ -451,6 +456,7 @@ def main():
     for n in ['checkpoint','reranker','runtime','upstream','build-root','reference-build','data-root','candidates-root','batch-evidence','warm-cache-from','output']:
         p.add_argument('--'+n,type=Path,required=True)
     p.add_argument('--size',choices=list(PAIR_SPEC),default='tiny')
+    p.add_argument('--inference-backend',choices=['hybrid','raw_eager'],default='hybrid')
     p.add_argument('--prepared-reference',type=Path)
     p.add_argument('--short-batch-seconds',type=float,default=.03415)
     p.add_argument('--long-intercept-seconds',type=float,default=.080)
