@@ -21,7 +21,7 @@ from local_modeling_colqwen3 import LocalColQwen3
 from optimized_prefill import Options, OptimizedTextStage, configure_compiler
 from prepared_prefill import StageCompiler
 from profile_warm_forward import emit, measure
-from profile_warm_text import TextForward, identity
+from profile_warm_text import TextForward, identity, validate_snapshot_identity
 from run_hf_baseline import sha256
 from text_forward_variants import VARIANTS, VariantTextStage, variant_identity
 
@@ -37,16 +37,20 @@ def run(args, result):
     torch.npu.matmul.allow_hf32 = False
     torch.set_num_threads(4)
     options = Options()
-    saved = torch.load(args.frozen_inputs, map_location='cpu', weights_only=True)
+    snapshot = args.frozen_inputs or args.reference_snapshot
+    saved = torch.load(snapshot, map_location='cpu', weights_only=True)
     provenance = identity(args, options)
-    if saved['identity'] != provenance:
-        raise RuntimeError('Frozen input identity changed')
+    result['reference_identity_changes'] = validate_snapshot_identity(
+        saved['identity'], provenance, reference_only=bool(args.reference_snapshot))
+    result['reference_identity'] = saved['identity']
+    if '310P' in torch.npu.get_device_name().upper():
+        raise ValueError('This comparison includes historical 910B variants; use profile_warm_text baseline on 310P')
     tensors = tuple(t.to(args.device).contiguous() for t in saved['text_inputs'])
     if len(tensors) != 7 or tensors[0].shape[0] != 1:
         raise ValueError('Expected seven frozen B1 tensors')
     result.update(device=torch.npu.get_device_name(), torch=torch.__version__,
                   torch_npu=torch_npu.__version__, input_identity=provenance,
-                  frozen_inputs_sha256=sha256(args.frozen_inputs),
+                  frozen_inputs_sha256=sha256(snapshot),
                   text_input_shapes=[list(t.shape) for t in tensors],
                   variant_source_sha256=sha256(Path(__file__).with_name('text_forward_variants.py')),
                   runner_source_sha256=sha256(Path(__file__)), parity={}, cache_records={})
@@ -75,7 +79,7 @@ def run(args, result):
         result['parity'][name] = dict(eager=eager_parity, compiled=compiled_parity, vs_eager=vs_eager)
         if not compiled_parity['passed'] or not vs_eager['passed']:
             raise RuntimeError(f'{name} compiled parity failed')
-        if name == 'baseline' and not compiled_parity['exact']:
+        if name == 'baseline' and not args.reference_snapshot and not compiled_parity['exact']:
             raise RuntimeError('Control must remain bit-exact')
         calls[name] = TextForward(call, tensors)
         result['cache_records'][name] = compiler.records
@@ -109,7 +113,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--model', required=True)
     parser.add_argument('--anchor', type=Path, required=True)
-    parser.add_argument('--frozen-inputs', type=Path, required=True)
+    snapshots = parser.add_mutually_exclusive_group(required=True)
+    snapshots.add_argument('--frozen-inputs', type=Path)
+    snapshots.add_argument('--reference-snapshot', type=Path)
     parser.add_argument('--cache-root', type=Path, required=True)
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--variant', choices=[name for name in VARIANTS if name != 'baseline'], default='apply_bsnd')

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Isolated warmed ColQwen text transformer forward on one real B1 page.
 
-Only the 36 text layers, DeepStack additions and final RMSNorm are timed/profiled.
+The 36 text layers, DeepStack additions and final RMSNorm are timed/profiled,
+including the portable baseline's one-time sequence padding and output trim.
 Hidden states, cos/sin, causal mask and three DeepStack tensors are prepared once
 and resident on NPU. Vision, mergers, token embedding/image insertion, rotary
 initialization, retrieval projection, transfers, compile and validation are outside
@@ -57,6 +58,16 @@ def identity(args, options):
                                      'prepared_prefill.py', 'patch_embedding.py')})
 
 
+def validate_snapshot_identity(saved, current, *, reference_only=False):
+    # A cross-implementation comparison deliberately changes modeling source
+    # and options, but must still use the same checkpoint and captured page.
+    keys = ('model', 'config_sha256', 'weights', 'anchor_sha256') if reference_only else tuple(current)
+    changed = [key for key in keys if saved.get(key) != current.get(key)]
+    if changed:
+        raise RuntimeError(f'Frozen text identity mismatch: {changed}')
+    return [key for key in current if saved.get(key) != current.get(key)]
+
+
 @torch.inference_mode()
 def run(args, result):
     import torch_npu
@@ -69,6 +80,8 @@ def run(args, result):
     torch.set_num_threads(4)
     result.update(device=torch.npu.get_device_name(), torch=torch.__version__,
                   torch_npu=torch_npu.__version__, internal_format=True)
+    if '310P' in result['device'].upper() and args.variant != 'baseline':
+        raise ValueError('Historical native-GQA/rotary/SwiGLU variants are 910B diagnostics; use baseline on 310P')
     options = Options()
     provenance = identity(args, options)
     result['input_identity'] = provenance
@@ -79,14 +92,17 @@ def run(args, result):
     result['variant'] = variant_identity(args.variant)
     result['variant_source_sha256'] = sha256(Path(__file__).with_name('text_forward_variants.py'))
     result['runner_source_sha256'] = sha256(Path(__file__))
-    if args.frozen_inputs:
-        saved = torch.load(args.frozen_inputs, map_location='cpu', weights_only=True)
-        if saved['identity'] != provenance:
-            raise RuntimeError('Frozen text inputs differ in model, anchor, options or source')
+    input_snapshot = args.frozen_inputs or args.reference_snapshot
+    if input_snapshot:
+        saved = torch.load(input_snapshot, map_location='cpu', weights_only=True)
+        changes = validate_snapshot_identity(saved['identity'], provenance,
+                                             reference_only=bool(args.reference_snapshot))
+        result['reference_identity'] = saved['identity']
+        result['reference_identity_changes'] = changes
         tensors = tuple(t.to(args.device).contiguous() for t in saved['text_inputs'])
         expected = saved['expected_hidden']
         result['setup_validation'] = saved['setup_validation']
-        snapshot = args.frozen_inputs
+        snapshot = input_snapshot
     else:
         batch, hf_anchor = load_case(args.anchor, 0, args.device)
         if 'pixel_values' not in batch:
@@ -118,6 +134,12 @@ def run(args, result):
                   text_layers=len(text.layers),
                   text_input_shapes=[list(t.shape) for t in tensors],
                   text_input_dtypes=[str(t.dtype) for t in tensors])
+    result['attention_contract'] = dict(
+        layout=result['variant']['layout'], gqa=result['variant']['gqa'],
+        real_tokens=result['text_tokens'],
+        physical_tokens=((result['text_tokens'] + result['variant']['attention_alignment'] - 1)
+                         // result['variant']['attention_alignment'] * result['variant']['attention_alignment']),
+        norms='unchanged_manual', scope='text_prefill_no_kv_cache')
     if len(tensors) != 7 or result['batch_size'] != 1:
         raise ValueError('Expected seven frozen B1 text tensors')
     candidate_eager = text(*tensors)
@@ -149,7 +171,7 @@ def run(args, result):
     result['adoption_eligible'] = (result['candidate_eager_vs_frozen']['passed'] and
                                    result['vs_frozen_eager']['passed'] and
                                    result['vs_candidate_eager']['passed'])
-    if args.variant == 'baseline' and not result['vs_frozen_eager']['exact']:
+    if args.variant == 'baseline' and not args.reference_snapshot and not result['vs_frozen_eager']['exact']:
         raise RuntimeError('Isolated text forward differs from frozen eager reference')
     if not result['adoption_eligible'] and not args.diagnostic_parity:
         raise RuntimeError('Text variant failed existing atol/rtol=0.002 numerical gate')
@@ -180,7 +202,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--model', required=True)
     parser.add_argument('--anchor', type=Path, required=True)
-    parser.add_argument('--frozen-inputs', type=Path)
+    inputs = parser.add_mutually_exclusive_group()
+    inputs.add_argument('--frozen-inputs', type=Path)
+    inputs.add_argument('--reference-snapshot', type=Path,
+                        help='Compare changed source/options against an older frozen reference; checkpoint and anchor must match')
     parser.add_argument('--execution', choices=('raw_eager', 'torchair'), required=True)
     parser.add_argument('--variant', choices=tuple(VARIANTS), default='baseline')
     parser.add_argument('--diagnostic-parity', action='store_true',
@@ -195,9 +220,9 @@ def main():
     args = parser.parse_args()
     if not args.device.startswith('npu:') or min(args.warmups, args.repeats, args.profile_steps) < 1:
         parser.error('NPU and positive warmups/repeats/profile steps required')
-    if args.execution == 'torchair' and not args.frozen_inputs:
+    if args.execution == 'torchair' and not (args.frozen_inputs or args.reference_snapshot):
         parser.error('Compiled text must load the eager --frozen-inputs snapshot')
-    if args.variant != 'baseline' and not args.frozen_inputs:
+    if args.variant != 'baseline' and not (args.frozen_inputs or args.reference_snapshot):
         parser.error('Text variants must use the existing baseline --frozen-inputs snapshot')
     args.output_dir.mkdir(parents=True, exist_ok=False)
     result = dict(status='started', command=sys.argv, host=platform.node(),

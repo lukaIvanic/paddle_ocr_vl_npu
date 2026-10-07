@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from analyze_text_profile import analyze
-VARIANTS = ('baseline', 'bsnd', 'rotary_bnsd', 'apply_bnsd', 'apply_bsnd',
+VARIANTS = ('baseline', 'baseline_910b', 'bsnd', 'rotary_bnsd', 'apply_bnsd', 'apply_bsnd',
             'swiglu', 'apply_bsnd_swiglu')
 
 

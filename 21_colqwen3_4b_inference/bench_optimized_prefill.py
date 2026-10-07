@@ -218,7 +218,8 @@ def main():
     p.add_argument('--unfused',action='store_true')
     p.add_argument('--weight-format',choices=('native','fractal_nz'),default='native')
     p.add_argument('--enable-internal-format',action='store_true')
-    p.add_argument('--gqa',choices=('native','repeat'),default='native')
+    p.add_argument('--gqa',choices=('native','repeat'),default='repeat',
+                   help='repeat follows the documented 310P contract; native is a target-specific experiment')
     p.add_argument('--vision-norm',choices=('module','manual_fp32'),default='manual_fp32')
     p.add_argument('--patch-embedding',choices=('linear','conv3d'),default='linear')
     p.add_argument('--patch-repeats',type=int,default=50)

@@ -103,7 +103,7 @@ def capture(fn, args, metric):
     parser = Path(__file__).resolve().parents[1]/'11_mineru_2_5_pro_inference/parse_npu_profile.py'
     command = [sys.executable, str(parser), '--profile-dir', str(destination/'raw'),
                '--topn', '40', '--out-json', str(destination/'parsed.json'),
-               '--out-md', str(destination/'parsed.md'), '--skip-trace']
+               '--out-md', os.devnull, '--skip-trace']
     parsed = subprocess.run(command, check=True, capture_output=True, text=True)
     (destination/'parser.log').write_text(parsed.stdout+parsed.stderr)
     kernels = sorted((destination/'raw').glob('**/ASCEND_PROFILER_OUTPUT/kernel_details.csv'))
@@ -113,7 +113,7 @@ def capture(fn, args, metric):
     (destination/'kernel_accounting.json').write_text(json.dumps(accounting, indent=2)+'\n')
     return dict(profiled_wall_ms=distribution(timings), diagnostic_only=True,
                 parser_command=command, parsed_json=str(destination/'parsed.json'),
-                parsed_markdown=str(destination/'parsed.md'), kernel_accounting=accounting), output
+                kernel_accounting=accounting), output
 
 
 @torch.inference_mode()

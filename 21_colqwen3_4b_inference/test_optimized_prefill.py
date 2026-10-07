@@ -9,13 +9,16 @@ from config import ColQwenConfig,VisionConfig,TextConfig
 from local_modeling_colqwen3 import LocalColQwen3
 from prepared_prefill import prepare_inputs,prepare_text,finish_embeddings,bmm_attention
 from optimized_prefill import (Linear,Options,OptimizedVisionStage,OptimizedTextStage,
-    prompt_attention,text_args_for_promptfa,format_code)
+    prompt_attention,text_args_for_promptfa,format_code,prepare_310p_text_inputs)
 from bench_optimized_prefill import score_smoke
 
 
 def fake_promptfa(q,k,v,**kw):
     assert 'actual_seq_lengths' not in kw and 'actual_seq_lengths_kv' not in kw
-    assert kw['input_layout']=='BNSD' and kw['sparse_mode']==0
+    assert kw['input_layout'] in ('BNSD','BSND') and kw['sparse_mode']==0
+    bsnd=kw['input_layout']=='BSND'
+    if bsnd:
+        q,k,v=(a.transpose(1,2) for a in (q,k,v))
     assert kw['pre_tokens']==kw['next_tokens']==2147483647
     mask=kw.get('atten_mask')
     if mask is None:
@@ -23,10 +26,61 @@ def fake_promptfa(q,k,v,**kw):
     else:
         assert mask.dtype==torch.bool
         mask=torch.where(mask,torch.finfo(q.dtype).min,0.).to(q.dtype)
-    return bmm_attention(q,k,v,kw['scale_value'],mask).transpose(1,2).contiguous()
+    result=bmm_attention(q,k,v,kw['scale_value'],mask)
+    return result if bsnd else result.transpose(1,2).contiguous()
 
 
 class OptimizedContracts(unittest.TestCase):
+    def test_cross_source_snapshot_keeps_checkpoint_and_input_guards(self):
+        from profile_warm_text import validate_snapshot_identity
+        saved=dict(model='model',config_sha256='config',weights={'a':[1,2]},
+                   anchor_sha256='anchor',options={'gqa':'native'},source={'a':'old'})
+        current={**saved,'options':{'gqa':'repeat'},'source':{'a':'new'}}
+        with self.assertRaises(RuntimeError):
+            validate_snapshot_identity(saved,current)
+        self.assertEqual(validate_snapshot_identity(saved,current,reference_only=True),
+                         ['options','source'])
+        for key in ('model','config_sha256','weights','anchor_sha256'):
+            with self.assertRaises(RuntimeError):
+                validate_snapshot_identity(saved,{**current,key:None},reference_only=True)
+
+    def test_portable_mask_alignment_and_real_outputs(self):
+        torch.manual_seed(310)
+        for length in (1,127,128,129):
+            q=torch.randn(2,4,length,64).half()
+            k=torch.randn(2,2,length,64).half();v=torch.randn_like(k)
+            mask=torch.ones(2,1,length,length,dtype=torch.bool).triu(1)
+            # Extra blocked keys exercise preservation of a supplied mask.
+            if length>1:
+                mask[:,:,:,1]=True
+            hidden=torch.randn(2,length,256).half()
+            cos=torch.randn(2,length,64).half();sin=torch.randn_like(cos)
+            deep=tuple(torch.randn_like(hidden) for _ in range(3))
+            prepared=prepare_310p_text_inputs(hidden,cos,sin,mask,*deep)
+            physical=((length+127)//128)*128
+            for original,padded in zip((hidden,cos,sin,*deep),(prepared[0],prepared[1],prepared[2],*prepared[4:])):
+                self.assertEqual(padded.shape[1],physical)
+                self.assertTrue(torch.equal(padded[:,:length],original))
+            self.assertTrue(bool((prepared[1][:,length:]==1).all()))
+            for padded in (prepared[0],prepared[2],*prepared[4:]):
+                self.assertTrue(bool((padded[:,length:]==0).all()))
+            with patch('optimized_prefill._promptfa',side_effect=fake_promptfa) as op:
+                reference=prompt_attention(q,k,v,64**-.5,mask,'native')
+                for layout in ('BNSD','BSND'):
+                    padded_qkv=tuple(torch.nn.functional.pad(a,(0,0,0,physical-length)) for a in (q,k,v))
+                    inputs=padded_qkv if layout=='BNSD' else tuple(a.transpose(1,2) for a in padded_qkv)
+                    actual=prompt_attention(*inputs,64**-.5,prepared[3],'repeat',layout=layout)[:,:length]
+                    call=op.call_args
+                    self.assertNotIn('num_key_value_heads',call.kwargs)
+                    self.assertEqual(call.args[0].shape,call.args[1].shape)
+                    padded=call.kwargs['atten_mask']
+                    self.assertEqual(padded.shape,(2,1,physical,physical))
+                    self.assertTrue(torch.equal(padded[:,:,:length,:length],mask))
+                    self.assertTrue(bool(padded[:,:,:length,length:].all()))
+                    self.assertTrue(bool((~padded).any(-1).all()))
+                    torch.testing.assert_close(actual,reference,atol=.002,rtol=.002)
+                    self.assertEqual(actual.shape,(2,length,4,64))
+
     def test_strict_format_codes(self):
         for value in (29,'29','FRACTAL_NZ'):
             self.assertEqual(format_code(value),29)

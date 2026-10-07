@@ -1,7 +1,9 @@
 """Opt-in Ascend prefill candidates; the local/prepared references stay untouched.
 
-Uses the fixed-shape PromptFA contract exercised by the reranker on 310P,
-not 910B-only fusion_attention or CPU actual-sequence-length inputs.
+Text defaults follow the conservative 310P PromptFA contract: repeated KV
+heads, square 128-aligned masked attention, FP16 and no host length inputs.
+Hidden states and rotary/DeepStack inputs are padded once before the text
+stack; only real output rows are returned after its final normalization.
 """
 from dataclasses import asdict, dataclass
 import hashlib
@@ -19,7 +21,7 @@ from prepared_prefill import gelu_tanh
 class Options:
     fused_projections: bool = True
     weight_format: str = 'native'
-    gqa: str = 'native'
+    gqa: str = 'repeat'
     vision_norm: str = 'manual_fp32'
 
     def __post_init__(self):
@@ -90,28 +92,72 @@ def _promptfa(q, k, v, **kwargs):
     return torch_npu.npu_prompt_flash_attention(q, k, v, **kwargs)
 
 
-def prompt_attention(q, k, v, scale, mask=None, gqa='native'):
+def aligned_promptfa_mask(mask, alignment=128):
+    """Block padded keys for real queries; dummy queries attend only themselves."""
+    if mask.dtype != torch.bool or mask.ndim != 4 or mask.shape[1] != 1 or mask.shape[2] != mask.shape[3]:
+        raise ValueError('Expected square bool [B,1,S,S] mask')
+    length = mask.shape[-1]
+    physical = ((length + alignment - 1) // alignment) * alignment
+    if physical == length:
+        return mask.contiguous()
+    # No fully blocked dummy rows: those are outside the PromptFA contract.
+    padded = F.pad(mask, (0, physical-length, 0, physical-length), value=True)
+    positions = torch.arange(physical, device=mask.device)
+    dummy_diagonal = (positions[:, None] == positions[None, :]) & (positions[:, None] >= length)
+    return (padded & ~dummy_diagonal).contiguous()
+
+
+def prepare_310p_text_inputs(hidden, cos, sin, mask, deep0, deep1, deep2):
+    """Pad once before the stack, following the established static-bucket path."""
+    length = hidden.shape[1]
+    if length < 1 or mask.shape != (hidden.shape[0], 1, length, length):
+        raise ValueError('Expected nonempty text and matching square mask')
+    physical = ((length + 127) // 128) * 128
+    if hidden.shape[0] > 128 or physical > 65535:
+        raise ValueError('Text shape exceeds the 310P PromptFA contract')
+    padding = (0, 0, 0, physical-length)
+    if physical != length:
+        hidden = F.pad(hidden, padding)
+        cos, sin = F.pad(cos, padding, value=1), F.pad(sin, padding)
+        deep0, deep1, deep2 = (F.pad(a, padding) for a in (deep0, deep1, deep2))
+    return hidden, cos, sin, aligned_promptfa_mask(mask), deep0, deep1, deep2
+
+
+def prompt_attention(q, k, v, scale, mask=None, gqa='native', *, layout='BNSD'):
+    """Return BSND output, regardless of the attention input layout."""
+    if layout not in ('BNSD', 'BSND'):
+        raise ValueError('Unsupported attention layout')
+    head_axis, seq_axis = (1, 2) if layout == 'BNSD' else (2, 1)
     if q.dtype != torch.float16 or k.dtype != q.dtype or v.dtype != q.dtype:
         raise ValueError('Portable PromptFA path requires FP16 Q/K/V')
-    if q.shape[-1] not in (64, 128) or q.shape[2] != k.shape[2] or k.shape != v.shape:
+    if q.shape[-1] not in (64, 128) or q.shape[seq_axis] != k.shape[seq_axis] or k.shape != v.shape:
         raise ValueError('Expected square D64/D128 prefill attention')
-    if q.shape[1] % k.shape[1]:
+    if q.shape[head_axis] % k.shape[head_axis]:
         raise ValueError('Invalid GQA head counts')
-    if gqa == 'repeat' and q.shape[1] != k.shape[1]:
-        b,h,s,d = k.shape
-        groups = q.shape[1] // h
-        k = k[:, :, None].expand(b,h,groups,s,d).reshape(b,h*groups,s,d)
-        v = v[:, :, None].expand(b,h,groups,s,d).reshape(b,h*groups,s,d)
-    kwargs = dict(num_heads=q.shape[1], input_layout='BNSD', scale_value=scale,
-                  pre_tokens=2147483647, next_tokens=2147483647, sparse_mode=0)
-    if k.shape[1] != q.shape[1]:
-        kwargs['num_key_value_heads'] = k.shape[1]
     if mask is not None:
-        if mask.dtype != torch.bool or mask.shape != (q.shape[0],1,q.shape[2],k.shape[2]):
-            raise ValueError('Expected a prepared square bool mask')
+        length = q.shape[seq_axis]
+        if mask.dtype != torch.bool or mask.shape != (q.shape[0],1,length,length):
+            raise ValueError('Expected prepared square bool mask')
+    if gqa == 'repeat' and q.shape[head_axis] != k.shape[head_axis]:
+        groups = q.shape[head_axis] // k.shape[head_axis]
+        if layout == 'BNSD':
+            b,h,s,d = k.shape
+            k = k[:, :, None].expand(b,h,groups,s,d).reshape(b,h*groups,s,d)
+            v = v[:, :, None].expand(b,h,groups,s,d).reshape(b,h*groups,s,d)
+        else:
+            b,s,h,d = k.shape
+            k = k[:, :, :, None].expand(b,s,h,groups,d).reshape(b,s,h*groups,d)
+            v = v[:, :, :, None].expand(b,s,h,groups,d).reshape(b,s,h*groups,d)
+    kwargs = dict(num_heads=q.shape[head_axis], input_layout=layout, scale_value=scale,
+                  pre_tokens=2147483647, next_tokens=2147483647, sparse_mode=0)
+    if k.shape[head_axis] != q.shape[head_axis]:
+        kwargs['num_key_value_heads'] = k.shape[head_axis]
+    if mask is not None:
         kwargs['atten_mask'] = mask
     out = _promptfa(q.contiguous(), k.contiguous(), v.contiguous(), **kwargs)
-    return out.transpose(1,2).contiguous()
+    if layout == 'BNSD':
+        out = out.transpose(1,2)
+    return out.contiguous()
 
 
 class VisionBlock(nn.Module):
@@ -178,11 +224,11 @@ class TextBlock(nn.Module):
         x=self.norm1(hidden)
         q,k,v=self.qkv(x).split(self.qkv.sizes,-1) if self.fused else (self.q(x),self.k(x),self.v(x))
         shape=(*x.shape[:-1],-1,self.dim)
-        q=self.q_norm(q.reshape(shape)).transpose(1,2)
-        k=self.k_norm(k.reshape(shape)).transpose(1,2)
-        v=v.reshape(shape).transpose(1,2)
+        q=self.q_norm(q.reshape(shape))
+        k=self.k_norm(k.reshape(shape))
+        v=v.reshape(shape)
         q,k=q*cos+rotate_half(q)*sin,k*cos+rotate_half(k)*sin
-        out=prompt_attention(q,k,v,self.dim**-0.5,mask,self.gqa)
+        out=prompt_attention(q,k,v,self.dim**-0.5,mask,self.gqa,layout='BSND')
         hidden=hidden+self.out(out.reshape(*x.shape[:-1],-1))
         x=self.norm2(hidden)
         gate,up=self.gate_up(x).split(self.gate_up.sizes,-1) if self.fused else (self.gate(x),self.up(x))
@@ -196,13 +242,16 @@ class OptimizedTextStage(nn.Module):
         self.norm=model.language_model.norm
 
     def forward(self,hidden,cos,sin,mask,deep0,deep1,deep2):
+        real_length=hidden.shape[1]
+        hidden,cos,sin,mask,deep0,deep1,deep2=prepare_310p_text_inputs(
+            hidden,cos,sin,mask,deep0,deep1,deep2)
         deep=(deep0,deep1,deep2)
-        cos,sin=cos.unsqueeze(1),sin.unsqueeze(1)
+        cos,sin=cos.unsqueeze(2),sin.unsqueeze(2)
         for index,layer in enumerate(self.layers):
             hidden=layer(hidden,cos,sin,mask)
             if index<3:
                 hidden=hidden+deep[index]
-        return self.norm(hidden)
+        return self.norm(hidden)[:, :real_length].contiguous()
 
 
 def text_args_for_promptfa(args):

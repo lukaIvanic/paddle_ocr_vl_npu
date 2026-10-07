@@ -18,10 +18,13 @@ class TextVariant:
     layout: str = 'BNSD'
     rotary: str = 'manual'
     swiglu: bool = False
+    gqa: str = 'native'
+    attention_alignment: int = 1
 
 
 VARIANTS = {
-    'baseline': TextVariant(),
+    'baseline': TextVariant(layout='BSND', gqa='repeat', attention_alignment=128),
+    'baseline_910b': TextVariant(),
     'bsnd': TextVariant(layout='BSND'),
     'rotary_bnsd': TextVariant(rotary='rotary_mul'),
     'apply_bnsd': TextVariant(rotary='apply'),
@@ -34,8 +37,10 @@ VARIANTS = {
 class VariantTextBlock(TextBlock):
     def __init__(self, source, options, variant):
         super().__init__(source, options)
-        if not self.fused or self.gqa != 'native':
+        if not self.fused:
             raise ValueError('Variant lab preserves packed projections and native GQA')
+        if variant.gqa != 'native' or variant.attention_alignment != 1:
+            raise ValueError('Portable baseline uses OptimizedTextStage, not the diagnostic variants')
         self.variant = variant
 
     def forward(self, hidden, cos, sin, mask):
