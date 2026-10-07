@@ -65,7 +65,7 @@ def worker(args):
         source_sha256={n: sha256(root/n) for n in ['bench_reranker_sizes.py', 'local_modeling_rwkv_embedding.py',
             'local_modeling_rwkv_reranker.py', 'probe_reranker_endpoint.py', 'run_reranker_smoke.py', 'wkv7_endpoint.py']},
         physical_npu=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), shared_device=args.allow_shared_device, all_checks_passed=False,
-        scope='Prepared device inputs; uncached backbone plus state-readout head. Synchronized steady calls exclude CPU checks, compile, input transfers and tokenization.',
+        backend=args.backend, scope='Prepared device inputs; uncached backbone plus state-readout head. Synchronized steady calls exclude CPU checks, compile, input transfers and tokenization.',
         timings={})
     try:
         import torch_npu
@@ -128,10 +128,16 @@ def worker(args):
             report['timings']['eager_total'] = measure(lambda: ranker(backbone(ids,lengths)[1]), args.repeats, args.batch_size)
             print('EAGER_TIMING', json.dumps(report['timings']['eager_total']), flush=True)
             save(args.output/'result.json', report)
+            if args.backend=='raw_eager':
+                report['all_checks_passed']=True
+                return
             before=time.perf_counter();print('COMPILE_START',args.size,args.dtype,args.bucket,flush=True)
             encode=compiled(backbone.forward,args.output/'backbone_cache'); head=compiled(ranker.forward,args.output/'head_cache')
             actual=encode(ids,lengths); logits=head(actual[1]); torch.npu.synchronize()
             report['compile_and_first_call_seconds']=time.perf_counter()-before
+            report['compiled_state_diagnostics']=[metrics(a,b) for a,b in zip(actual,eager)]
+            report['compiled_logit_diagnostics']=dict(metrics(logits,expected),actual=logits.cpu().tolist(),expected=expected.cpu().tolist())
+            save(args.output/'result.json',report)
             report['compiled_states_vs_eager']=[require(a,b,.02,.005) for a,b in zip(actual,eager)]
             report['compiled_logits_vs_eager']=require(logits,expected,.02,.005)
             assert torch.equal(head(encode(ids,lengths)[1]),logits)
@@ -219,6 +225,7 @@ def main():
         p.add_argument('--'+n,type=Path,required=True)
     p.add_argument('--devices',nargs='+',type=int,default=[7,6,4,3,2,1,0])
     p.add_argument('--repeats',type=int,default=10)
+    p.add_argument('--backend',choices=['torchair','raw_eager'],default='torchair')
     p.add_argument('--batch-size',type=int,choices=[1,4],default=4)
     p.add_argument('--exact-input-shape',action='store_true',help='B1 worker: compile the original token length without bucket padding')
     p.add_argument('--idle-wait-seconds',type=int,default=21600)
