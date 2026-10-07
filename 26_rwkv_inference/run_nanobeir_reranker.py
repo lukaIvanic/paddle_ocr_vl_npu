@@ -1,4 +1,4 @@
-"""Pinned NanoBEIR 90M reranker, logical B32 preparation and B4 NPU workers."""
+"""Pinned NanoBEIR released RWKV reranker, logical B32 preparation and B4 NPU workers."""
 import argparse
 import ast
 import gzip
@@ -23,6 +23,23 @@ from local_modeling_rwkv_reranker import Reranker, CHECKPOINT_SHA256 as RERANKER
 from probe_reranker_endpoint import Backbone, compiled
 from probe_wkv7 import load_bridge
 from wkv7_endpoint import load_endpoint, register_converter
+
+
+PAIR_SPEC={'tiny':('rwkv0b1-emb-curriculum.pth','rwkv0b1-reranker.pth',12,768,63.41),
+           'base':('rwkv0b4-emb-curriculum.pth','rwkv0b3-reranker.pth',24,1024,68.60),
+           'large':('rwkv1b4-emb-curriculum.pth','rwkv1b3-reranker.pth',24,2048,71.58)}
+
+
+def pair_hashes(args):
+    if args.size=='tiny':return CHECKPOINT_SHA256,RERANKER_SHA256
+    pin=json.loads((Path(__file__).parent/'data/large_checkpoints.json').read_text())
+    hashes={f['rfilename']:f['lfs']['sha256'] for f in pin['files']}
+    emb,rank,*_=PAIR_SPEC[args.size]
+    return hashes[emb],hashes[rank]
+
+
+def batch_cost(args, length):
+    return args.short_batch_seconds if length<=512 else args.long_intercept_seconds+args.long_per_token_seconds*length
 
 
 def progress(path, value):
@@ -109,7 +126,7 @@ def prepare_bm25(args, report, wrapper_tokenizer):
                 assert len({len(r) for r in rows})==1 and all(r[-1]==65535 and 0<len(r)<=2048 for r in rows)
                 arrays.append(np.asarray(rows,dtype=np.int32).reshape(-1));ls.extend(map(len,rows))
             lengths.extend(ls);added+=len(real_ids)-100;baselines.append(baseline)
-            cost=sum(.03415 if L<=512 else .080+.000006*L for L in ls[::4])
+            cost=sum(batch_cost(args,L) for L in ls[::4])
             jobs.append(dict(task=name,query_id=qid,document_ids=[str(i) for i in range(len(docs))],
                 corpus_ids=real_ids,labels=labels,bm25_ids=bm25_ids,baseline_ndcg=baseline,
                 row_start=start,lengths=ls,estimated_seconds=cost))
@@ -150,8 +167,8 @@ def aggregate_bm25(args, report, scores):
         save(out/'result.json',row);report['task_results'].append(row);print('TASK_RESULT',json.dumps(row),flush=True)
     assert len(report['task_results'])==11 and sum(t['pairs'] for t in report['task_results'])==report['pairs']
     report.update(mean_ndcg_at_10=sum(t['ndcg_at_10'] for t in report['task_results'])/11,
-        paper_mean_ndcg_at_10=63.41,all_checks_passed=True)
-    report['delta_paper_points']=report['mean_ndcg_at_10']-63.41
+        paper_mean_ndcg_at_10=PAIR_SPEC[args.size][4],all_checks_passed=True)
+    report['delta_paper_points']=report['mean_ndcg_at_10']-PAIR_SPEC[args.size][4]
 
 
 def prepare(args, report):
@@ -209,7 +226,7 @@ def prepare(args, report):
             for i,qid in enumerate(queries):
                 lo=i*100;hi=lo+100;ls=lengths[lo:hi]
                 assert all(len(set(ls[k:k+4]))==1 for k in range(0,100,4))
-                cost=sum(.03415 if L<=512 else .080+.000006*L for L in ls[::4])
+                cost=sum(batch_cost(args,L) for L in ls[::4])
                 digest=hashlib.sha256(flat[offsets[lo]:offsets[hi]].tobytes()+np.asarray(ls,dtype=np.int32).tobytes()).hexdigest()
                 jobs.append(dict(task=name,query_id=qid,document_ids=[d for q,d in pairs[lo:hi]],
                                  row_start=lo,lengths=ls,input_sha256=digest,estimated_seconds=cost))
@@ -242,7 +259,11 @@ def worker(args):
                       torch=torch.__version__,torch_npu=torch_npu.__version__,matmul_allow_hf32=torch.npu.matmul.allow_hf32)
         root=Path(__file__).parent;load_bridge(root/'wkv7_npu',args.reference_build);load_endpoint(args.build_root);register_converter()
         dtype={'fp16':torch.float16,'fp32':torch.float32}[args.dtype]
-        model=Embedding(args.checkpoint,'npu:0',dtype);ranker=Reranker(args.reranker,'npu:0',dtype)
+        emb_sha,rank_sha=pair_hashes(args)
+        model=Embedding(args.checkpoint,'npu:0',dtype,expected_sha256=emb_sha);ranker=Reranker(args.reranker,'npu:0',dtype,expected_sha256=rank_sha)
+        _,_,depth,width,_=PAIR_SPEC[args.size]
+        assert (model.depth,model.width,ranker.depth,ranker.width)==(depth,width,depth,width)
+        report.update(size=args.size,checkpoint_sha256=emb_sha,reranker_sha256=rank_sha,source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())
         backbone=Backbone(model).eval()
         jobs=json.loads((args.output/f'jobs_{i}.json').read_text())
         # Each process owns fresh copies; no shared TorchAir cache writers.
@@ -325,6 +346,8 @@ def coordinate(args):
     report=dict(source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         source_sha256={n:sha256(root/n) for n in ['run_nanobeir_reranker.py','probe_reranker_endpoint.py','local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py','run_nanoscidocs.py']},
         checkpoint_sha256=sha256(args.checkpoint),reranker_sha256=sha256(args.reranker),devices=args.devices,
+        size=args.size,expected_paper_mean_ndcg_at_10=PAIR_SPEC[args.size][4],
+        batch_cost_model=dict(short_batch_seconds=args.short_batch_seconds,long_intercept_seconds=args.long_intercept_seconds,long_per_token_seconds=args.long_per_token_seconds),
         dense_dtype=args.dtype,state_dtype='fp32',logical_batch_size=32,outer_batch_size=None if args.protocol=='bm25-positives' else 128,device_batch_size=4,
         preparation=('Per-query positives first followed by BM25 nonpositive texts; B32 padding reset per query; last2048/EOS; sklearn tie-averaged NDCG.' if args.protocol=='bm25-positives' else 'Task-wide query order and saved candidate rank order; pinned wrapper B32 left padding/last2048/EOS; additional right padding only for compiled T512.'),
         backend_policy='TorchAir T512 for prepared length<=512; exact-length raw eager for longer inputs',
@@ -332,11 +355,14 @@ def coordinate(args):
     children=[]
     try:
         assert len(args.devices)==2 and len(set(args.devices))==2
-        assert report['checkpoint_sha256']==CHECKPOINT_SHA256 and report['reranker_sha256']==RERANKER_SHA256
+        assert (report['checkpoint_sha256'],report['reranker_sha256'])==pair_hashes(args)
         gates=json.loads(args.batch_evidence.read_text())
         for run in gates['runs']:
             p=root.parent/run['result_path'];assert sha256(p)==run['result_sha256']
             previous=json.loads(p.read_text());assert previous['all_checks_passed']
+            if args.size!='tiny':
+                assert previous['checkpoint_sha256']==report['checkpoint_sha256'] and previous['reranker_sha256']==report['reranker_sha256']
+                assert previous['size']==args.size and previous['dtype']==args.dtype and previous['batch_size']==4
             for n in ['local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py']:
                 assert report['source_sha256'][n]==previous['source_sha256'][n]
         report['batch_gate_sha256']=sha256(args.batch_evidence)
@@ -345,10 +371,21 @@ def coordinate(args):
         assert cache['backend']=='torchair'
         for n in ['local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py']:
             assert report['source_sha256'][n]==cache['source_sha256'][n]
-        assert cache['checkpoint_sha256']=={'checkpoint':report['checkpoint_sha256'],'reranker':report['reranker_sha256']}
+        cache_pair=((cache['checkpoint_sha256']['checkpoint'],cache['checkpoint_sha256']['reranker']) if isinstance(cache['checkpoint_sha256'],dict) else (cache['checkpoint_sha256'],cache['reranker_sha256']))
+        assert cache_pair==pair_hashes(args)
         report['warm_cache_reference_sha256']=sha256(args.warm_cache_from/'result.json')
         report['historical_batch_probe_sha256']=sorted({json.loads((root.parent/r['result_path']).read_text())['source_sha256']['probe_reranker_endpoint.py'] for r in gates['runs']})
-        prepare(args,report);report['preparation_seconds']=time.perf_counter()-start;save(args.output/'result.json',report)
+        prepare(args,report)
+        if args.prepared_reference:
+            prior=json.loads((args.prepared_reference/'result.json').read_text())
+            assert prior['all_checks_passed'] and prior['protocol']==args.protocol and prior['dataset_manifest_sha256']==report['dataset_manifest_sha256']
+            def identities(folder):
+                jobs=sum([json.loads((folder/f'jobs_{i}.json').read_text()) for i in range(2)],[])
+                return {(j['task'],j['query_id']):(j['input_sha256'],j['document_ids'],j['lengths']) for j in jobs}
+            assert identities(args.prepared_reference)==identities(args.output), 'Prepared pairs differ from accepted protocol run'
+            report['prepared_reference_sha256']=sha256(args.prepared_reference/'result.json')
+            report['prepared_inputs_identical_to_reference']=True
+        report['preparation_seconds']=time.perf_counter()-start;save(args.output/'result.json',report)
         launch=time.perf_counter();logs=[]
         for i,device in enumerate(args.devices):
             env=os.environ.copy();env['ASCEND_RT_VISIBLE_DEVICES']=str(device)
@@ -398,9 +435,9 @@ def coordinate(args):
             row=dict(task=name,queries=len(candidates),pairs=len(candidates)*100,ndcg_at_10=ndcg,embedding_ndcg_at_10=baseline,delta_embedding_points=ndcg-baseline,metric_crosscheck_passed=True)
             save(out/'result.json',row);report['task_results'].append(row);print('TASK_RESULT',json.dumps(row),flush=True)
         assert sum(t['pairs'] for t in report['task_results'])==64900
-        report.update(mean_ndcg_at_10=sum(t['ndcg_at_10'] for t in report['task_results'])/13,paper_mean_ndcg_at_10=63.41,
+        report.update(mean_ndcg_at_10=sum(t['ndcg_at_10'] for t in report['task_results'])/13,paper_mean_ndcg_at_10=PAIR_SPEC[args.size][4],
             all_checks_passed=True)
-        report['delta_paper_points']=report['mean_ndcg_at_10']-63.41
+        report['delta_paper_points']=report['mean_ndcg_at_10']-PAIR_SPEC[args.size][4]
     except Exception as error:report['error']=f'{type(error).__name__}: {error}';raise
     finally:
         for child in children:
@@ -413,11 +450,17 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     for n in ['checkpoint','reranker','runtime','upstream','build-root','reference-build','data-root','candidates-root','batch-evidence','warm-cache-from','output']:
         p.add_argument('--'+n,type=Path,required=True)
+    p.add_argument('--size',choices=list(PAIR_SPEC),default='tiny')
+    p.add_argument('--prepared-reference',type=Path)
+    p.add_argument('--short-batch-seconds',type=float,default=.03415)
+    p.add_argument('--long-intercept-seconds',type=float,default=.080)
+    p.add_argument('--long-per-token-seconds',type=float,default=.000006)
     p.add_argument('--protocol',choices=['embedding','bm25-positives'],default='embedding')
     p.add_argument('--dtype',choices=['fp16','fp32'],default='fp16')
     p.add_argument('--devices',type=int,nargs=2,required=True)
     p.add_argument('--worker-index',type=int,choices=[0,1])
     args=p.parse_args()
+    if min(args.short_batch_seconds,args.long_intercept_seconds,args.long_per_token_seconds)<=0:p.error('Cost estimates must be positive')
     worker(args) if args.worker_index is not None else coordinate(args)
 
 
