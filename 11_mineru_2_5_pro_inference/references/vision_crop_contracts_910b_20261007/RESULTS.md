@@ -6,7 +6,9 @@ text decode and does not diagnose Luka's reported 310P vision bottleneck.
 Source: `82575a912a6e9b1ab38233bfbf91c059c6111475`, physical NPU 3,
 Ascend910B2, FP16, all 32 vision blocks. Twelve lanes completed successfully,
 each with 30 warm unprofiled forwards and three separately profiled forwards.
-The exact source, commands, versions, occupancy and exit receipts are retained.
+Source, versions, raw results and available occupancy/exit records are retained.
+The reconstructed top-level command file has a documented correction; see
+[RECEIPT_NOTE.md](RECEIPT_NOTE.md) before treating it as launch evidence.
 
 ## Real inputs and measurement boundary
 
@@ -37,11 +39,14 @@ The two crops are separate diagnostics; these are not corpus-average rates.
 | Compiled PromptFA D80 / NZ weights | 18.712 | 38,477 | 50.797 | 59,768 |
 | Compiled PromptFA D128 / ND weights | 18.942 | 38,010 | 51.816 | 58,592 |
 | Eager PromptFA D80 / ND weights | 57.512 | 12,519 | 58.658 | 51,758 |
-| Eager stock unpad D128 / ND weights | 53.526 | 13,451 | 69.760 | 43,521 |
-| Eager stock unpad D128 / NZ weights | 55.246 | 13,033 | 69.981 | 43,383 |
+| Eager stock-op unpad D128 / ND weights | 53.526 | 13,451 | 69.760 | 43,521 |
+| Eager stock-op unpad D128 / NZ weights | 55.246 | 13,033 | 69.981 | 43,383 |
 
-Compare weights within the same path. Compare attention operators within eager
-mode. A compiled-versus-eager ratio includes fusion and dispatch differences.
+Compare weights within the same path. The small-crop eager lanes are
+**host-bound** and are not an unpad-versus-PromptFA performance comparison.
+Their raw measurements remain visible above; do not report a relative speedup
+or slowdown between those small-crop eager paths. Larger-crop operator-path
+comparisons use the eager controls. A compiled-versus-eager ratio includes fusion and dispatch differences.
 CPU sequence lengths for unpad are prepared once before replay; the op's
 per-layer CPU metadata consumption remains timed. This is the actual stock
 operator contract inside our vision stack, not stock vLLM engine throughput or
@@ -62,8 +67,8 @@ are retained by type rather than assigned to a guessed semantic category.
 | Compiled PromptFA D80 / NZ weights | 16.695 | 15.300 | 18.569 | 50.564 |
 | Compiled PromptFA D128 / ND weights | 16.804 | 13.665 | 20.848 | 51.317 |
 | Eager PromptFA D80 / ND weights | 16.839 | 14.423 | 26.791 | 58.052 |
-| Eager stock unpad D128 / ND weights | 19.294 | 14.380 | 35.842 | 69.516 |
-| Eager stock unpad D128 / NZ weights | 19.327 | 14.171 | 36.223 | 69.721 |
+| Eager stock-op unpad D128 / ND weights | 19.294 | 14.380 | 35.842 | 69.516 |
+| Eager stock-op unpad D128 / NZ weights | 19.327 | 14.171 | 36.223 | 69.721 |
 
 Compiled baseline attention is 34.8% of summed kernel duration on the larger
 crop and 15.7% on the smaller crop. NZ compiled weights increase linear time
@@ -72,7 +77,7 @@ nearly unchanged there, while the complete padded encoder is slower.
 
 Small-crop eager kernel sums are 25.534 ms (PromptFA) and 31.029 ms (unpad),
 versus unprofiled wall means of 57.512 and 53.526 ms. This is consistent with
-material submission overhead; these are different profiled/unprofiled windows,
+host-bound execution; these are different profiled/unprofiled windows,
 so their subtraction is not an independently measured host-time bucket.
 
 ## Actual formats and feature differences
@@ -84,7 +89,8 @@ NZ lanes. No separate TransData kernel was observed. This does not establish
 absence of internal packing. Compiled large-crop native matmuls include V3;
 the NZ compiled lane uses V2, so format selection also changes kernel selection.
 
-The private op executes `UnpadFlashAttentionNdKernel` with ND Q/K/V tensors
+**“Stock vLLM-Ascend” here means its stock op inside our eager stack, not the
+vLLM-Ascend vision path.** The private op executes `UnpadFlashAttentionNdKernel` with ND Q/K/V tensors
 [S,16,128], both with ND and NZ projection weights. Vision has no persistent
 KV cache; a weight-format change does not turn these fresh activations into
 an autoregressive NZ cache. The source audit of vLLM-Ascend is pinned in
@@ -101,8 +107,14 @@ and every lane has zero new graphs/recompilation warnings during warm timing.
 | Compiled PromptFA D80 / NZ weights | 0.007526 | 0.012792 | 0.999918 |
 | Compiled PromptFA D128 / ND weights | 0.000000 | 0.000000 | 1.000000 |
 | Eager PromptFA D80 / ND weights | 0.000000 | 0.000000 | 1.000000 |
-| Eager stock unpad D128 / ND weights | 0.007199 | 0.021529 | 0.999768 |
-| Eager stock unpad D128 / NZ weights | 0.007199 | 0.021529 | 0.999768 |
+| Eager stock-op unpad D128 / ND weights | 0.007199 | 0.021529 | 0.999768 |
+| Eager stock-op unpad D128 / NZ weights | 0.007199 | 0.021529 | 0.999768 |
+
+**Unpad drift is unexplained.** On the larger crop its layer-0 relative L2 is
+about 2.8e-4, but full-encoder relative L2 reaches 0.021529 (2.15%). No FP32
+reference investigation has been performed, so this cannot be attributed to
+benign accumulation or approved as OCR-quality equivalence. Timing remains
+reported independently.
 
 Max/mean absolute errors and allclose diagnostics are retained in the raw
 results; no downstream OCR quality run or production-default change was made.
@@ -119,6 +131,13 @@ mode has no 910B execution claim.
 
 Use [the vision-specific 310P handoff](../../VISION_CROP_310P_HANDOFF.md), which
 discovers that server's environment and prohibits tracked source edits.
+
+## Host context and receipt limitations
+
+[Historical host context](HISTORICAL_HOST_CONTEXT.md) lists missing per-lane
+load, CPU-count, other-job and device-state records. They are not reconstructed
+from later snapshots. Small-crop eager comparisons are host-bound as described
+above. New runs collect these fields before and after every lane.
 
 ## Evidence
 
