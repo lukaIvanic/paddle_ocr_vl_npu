@@ -9,10 +9,26 @@ import time
 from unittest.mock import Mock, patch
 import numpy as np
 import torch
-from run_hr_evaluation import aggregate, distribution, maxsim_column, Journal, select_workload
+from run_hr_evaluation import aggregate, distribution, maxsim_column, Journal, select_workload, Execution
 
 
 class HrTests(unittest.TestCase):
+    def test_strict_compilation_never_falls_back_on_cache_miss(self):
+        from contextlib import nullcontext
+        execution=object.__new__(Execution)
+        execution.mode='torchair'
+        execution.vision=Mock(side_effect=AssertionError('Eager fallback'))
+        execution.compiler=Mock()
+        execution.compiler.get.return_value=lambda x:x+1
+        execution.journal=Mock()
+        execution.journal.section.side_effect=lambda *a,**kw:nullcontext()
+        execution.ready=set()
+        with tempfile.TemporaryDirectory() as root, patch('run_hr_evaluation.cached_path',return_value=Path(root)/'missing'):
+            actual=execution.stage('vision',(torch.zeros(3,4),),dict(kind='page'))
+        self.assertTrue(torch.equal(actual,torch.ones(3,4)))
+        execution.compiler.get.assert_called_once()
+        execution.vision.assert_not_called()
+
     def test_maxsim_ragged_queries_and_zero_document_rows(self):
         q=[torch.tensor([[-1.,0.],[0.,1.]]),torch.tensor([[1.,1.]])]
         d=torch.tensor([[1.,0.],[0.,0.]])

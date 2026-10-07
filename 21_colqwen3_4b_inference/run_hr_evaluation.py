@@ -1,7 +1,7 @@
 """Instrumented, exact-corpus English HR retrieval; NPU encoding and FP32 MaxSim.
 
-Only existing compatible transformer caches are used. Uncached shapes explicitly
-use optimized raw eager; no per-shape compilation or silent failure fallback.
+The historical cache-only mode labels uncached eager execution. Explicit
+torchair mode compiles every transformer call, without an eager fallback.
 """
 import argparse
 from collections import defaultdict
@@ -25,7 +25,8 @@ import torch
 from download_hr_reference import FILES, REPO, REVISION
 from local_modeling_colqwen3 import LocalColQwen3
 from optimized_prefill import (Options, OptimizedVisionStage, OptimizedTextStage,
-                               configure_compiler, text_args_for_promptfa)
+                               configure_compiler, text_args_for_promptfa, prepare_310p_text_inputs)
+from text_forward_variants import PreparedTextForward
 from patch_embedding import LinearPatchEmbed, prepare_linear_patch_inputs
 from prepared_prefill import StageCompiler, prepare_text, finish_embeddings
 from run_hf_baseline import sha256
@@ -77,6 +78,8 @@ class Execution:
         options=Options()
         self.vision=OptimizedVisionStage(model,options).eval()
         self.text=OptimizedTextStage(model,options).eval()
+        self.query_text=PreparedTextForward(self.text).eval()
+        self.mode=args.execution
         self.patch=LinearPatchEmbed(model.visual.patch_embed).eval()
         self.compiler=StageCompiler(args.model,args.cache_root,journal.emit)
         configure_compiler(self.compiler,options)
@@ -87,17 +90,33 @@ class Execution:
     def stage(self, name, tensors, record):
         module=getattr(self,name)
         tokens=tensors[0].numel()//tensors[0].shape[-1]
+        stage_name='optimized_'+name
+        real_length=None
+        if self.mode=='torchair' and record['kind']=='query' and name=='text':
+            # Same padding and transformer body as OptimizedTextStage.forward.
+            # Move the existing padding before compile so query lengths share a
+            # 128-token graph. Both padding and trim remain in pipeline timing.
+            real_length=tensors[0].shape[1]
+            with self.journal.section(record,'text_alignment',tokens,device=True):
+                tensors=prepare_310p_text_inputs(*tensors)
+            module=self.query_text
+            stage_name='optimized_query_text_aligned'
+            record['text_physical_tokens']=tensors[0].shape[1]
         with self.journal.section(record,name+'_dispatch'):
-            path=cached_path(self.compiler,'optimized_'+name,tensors)
+            path=cached_path(self.compiler,stage_name,tensors)
             warm=path.exists() and any(path.rglob('*.om'))
-            call=self.compiler.get('optimized_'+name,module,tensors) if warm else module
-            route='compiled_cache' if warm else 'optimized_eager_uncached'
+            compiled=self.mode=='torchair' or warm
+            call=self.compiler.get(stage_name,module,tensors) if compiled else module
+            route='compiled_torchair' if self.mode=='torchair' else ('compiled_cache' if warm else 'optimized_eager_uncached')
             first=str(path) not in self.ready
             self.ready.add(str(path))
             record.setdefault('stage_first_use',{})[name]=first
         # First real invocation includes cache loading, if any; never replay.
         with self.journal.section(record,name+'_transformer',tokens,device=True,route=route):
             result=call(*tensors)
+        if real_length is not None:
+            with self.journal.section(record,'text_output_trim',tokens,device=True):
+                result=result[:,:real_length].contiguous()
         return result
 
 
@@ -268,6 +287,13 @@ def run(args, result, journal):
         r['wall_s'] for r in records if r['kind'] in ('page','query'))
     result['page_per_s']=len(corpus)/result['page_encoding_s']
     result['cache_records']=execution.compiler.records
+    if args.execution=='torchair':
+        transformers=[s for r in records if r['kind'] in ('page','query')
+                      for name,s in r['sections'].items() if name.endswith('_transformer')]
+        result['compiled_coverage']=dict(transformer_calls=len(transformers),
+            all_compiled=all(s.get('route')=='compiled_torchair' for s in transformers))
+        if not result['compiled_coverage']['all_compiled']:
+            raise RuntimeError('Strict compiled evaluation contains an uncompiled transformer call')
     score_setup=dict(kind='setup',id='scoring_setup',sections={})
     score_setup_start=time.perf_counter()
     with journal.section(score_setup,'scoring_prepare'):
@@ -347,6 +373,8 @@ def main(observer_factory=Journal):
     p.add_argument('--cache-root',type=Path,default=Path('.runtime_cache/21_colqwen3/prepared'))
     p.add_argument('--workload',choices=('dev','full'),default='dev',help='Full HR only by explicit request')
     p.add_argument('--profile',action='store_true',help='Profile selected real items in the complete pipeline')
+    p.add_argument('--execution',choices=('cache_only','torchair'),default='cache_only',
+                   help='torchair requires compilation for every page and query transformer call')
     args=p.parse_args()
     if not args.device.startswith('npu:'):
         p.error('NPU required')
@@ -358,7 +386,7 @@ def main(observer_factory=Journal):
                 model_config_sha256=sha256(Path(args.model)/'config.json'),
                 processor_sha256=sha256(Path(args.model)/'processing_ops_colqwen3.py'),
                 commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
-                workload=args.workload,profiler=args.profile,
+                workload=args.workload,profiler=args.profile,execution=args.execution,
                 scope='B1 sequential real pipeline; deferred event intervals, host spans, no embedding serialization',
                 scoring='FP32 NPU dot/max, CPU FP32 per-query sum; full 2560 dimensions; pytrec_eval metrics')
     try:
