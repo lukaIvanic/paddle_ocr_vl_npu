@@ -18,18 +18,7 @@ def emit(label,value):
     print(label,json.dumps(value),flush=True)
 
 
-def main():
-    p=argparse.ArgumentParser(description=__doc__)
-    for name in ['output','prepared','models','reference-build','build-root','vector-build','cache-task']:
-        p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--batch-size',type=int,choices=[1,2,4,8,16,32],required=True)
-    p.add_argument('--size',default='large',choices=['large'])
-    p.add_argument('--repeats',type=int,default=3)
-    a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False)
-    status=subprocess.check_output(['bash','-c','npu-status'],text=True)
-    import os
-    line=next(x for x in status.splitlines() if x.startswith('NPU '+os.environ['ASCEND_RT_VISIBLE_DEVICES']+': '))
-    assert ': free ' in line and 'Health=OK' in line,line
+def load_cases(a):
     data=load_task(a,'NanoSCIDOCSRetrieval')
     jobs=sorted(data['jobs'],key=lambda j:(len(data['queries'][j['query_id']]),j['query_id']))
     jobs=[jobs[i] for i in [0,len(jobs)//2,len(jobs)-1]]
@@ -43,8 +32,24 @@ def main():
     assert len(pairs)==96
     cache=np.load(a.cache_task/'document_states.npy',mmap_mode='r')
     assert cache.shape==(len(indices),3244032) and cache.dtype==np.float32
+    return pairs,cache
+
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    for name in ['output','prepared','models','reference-build','build-root','vector-build','cache-task']:
+        p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--batch-size',type=int,choices=[1,2,4,8,16,32],required=True)
+    p.add_argument('--size',default='large',choices=['large'])
+    p.add_argument('--repeats',type=int,default=3)
+    a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False)
+    status=subprocess.check_output(['bash','-c','npu-status'],text=True)
+    import os
+    line=next(x for x in status.splitlines() if x.startswith('NPU '+os.environ['ASCEND_RT_VISIBLE_DEVICES']+': '))
+    assert ': free ' in line and 'Health=OK' in line,line
+    pairs,cache=load_cases(a)
     batches=[pairs[i:i+a.batch_size] for i in range(0,len(pairs),a.batch_size)]
-    emit('INPUTS',dict(batch=a.batch_size,pairs=len(pairs),query_lengths=[len(data['queries'][j['query_id']]) for j in jobs],pair_ids=[(q,d) for _,_,_,q,d in pairs],cache=str(a.cache_task),source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),script_sha256=sha256(Path(__file__)),scope='Prepared tokens; existing RAM/file-backed FP32 states; includes gather/H2D/rearrange/query preparation/backbone/reranker/score D2H; excludes tokenization/cache build/setup/compile/profile export.'))
+    emit('INPUTS',dict(batch=a.batch_size,pairs=len(pairs),query_lengths=sorted({len(x[1]) for x in pairs}),pair_ids=[(q,d) for _,_,_,q,d in pairs],cache=str(a.cache_task),source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),script_sha256=sha256(Path(__file__)),scope='Prepared tokens; existing RAM/file-backed FP32 states; includes gather/H2D/rearrange/query preparation/backbone/reranker/score D2H; excludes tokenization/cache build/setup/compile/profile export.'))
     e=Engine(a);loader=StateLoader(cache,a.batch_size)
 
     def pipeline(batch,backend,mode):

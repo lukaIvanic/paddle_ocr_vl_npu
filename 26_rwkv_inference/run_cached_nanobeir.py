@@ -226,11 +226,12 @@ def evaluate(a,e,report):
                 cache[off:off+len(chosen)]=pack(e.states(rows,document=True))[:len(chosen)]
                 if off%100==0:progress(a.output/'progress.json',dict(task=name,phase='build',done=off+len(chosen),total=len(ids),seconds=time.perf_counter()-build))
             cache.flush();builds=time.perf_counter()-build;del cache;cache=np.load(path,mmap_mode='r')
+            loader=StateLoader(cache,4)
             # Warm real query lengths and uncached shapes before timed scoring.
             for j in jobs:
                 q=queries[j['query_id']];dids=j['corpus_ids'][:4]
                 for _ in range(1):
-                    e.scores([q]*4,unpack(cache[[index[d] for d in dids]]))
+                    e.scores([q]*4,loader([index[d] for d in dids]))
             torch.npu.synchronize()
             for j in jobs[:2]:
                 e.scores([docs[d]+queries[j['query_id']] for d in j['corpus_ids'][:4]],document=True)
@@ -246,7 +247,7 @@ def evaluate(a,e,report):
                         for mode in modes:
                             t=time.perf_counter()
                             if mode=='cached':
-                                with torch.profiler.record_function('rwkv.cache_gather_and_h2d'):state=unpack(cache[[index[d] for d in ds]])
+                                with torch.profiler.record_function('rwkv.cache_gather_and_h2d'):state=loader([index[d] for d in ds])
                                 logits=e.scores([q]*4,state)
                             else:logits=e.scores([docs[d]+q for d in ds],document=True)
                             scores=logits.cpu().tolist()[:real];sums[mode]+=time.perf_counter()-t;per[mode].extend(scores)
@@ -258,7 +259,7 @@ def evaluate(a,e,report):
                     progress(a.output/'progress.json',dict(task=name,phase='paired_score',done=done,total=len(jobs),scoring_seconds=sums,elapsed_seconds=time.perf_counter()-taskstart))
             row=dict(task=name,queries=len(jobs),pairs=sum(len(j['corpus_ids']) for j in jobs),documents=len(ids),cache_bytes=path.stat().st_size,cache_build_seconds=builds,build_warmup_seconds=warm,scoring_seconds=sums,ndcg={m:sum(v)/len(v)*100 for m,v in values.items()},previous_ndcg=old[name],max_cached_uncached_logit_delta=max(deltas),total_seconds=time.perf_counter()-taskstart)
             save(folder/'result.json',row);report['tasks'].append(row);save(a.output/'result.json',report);print('TASK_RESULT',json.dumps(row),flush=True)
-            del cache
+            del loader,cache
     report['evaluation_seconds']=time.perf_counter()-start
 
 
