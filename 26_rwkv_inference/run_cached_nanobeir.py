@@ -123,6 +123,33 @@ def smoke(a,e,report):
         require(got,base,.02,.005)
         assert all(x['finite'] and x['normalized_rmse']<=.002 for x in report['checks']['split_states']),report['checks']['split_states']
         assert all(torch.equal(x,y) for x,y in zip(pre,before))
+        single=[]
+        for tokens in full:
+            _,st,_=e.model.encode_states(torch.tensor([tokens],dtype=torch.long,device='npu'))
+            single.append(e.ranker(st[1]))
+        report['checks']['batch_vs_single']=require(base,torch.cat(single),.02,.005)
+        # Exercise cross-chunk continuation against full-sequence dense ops and
+        # the already-validated stock recurrence, including three inactive rows.
+        longdata=load_task(a,'NanoFiQA2018Retrieval')
+        ld=max(longdata['documents'],key=lambda d:len(longdata['documents'][d]))
+        lj=next(j for j in longdata['jobs'] if ld in j['corpus_ids'])
+        lp=longdata['documents'][ld];lq=longdata['queries'][lj['query_id']]
+        assert len(lp)>2048
+        pref=prefixes[:3]+[lp];suff=suffixes[:3]+[lq]
+        lpstate=e.states(pref,backend='raw_eager',document=True)
+        lc=e.scores(suff,lpstate,backend='raw_eager')
+        lf=e.scores([p+q for p,q in zip(pref,suff)],backend='raw_eager',document=True)
+        report['checks']['long_split_score']=require(lc,lf,.02,.005)
+        operations=[b.vector_variant for b in e.model.blocks]
+        try:
+            for b in e.model.blocks:b.vector_variant=None
+            _,refstate,_=e.model.encode_states(torch.tensor([lp+lq],dtype=torch.long,device='npu'))
+            refscore=e.ranker(refstate[1])
+        finally:
+            for b,op in zip(e.model.blocks,operations):b.vector_variant=op
+        report['checks']['long_full_sequence_control']=require(lc[-1:],refscore,.02,.005)
+        report['checks']['long_compiled_cached']=require(e.scores(suff,e.states(pref,document=True)),lc,.02,.005)
+        report['long_control_tokens']=len(lp+lq)
         # Real saved state, not random tensors or a device-resident-only timing.
         path=a.output/'smoke_states.npy';np.save(path,pack(pre));disk=np.load(path,mmap_mode='r')
         restored=unpack(disk);assert all(torch.equal(x,y) for x,y in zip(pre,restored))
