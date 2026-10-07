@@ -4,6 +4,8 @@ set -u
 repo=$(git rev-parse --show-toplevel)
 data=${1:?Pass prepared dataset.json.gz}
 run_root=${2:?Pass a persistent evidence/checkpoint directory}
+arm=${3:-all}
+case "$arm" in all|constant|warmup_linear) ;; *) echo 'Invalid training arm' >&2; exit 2 ;; esac
 mkdir -p "$run_root"
 python=/usr/local/python3.12.13/bin/python3
 cd "$repo"
@@ -35,13 +37,20 @@ stage() (
     return "$code"
 )
 
+if [[ $arm == all ]]; then
 stage control 13_qwen3_reranker/check_margin_distillation.py \
     --model /workspace/models/Qwen3-Reranker-0.6B --dataset "$data" \
     --output "$run_root/control/control.json" || exit $?
 stage teacher 13_qwen3_reranker/run_margin_distillation.py --mode teacher \
     --model /workspace/models/Qwen3-Reranker-4B --dataset "$data" \
     --output "$run_root/teacher" || exit $?
-for schedule in constant warmup_linear; do
+arms='constant warmup_linear'
+else
+    # Independent arms can run on separately selected free NPUs after setup.
+    [[ -f $run_root/control/control.json && -f $run_root/teacher/teacher.json ]] || exit 2
+    arms=$arm
+fi
+for schedule in $arms; do
     stage "$schedule" 13_qwen3_reranker/run_margin_distillation.py --mode train \
         --model /workspace/models/Qwen3-Reranker-0.6B --dataset "$data" \
         --teacher "$run_root/teacher/teacher.json" --control "$run_root/control/control.json" \
