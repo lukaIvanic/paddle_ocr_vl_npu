@@ -2,7 +2,24 @@
 # Source npu-setup once; run every variant sequentially on that physical card.
 set -e
 cd "$(dirname "$0")/.."
-source npu-setup || exit 1
+if source npu-setup; then
+  :
+elif [ -n "${TEXT_PHYSICAL_NPU:-}" ]; then
+  # Explicit user-reserved card may contain an idle reservation process, so
+  # automatic free-card selection can fail before sourcing the vendor env.
+  source /usr/local/Ascend/cann-9.0.0/set_env.sh || true
+  source /usr/local/Ascend/nnal/atb/set_env.sh || true
+  export TORCH_DEVICE_BACKEND_AUTOLOAD=0 VLLM_WORKER_MULTIPROC_METHOD=spawn
+  export LD_LIBRARY_PATH="/usr/local/Ascend/nnal/atb/9.0.0/atb/cxx_abi_1/lib:${LD_LIBRARY_PATH:-}"
+  export LD_PRELOAD="/usr/lib/aarch64-linux-gnu/libjemalloc.so.2${LD_PRELOAD:+:$LD_PRELOAD}"
+else
+  exit 1
+fi
+if [ -n "${TEXT_PHYSICAL_NPU:-}" ]; then
+  [[ "$TEXT_PHYSICAL_NPU" =~ ^[0-7]$ ]] || exit 2
+  export ASCEND_RT_VISIBLE_DEVICES="$TEXT_PHYSICAL_NPU"
+  printf 'Using explicitly user-reserved physical NPU %s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+fi
 # Vendor environment scripts reference optional unset variables internally.
 set -euo pipefail
 TEXT_VARIANT_ROOT="${TEXT_VARIANT_ROOT:?Set a fresh evidence directory}"
