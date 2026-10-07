@@ -45,27 +45,33 @@ def measure(call, repeats):
             'min_seconds': min(samples), 'p95_seconds': float(np.percentile(samples, 95))}
 
 
-def profile(call, output, label):
+def profile(call, output, label, warmup_iterations=1, active_iterations=2):
+    """PyTorch CPU/NPU profiler via its Ascend extension; warmup is excluded."""
     import torch_npu.profiler as prof
-    call(); torch.npu.synchronize()
+    for _ in range(warmup_iterations):
+        call()
+    torch.npu.synchronize()
     with prof.profile(activities=[prof.ProfilerActivity.CPU, prof.ProfilerActivity.NPU],
-            schedule=prof.schedule(wait=0, warmup=0, active=1, repeat=1),
+            schedule=prof.schedule(wait=0, warmup=1, active=active_iterations, repeat=1),
             experimental_config=prof._ExperimentalConfig(profiler_level=prof.ProfilerLevel.Level1,
-                aic_metrics=prof.AiCMetrics.PipeUtilization, export_type=prof.ExportType.Text),
+                export_type=prof.ExportType.Text),
             on_trace_ready=prof.tensorboard_trace_handler(str(output), analyse_flag=True),
             record_shapes=True, profile_memory=False, with_stack=True) as capture:
-        with torch.profiler.record_function(label):
-            for _ in range(2):
+        for _ in range(1 + active_iterations):
+            with torch.profiler.record_function(label):
                 call()
-        torch.npu.synchronize(); capture.step()
+            torch.npu.synchronize()
+            capture.step()
     parser_path = Path(__file__).resolve().parents[1]/'05_full_recognizer_optimizations/parse_npu_profile.py'
     spec = importlib.util.spec_from_file_location('profile_parser', parser_path)
     parser = importlib.util.module_from_spec(spec); spec.loader.exec_module(parser)
-    runs = [parser.parse_run(p, topn=15, skip_trace=False) for p in parser.find_run_roots(output)]
+    runs = [parser.parse_run(p, topn=100, skip_trace=False) for p in parser.find_run_roots(output)]
     assert runs and all('kernel_details' in r for r in runs), 'Missing analyzed NPU trace'
-    save(output/'summary.json', {'parser_sha256': sha256(parser_path), 'profile_iterations': 2, 'runs': runs})
+    save(output/'summary.json', {'parser_sha256': sha256(parser_path),
+        'unprofiled_warmup_iterations': warmup_iterations, 'profiler_warmup_iterations': 1,
+        'profile_iterations': active_iterations, 'record_shapes': True, 'runs': runs})
     return {'path': str(output), 'summary_sha256': sha256(output/'summary.json'),
-            'iterations': 2, 'kernel_totals': [r['kernel_details'] for r in runs]}
+            'iterations': active_iterations, 'kernel_totals': [r['kernel_details'] for r in runs]}
 
 
 def main():
