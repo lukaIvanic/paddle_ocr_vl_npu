@@ -24,6 +24,7 @@ def main():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--schedule', choices=['constant', 'warmup_linear'], default='constant')
     p.add_argument('--steps', type=int, default=50)
+    p.add_argument('--profile-updates', type=int, default=3)
     p.add_argument('--queries-per-update', type=int, default=32)
     p.add_argument('--learning-rate', type=float, default=1e-6)
     p.add_argument('--wall-time-limit', type=float, default=2400)
@@ -210,14 +211,16 @@ def main():
             norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0, error_if_nonfinite=True)
             if args.mode != 'profile': optimizer.step()
             torch.npu.synchronize()
-            row = {'step': step, 'lr': learning_rate, 'loss': total_loss.item(), 'gradient_norm': norm.item(),
+            row = {'step': step, 'optimizer_step_applied':args.mode == 'train', 'lr': learning_rate, 'loss': total_loss.item(), 'gradient_norm': norm.item(),
                    'seconds': time.monotonic() - begin, 'queries': len(window), 'pairs': len(window)*8,
                    'backward_microbatches': micros, 'peak_allocated_gib': torch.npu.max_memory_allocated()/1024**3}
             result['updates'].append(row)
             print('UPDATE', json.dumps(row), flush=True)
             if args.mode == 'profile':
-                result['status'] = 'profile_completed_no_optimizer_updates'
-                break
+                if step >= args.profile_updates:
+                    result['status'] = 'profile_completed_no_optimizer_updates'
+                    break
+                continue
             if step in {1, 3, 10, 25, 50} or step == args.steps:
                 checkpoint(step)
                 evaluate(step, endpoint=step == args.steps or step in args.reserved_eval_steps)
