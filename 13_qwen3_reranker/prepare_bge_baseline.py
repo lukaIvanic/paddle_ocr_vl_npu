@@ -6,7 +6,12 @@ unmodified pinned loader supplies per-file cap and concatenation behavior.
 import argparse,collections,gzip,hashlib,json,pathlib,random,sys,tarfile,time,types
 from bge_baseline import PIN,reference_dataset_class,candidate_indices
 from training_smoke_data import normalize,body
-from distill_runtime import read,save,digest
+from distill_runtime import read,save as save_json,digest
+def save(path,data):
+ if str(path).endswith(".gz"):
+  path=pathlib.Path(path);path.parent.mkdir(parents=True,exist_ok=True)
+  path.write_bytes(gzip.compress(json.dumps(data,ensure_ascii=False).encode(),mtime=0))
+ else:save_json(path,data)
 DEFAULT_INSTRUCTION='Given a web search query, retrieve relevant passages that answer the query'
 def key(t):return normalize(t)
 def qhash(t):return hashlib.sha256(key(t).encode()).hexdigest()
