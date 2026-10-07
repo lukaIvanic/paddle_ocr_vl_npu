@@ -4,6 +4,14 @@ This is a runnable handoff, not a 310P performance report. The 310P machine is
 not reachable from the authoring machine. Run there and report directly to Luka
 in chat. Keep JSON, tensor captures and logs; do not write a Markdown report.
 
+You need no previous conversation, access to Luka's computer, or access to the
+blue-zone server. Everything executable below comes from this GitHub repository:
+`https://github.com/lukaIvanic/paddle_ocr_vl_npu.git`. References to 910B results
+are comparison facts only; no step fetches a file from that server. Your job is
+to discover this machine's existing environment and assets, execute these
+committed scripts, and explain the outcome. Do not implement fixes or improvise
+replacement code. Read-only discovery and the commands below are authorized.
+
 ## Scope and source
 
 Validate the exact FP16/native-weight optimized implementation that completed
@@ -19,6 +27,33 @@ patch dependencies, or replace its working CANN/torch/torch-npu stack. A detache
 checkout fetched from origin is allowed; it does not create a branch. Preserve
 unrelated work. If tracked changes or a checkout conflict exist, stop and report.
 
+Use Bash. First run `pwd`, `hostname`, `uname -a`, `id`, `command -v git`,
+`command -v python3`, and `git rev-parse --show-toplevel`. If the last command
+fails, locate an existing checkout with a bounded search:
+
+```bash
+find /home /root /workspace /opt /data -maxdepth 5 -type d \
+  -name paddle_ocr_vl_npu -print 2>/dev/null
+```
+
+Enter a returned checkout and verify `git remote -v` identifies the repository
+above. If there is no checkout, bootstrap a new detached checkout in an unused
+directory below the agent's current writable working directory:
+
+```bash
+test ! -e colqwen_310p_validation || exit 1
+mkdir colqwen_310p_validation
+cd colqwen_310p_validation
+git init
+git remote add origin https://github.com/lukaIvanic/paddle_ocr_vl_npu.git
+git fetch origin codex/colqwen-warm-forward-profile
+git checkout --detach FETCH_HEAD
+```
+
+This creates no named branch or commit. If GitHub/authentication is unavailable,
+report that blocker; do not attempt to reach another machine for source. Once
+inside the correct checkout, use the common update sequence:
+
 ```bash
 export WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
 cd "$WORK_SERVER_REPO"
@@ -29,15 +64,66 @@ git checkout --detach FETCH_HEAD
 git rev-parse HEAD
 ```
 
-Activate the existing successful 310P NPU environment. Use `source npu-setup`
-only if that is the server's established setup command. Select one healthy,
-free 310P; record `npu-smi info`. Never stop another process. Export exactly one
-physical ID in `ASCEND_RT_VISIBLE_DEVICES`; the logical device is `npu:0`.
-Do not copy the 910B NPU-0 reservation or its CANN paths onto this machine.
+## Discover this machine before selecting paths
+
+Do not assume there is a ColQwen virtual environment or a blue-zone-style
+container. Run in the local shell/container that has access to this server's
+310P devices. Collect the following read-only inventory:
+
+```bash
+command -v npu-setup || true
+command -v npu-smi || true
+command -v docker || true
+df -h
+free -h
+python3 21_colqwen3_4b_inference/discover_310p.py
+```
+
+The committed discovery script needs only standard-library Python (3.8+). It
+lists candidate Python environments and their installed-package metadata,
+CANN/ATB setup scripts, matching ColQwen checkpoints, and HR dataset roots. It
+does not import torch, allocate an NPU, install packages, or alter configuration.
+Preserve its printed inventory. A bounded search may report `truncated=true`
+or permission errors: that is NOT proof that assets are missing. Repeat with
+specific accessible mount points shown by `df -h`, or local paths from the
+machine's run commands, using one or more `--root /actual/path` arguments.
+
+If the host has no usable accelerator environment but Docker is available,
+inspect `docker ps --format '{{.Names}} {{.Image}}'`. For an existing relevant
+310P container, use `docker exec <discovered-name> ...` to run the SAME inventory
+inside it. Check that it has the repository and model/dataset mounts. Do not
+launch, recreate, restart or install into a container. If none is usable, report
+the inventory and blocker. Do not use the blue-zone container name.
+
+Choose an interpreter with the installed torch/torch-npu/TorchAir stack used by
+this machine's existing successful 310P work. The inventory's `candidate` path
+preserves virtual environments; do not replace it with a resolved system-Python
+symlink. Select the ColQwen-compatible HF dependencies listed below. Metadata
+discovery is not proof of importability: the preflight tests actual imports.
+If no compatible interpreter exists, report the candidate/version matrix and
+missing or mismatched packages. Do not install packages or create an environment
+under this execution-only brief; provisioning must be arranged by Luka.
+
+If `npu-setup` exists, inspect its local contents before sourcing it; use it only
+if it sets up this machine's 310P runtime. Otherwise inspect the discovered
+`set_env.sh` paths and local successful run commands to identify the existing
+matching CANN environment (and ATB environment if that stack uses it). Source
+those exact scripts. Do not select the newest-looking version by guess. If the
+choice is ambiguous, report the candidates and stop rather than mixing stacks.
+Record the setup-script paths and resolved installation versions in your reply.
+
+Run `npu-smi info` after activation. Choose one healthy, idle 310P with enough
+free memory and no other process using it. Export its actual physical ID as
+`ASCEND_RT_VISIBLE_DEVICES`; the scripts use logical `npu:0`. Never stop another
+process. If no card is free, report availability and stop. Do not reuse the
+blue-zone NPU-0 reservation or its CANN paths. Before running the next sections,
+confirm the selected interpreter, setup scripts, device, model and dataset all
+belong to the SAME host/container filesystem.
 
 ## Assets and environment
 
-Resolve existing local paths; the examples below are placeholders to replace.
+Select existing paths from the inventory; the assignments below are placeholders
+to replace with those observed values, not commands to run literally.
 The checkpoint is `OpenSearch-AI/Ops-Colqwen3-4B`. Required file SHA256 values,
 including both weight shards, are committed in `310p_assets.json`. The dataset
 is `vidore/vidore_v3_hr_mteb_format`, revision
@@ -71,8 +157,8 @@ run_phase() {
     shift
     mkdir -p "$RUN_ROOT/$phase"
     { git rev-parse HEAD; hostname; printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"; printf '%q ' "$@"; printf '\n'; } > "$RUN_ROOT/$phase/command.txt"
-    "$@" > "$RUN_ROOT/$phase/run.log" 2>&1
-    local code=$?
+    local code
+    if "$@" > "$RUN_ROOT/$phase/run.log" 2>&1; then code=0; else code=$?; fi
     printf '%s\n' "$code" > "$RUN_ROOT/$phase/exit_code.txt"
     tail -n 3 "$RUN_ROOT/$phase/run.log"
     return "$code"
@@ -82,6 +168,11 @@ run_phase() {
 Use the same shell/environment for the commands below. Each phase has an
 explicit failure guard. Continue automatically after a successful phase; no
 additional approval between successful phases is required by this brief.
+These functions/exports are shell state: if your tool starts a fresh shell per
+call, source the same setup scripts and repeat the assignments and function
+definition in that shell. Keep the SAME recorded RUN_ROOT; do not regenerate it
+for every command. Never rerun a completed phase into its existing output
+directory. A retry must use a clearly labeled new RUN_ROOT and explain why.
 
 ## Execute in order
 
@@ -92,6 +183,14 @@ additional approval between successful phases is required by this brief.
 run_phase preflight "$PYTHON_BIN" -u 21_colqwen3_4b_inference/run_portable_smoke.py \
   --phase preflight --model "$COLQWEN_MODEL" --dataset-root "$HR_DATASET" \
   --cache-root "$COLQWEN_CACHE" --output-dir "$RUN_ROOT/preflight/output" || exit 1
+```
+
+Before loading the checkpoint, also execute the committed CPU contract tests
+with this interpreter (these do not validate NPU kernels):
+
+```bash
+run_phase contracts env PYTHONPATH=21_colqwen3_4b_inference "$PYTHON_BIN" -m unittest \
+  test_portable_smoke test_hr_evaluation test_optimized_prefill || exit 1
 ```
 
 2. **Real-input smoke:** HR query 0, then distinct full pages 5 and 0. Run
@@ -133,9 +232,21 @@ run_phase full_hr "$PYTHON_BIN" -u 21_colqwen3_4b_inference/run_hr_evaluation.py
 Expect `status=completed`, `pages=1110`, `queries=318`, and
 `compiled_coverage={"transformer_calls":2538,"all_compiled":true}`. All pages
 should have 5040 vision / 1274 real text positions; text attention uses 1280.
-All 318 query graphs use the existing 128-position alignment and return only
-real query rows. No profiler overhead is enabled. Do not substitute the default
+All 318 queries share the existing 128-position graph and return only real
+query rows. No profiler overhead is enabled. Do not substitute the default
 111-page development workload for the full run.
+
+Long-run monitoring is part of the task. Use a long-lived tool session, or the
+tool's documented background execution support, so a short tool timeout does
+not kill the process. Poll `tail -n 5 "$RUN_ROOT/full_hr/run.log"` and
+`cat "$RUN_ROOT/full_hr/output/progress.json"` about every 30–60 seconds.
+The evaluator emits heartbeats every five seconds; compilation may take much
+longer than one item. The smoke prints phase starts and compile-cache events
+but has no heartbeat. Do not label quiet smoke output as a hang or kill it
+without evidence. If monitoring becomes unavailable, report the PID/log and
+resume monitoring rather than launching a duplicate job. A failed phase's
+`exit_code.txt` and first causal traceback take precedence over a partial
+throughput line. Stay until completion or a concrete reported blocker.
 
 ## Compatibility basis and limits
 
@@ -152,8 +263,9 @@ real query rows. No profiler overhead is enabled. Do not substitute the default
 
 These references support the selected API contracts; they do not establish
 that the installed 310P software stack compiles the whole model or that it has
-sufficient memory. Only the target runs establish that. The successful 910B
-smoke of this handoff is explicitly labeled `--expected-chip 910B`.
+sufficient memory. Only the target runs establish that. Harness checks on 910B
+use the explicit `--expected-chip 910B` flag; NEVER use that override on 310P or
+remove the default chip guard to bypass a discovery/configuration failure.
 
 ## Report directly to Luka
 
