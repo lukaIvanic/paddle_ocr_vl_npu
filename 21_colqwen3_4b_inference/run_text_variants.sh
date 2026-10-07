@@ -45,7 +45,10 @@ for TEXT_VARIANT in baseline bsnd rotary_bnsd apply_bnsd apply_bsnd swiglu apply
     set -e
     printf '%s\n' "$TEXT_EXIT" > "$TEXT_OUTPUT/exit_code.txt"
     printf 'FINISH %s %s exit=%s\n' "$TEXT_VARIANT" "$TEXT_LANE" "$TEXT_EXIT"
-    if [ "$TEXT_EXIT" != 0 ]; then tail -n 18 "$TEXT_OUTPUT/run.log"; fi
+    if [ "$TEXT_EXIT" != 0 ]; then
+      tail -n 18 "$TEXT_OUTPUT/run.log"
+      if [ "$TEXT_VARIANT" = baseline ]; then exit "$TEXT_EXIT"; fi
+    fi
   done
 done
 npu-smi info -t proc-mem -i "$ASCEND_RT_VISIBLE_DEVICES" > "$TEXT_VARIANT_ROOT/npu_after.txt"

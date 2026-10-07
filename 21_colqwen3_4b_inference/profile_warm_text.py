@@ -78,7 +78,7 @@ def run(args, result):
             VariantTextStage(model, options, args.variant)).eval()
     result['variant'] = variant_identity(args.variant)
     result['variant_source_sha256'] = sha256(Path(__file__).with_name('text_forward_variants.py'))
-    result['runner_source_sha256'] = sha256(__file__)
+    result['runner_source_sha256'] = sha256(Path(__file__))
     if args.frozen_inputs:
         saved = torch.load(args.frozen_inputs, map_location='cpu', weights_only=True)
         if saved['identity'] != provenance:
