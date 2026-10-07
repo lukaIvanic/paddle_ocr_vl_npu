@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Run only after the user reviews the completed preparation and configuration.
-set -euo pipefail
+set -eo pipefail
 cd "$(git rev-parse --show-toplevel)"
 source npu-setup
+set -u
 exec /usr/local/python3.12.13/bin/python3 -u 13_qwen3_reranker/run_bge_baseline.py \
   --mode train \
   --model /workspace/models/Qwen3-Reranker-0.6B \
