@@ -54,6 +54,7 @@ class Block(Weights):
             raise ValueError(f'Block keys mismatch: missing={expected-set(values)}, unexpected={set(values)-expected}')
         super().__init__(values, device, dense_dtype)
         self.matrix_recurrence = None  # Explicit benchmark opt-in; default unchanged.
+        self.group_norm_impl = 'group_norm'
 
     def run(self, x, first, previous=None, matrix=None, valid_lengths=None):
         B, T, C = x.shape
@@ -110,7 +111,14 @@ class Block(Weights):
             del chunks, part
         del inputs
         y = y.permute(0, 2, 1, 3).contiguous().reshape(B*T, C)
-        y = F.group_norm(y, H, self.get('att.ln_x.weight'), self.get('att.ln_x.bias'), .00064).reshape(B, T, C)
+        if self.group_norm_impl == 'layer_norm':
+            # GroupNorm on [BT,C] with H groups is a 64-channel LayerNorm
+            # per row/head, followed by the original per-channel affine.
+            y = F.layer_norm(y.reshape(-1, 64), (64,), None, None, .00064).reshape(B*T, C)
+            y = y * self.get('att.ln_x.weight') + self.get('att.ln_x.bias')
+        else:
+            y = F.group_norm(y, H, self.get('att.ln_x.weight'), self.get('att.ln_x.bias'), .00064)
+        y = y.reshape(B, T, C)
         extra = ((r * k * self.get('att.r_k').reshape(C)).reshape(B, T, H, 64)
                  .sum(-1, keepdim=True) * v.reshape(B, T, H, 64)).reshape(B, T, C)
         x = x + self.linear((y + extra) * g, 'att.output.weight')
