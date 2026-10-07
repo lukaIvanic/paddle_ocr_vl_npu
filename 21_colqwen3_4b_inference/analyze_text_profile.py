@@ -88,8 +88,8 @@ def analyze(directory):
         forbidden = {'MaskedScatter', 'LayerNormV3', 'Gelu', 'GeluV2', 'Unpack', 'Conv3D'}
         if forbidden.intersection(counts):
             raise ValueError('Non-text preparation/vision kernel in isolated capture')
-        length = result['text_tokens']
-        # Both Q and KV must attend over the frozen text length, rather than a vision grid.
+        length = result.get('attention_contract', {}).get('physical_tokens', result['text_tokens'])
+        # The portable path aligns the frozen text sequence before the stack.
         attention = [g for g in values if g['type'] == 'PromptFlashAttention']
         if any(any(f',{length},' not in s for s in g['input_shapes'].split(';')[:3]) for g in attention):
             raise ValueError('Attention shape is inconsistent with frozen text inputs')
