@@ -341,19 +341,23 @@ def run(args, report):
                 del caches
                 save(args.output,report)
         if args.profile and functions:
-            variant = next(iter(functions))
-            caches = allocate(dense,variant)
-            ids, pos, rope = (t.clone() for t in initial)
-            profile_dir = args.output.parent / f"profile_{variant}_batch{start}"
-            with torch_npu.profiler.profile(activities=[torch_npu.profiler.ProfilerActivity.CPU,
-                  torch_npu.profiler.ProfilerActivity.NPU], record_shapes=True,
-                  on_trace_ready=torch_npu.profiler.tensorboard_trace_handler(str(profile_dir))) as prof:
-                for _ in range(min(8,args.max_new_tokens-1)):
-                    ids,pos = functions[variant](ids,pos,rope,*caches)
-                    ids.cpu()
-                    prof.step()
-                torch.npu.synchronize()
-            batch_report["profile"] = {"variant":variant,"directory":str(profile_dir),"outside_throughput":True}
+            batch_report["profiles"] = []
+            for variant in functions:
+                caches = allocate(dense,variant)
+                ids, pos, rope = (t.clone() for t in initial)
+                profile_dir = args.output.parent / f"profile_{variant}_batch{start}"
+                with torch_npu.profiler.profile(activities=[torch_npu.profiler.ProfilerActivity.CPU,
+                      torch_npu.profiler.ProfilerActivity.NPU], record_shapes=True,
+                      experimental_config=torch_npu.profiler._ExperimentalConfig(
+                          profiler_level=torch_npu.profiler.ProfilerLevel.Level1),
+                      on_trace_ready=torch_npu.profiler.tensorboard_trace_handler(str(profile_dir))) as prof:
+                    for _ in range(min(8,args.max_new_tokens-1)):
+                        ids,pos = functions[variant](ids,pos,rope,*caches)
+                        ids.cpu()
+                        prof.step()
+                    torch.npu.synchronize()
+                batch_report["profiles"].append({"variant":variant,"directory":str(profile_dir),"outside_throughput":True})
+                del caches
         del dense, initial, functions, prod
         torch.npu.empty_cache()
     aggregate = {}
@@ -376,6 +380,22 @@ def run(args, report):
             "min_useful_decode_tok_s":min(t["useful_decode_tok_s"] for t in trials),
             "max_useful_decode_tok_s":max(t["useful_decode_tok_s"] for t in trials)}
     report["throughput"] = aggregate
+    comparisons = []
+    for baseline, candidate, scope in (
+        ("increfa_nd", "increfa_nz", "same dense IncreFA contract; storage format differs"),
+        ("fia_blocked_nd", "fia_nz", "same blocked FIA contract; storage format differs"),
+        ("increfa_nd", "fia_nd", "full decoder path: attention and cache writer/layout differ"),
+        ("increfa_nd", "fia_blocked_nd", "full decoder path: attention and cache writer/layout differ"),
+    ):
+        if (aggregate.get(baseline,{}).get("status") != "passed" or
+                aggregate.get(candidate,{}).get("status") != "passed"):
+            continue
+        ratios = [c["useful_decode_tok_s"]/b["useful_decode_tok_s"]
+                  for b,c in zip(aggregate[baseline]["trials"],aggregate[candidate]["trials"])]
+        comparisons.append({"baseline":baseline,"candidate":candidate,"scope":scope,
+            "paired_throughput_ratios":ratios,"median_ratio":statistics.median(ratios),
+            "min_ratio":min(ratios),"max_ratio":max(ratios)})
+    report["comparisons"] = comparisons
     report["status"] = "completed"
     report["stage"] = "complete"
 
