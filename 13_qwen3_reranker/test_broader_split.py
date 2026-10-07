@@ -23,6 +23,11 @@ class SplitTests(unittest.TestCase):
   self.assertEqual(g['supplied_labels'],[1]+[0]*7)
   self.assertEqual(g,sample_group(r,lambda r,d: True,4))
   self.assertIsNone(sample_group(r,lambda r,d: False,4))
+ def test_capped_raw_pools_rejected(self):
+  for field in ['pos','neg']:
+   r=self.row();r[field]=r[field][:-1]
+   with self.assertRaisesRegex(ValueError,'pool was capped'):
+    clean_pool([r],'nq',None,set())
  def test_language_and_pilot_quotas(self):
   for lang in ['en','zh']:
    self.assertEqual(sum(n for l,n,v,i in SPECS.values() if l==lang),3200)
