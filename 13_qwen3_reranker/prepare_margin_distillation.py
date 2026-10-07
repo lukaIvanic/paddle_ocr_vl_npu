@@ -4,6 +4,7 @@ Read existing top100 retrieval results; never rerun retrieval or inject golds.
 Reuse cached BGE rows and acquire short Chinese MIRACL shards from the mirror.
 """
 import argparse,collections,gc,gzip,hashlib,json,os,pathlib,random,sys,time,urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from mixture_data import MIRROR,REVISION,EXCLUDED,text_hash
 
 ROOT=pathlib.Path(__file__).resolve().parents[1]
@@ -20,6 +21,10 @@ def read(p):return json.loads(gzip.decompress(p.read_bytes()) if p.suffix=='.gz'
 
 
 def raw_pool(args):
+    cached=args.output/'raw_pool.json.gz'
+    if cached.exists():
+        value=read(cached)
+        return value['rows'],value['provenance']
     old=read(args.previous_mixture)
     rows=[];seen=set()
     allowed={'nq':'en','squad':'en','miracl_en':'en','miracl_zh':'zh'}
@@ -43,19 +48,30 @@ def raw_pool(args):
     assert metadata['sha']==REVISION
     args.downloads.mkdir(exist_ok=True,parents=True)
     import pyarrow.parquet as pq
-    for config in config_names:
-        files=sorted(s['rfilename'] for s in metadata['siblings']
-                     if s['rfilename'].startswith(config+'/') and s['rfilename'].endswith('.parquet'))
-        assert files
-        offset=0
-        for name in files:
+    all_files={config:sorted(s['rfilename'] for s in metadata['siblings']
+               if s['rfilename'].startswith(config+'/') and s['rfilename'].endswith('.parquet'))
+               for config in config_names}
+    assert all(all_files.values())
+    def download(item):
+            config,name=item
             p=args.downloads/pathlib.Path(name).name.replace('train-',config+'-')
             if not p.exists():
+                started=time.monotonic()
                 print('DOWNLOAD',json.dumps({'file':name}),flush=True)
                 url=f'{endpoint}/datasets/{MIRROR}/resolve/{REVISION}/{name}?download=true'
                 with urllib.request.urlopen(url,timeout=90) as stream,p.with_suffix('.partial').open('wb') as out:
                     while chunk:=stream.read(1024**2):out.write(chunk)
                 p.with_suffix('.partial').replace(p)
+                print('DOWNLOADED',json.dumps({'file':name,'bytes':p.stat().st_size,
+                      'seconds':time.monotonic()-started}),flush=True)
+            return p
+    jobs=[(c,n) for c,files in all_files.items() for n in files]
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        downloaded=dict(zip(jobs,pool.map(download,jobs)))
+    for config,files in all_files.items():
+        offset=0
+        for name in files:
+            p=downloaded[(config,name)]
             data=pq.read_table(p).to_pylist()
             for i,row in enumerate(data):
                 identity=f'{config}/{offset+i}'
@@ -64,9 +80,11 @@ def raw_pool(args):
                     rows.append(row|{'id':identity,'source':source,'language':allowed[source]})
                     seen.add(identity)
             offset+=len(data)
-    return rows,{'original':'Shitao/bge-m3-data','mirror':MIRROR,'revision':REVISION,
+    origin={'original':'Shitao/bge-m3-data','mirror':MIRROR,'revision':REVISION,
                  'previous_sample_sha256':sha(args.previous_mixture),
                  'download_sha256':{p.name:sha(p) for p in args.downloads.glob('*.parquet')}}
+    save(cached,{'rows':rows,'provenance':origin})
+    return rows,origin
 
 
 def build_groups(rows,blocked_queries,blocked_docs,seed,train_queries,val_queries):
@@ -154,11 +172,25 @@ def main():
     p.add_argument('--train-queries',type=int,default=1600)
     p.add_argument('--validation-queries',type=int,default=64)
     p.add_argument('--seed',type=int,default=1047)
+    p.add_argument('--acquire-only',action='store_true')
     args=p.parse_args();args.output.mkdir(exist_ok=True,parents=True)
+    if args.acquire_only:
+        rows,origin=raw_pool(args)
+        print('ACQUIRED',len(rows),json.dumps(collections.Counter(r['source'] for r in rows)),flush=True)
+        return
     import mteb,importlib.metadata
     assert importlib.metadata.version('mteb')=='1.38.9'
     from mteb.evaluation.evaluators.RetrievalEvaluator import corpus_to_str
     from run_english_suite import load_task
+    # MTEB's generic qrels read omits the default config name. Specify it for
+    # offline cache resolution while preserving the suite's pinned revisions.
+    import importlib
+    module=importlib.import_module('mteb.abstasks.AbsTaskRetrieval')
+    original_loader=module.load_dataset
+    def explicit_default(repo,*a,**kw):
+        if not a and 'name' not in kw:kw['name']='default'
+        return original_loader(repo,*a,**kw)
+    module.load_dataset=explicit_default
     class Observer:state={}
     panel=[];reserved=[];bq=set();bd=set();provenance={}
     for name in list(ENGLISH)+list(TASKS):

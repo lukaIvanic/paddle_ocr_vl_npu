@@ -75,7 +75,7 @@ def main():
             fusion_grads = grads
             parameter = named['layers.0.self_attn.q_proj.weight']
             start = parameter.detach().clone()
-            gradient = parameter.grad.detach().clone()
+            optimizer_gradient = parameter.grad.detach().clone()
         if mode == 'replay':
             result['replay_relative_l2'] = {k: ((g-fusion_grads[k]).norm()/fusion_grads[k].norm().clamp_min(1e-20)).item()
                                           for k, g in grads.items()}
@@ -86,7 +86,7 @@ def main():
     a = torch.nn.Parameter(start.clone()); b = torch.nn.Parameter(start.clone())
     ordinary = torch.optim.AdamW([a], lr=1e-6, betas=(.9,.999), eps=1e-8, weight_decay=0)
     fused = torch_npu.optim.NpuFusedAdamW([b], lr=1e-6, betas=(.9,.999), eps=1e-8, weight_decay=0)
-    a.grad = gradient.clone(); b.grad = gradient.clone()
+    a.grad = optimizer_gradient.clone(); b.grad = optimizer_gradient.clone()
     ordinary.step(); fused.step()
     result['optimizer_max_parameter_difference'] = (a-b).abs().max().item()
     result['optimizer_max_update'] = (a-start).abs().max().item()
