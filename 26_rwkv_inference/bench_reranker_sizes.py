@@ -107,9 +107,11 @@ def worker(args):
                 return
             backbone = Backbone(model).eval()
             lengths = torch.tensor([len(c['input_ids']) for c in cases], dtype=torch.int32, device='npu')
-            ids = torch.tensor([c['input_ids']+[0]*(args.bucket-len(c['input_ids'])) for c in cases], dtype=torch.long, device='npu')
+            static_tokens=len(cases[0]['input_ids']) if args.exact_input_shape else args.bucket
+            report.update(static_tokens=static_tokens,exact_input_shape=args.exact_input_shape)
+            ids = torch.tensor([c['input_ids']+[0]*(static_tokens-len(c['input_ids'])) for c in cases], dtype=torch.long, device='npu')
             save(args.output/'inputs.json', [dict(query_id=c['query_id'], document_id=c['document_id'],
-                input_ids=c['input_ids'], valid_length=len(c['input_ids']), bucket=args.bucket) for c in cases])
+                input_ids=c['input_ids'], valid_length=len(c['input_ids']), bucket=args.bucket,static_tokens=static_tokens) for c in cases])
             report['valid_tokens'] = lengths.cpu().tolist()
             eager = backbone(ids, lengths); expected = ranker(eager[1])
             singles = []
@@ -218,6 +220,7 @@ def main():
     p.add_argument('--devices',nargs='+',type=int,default=[7,6,4,3,2,1,0])
     p.add_argument('--repeats',type=int,default=10)
     p.add_argument('--batch-size',type=int,choices=[1,4],default=4)
+    p.add_argument('--exact-input-shape',action='store_true',help='B1 worker: compile the original token length without bucket padding')
     p.add_argument('--idle-wait-seconds',type=int,default=21600)
     p.add_argument('--allow-shared-device',action='store_true',help='Explicit middle/largest-FP16 worker probe; reserve 2 GiB headroom and cap allocator at 6 GiB')
     p.add_argument('--worker',action='store_true');p.add_argument('--gate-only',action='store_true')
@@ -226,6 +229,8 @@ def main():
     p.add_argument('--bucket',type=int,choices=[512,2048],default=512)
     args=p.parse_args()
     if not 0<args.idle_wait_seconds<=86400 or not 3<=args.repeats<=100 or not set(args.devices).issubset({0,1,2,3,4,6,7}):p.error('Use 3..100 repeats and healthy idle devices 0/1/2/3/4/6/7')
+    if args.exact_input_shape and (not args.worker or args.batch_size!=1):
+        p.error('Exact input shape requires an explicit B1 worker')
     if args.batch_size!=4 and not args.worker:
         p.error('B1 is an explicit worker probe; the background matrix uses B4')
     if args.allow_shared_device and (not args.worker or args.size=='tiny' or (args.size=='large' and args.dtype!='fp16')):
