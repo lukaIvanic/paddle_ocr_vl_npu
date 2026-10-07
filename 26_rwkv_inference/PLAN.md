@@ -382,6 +382,19 @@ launches **48 eager / 24 compiled vector blocks**, same shapes/dtypes; device ti
 no batch-size or precision conclusion. Shape/stack recording inflates eager host
 trace time; use clean latency. [`Shapes, CSVs, hashes and accounting`](../tmp/26_rwkv_inference/reranker_largest_profile_b4_57c83b92/profile_comparison.json).
 
+
+**Matrix recurrence source audit, 2026-10-07:** the imported RWKV-Vibe kernel
+still uses vector token recurrence; its 48-token load tiles are not a multi-token
+matrix factorization. Priority is testing a matrix replacement, not adjusting
+its launch count. `rwkv-rs/rwkv7-ascend-npu` at `b6391271` supplies Apache-2.0
+`rwkv7_chunk_scan.py`: DPLR/WY factorization with batched matmuls, FP32 state,
+FP32/FP16/BF16 compute, optional AscendC helpers and dense tree prefix. Authors
+report 910B2C runs, but a different language-model checkpoint/runtime and BF16
+factor math; B4/T2048 lacks a full-length reference check. No candidate ran here.
+First isolate real largest-model recurrence inputs, validate outputs/continuation
+and EOS states, then warmed PyTorch profiling at B1/B4 T512/T2048; only integrate
+with measured parity/speed. [Pinned sources, hashes, contracts and limitations](wkv7_npu/matrix_research.json).
+
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,
 followed by casts/normalization. These profiles precede the validated B4 benchmark path above.

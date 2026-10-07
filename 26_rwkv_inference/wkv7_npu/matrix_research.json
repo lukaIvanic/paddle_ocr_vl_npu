@@ -1,0 +1,129 @@
+{
+  "date": "2026-10-07",
+  "status": "source audit only; no candidate executed on our NPU",
+  "sources": [
+    {
+      "repository": "RWKV-Vibe/rwkv_Ascend",
+      "commit": "1a6eaeb47358001c4fed6e636ed95545fed1f20b",
+      "path": "cann-ops-rwkv/src/rwkv7/wkv7/op_kernel/wkv7.cpp",
+      "sha256": "b7aaeccbe1bab03ca53c40874a1130eab04b3561e6bd8e0c429d95c8eda02fc8",
+      "url": "https://github.com/RWKV-Vibe/rwkv_Ascend/blob/1a6eaeb47358001c4fed6e636ed95545fed1f20b/cann-ops-rwkv/src/rwkv7/wkv7/op_kernel/wkv7.cpp"
+    },
+    {
+      "repository": "rwkv-rs/rwkv7-ascend-npu",
+      "commit": "b6391271f0ddb606dad5e97a65fa4742e82fcd50",
+      "path": "vllm-rwkv-ascend/LICENSE",
+      "sha256": "75efa07c4d2afb14d8226cf00b7763dd2ec1c5585a9dfe919881a3a3fef2ddac",
+      "url": "https://github.com/rwkv-rs/rwkv7-ascend-npu/blob/b6391271f0ddb606dad5e97a65fa4742e82fcd50/vllm-rwkv-ascend/LICENSE"
+    },
+    {
+      "repository": "rwkv-rs/rwkv7-ascend-npu",
+      "commit": "b6391271f0ddb606dad5e97a65fa4742e82fcd50",
+      "path": "vllm-rwkv-ascend/perf/rwkv7_chunk_scan.py",
+      "sha256": "fc7a8c4486a1a5bfe8cc3aecc6e1b88655c28d0b64bc6c4177c1b4bb2f476167",
+      "url": "https://github.com/rwkv-rs/rwkv7-ascend-npu/blob/b6391271f0ddb606dad5e97a65fa4742e82fcd50/vllm-rwkv-ascend/perf/rwkv7_chunk_scan.py"
+    },
+    {
+      "repository": "rwkv-rs/rwkv7-ascend-npu",
+      "commit": "b6391271f0ddb606dad5e97a65fa4742e82fcd50",
+      "path": "vllm-rwkv-ascend/tests/test_chunk_scan.py",
+      "sha256": "1c2348daf992ade63756745d35234760f5057c84eb5f4f35cc0673f24a2ddc89",
+      "url": "https://github.com/rwkv-rs/rwkv7-ascend-npu/blob/b6391271f0ddb606dad5e97a65fa4742e82fcd50/vllm-rwkv-ascend/tests/test_chunk_scan.py"
+    },
+    {
+      "repository": "rwkv-rs/rwkv7-ascend-npu",
+      "commit": "b6391271f0ddb606dad5e97a65fa4742e82fcd50",
+      "path": "vllm-rwkv-ascend/perf/bench_rwkv7_pth_prefill.py",
+      "sha256": "e14e69cbf850508c70431a5c6f4257ea31c6c0a918557e07bfa53f9009024eda",
+      "url": "https://github.com/rwkv-rs/rwkv7-ascend-npu/blob/b6391271f0ddb606dad5e97a65fa4742e82fcd50/vllm-rwkv-ascend/perf/bench_rwkv7_pth_prefill.py"
+    },
+    {
+      "repository": "rwkv-rs/rwkv7-ascend-npu",
+      "commit": "b6391271f0ddb606dad5e97a65fa4742e82fcd50",
+      "path": "BENCHMARK_QWEN35_ALBATROSS.md",
+      "sha256": "a28362ebb906bb615e6185e81fb081dcfc4d84e9a7ea4eb221bb449d05d8edf4",
+      "url": "https://github.com/rwkv-rs/rwkv7-ascend-npu/blob/b6391271f0ddb606dad5e97a65fa4742e82fcd50/BENCHMARK_QWEN35_ALBATROSS.md"
+    },
+    {
+      "repository": "rwkv-rs/rwkv7-ascend-npu",
+      "commit": "b6391271f0ddb606dad5e97a65fa4742e82fcd50",
+      "path": "vllm-rwkv-ascend/perf/results/qwen35_dense_910b2c_20260714.json",
+      "sha256": "c4d3fa7f9033b0c93d63c887a951ca7ea12f3a54a4c5760b13efe2b756cb3168",
+      "url": "https://github.com/rwkv-rs/rwkv7-ascend-npu/blob/b6391271f0ddb606dad5e97a65fa4742e82fcd50/vllm-rwkv-ascend/perf/results/qwen35_dense_910b2c_20260714.json"
+    },
+    {
+      "repository": "rwkv-rs/rwkv7-ascend-npu",
+      "commit": "b6391271f0ddb606dad5e97a65fa4742e82fcd50",
+      "path": "vllm-rwkv-ascend/perf/ascendc/direct/README.md",
+      "sha256": "68ebea6dc01af22a807e4e1f32f33287132913000f60c94bd41eb76eba74d62c",
+      "url": "https://github.com/rwkv-rs/rwkv7-ascend-npu/blob/b6391271f0ddb606dad5e97a65fa4742e82fcd50/vllm-rwkv-ascend/perf/ascendc/direct/README.md"
+    },
+    {
+      "repository": "rwkv-rs/rwkv7-ascend-npu",
+      "commit": "b6391271f0ddb606dad5e97a65fa4742e82fcd50",
+      "path": "rwkv7-hf-ascend/rwkv7_hf/dplr_prefill_triton.py",
+      "sha256": "1b5559c0e0f2a28c65bcc41aeac163378d1ff883afc794aaab3e6da62acbb9ce",
+      "url": "https://github.com/rwkv-rs/rwkv7-ascend-npu/blob/b6391271f0ddb606dad5e97a65fa4742e82fcd50/rwkv7-hf-ascend/rwkv7_hf/dplr_prefill_triton.py"
+    },
+    {
+      "repository": "fla-org/flash-linear-attention",
+      "commit": "b8ff848705a8f7685770273452f2c8d8dcf40621",
+      "path": "fla/ops/rwkv7/chunk.py",
+      "sha256": "218bb87a1ea3c56bd2f9bab318b450a7172369bb4b168823b7d504492ab6c6a1",
+      "url": "https://github.com/fla-org/flash-linear-attention/blob/b8ff848705a8f7685770273452f2c8d8dcf40621/fla/ops/rwkv7/chunk.py"
+    }
+  ],
+  "current_kernel": {
+    "repository": "RWKV-Vibe/rwkv_Ascend",
+    "source_commit_unchanged": true,
+    "implementation": "AscendC vector recurrence, token-stream load tiles of 48, sequential recurrence per token; not multi-token matrix factorization"
+  },
+  "matrix_candidate": {
+    "repository": "rwkv-rs/rwkv7-ascend-npu",
+    "license": "Apache-2.0 (vllm-rwkv-ascend/LICENSE)",
+    "path": "vllm-rwkv-ascend/perf/rwkv7_chunk_scan.py",
+    "algorithm": "RWKV-7 DPLR/WY chunk factorization; batched matrix multiplications; sequential chunk apply or optional dense affine prefix",
+    "inputs": "[B,T,H,N] or [B,T,H*N] vectors; FP32 [B,H,N,N] VxK initial state",
+    "outputs": "all token outputs and FP32 VxK final state",
+    "decay_adapter": "w_is_log_decay=True for owned log-decay w; kk and learned a passed separately; implementation forms alpha=-kk, beta=kk*a",
+    "compute_dtypes": [
+      "fp32",
+      "fp16",
+      "bf16"
+    ],
+    "native_helpers": "optional AscendC gate preparation, causal mask and unit-lower inverse; pure torch path imports only torch and math",
+    "endpoint_limitation": "no per-row valid-length endpoint-state API; must preserve validated EOS-state/right-padding behavior before integration",
+    "layout_adapter": "owned vectors are B,H,T,N; transpose/contiguous to B,T,H,N; outputs reshape B,T,C",
+    "performance_status": "author-reported Ascend sequence runs; no speed claim for our checkpoint/runtime"
+  },
+  "reported_evidence": {
+    "hardware": "Ascend910B2C 64GB",
+    "cann": "8.5.1",
+    "torch": "2.9.0+cpu",
+    "torch_npu": "2.9.0rc1",
+    "checkpoint": "rwkv7-g1h-1.5b.pth, language model rather than our reranker",
+    "best_long_context_flags": [
+      "chunk_size=128",
+      "chunk_compute_dtype=bf16",
+      "dense_chunk_prefix=True",
+      "dense_prefix_algorithm=tree_root",
+      "chunk_inverse_backend=native_blocked",
+      "chunk_inverse_base_size=32"
+    ],
+    "b1_t2048_prefill_tokens_per_second": 18870.959696264796,
+    "b1_t2048_correctness_length": 2048,
+    "b1_t2048_logits_cosine": 0.9999973177909851,
+    "b4_t2048_prefill_tokens_per_second": 21930.12596086559,
+    "b4_t2048_correctness_length": 8,
+    "b4_t2048_full_reference_missing": true,
+    "b4_t2048_reported_recurrence_stage_ms": 237.4,
+    "b4_t2048_reported_full_prefill_ms": 373.6,
+    "caution": "FP16 weights/BF16 matrix factors, different checkpoint/runtime; cannot compare directly with our FP32 timings; generation agreement does not establish reranker state/score accuracy"
+  },
+  "excluded_shortcuts": {
+    "fla_native_ascend": "Pinned FLA tree has native Ascend backends for other operators, but no native RWKV7 or DPLR backend; generic chunk source availability is not proof of supported NPU execution",
+    "hf_triton": "dplr_prefill_triton.py includes CUDA-device gates; not a ready Ascend path merely because it lives in this repository",
+    "other_vector_scan": "direct AscendC prefill scan and SGLang recurrent Triton scan still process tokens recurrently; not the matrix path requested"
+  },
+  "next_validation": "Isolated recurrence probe using actual largest-model layer inputs, FP32 chunk16/32/64 then documented chunk128 BF16/native path; compare all outputs, final/nonzero/split states; warmed PyTorch CPU/NPU profiler B1/B4 T512/T2048 to confirm AI_CORE matmul shapes and latency; preserve valid EOS states; integrate only after parity and speed evidence"
+}
