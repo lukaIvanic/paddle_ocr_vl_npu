@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Isolated attention ablations over tensors captured from the production path.
+"""Full 32-block vision ablations over tensors from actual images/production.
 
 No production source or defaults are changed. Capture runs are NOT throughput
 benchmarks. Replay compares all 32 real blocks; unpad uses eager block dispatch
@@ -18,6 +18,7 @@ import subprocess
 import sys
 import time
 import types
+import warnings
 
 import torch
 import torch.nn.functional as F
@@ -29,7 +30,8 @@ from run_transformers_recognition_smoke import configure_npu, synchronize
 from vision_prefill_compile import MinerUVisionPrefillRuntime, StaticMinerUVisionBlocks, _import_torchair
 
 VARIANTS = ('baseline', 'pfa_d128', 'pfa_approx', 'pfa_d128_approx',
-            'unpad_d80', 'unpad_d128', 'eager_pfa')
+            'unpad_d80', 'unpad_d128', 'eager_pfa', 'pfa_nz_weights',
+            'eager_pfa_nz_weights', 'unpad_d128_nz_weights')
 
 
 def sha(path):
@@ -167,6 +169,78 @@ def unpad_attention(lengths):
     return attention
 
 
+@torch.inference_mode()
+def capture_crops(args):
+    """Capture the actual full vision forward; never manufacture hidden states."""
+    from PIL import Image
+    from transformers import AutoProcessor
+    from vision_prefill_compile import select_vision_bucket
+    root = args.output_dir.resolve()
+    root.mkdir(parents=True, exist_ok=False)
+    configure_npu()
+    import torch_npu
+    torch.npu.config.allow_internal_format = True
+    model = LocalMinerU2_5ForConditionalGeneration.from_pretrained(
+        args.model, dtype=torch.float16, device='npu:0').eval()
+    model.set_vision_attention_impl('prompt_flash_attention')
+    processor = AutoProcessor.from_pretrained(args.model, use_fast=False, local_files_only=True)
+    processor.image_processor.min_pixels = 25088
+    processor.image_processor.max_pixels = 602112
+    size = getattr(processor.image_processor, 'size', None)
+    if size is not None:
+        size['shortest_edge'], size['longest_edge'] = 25088, 602112
+    manifest = dict(commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+        model=str(args.model.resolve()), model_hashes={n:sha(args.model/n) for n in ('config.json','model.safetensors')},
+        routes={}, scope='actual crops, patch embedding/positions -> full 32-block compiled vision -> merger',
+        diagnostic_page_throughput_valid=False, processor=dict(min_pixels=25088,max_pixels=602112),
+        physical_device=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'))
+    runtime = MinerUVisionPrefillRuntime(model.visual, buckets=(384,768,3072), cache_root=args.cache_root,
+        model_dir=args.model, device=torch.device('npu:0'), dtype=torch.float16)
+    original_compile = runtime._compiled_for_bucket
+    current = {}
+
+    def get_compiled(bucket):
+        compiled = original_compile(bucket)
+        def call(*inputs):
+            output = compiled(*inputs)
+            synchronize()
+            route = current['route']
+            cpu_inputs = [v.detach().cpu().clone() for v in inputs]
+            target = root/(route+'.pt')
+            torch.save(dict(inputs=cpu_inputs,expected=output.detach().cpu().clone()), target)
+            manifest['routes'][route] = dict(tags=current['tags'],bucket=bucket,
+                segments=mask_segments(cpu_inputs[3]),file=target.name,sha256=sha(target),
+                baseline_cache=str(runtime._cache_dir(bucket)),image=current['image'],
+                image_sha256=current['image_sha256'])
+            write_json(root/'manifest.json',manifest)
+            return output
+        return call
+
+    runtime._compiled_for_bucket = get_compiled
+    model.set_vision_prefill_runtime(runtime)
+    for index,path in enumerate(args.image):
+        with Image.open(path) as image:
+            image = image.convert('RGB')
+        inp = processor.image_processor(images=[image],return_tensors='pt')
+        real = int(inp.pixel_values.shape[0])
+        if real*196 > 602112:
+            raise ValueError('processor ignored the actual crop pixel cap')
+        bucket = select_vision_bucket(real,(384,768,3072))
+        if bucket is None: raise ValueError('real crop exceeds supported buckets')
+        route = f'crop_{index}_bucket_{bucket}'
+        current.update(route=route,image=str(path.resolve()),image_sha256=sha(path),
+            tags=dict(route=route,real_tokens=real,physical_tokens=bucket,members=1,member_lengths=[real],
+                image_grid_thw=inp.image_grid_thw.tolist(),num_heads=16,head_dim=80,dtype='torch.float16'))
+        phase('real_crop_capture',**current['tags'])
+        pixel = inp.pixel_values.to('npu:0',dtype=torch.float16)
+        grid = inp.image_grid_thw.to('npu:0')
+        features = model.get_image_features(pixel,grid)
+        synchronize()
+        manifest['routes'][route]['merged_feature_shape'] = list(features.shape)
+        write_json(root/'manifest.json',manifest)
+    phase('capture_complete',routes=list(manifest['routes']))
+
+
 def candidate_forward(module, route, variant, lengths):
     """Reuse the exact production forward bytecode, replacing only attention.
 
@@ -222,13 +296,14 @@ def replay(args):
         raise ValueError('captured mask/segment mismatch')
     configure_npu()
     import torch_npu
+    torch.npu.config.allow_internal_format = True
     device_name = torch.npu.get_device_name(0)
     result = dict(variant=args.variant, route=args.route, tags=entry['tags'], segments=lengths,
         device=device_name, soc_version=int(torch_npu.npu.get_soc_version()),
         torch=torch.__version__, torch_npu=torch_npu.__version__,
         commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
         source_capture_sha256=entry['sha256'], model_hashes=manifest['model_hashes'],
-        execution='raw_eager' if args.variant.startswith('unpad_') or args.variant == 'eager_pfa' else 'torchair_fullgraph',
+        execution='raw_eager' if args.variant.startswith(('unpad_', 'eager_pfa')) else 'torchair_fullgraph',
         boundary='all 32 production vision blocks; excludes capture/H2D/setup; includes attention layout and CPU metadata handling',
         accuracy_scope='same-input layer0 and propagated full-encoder features; NOT downstream OCR accuracy')
     if 'approx' in args.variant and not 200 <= result['soc_version'] <= 205:
@@ -239,6 +314,19 @@ def replay(args):
     phase('model_load_start', variant=args.variant)
     model = LocalMinerU2_5ForConditionalGeneration.from_pretrained(model_path, dtype=torch.float16, device='npu:0')
     model.set_vision_attention_impl('prompt_flash_attention')
+    if args.variant.endswith('_nz_weights'):
+        began = time.perf_counter()
+        for block in model.visual.blocks:
+            for linear in (block.attn.qkv,block.attn.proj,block.mlp.fc1,block.mlp.fc2):
+                native = linear.weight.detach().cpu()
+                formatted = torch_npu.npu_format_cast(linear.weight.detach(),29)
+                if int(torch_npu.get_npu_format(formatted)) != 29:
+                    raise RuntimeError('vision weight NZ descriptor not retained; no fallback')
+                if not torch.equal(torch_npu.npu_format_cast(formatted,2).cpu(),native):
+                    raise RuntimeError('vision weight values changed during NZ conversion')
+                linear.weight = torch.nn.Parameter(formatted,requires_grad=False)
+        synchronize()
+        result['vision_weight_conversion_s'] = time.perf_counter()-began
     result['vision_weights'] = [dict(layer=index, projection=name,
         shape=list(linear.weight.shape), dtype=str(linear.weight.dtype),
         format=int(torch_npu.get_npu_format(linear.weight)))
@@ -297,13 +385,23 @@ def replay(args):
         raise RuntimeError('baseline differs from its own production capture; investigate before ablations')
     for _ in range(2):
         fn(*inputs)
-    timing, output = measure(lambda: fn(*inputs), args.steps)
+    graphs_before = int(torch._dynamo.utils.counters['stats']['unique_graphs'])
+    with warnings.catch_warnings(record=True) as caught:
+        timing, output = measure(lambda: fn(*inputs), args.steps)
+    result['timing_gate'] = dict(
+        new_graphs=int(torch._dynamo.utils.counters['stats']['unique_graphs'])-graphs_before,
+        recompile_warnings=sum('recompiled' in str(w.message) for w in caught))
+    if any(result['timing_gate'].values()):
+        result['status'] = 'invalid_timing_compile_in_measurement'
+        write_json(root/'result.json',result)
+        raise RuntimeError('compilation occurred inside warm vision timer')
     result['timing'] = timing
     result['repeat_parity'] = differences(candidate, output)
     if result['repeat_parity']['nonfinite'] or not result['repeat_parity']['exact']:
         write_json(root / 'result.json', result)
         raise RuntimeError('same-input candidate replay is nonfinite or nondeterministic')
     result['real_tok_s'] = entry['tags']['real_tokens'] * 1000 / timing['device_ms']['mean']
+    result['wall_real_tok_s'] = entry['tags']['real_tokens'] * 1000 / timing['wall_ms']['mean']
     result['physical_tok_s'] = entry['tags']['physical_tokens'] * 1000 / timing['device_ms']['mean']
     result['status'] = 'completed'
     if args.profile:
@@ -341,10 +439,17 @@ def main():
     run.add_argument('--output-dir', type=Path, required=True)
     run.add_argument('--steps', type=int, default=10)
     run.add_argument('--profile', action='store_true')
+    crops = sub.add_parser('capture-crops')
+    crops.add_argument('--model',type=Path,required=True)
+    crops.add_argument('--image',type=Path,action='append',required=True)
+    crops.add_argument('--cache-root',type=Path,required=True)
+    crops.add_argument('--output-dir',type=Path,required=True)
     args = parser.parse_args()
-    if (args.limit if args.mode == 'capture' else args.steps) <= 0:
+    if args.mode != 'capture-crops' and (args.limit if args.mode == 'capture' else args.steps) <= 0:
         parser.error('counts must be positive')
-    capture(args) if args.mode == 'capture' else replay(args)
+    if args.mode == 'capture': capture(args)
+    elif args.mode == 'capture-crops': capture_crops(args)
+    else: replay(args)
 
 
 if __name__ == '__main__':
