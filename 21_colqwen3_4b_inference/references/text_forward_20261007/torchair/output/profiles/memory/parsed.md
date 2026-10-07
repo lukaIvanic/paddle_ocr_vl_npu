@@ -210,4 +210,3 @@ _No rows._
 | `aclrtLaunchKernelWithHostArgs` | 3 | 55.450 |
 | `step_info` | 6 | 25.640 |
 | `OutputCopy` | 3 | 2.050 |
-

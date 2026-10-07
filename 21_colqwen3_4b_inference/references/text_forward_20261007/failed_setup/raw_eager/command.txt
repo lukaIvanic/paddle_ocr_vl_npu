@@ -1,4 +1,4 @@
 d0a784da9357868ed907f3b6da5d0d3721b0904a
 liteserver-c001-4
 ASCEND_RT_VISIBLE_DEVICES=2
-/workspace/venvs/colqwen3_hf_py312/bin/python -u 21_colqwen3_4b_inference/profile_warm_text.py --model /workspace/models/Ops-Colqwen3-4B --anchor tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt --execution raw_eager --output-dir tmp/21_colqwen3_4b_inference/text_forward_20261007T105919_d0a784da/raw_eager/output --cache-root tmp/21_colqwen3_4b_inference/text_forward_20261007T105919_d0a784da/cache --warmups 3 --repeats 30 --profile-steps 3 --metrics pipe memory 
+/workspace/venvs/colqwen3_hf_py312/bin/python -u 21_colqwen3_4b_inference/profile_warm_text.py --model /workspace/models/Ops-Colqwen3-4B --anchor tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt --execution raw_eager --output-dir tmp/21_colqwen3_4b_inference/text_forward_20261007T105919_d0a784da/raw_eager/output --cache-root tmp/21_colqwen3_4b_inference/text_forward_20261007T105919_d0a784da/cache --warmups 3 --repeats 30 --profile-steps 3 --metrics pipe memory

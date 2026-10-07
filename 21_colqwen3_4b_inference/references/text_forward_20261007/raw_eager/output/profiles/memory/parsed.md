@@ -194,4 +194,3 @@ _No rows._
 | `aclrtGetHardwareSyncAddr` | 867 | 542.900 |
 | `aclrtGetResInCurrentThread` | 216 | 175.060 |
 | `aclrtSynchronizeDeviceWithTimeout` | 7 | 141.370 |
-
