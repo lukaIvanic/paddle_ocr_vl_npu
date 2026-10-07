@@ -1,0 +1,23 @@
+{
+  "dataset": "Shitao/bge-m3-data",
+  "dataset_revision": "a69db8b86e9c1767d193ee0de95e5c4001a71eae",
+  "code_repository": "FlagOpen/FlagEmbedding",
+  "code_commit": "fd1a2bdf69488ffebe0327999d4400d8c8058a0b",
+  "archive": {
+    "type": "file",
+    "oid": "3c353a9f32a7f1fef2d4a813c66ef9d55b3172c6",
+    "size": 23980827921,
+    "lfs": {
+      "oid": "803e798c071ff114df022402ebc0a88d17f68c84eee77f5fbde8a9892d1a6c62",
+      "size": 23980827921,
+      "pointerSize": 136
+    },
+    "xetHash": "0c8a38e547780328979b57cd5ab03ca34c3ecd95a745fff44167978655567578",
+    "path": "bge-m3-data.tar.gz"
+  },
+  "code_sha256": {
+    "AbsDataset.py": "adacaf7f89dc39bbce12086cca88943e4d66ec5d4d3b9c2c0fe3481078506c1d",
+    "AbsModeling.py": "3623afc30505b6f688f2badcdff2be34b49cb27275d5f3627a4004f7a8c9bf93",
+    "AbsArguments.py": "cc847cfc8c71a3958b5f8b0fe5ba0a1df3fd4d852de0370d57a755e7e6f79549"
+  }
+}
