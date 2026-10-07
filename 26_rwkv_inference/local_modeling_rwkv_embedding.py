@@ -55,6 +55,8 @@ class Block(Weights):
         super().__init__(values, device, dense_dtype)
         self.matrix_recurrence = None  # Explicit benchmark opt-in; default unchanged.
         self.group_norm_impl = 'group_norm'
+        self.vector_variant = None
+        self.vector_dtype = torch.float32
 
     def run(self, x, first, previous=None, matrix=None, valid_lengths=None):
         B, T, C = x.shape
@@ -88,7 +90,16 @@ class Block(Weights):
         state = (torch.zeros((B, H, 64, 64), device=x.device, dtype=torch.float32)
                  if matrix is None else matrix.contiguous())
         inputs = None
-        if self.matrix_recurrence is not None:
+        if self.vector_variant is not None:
+            if T > 2048:
+                raise ValueError('Vector variant supports T<=2048')
+            inputs = [layout(t).to(self.vector_dtype) for t in (k,v,w,r,-kk,kk*a)]
+            lens = (torch.full((B,), T, device=x.device, dtype=torch.int32)
+                    if valid_lengths is None else valid_lengths)
+            y, state = self.vector_variant(*inputs, state.to(self.vector_dtype), lens)
+            # Keep the surrounding model fixed; only recurrence is reduced.
+            y, state = y.float(), state.float()
+        elif self.matrix_recurrence is not None:
             y, state = self.matrix_recurrence(k, v, w, r, kk, a, state, valid_lengths)
         elif valid_lengths is not None:
             inputs = [layout(t) for t in (k, v, w, r, -kk, kk * a)]
