@@ -1,7 +1,13 @@
 # Active MinerU 310P target: vision encoding
 
 The optimization target is the **32-layer vision transformer**, not text decode.
-Luka reports about 3.5k useful vision tokens/s on 310P versus 45k+ on 910B.
+The Sep 5 384-page result was 3,160 useful raw vision tokens/s on 310P versus
+about 46k on 910B (the historical shorthand is “3.5k”). The corrected Sep 21
+S5632 profile records 1325.7/54.8 ms for PromptFA (24.2×) and 430.4/23.1 ms
+for the four projections (18.7×), 310P/910B respectively. Slow ordinary
+matmuls are an open question alongside attention: kernel/tiling choice, core
+parallelism, waiting, hidden conversion/repacking and device power/clock state
+must be distinguished before another attention-contract ranking.
 The saved matched 910B full-run reference records 44,143.9 useful raw vision
 tokens/s. Those figures concern vision tokens, not generated text tokens.
 Different masks, padding densities and crop distributions change the rate;
@@ -65,7 +71,19 @@ synthetic hidden states or reconstructs Q/K/V.
 - `unpad_d128`: full eager stack using the stock private op's D128 contract;
 - `unpad_d128_nz_weights`: same eager unpad stack, projection weights NZ.
 
-Compare attention contracts within eager mode, and weight formats within the
+The diagnostic extension adds `internal_format_opposite`, `grouped_qkv` and
+`grouped_qkv_mlp_fc1` in the compiled full stack. The grouped modes were 310P
+compile workarounds, not established speedups. Complete configuration files
+bind capture/replay settings and isolate cache identities. Historical production
+command receipts and defaults at their recorded source commit must be compared
+before describing any replay as production-matched.
+
+The separate `probe_vision_matmul.py` is synthetic calibration only, across
+the exact projection shapes, FP16 ND/NZ, eager/compiled and explicit internal
+formats. Its kernel TFLOPS must never be presented as model throughput.
+
+Compare attention contracts within eager mode only where host dispatch does
+not dominate (the small-crop 910B eager results are host-bound), and weight formats within the
 same execution/attention path. A compiled-versus-eager ratio also includes
 fusion and dispatch differences. This is the stock operator contract inside
 the owned vision stack, not a benchmark of the entire stock vLLM wrapper.
@@ -85,15 +103,21 @@ Feature drift is quantified independently and does not suppress timings merely
 because outputs differ. Nonfinite outputs and NPU failures stop progression.
 
 Inspect actual profiler formats: a loaded NZ descriptor is insufficient proof
-that the compiled matmul consumes NZ. Count 32 attention calls and 128 projection
-matmuls per full forward. Separate attention, linears, rotary, LayerNorm and
+that the compiled matmul consumes NZ. The ordinary path has 32 attention calls
+and 128 projection operations per forward, but grouped/fused implementations
+can change kernel counts and names. Use `analyze_vision_diagnostics.py`; it
+reports unknown types without a chip or fixed-count assertion, retains per-call
+Block/Mix/Core/wait/HF32/shape/format columns and separates total wait from
+kernel durations. Separate attention, linears, rotary, LayerNorm and
 conversion costs using kernel duration_us with the correct forward denominator.
 PMU engine times overlap; do not sum them as elapsed time.
 
 The receiving-agent procedure is
-[VISION_CROP_310P_HANDOFF.md](VISION_CROP_310P_HANDOFF.md). Its primary lanes
-and compiled padding control are validated on 910B; actual 310P measurements
-remain out of band. It also names a separate 310P-only approximate-precision
-matrix rather than treating a 910B unsupported-device skip as validation.
+[VISION_CROP_310P_HANDOFF.md](VISION_CROP_310P_HANDOFF.md). It puts diagnostics
+first. The Sep 6 310P matrix already found unpad D128 about 13% faster at S5632
+and slightly slower at S768, with compiled approximate PromptFA at 1604.5 ms.
+Those choices are secondary confirmation on crop-sized inputs. Actual new
+310P measurements remain out of band; a 910B unsupported-device skip is not
+validation of the 310P-only approximate-precision converter.
 See [the twelve-lane 910B results](references/vision_crop_contracts_910b_20261007/RESULTS.md)
 for warm full-encoder rates, actual kernel formats and independent feature drift.

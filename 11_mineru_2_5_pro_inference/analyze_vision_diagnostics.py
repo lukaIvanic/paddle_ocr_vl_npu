@@ -9,13 +9,15 @@ import argparse
 import collections
 import csv
 import json
+import math
 from pathlib import Path
 import re
 
 
 def number(value):
     try:
-        return float(str(value).strip())
+        parsed = float(str(value).strip())
+        return parsed if math.isfinite(parsed) else None
     except (ValueError, TypeError):
         return None
 
@@ -40,8 +42,10 @@ def aggregate(rows, forwards):
     def histogram(column):
         return dict(collections.Counter(r.get(column, 'MISSING') for r in rows))
     return dict(calls=len(rows), calls_per_forward=len(rows)/forwards,
-                duration_ms_per_forward=sum(v for v in duration if v is not None)/1000/forwards,
-                wait_ms_per_forward=sum(v for v in waits if v is not None)/1000/forwards,
+                duration_ms_per_forward=(sum(v for v in duration if v is not None)/1000/forwards
+                                         if not rows or any(v is not None for v in duration) else None),
+                wait_ms_per_forward=(sum(v for v in waits if v is not None)/1000/forwards
+                                     if not rows or any(v is not None for v in waits) else None),
                 missing_duration=sum(v is None for v in duration), missing_wait=sum(v is None for v in waits),
                 block_num=histogram('Block Num'), mix_block_num=histogram('Mix Block Num'),
                 accelerator_core=histogram('Accelerator Core'), hf32_eligible=histogram('HF32 Eligible'),
@@ -78,14 +82,41 @@ def profile(rows, forwards):
                 names_found={k:sorted({r.get('Type','MISSING') for r in v}) for k,v in buckets.items()},
                 unclassified_types=sorted({r.get('Type','MISSING') for r in buckets['remaining']}),
                 conversion_directions=dict(collections.Counter(r.get('Input Formats','MISSING')+' -> '+r.get('Output Formats','MISSING') for r in buckets['format_conversion'])),
+                conversion_by_direction={direction:aggregate(group, forwards) for direction,group in
+                    _group_conversions(buckets['format_conversion']).items()},
                 kernel_calls=[{k:r.get(k) for k in columns} for r in rows if bucket(r) in ['attention','matmul']],
                 observed_stream_gap_ms_per_forward=gaps,
                 wait_note='CSV Wait Time sum is separate from kernel duration; not proven host delay. Do not add it to duration as elapsed time.',
                 gap_note='Per device/stream/profile-step observed gaps; include profiler/synchronization effects. Streams may overlap; do not sum as host time.')
 
 
+def _group_conversions(rows):
+    groups = collections.defaultdict(list)
+    for row in rows:
+        groups[row.get('Input Formats','MISSING')+' -> '+row.get('Output Formats','MISSING')].append(row)
+    return groups
+
+
+def attach_receipt(record, receipt):
+    if not receipt.is_dir():
+        return
+    record['receipt'] = str(receipt)
+    for name in ['command', 'before', 'after', 'exit']:
+        path = receipt / (name+'.json')
+        if path.exists():
+            record['receipt_'+name] = json.loads(path.read_text())
+    outcome = record.get('receipt_exit')
+    if outcome and outcome['status'] != 'completed':
+        record['status'] = outcome['status']
+        record['warnings'].append('launch receipt overrides worker status; the worker may have failed after writing timings')
+    elif not outcome:
+        record['status'] = 'incomplete_receipt'
+        record['warnings'].append('no final launch receipt; completion not established')
+
+
 def analyze(root, default_forwards):
     lanes = []
+    seen_receipts = set()
     for path in sorted(root.rglob('result.json')):
         if any(x in path.parts for x in ['vision_cache', 'cache']):
             continue
@@ -98,7 +129,13 @@ def analyze(root, default_forwards):
                       execution=data.get('execution'), status=data.get('status','incomplete'),
                       config=data.get('vision_config'), timing=data.get('timing'),
                       wall_real_tok_s=data.get('wall_real_tok_s'), drift=data.get('full_encoder_parity'),
-                      calibration_shape=data.get('shape'), calibration_tflops=data.get('achieved_tflops'), warnings=[])
+                      calibration_shape=data.get('shape'), calibration_tflops=data.get('achieved_tflops'),
+                      weight_format=data.get('weight_format_requested'),
+                      weight_format_actual=data.get('weight_format_actual'),
+                      allow_internal_format=data.get('allow_internal_format'), warnings=[])
+        receipt = path.parent.with_name(path.parent.name+'.receipt')
+        attach_receipt(record, receipt)
+        seen_receipts.add(receipt)
         if len(files) != 1:
             record['warnings'].append(f'expected one kernel CSV, found {len(files)}; no aggregate invented')
         else:
@@ -112,8 +149,18 @@ def analyze(root, default_forwards):
                 m,k,n = (data['shape'][x] for x in ['M','K','N'])
                 for typ, group in record['profile']['by_type'].items():
                     if group['bucket'] == 'matmul':
-                        us = group['duration_ms_per_forward']*1000/max(group['calls_per_forward'], 1e-30)
-                        group['achieved_tflops'] = 2*m*k*n/(us*1e6) if us > 0 and group['calls_per_forward']==1 and len(record['profile']['names_found']['matmul'])==1 else None
+                        ms = group['duration_ms_per_forward']
+                        us = ms*1000/max(group['calls_per_forward'], 1e-30) if ms is not None else None
+                        group['achieved_tflops'] = 2*m*k*n/(us*1e6) if us and us > 0 and group['calls_per_forward']==1 and len(record['profile']['names_found']['matmul'])==1 else None
+        lanes.append(record)
+    for receipt in sorted(root.rglob('*.receipt')):
+        if receipt in seen_receipts or not receipt.is_dir():
+            continue
+        record = dict(lane=str(receipt.relative_to(root)), device='unreported', kind='launch_only',
+                      variant=None, route=None, execution=None, status='incomplete', warnings=[])
+        attach_receipt(record, receipt)
+        record['status'] = record.get('receipt_exit', {}).get('status', record['status'])
+        record['warnings'].append('no model/calibration result; inspect receipt/log (capture launches are expected here)')
         lanes.append(record)
     return dict(schema=1, profile_forward_default=default_forwards, lanes=lanes,
                 scope='Vision stack and separately labelled synthetic matmul calibration; never substitute calibration for model performance')
@@ -150,8 +197,27 @@ def report(result):
         p=r.get('profile')
         if not p:continue
         for name,g in p['by_type'].items():
-            lines.append(f"| {r['device']} | {r['lane']} | {g['bucket']}: {name} | {g['calls_per_forward']:.1f} | {g['duration_ms_per_forward']:.6f} | {g['wait_ms_per_forward']:.6f} | {g['block_num']} | {g['mix_block_num']} | {g['accelerator_core']} |")
-        lines.append(f"| {r['device']} | {r['lane']} | **TOTAL WAIT (separate)** | — | — | {p['total']['wait_ms_per_forward']:.6f} | — | — | — |")
+            lines.append(f"| {r['device']} | {r['lane']} | {g['bucket']}: {name} | {g['calls_per_forward']:.1f} | {fmt(g['duration_ms_per_forward'])} | {fmt(g['wait_ms_per_forward'])} | {g['block_num']} | {g['mix_block_num']} | {g['accelerator_core']} |")
+        lines.append(f"| {r['device']} | {r['lane']} | **TOTAL WAIT (separate)** | — | — | {fmt(p['total']['wait_ms_per_forward'])} | — | — | — |")
+    lines += ['', '**Synthetic calibration only — not model performance.**', '',
+              '| Chip | Lane / M,K,N | Execution | Requested/actual weight format | Internal format | Matmul types / Block Num | Kernel us/forward | TFLOPS | Status |',
+              '|---|---|---|---|---|---|---:|---:|---|']
+    for r in result['lanes']:
+        if r['kind'] != 'matmul_calibration':continue
+        p=r.get('profile', {})
+        groups={k:g['block_num'] for k,g in p.get('by_type',{}).items() if g['bucket']=='matmul'}
+        ms=p.get('buckets',{}).get('matmul',{}).get('duration_ms_per_forward')
+        lines.append(f"| {r['device']} | {r['lane']} / {r['calibration_shape']} | {r['execution']} | {r['weight_format']}/{r['weight_format_actual']} | {r['allow_internal_format']} | {groups} | {fmt(ms*1000 if ms is not None else None)} | {fmt(r['calibration_tflops'])} | {r['status']} |")
+    lines += ['', '| Lane | Physical card | Before/after UTC | Before/after load average | CPUs / affinity | Device errors | Clock data |',
+              '|---|---|---|---|---|---|---|']
+    for r in result['lanes']:
+        b,a=r.get('receipt_before',{}),r.get('receipt_after',{})
+        if not b and not a:continue
+        lines.append(f"| {r['lane']} | {b.get('visible_devices')} | {b.get('utc')} / {a.get('utc')} | {b.get('load_average')} / {a.get('load_average')} | {b.get('cpu_count')}/{b.get('affinity_cpu_count')} | {b.get('device_error')} / {a.get('device_error')} | {b.get('clock_data')} / {a.get('clock_data')} |")
+    lines += ['', 'Failures, missing data and launch-only records:', '']
+    for r in result['lanes']:
+        if r['status']!='completed' or r['warnings']:
+            lines.append(f"- {r['lane']}: {r['status']}; {'; '.join(r['warnings'])}")
     lines += ['', 'Full per-call columns, shape/format/HF32 histograms, conversion directions, remaining types and per-stream gaps are retained in the companion JSON. Unclassified does not mean erroneous; it means no semantic attribution was guessed.', '']
     return '\n'.join(lines)
 

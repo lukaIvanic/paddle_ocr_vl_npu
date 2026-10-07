@@ -1,0 +1,11 @@
+{
+  "attention_impl": "prompt_flash_attention",
+  "projection_impl": "linear",
+  "layer_norm_impl": "manual_fp32",
+  "promptfa_pad_head_dim_to": 0,
+  "approximate_precision": false,
+  "allow_internal_format": true,
+  "buckets": [384, 768, 3072],
+  "min_pixels": 25088,
+  "max_pixels": 602112
+}

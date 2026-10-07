@@ -139,6 +139,14 @@ load, CPU-count, other-job and device-state records. They are not reconstructed
 from later snapshots. Small-crop eager comparisons are host-bound as described
 above. New runs collect these fields before and after every lane.
 
+## Portable reanalysis
+
+[Generic reanalysis](GENERIC_REANALYSIS.md) adds per-kernel Block Num, Mix Block
+Num, wait, Accelerator Core, HF32, shape/format and remaining-type accounting.
+It reproduces all 12 original duration totals with a three-forward denominator.
+Compiled large-crop total CSV wait is 0.439 ms/forward, reported separately from
+kernel duration. No new host-load history or causal attribution is inferred.
+
 ## Evidence
 
 - `analysis.json`: normalized types/counts/durations, actual formats, timing and feature summaries.
