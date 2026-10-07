@@ -143,16 +143,19 @@ def build_groups(rows,blocked_queries,blocked_docs,seed,train_queries,val_querie
         result=[]
         for source in sorted({r['source'] for r in selected}):
             rs=[r for r in selected if r['source']==source]
+            need_mining=any(len(r['neg'])<7 for r in rs)
             # Candidate bank stays inside this split and source.
-            bank=list(dict.fromkeys(d for r in rs for d in r['pos']+r['neg']))
-            vectorizer=TfidfVectorizer(analyzer='char',ngram_range=(2,3),max_features=100000)
-            matrix=vectorizer.fit_transform(bank)
+            if need_mining:
+                bank=list(dict.fromkeys(d for r in rs for d in r['pos']+r['neg']))
+                vectorizer=TfidfVectorizer(analyzer='char',ngram_range=(2,3),max_features=100000)
+                matrix=vectorizer.fit_transform(bank)
             for r in rs:
                 documents=[r['pos'][0]]+r['neg'][:7]
-                sims=(matrix@vectorizer.transform([r['query']]).T).toarray().ravel()
-                for index in sorted(range(len(bank)),key=lambda i:(-sims[i],i)):
-                    if len(documents)>=8:break
-                    if bank[index] not in documents:documents.append(bank[index])
+                if len(documents)<8:
+                    sims=(matrix@vectorizer.transform([r['query']]).T).toarray().ravel()
+                    for index in sorted(range(len(bank)),key=lambda i:(-sims[i],i)):
+                        if len(documents)>=8:break
+                        if bank[index] not in documents:documents.append(bank[index])
                 assert len(documents)==8
                 result.append({k:r[k] for k in ['id','source','language','query']}|
                               {'documents':documents,'instruction':
