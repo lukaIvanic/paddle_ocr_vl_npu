@@ -1,0 +1,154 @@
+{
+  "scope": "Ascend 910B2 physical NPU 7 shared with a GPQA service. B1, identical real 257-token input without padding, uncached backbone plus readout. Three warmups and ten synchronized repeats. Dense projection dtype changes; recurrent state and pointwise arithmetic remain FP32. Compile, tokenization and transfers excluded.",
+  "source_commit": "7ce99dc23ce2117a45e82d9b559c3103dc5c474c",
+  "rows": [
+    {
+      "run": "base_fp32",
+      "result": "base_fp32/result.json",
+      "size": "base",
+      "dtype": "fp32",
+      "backend": "torchair",
+      "all_checks_passed": true,
+      "timings_ms": {
+        "eager_total": 147.0499000060954,
+        "torchair_total": 25.636254998971708,
+        "torchair_head_only": 4.058724996866658
+      },
+      "peak_reserved_gib": 3.078125,
+      "full_input_compiled_logits": {
+        "max_abs": 1.5735626220703125e-05,
+        "normalized_rmse": 2.9847042242181487e-06,
+        "finite": true,
+        "actual": [
+          -5.272073268890381
+        ],
+        "expected": [
+          -5.272089004516602
+        ]
+      },
+      "cpu_smoke_logit_max_abs": 1.430511474609375e-06
+    },
+    {
+      "run": "base_fp16",
+      "result": "base_fp16/result.json",
+      "size": "base",
+      "dtype": "fp16",
+      "backend": "torchair",
+      "all_checks_passed": true,
+      "timings_ms": {
+        "eager_total": 168.66162499354687,
+        "torchair_total": 28.448300006857608,
+        "torchair_head_only": 4.933880001772195
+      },
+      "peak_reserved_gib": 1.6484375,
+      "full_input_compiled_logits": {
+        "max_abs": 0.0,
+        "normalized_rmse": 0.0,
+        "finite": true,
+        "actual": [
+          -5.2734375
+        ],
+        "expected": [
+          -5.2734375
+        ]
+      },
+      "cpu_smoke_logit_max_abs": 0.005293846130371094
+    },
+    {
+      "run": "base_bf16",
+      "result": "base_bf16/result.json",
+      "size": "base",
+      "dtype": "bf16",
+      "backend": "torchair",
+      "all_checks_passed": true,
+      "timings_ms": {
+        "eager_total": 180.86230500193778,
+        "torchair_total": 28.061434997653123,
+        "torchair_head_only": 4.898535007669125
+      },
+      "peak_reserved_gib": 1.650390625,
+      "full_input_compiled_logits": {
+        "max_abs": 0.0,
+        "normalized_rmse": 0.0,
+        "finite": true,
+        "actual": [
+          -5.3125
+        ],
+        "expected": [
+          -5.3125
+        ]
+      },
+      "cpu_smoke_logit_max_abs": 0.032637596130371094
+    },
+    {
+      "run": "large_bf16",
+      "result": "large_bf16/result.json",
+      "size": "large",
+      "dtype": "bf16",
+      "backend": "raw_eager",
+      "all_checks_passed": true,
+      "timings_ms": {
+        "eager_total": 174.52468500414398
+      },
+      "peak_reserved_gib": 5.796875,
+      "full_input_compiled_logits": null,
+      "cpu_smoke_logit_max_abs": 0.006676673889160156
+    },
+    {
+      "run": "large_fp16",
+      "result": "../reranker_largest_shared_434778e9/probe_t512/result.json",
+      "size": "large",
+      "dtype": "fp16",
+      "raw_checks_passed": true,
+      "all_checks_passed": false,
+      "error": "AssertionError: {'max_abs': 0.04619598388671875, 'normalized_rmse': 0.0005372988525778055, 'finite': True}",
+      "timings_ms": {
+        "eager_total": 179.54796500271186
+      },
+      "peak_reserved_gib": 5.837890625,
+      "cpu_smoke_logit_max_abs": 0.0027704238891601562,
+      "compiled_logit_not_recorded": true
+    }
+  ],
+  "middle_compiled_slowdown_vs_fp32": {
+    "fp32": 1.0,
+    "fp16": 1.1096901637153591,
+    "bf16": 1.0945996206847954
+  },
+  "caveats": [
+    "One input is a numerical/speed smoke, not a NanoBEIR accuracy test.",
+    "Sequential shared-device runs do not establish isolated throughput or small performance differences.",
+    "Largest FP32 pair needs about 9.93 GiB of live weights and could not be compared in the available roughly 8.16 GiB; FP16/BF16 live weights about 5.22 GiB.",
+    "Largest FP16 compiled state gate failed; no validated TorchAir timing or recorded compiled final-score difference from that earlier run."
+  ],
+  "middle_nanobeir_eta": {
+    "dtype": "fp32",
+    "batch_size": 4,
+    "document_cache": false,
+    "full_13_task_embedding_candidates": {
+      "queries": 649,
+      "pairs": 64900,
+      "one_npu_minutes": [
+        50,
+        60
+      ],
+      "two_npu_minutes": [
+        25,
+        30
+      ]
+    },
+    "alternate_11_task_bm25_plus_positives": {
+      "queries": 550,
+      "pairs": 57688,
+      "one_npu_minutes": [
+        40,
+        45
+      ],
+      "two_npu_minutes": [
+        20,
+        25
+      ]
+    },
+    "method": "Estimate from saved tiny-model batch lengths, middle shared B4 T512 compiled timing and a linear interpolation of middle exact-length eager timing between T512/T2048 for longer batches; allows compile and host overhead. Not measured full middle-model benchmark runtime."
+  }
+}

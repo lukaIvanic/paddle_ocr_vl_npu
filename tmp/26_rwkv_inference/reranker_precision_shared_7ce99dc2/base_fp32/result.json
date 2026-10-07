@@ -1,0 +1,271 @@
+{
+  "size": "base",
+  "dtype": "fp32",
+  "batch_size": 1,
+  "gate_only": false,
+  "bucket": 512,
+  "source_commit": "7ce99dc23ce2117a45e82d9b559c3103dc5c474c",
+  "source_sha256": {
+    "bench_reranker_sizes.py": "9d7870878d82c8960f8a4363ad0f3fcced9fe469b62f8ab389918e0bfb6c702a",
+    "local_modeling_rwkv_embedding.py": "d0ac9a9fdb234e0fdeb29ef6d26623a29d4338b9ee28e487b9dc5fc6890eae2d",
+    "local_modeling_rwkv_reranker.py": "62d3ce3f2f5d8a54924794422778fc61827962e41c0d4cd2d62591b9dfeb5896",
+    "probe_reranker_endpoint.py": "a7a65478cdb8bb5fd6e0f3c17a5d719fa24fdf158fbaefce012c09e4068ebbfb",
+    "run_reranker_smoke.py": "91c62ae2fb96f0745eb0fea42d742b10ddf48323c9b7b76ca9ab987d5d5ecaf9",
+    "wkv7_endpoint.py": "73b1b8f8b7ac791c60efdadba6fae8e81bff2b850b14904ea3628f7e54160647"
+  },
+  "physical_npu": "7",
+  "shared_device": true,
+  "all_checks_passed": true,
+  "backend": "torchair",
+  "scope": "Prepared device inputs; uncached backbone plus state-readout head. Synchronized steady calls exclude CPU checks, compile, input transfers and tokenization.",
+  "timings": {
+    "eager_total": {
+      "repeats": 10,
+      "warmups": 3,
+      "host_samples_seconds": [
+        0.14528620000055525,
+        0.144663839993882,
+        0.1446740800020052,
+        0.14705586001218762,
+        0.14539710999815725,
+        0.15733837999869138,
+        0.16475476000050548,
+        0.15107228999841027,
+        0.1524849100096617,
+        0.1470439400000032
+      ],
+      "device_samples_seconds": [
+        0.1444159240722656,
+        0.14448797607421876,
+        0.14452259826660158,
+        0.14686282348632812,
+        0.14522154235839843,
+        0.15709698486328125,
+        0.16459251403808595,
+        0.15089802551269532,
+        0.15225888061523438,
+        0.14685646057128907
+      ],
+      "host_median_seconds": 0.1470499000060954,
+      "host_max_seconds": 0.16475476000050548,
+      "device_median_seconds": 0.14685964202880858,
+      "pairs_per_second": 6.800412648757658
+    },
+    "torchair_total": {
+      "repeats": 10,
+      "warmups": 3,
+      "host_samples_seconds": [
+        0.025684919994091615,
+        0.025724050006829202,
+        0.025535099994158372,
+        0.0257382200070424,
+        0.025519769988022745,
+        0.02570222000940703,
+        0.0255875900038518,
+        0.025541259994497523,
+        0.02577762000146322,
+        0.025575030012987554
+      ],
+      "device_samples_seconds": [
+        0.025445220947265625,
+        0.025588079452514647,
+        0.02538912010192871,
+        0.02559869956970215,
+        0.0253638801574707,
+        0.025574920654296875,
+        0.0253966007232666,
+        0.025417320251464842,
+        0.025644760131835937,
+        0.025444719314575197
+      ],
+      "host_median_seconds": 0.025636254998971708,
+      "host_max_seconds": 0.02577762000146322,
+      "device_median_seconds": 0.02544497013092041,
+      "pairs_per_second": 39.0072574968579
+    },
+    "torchair_head_only": {
+      "repeats": 10,
+      "warmups": 3,
+      "host_samples_seconds": [
+        0.004174700006842613,
+        0.004181249998509884,
+        0.004148189997067675,
+        0.004130059998715296,
+        0.004065789995365776,
+        0.0040516599983675405,
+        0.003971400001319125,
+        0.004029179995995946,
+        0.003982659996836446,
+        0.004005709997727536
+      ],
+      "device_samples_seconds": [
+        0.0040518798828125,
+        0.004067500114440918,
+        0.004025499820709228,
+        0.004017640113830567,
+        0.003937979936599731,
+        0.003930059909820557,
+        0.00384771990776062,
+        0.003909140110015869,
+        0.003861799955368042,
+        0.0038483400344848633
+      ],
+      "host_median_seconds": 0.004058724996866658,
+      "host_max_seconds": 0.004181249998509884,
+      "device_median_seconds": 0.003934019923210144,
+      "pairs_per_second": 246.3827928159709
+    }
+  },
+  "npu_status_before": "NPU 7: busy HBM=57130/65536MB AICore=1% Health=OK",
+  "allocator_budget_bytes": 6442450944,
+  "device": "Ascend910B2",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "hbm_before": {
+    "free_bytes": 8758509568,
+    "total_bytes": 65452113920
+  },
+  "state_dtype": "fp32",
+  "checkpoint_sha256": "6a707ff4b6e5d2215fbc9db341e990cbb911848ec7a713c12f2a5cd0673604d5",
+  "reranker_sha256": "e0350005fa706ec1348fed7056bd77e25567d674ac31d9fab9646a2efc749d77",
+  "architecture": {
+    "backbone_layers": 24,
+    "reranker_layers": 24,
+    "width": 1024,
+    "heads": 16,
+    "head_size": 64,
+    "selected_layers": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ]
+  },
+  "cases_sha256": "0a5e139202b3386e0dae793cda12c2a0803cf05dbd5b060a3cca084bd17d8dbe",
+  "cpu_gate": {
+    "input_ids": [
+      33193,
+      8872,
+      59,
+      36733,
+      332,
+      39415,
+      45,
+      57129,
+      33563,
+      36240,
+      33944,
+      21700,
+      37533,
+      43927,
+      63218,
+      65535
+    ],
+    "states": [
+      {
+        "max_abs": 2.288818359375e-05,
+        "normalized_rmse": 1.5440181186932023e-06,
+        "finite": true
+      },
+      {
+        "max_abs": 1.9073486328125e-05,
+        "normalized_rmse": 1.0740285460997256e-06,
+        "finite": true
+      }
+    ],
+    "hidden": {
+      "max_abs": 0.0001506805419921875,
+      "normalized_rmse": 2.445778363835416e-06,
+      "finite": true
+    },
+    "logits": {
+      "max_abs": 1.430511474609375e-06,
+      "normalized_rmse": 2.372378276049858e-07,
+      "finite": true
+    },
+    "cpu_logits": [
+      -6.029862403869629
+    ],
+    "npu_logits": [
+      -6.0298638343811035
+    ],
+    "seconds": 6.982502589991782
+  },
+  "static_tokens": 257,
+  "exact_input_shape": true,
+  "valid_tokens": [
+    257
+  ],
+  "batch_and_right_padding_vs_single": {
+    "max_abs": 0.0,
+    "normalized_rmse": 0.0,
+    "finite": true
+  },
+  "raw_checks_passed": true,
+  "compile_and_first_call_seconds": 180.58055894999416,
+  "compiled_state_diagnostics": [
+    {
+      "max_abs": 0.0,
+      "normalized_rmse": 0.0,
+      "finite": true
+    },
+    {
+      "max_abs": 0.0,
+      "normalized_rmse": 0.0,
+      "finite": true
+    }
+  ],
+  "compiled_logit_diagnostics": {
+    "max_abs": 1.5735626220703125e-05,
+    "normalized_rmse": 2.9847042242181487e-06,
+    "finite": true,
+    "actual": [
+      -5.272073268890381
+    ],
+    "expected": [
+      -5.272089004516602
+    ]
+  },
+  "compiled_states_vs_eager": [
+    {
+      "max_abs": 0.0,
+      "normalized_rmse": 0.0,
+      "finite": true
+    },
+    {
+      "max_abs": 0.0,
+      "normalized_rmse": 0.0,
+      "finite": true
+    }
+  ],
+  "compiled_logits_vs_eager": {
+    "max_abs": 1.5735626220703125e-05,
+    "normalized_rmse": 2.9847042242181487e-06,
+    "finite": true
+  },
+  "total_seconds": 204.85598504000518,
+  "peak_hbm_bytes": {
+    "allocated": 2879740416,
+    "reserved": 3305111552
+  }
+}

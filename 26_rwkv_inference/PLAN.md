@@ -335,6 +335,20 @@ and compiled parity pass; compiled states/logits equal eager. Peak reserved HBM
 These are shared-device timings, not quality results or isolated throughput.
 [`Commands, checks and timings`](../tmp/26_rwkv_inference/reranker_middle_shared_ec325479/).
 
+**Precision/fit smoke**, source `7ce99dc2`, shared 910B2 NPU 7, identical
+unpadded **B1/T257**, uncached: middle eager/TorchAir medians are
+**147.05/25.64 ms FP32**, **168.66/28.45 ms FP16**, **180.86/28.06 ms BF16**;
+all numerical gates pass. States/pointwise math stay FP32. Reduced projections
+save memory but show no speed gain here. Largest FP16/BF16 eager takes
+**179.55/174.52 ms**, peak reserved **5.84/5.80 GiB**; FP32 live weights
+(~9.93 GiB) exceed current spare HBM (~8.16 GiB). Largest FP16 padded and
+compiled-state gates failed (relative RMSE ~0.0005); its unpadded eager checks
+pass, but no validated largest TorchAir timing yet. These are single-input
+smokes, not suite accuracy. Middle FP32 B4 full 13-task NanoBEIR ETA: **50–60
+min / 25–30 min** on one/two NPUs; alternate 11-task BM25+positives: **40–45 /
+20–25 min**, estimated from saved batch lengths, not a measured middle run.
+[`Results, failed gates, precision comparison and estimate scope`](../tmp/26_rwkv_inference/reranker_precision_shared_7ce99dc2/precision_comparison.json).
+
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,
 followed by casts/normalization. These profiles precede the validated B4 benchmark path above.
