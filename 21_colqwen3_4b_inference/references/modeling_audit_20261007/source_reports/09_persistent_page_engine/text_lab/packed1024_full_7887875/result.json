@@ -1,0 +1,403 @@
+{
+  "schema_version": 1,
+  "kind": "text_prefill_lab_result",
+  "configuration": {
+    "mode": "packed",
+    "corpus": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_lab/corpus_256p_minpixels_div4_5a37baf.json",
+    "corpus_sha256": "a088e1c552c193d2343a7c9340b4864bb1b752c5cec491f1d2e9ef938c48054a",
+    "model": "/workspace/models/PaddleOCR-VL-1.6",
+    "device": "npu:0",
+    "dtype": "torch.float16",
+    "backend": "torchair",
+    "padding": "auto",
+    "buckets": [
+      32,
+      64,
+      96,
+      128,
+      160,
+      176,
+      192,
+      208,
+      224,
+      256,
+      320,
+      384,
+      448,
+      576,
+      640,
+      768,
+      896,
+      1024,
+      1152,
+      1280,
+      1312
+    ],
+    "cache_length": 8192,
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair",
+    "packed_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_text_lab_packed",
+    "baseline_lab_result": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_lab/replay_256p_9e14e4e/result.json",
+    "pack_length": 1024,
+    "max_pack_members": 32,
+    "pack_scope": [
+      "production_group",
+      "global"
+    ],
+    "allow_compile": false,
+    "include_output_head": false,
+    "embedding_policy": "real_token_embedding_plus_fixed_seed_synthetic_image_values",
+    "seed": 20260722
+  },
+  "corpus_contract": {
+    "ordering": "items are stored in request-source order; production_group_id preserves profile-guided prefill group membership and sequence",
+    "batch_size": 1,
+    "compiled_buckets": [
+      32,
+      64,
+      96,
+      128,
+      160,
+      176,
+      192,
+      208,
+      224,
+      256,
+      320,
+      384,
+      448,
+      576,
+      640,
+      768,
+      896,
+      1024,
+      1152,
+      1280,
+      1312
+    ],
+    "embeddings": "exact token ids and MRoPE layout; text lab substitutes deterministic image-token values after the real token embedding lookup",
+    "measured_boundary": "text transformer plus in-place prefill KV writes"
+  },
+  "setup": {
+    "total_s": 33.709999954968225,
+    "model_load_s": 14.4846370969899,
+    "weight_format_s": 4.4027206570026465,
+    "runtime_setup_s": 13.689192876976449,
+    "weight_format": {
+      "requested_mode": "decode_nz",
+      "mode": "decode_native_fallback",
+      "effective_mode": "decode_native_fallback",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "target_count": 127,
+      "cast_count": 1,
+      "converted_count": 0,
+      "already_nz_count": 0,
+      "converted_modules_sample": [],
+      "before_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "after_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "all_after_are_nz": false,
+      "fallback_reason": "npu_format_cast_did_not_produce_fractal_nz",
+      "failures_sample": [
+        {
+          "module": "model.layers.0.self_attn.q_proj",
+          "before_format": 2,
+          "after_format": 2,
+          "error": "npu_format_cast_did_not_produce_fractal_nz"
+        }
+      ]
+    },
+    "runtime_metadata": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "text_transformer_plus_in_place_prefill_kv_writes",
+      "buckets": [
+        32,
+        64,
+        96,
+        128,
+        160,
+        176,
+        192,
+        208,
+        224,
+        256,
+        320,
+        384,
+        448,
+        576,
+        640,
+        768,
+        896,
+        1024,
+        1152,
+        1280,
+        1312
+      ],
+      "requested_padding": "auto",
+      "padding": "bucket",
+      "overflow": "eager_same_stage_unpadded",
+      "compile_api": "torchair.inference.cache_compile",
+      "dynamic": false,
+      "fullgraph": true,
+      "torchair_ge_cache": true,
+      "compile_wrapper_total_s": 0.0015214468003250659,
+      "compile_first_call_total_s": 13.573920564900618,
+      "per_bucket": {
+        "32": {
+          "compile_wrapper_s": 8.829199941828847e-05,
+          "compile_first_call_s": 0.6583508090116084,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq32_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "64": {
+          "compile_wrapper_s": 7.853202987462282e-05,
+          "compile_first_call_s": 0.646306254027877,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq64_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "96": {
+          "compile_wrapper_s": 7.250095950439572e-05,
+          "compile_first_call_s": 0.6469703660113737,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq96_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "128": {
+          "compile_wrapper_s": 6.698200013488531e-05,
+          "compile_first_call_s": 0.6419398600119166,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq128_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "160": {
+          "compile_wrapper_s": 9.407202014699578e-05,
+          "compile_first_call_s": 0.642713483015541,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq160_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "176": {
+          "compile_wrapper_s": 6.845098687335849e-05,
+          "compile_first_call_s": 0.6416744849993847,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq176_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "192": {
+          "compile_wrapper_s": 6.790098268538713e-05,
+          "compile_first_call_s": 0.6439122430165298,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq192_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "208": {
+          "compile_wrapper_s": 6.716098869219422e-05,
+          "compile_first_call_s": 0.6457714849966578,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq208_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "224": {
+          "compile_wrapper_s": 6.6551030613482e-05,
+          "compile_first_call_s": 0.647531104972586,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq224_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "256": {
+          "compile_wrapper_s": 7.14609632268548e-05,
+          "compile_first_call_s": 0.6408532209461555,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq256_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "320": {
+          "compile_wrapper_s": 7.028196705505252e-05,
+          "compile_first_call_s": 0.64408216701122,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq320_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "384": {
+          "compile_wrapper_s": 6.913096876814961e-05,
+          "compile_first_call_s": 0.6423875179607421,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq384_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "448": {
+          "compile_wrapper_s": 7.601099787279963e-05,
+          "compile_first_call_s": 0.652267244993709,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq448_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "576": {
+          "compile_wrapper_s": 8.874200284481049e-05,
+          "compile_first_call_s": 0.6487757160211913,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq576_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "640": {
+          "compile_wrapper_s": 6.739096716046333e-05,
+          "compile_first_call_s": 0.6401097989873961,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq640_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "768": {
+          "compile_wrapper_s": 6.822100840508938e-05,
+          "compile_first_call_s": 0.6414240319863893,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq768_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "896": {
+          "compile_wrapper_s": 6.790098268538713e-05,
+          "compile_first_call_s": 0.645842776983045,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq896_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "1024": {
+          "compile_wrapper_s": 6.733101326972246e-05,
+          "compile_first_call_s": 0.6470187159720808,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq1024_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "1152": {
+          "compile_wrapper_s": 6.777100497856736e-05,
+          "compile_first_call_s": 0.6451036339858547,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq1152_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "1280": {
+          "compile_wrapper_s": 6.873096572235227e-05,
+          "compile_first_call_s": 0.6514008010271937,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq1280_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        },
+        "1312": {
+          "compile_wrapper_s": 6.803096039220691e-05,
+          "compile_first_call_s": 0.6594848489621654,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq1312_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        }
+      },
+      "cache_key_fields": {
+        "cache_length": 8192,
+        "dtype": "torch.float16",
+        "linear_weight_format": "decode_native_fallback",
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "text_source_hash": "7eebe726a39b",
+        "attention": "manual_causal",
+        "softmax_dtype": "fp32",
+        "execution_mode": "inference"
+      }
+    }
+  },
+  "result": {
+    "mode": "packed",
+    "graph_setup": {
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_text_lab_packed/text_packed_block_causal_modeinference_bs1_seq1024_members32_cache1024_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src786fc6e4187d",
+      "cache_was_warm": true,
+      "new_graph_compiled": false,
+      "wrapper_s": 7.790100062265992e-05,
+      "first_call_s": 0.5873805129667744,
+      "pack_length": 1024,
+      "max_members": 32,
+      "attention": "block_diagonal_causal_manual",
+      "cache_boundary": "packed_scratch_cache_only"
+    },
+    "correctness": {
+      "members": 2,
+      "real_tokens": 1024,
+      "source_indices": [
+        3479,
+        27
+      ],
+      "hidden_max_abs": 0.1875,
+      "hidden_mean_abs": 0.013916059397161007,
+      "first_token_matches": 2,
+      "first_token_total": 2,
+      "first_token_parity": 1.0
+    },
+    "scopes": {
+      "production_group": {
+        "scope": "production_group",
+        "policy": "first_fit_decreasing",
+        "packs": 680,
+        "overflow_items": 65,
+        "total_transformer_calls": 745,
+        "baseline_transformer_calls": 3524,
+        "call_reduction_fraction": 0.7885925085130534,
+        "member_histogram": {
+          "1": 107,
+          "2": 126,
+          "3": 137,
+          "4": 64,
+          "5": 33,
+          "6": 25,
+          "7": 22,
+          "8": 28,
+          "9": 20,
+          "10": 15,
+          "11": 17,
+          "12": 19,
+          "13": 21,
+          "14": 11,
+          "15": 10,
+          "16": 12,
+          "17": 8,
+          "18": 5
+        },
+        "packed_real_tokens": 454677,
+        "packed_physical_tokens": 696320,
+        "pack_fill_fraction": 0.6529713350183823,
+        "packed_graph_s": 8.310936984062195,
+        "overflow_baseline_s": 1.106495101928711,
+        "projected_transformer_s": 9.417432085990907,
+        "baseline_transformer_s": 28.119797070503235,
+        "transformer_speedup": 2.9859304334494126,
+        "transformer_time_reduction_fraction": 0.665096015366715,
+        "effective_tok_per_s": 56675.95955313326,
+        "physical_tok_per_s": 82624.64681401805,
+        "packed_graph_latency_ms": {
+          "mean": 12.22196615303264,
+          "median": 12.224370002746582,
+          "p95": 12.244642353057861
+        },
+        "wall_s": 9.437127880984917,
+        "excludes": [
+          "packed scratch KV redistribution into independent decode caches",
+          "LM head and first-token argmax"
+        ]
+      },
+      "global": {
+        "scope": "global",
+        "policy": "first_fit_decreasing",
+        "packs": 449,
+        "overflow_items": 65,
+        "total_transformer_calls": 514,
+        "baseline_transformer_calls": 3524,
+        "call_reduction_fraction": 0.8541430192962542,
+        "member_histogram": {
+          "1": 8,
+          "2": 125,
+          "3": 38,
+          "4": 42,
+          "5": 30,
+          "6": 23,
+          "7": 21,
+          "8": 11,
+          "9": 6,
+          "10": 6,
+          "11": 6,
+          "12": 4,
+          "13": 7,
+          "14": 8,
+          "15": 12,
+          "16": 32,
+          "17": 17,
+          "18": 28,
+          "19": 20,
+          "20": 5
+        },
+        "packed_real_tokens": 454677,
+        "packed_physical_tokens": 459776,
+        "pack_fill_fraction": 0.988909816954343,
+        "packed_graph_s": 5.492420038223266,
+        "overflow_baseline_s": 1.106495101928711,
+        "projected_transformer_s": 6.598915140151977,
+        "baseline_transformer_s": 28.119797070503235,
+        "transformer_speedup": 4.261275751131363,
+        "transformer_time_reduction_fraction": 0.7653284935304876,
+        "effective_tok_per_s": 80883.29500592845,
+        "physical_tok_per_s": 82069.24751990785,
+        "packed_graph_latency_ms": {
+          "mean": 12.232561332345805,
+          "median": 12.231120109558105,
+          "p95": 12.254587936401366
+        },
+        "wall_s": 6.214653401984833,
+        "excludes": [
+          "packed scratch KV redistribution into independent decode caches",
+          "LM head and first-token argmax"
+        ]
+      }
+    },
+    "integration_status": "transformer experiment only; packed KV redistribution must be implemented and measured before production integration"
+  }
+}

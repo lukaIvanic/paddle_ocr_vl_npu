@@ -638,3 +638,17 @@ On 2026-10-07, isolated B1/1,274-position text forward on one 910B2 measured
 **77.560 ms eager / 62.328 ms compiled**, with bit-exact hidden states and all four
 captures passing text-only isolation checks. See the
 [text-only report and evidence](references/text_forward_20261007/README.md).
+
+## Rotary/layout/SwiGLU text-forward candidates
+
+The user-requested text-only lab also exposes opt-in `--variant` candidates:
+BSND layout, native RotaryMul, joint ApplyRotary before BNSD/BSND attention,
+native packed SwiGLU, and their combination. Norms, native projection weights,
+MRoPE factors and DeepStack semantics stay unchanged. These implementations
+require new NPU validation; the previously measured baseline remains the control.
+
+`run_text_variants.sh` runs separate eager/compiled captures on one selected
+card, with a repeated compiled baseline to check drift. The numerical gate
+remains atol=0.002/rtol=0.002; `--diagnostic-parity` retains rejected candidates
+for profiling while marking them ineligible for adoption. See the
+[protocol and current execution status](references/text_variants_20261007/README.md).

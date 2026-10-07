@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-07",
+  "source_commit": "6ac2bbb8",
+  "status": "awaiting_exclusive_910B2_slot",
+  "new_candidate_inference_validated": false,
+  "evidence": [
+    {
+      "path": "startup_evidence/text_variants_20261007_2962b55e.driver.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_2962b55e.driver.exit"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_2962b55e.driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_2962b55e.driver.log"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_6ac2bbb8.driver.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_6ac2bbb8.driver.exit"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_6ac2bbb8.driver.log",
+      "sha256": "876d6d349df2b6315626a52ea7937794f85d5d1f009a5917380411672ff4ade7",
+      "bytes": 30,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_6ac2bbb8.driver.log"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_6ac2bbb8_card3free.driver.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_6ac2bbb8_card3free.driver.exit"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_6ac2bbb8_card3free.driver.log",
+      "sha256": "876d6d349df2b6315626a52ea7937794f85d5d1f009a5917380411672ff4ade7",
+      "bytes": 30,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_6ac2bbb8_card3free.driver.log"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_a3cee939.driver.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_a3cee939.driver.exit"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_a3cee939.driver.log",
+      "sha256": "876d6d349df2b6315626a52ea7937794f85d5d1f009a5917380411672ff4ade7",
+      "bytes": 30,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_a3cee939.driver.log"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_a3cee939_available/baseline/raw_eager/command.txt",
+      "sha256": "0f2dba4e4aebaf3f88f7e659ac869ff06103bfc77b3e83d4afadaf0cf1e000a9",
+      "bytes": 767,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_a3cee939_available/baseline/raw_eager/command.txt"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_a3cee939_available/baseline/raw_eager/exit_code.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_a3cee939_available/baseline/raw_eager/exit_code.txt"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_a3cee939_available/baseline/raw_eager/output/result.json",
+      "sha256": "e988cbf378003bad6be4944100d5043534573f4bd2e25460c005c573b2ec4fcd",
+      "bytes": 3784,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_a3cee939_available/baseline/raw_eager/output/result.json"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_a3cee939_available/baseline/raw_eager/run.log",
+      "sha256": "31eb9df24edd9b9be6fcbdb7280964c6adb6e2a1aacb7989782f7d196c4624de",
+      "bytes": 1142,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_a3cee939_available/baseline/raw_eager/run.log"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_a3cee939_available.driver.exit",
+      "sha256": "9d9b18720961e9b4689fd763b85e7b6f36160ccd3a8a1c9ddc5103bb0f66c396",
+      "bytes": 4,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_a3cee939_available.driver.exit"
+    },
+    {
+      "path": "startup_evidence/text_variants_20261007_a3cee939_available.driver.log",
+      "sha256": "be4657f773d096e6ca1022310c8d28f6641f733296d2b88d6f548886dc1f4628",
+      "bytes": 3695,
+      "original_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_variants_20261007_a3cee939_available.driver.log"
+    }
+  ]
+}

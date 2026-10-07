@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "kind": "text_prefill_lab_result",
+  "configuration": {
+    "mode": "profile",
+    "corpus": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_lab/corpus_256p_minpixels_div4_5a37baf.json",
+    "corpus_sha256": "a088e1c552c193d2343a7c9340b4864bb1b752c5cec491f1d2e9ef938c48054a",
+    "model": "/workspace/models/PaddleOCR-VL-1.6",
+    "device": "npu:0",
+    "dtype": "torch.float16",
+    "backend": "torchair",
+    "padding": "auto",
+    "buckets": [
+      64
+    ],
+    "cache_length": 8192,
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair",
+    "allow_compile": false,
+    "include_output_head": false,
+    "embedding_policy": "real_token_embedding_plus_fixed_seed_synthetic_image_values",
+    "seed": 20260722
+  },
+  "corpus_contract": {
+    "ordering": "items are stored in request-source order; production_group_id preserves profile-guided prefill group membership and sequence",
+    "batch_size": 1,
+    "compiled_buckets": [
+      32,
+      64,
+      96,
+      128,
+      160,
+      176,
+      192,
+      208,
+      224,
+      256,
+      320,
+      384,
+      448,
+      576,
+      640,
+      768,
+      896,
+      1024,
+      1152,
+      1280,
+      1312
+    ],
+    "embeddings": "exact token ids and MRoPE layout; text lab substitutes deterministic image-token values after the real token embedding lookup",
+    "measured_boundary": "text transformer plus in-place prefill KV writes"
+  },
+  "setup": {
+    "total_s": 16.18360050197225,
+    "model_load_s": 9.919676771969534,
+    "weight_format_s": 4.492337500967551,
+    "runtime_setup_s": 0.6785859629744664,
+    "weight_format": {
+      "requested_mode": "decode_nz",
+      "mode": "decode_native_fallback",
+      "effective_mode": "decode_native_fallback",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "target_count": 127,
+      "cast_count": 1,
+      "converted_count": 0,
+      "already_nz_count": 0,
+      "converted_modules_sample": [],
+      "before_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "after_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "all_after_are_nz": false,
+      "fallback_reason": "npu_format_cast_did_not_produce_fractal_nz",
+      "failures_sample": [
+        {
+          "module": "model.layers.0.self_attn.q_proj",
+          "before_format": 2,
+          "after_format": 2,
+          "error": "npu_format_cast_did_not_produce_fractal_nz"
+        }
+      ]
+    },
+    "runtime_metadata": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "text_transformer_plus_in_place_prefill_kv_writes",
+      "buckets": [
+        64
+      ],
+      "requested_padding": "auto",
+      "padding": "bucket",
+      "overflow": "eager_same_stage_unpadded",
+      "compile_api": "torchair.inference.cache_compile",
+      "dynamic": false,
+      "fullgraph": true,
+      "torchair_ge_cache": true,
+      "compile_wrapper_total_s": 8.464197162538767e-05,
+      "compile_first_call_total_s": 0.6600197270163335,
+      "per_bucket": {
+        "64": {
+          "compile_wrapper_s": 8.464197162538767e-05,
+          "compile_first_call_s": 0.6600197270163335,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq64_cache8192_weightsdecode_native_fallback_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src7eebe726a39b"
+        }
+      },
+      "cache_key_fields": {
+        "cache_length": 8192,
+        "dtype": "torch.float16",
+        "linear_weight_format": "decode_native_fallback",
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "text_source_hash": "7eebe726a39b",
+        "attention": "manual_causal",
+        "softmax_dtype": "fp32",
+        "execution_mode": "inference"
+      }
+    }
+  },
+  "result": {
+    "mode": "profile",
+    "buckets": {
+      "64": {
+        "representative_request_id": "page_000003_block_000003",
+        "real_text_tokens": 64,
+        "physical_text_tokens": 64,
+        "padding_text_tokens": 0,
+        "warmup": 2,
+        "repeats": 5,
+        "latency_ms": {
+          "min": 6.903339862823486,
+          "median": 6.982480049133301,
+          "p95": 6.987652111053467,
+          "max": 6.988860130310059
+        },
+        "effective_tok_per_s": 9195.55558984212,
+        "physical_tok_per_s": 9195.55558984212,
+        "samples_s": [
+          0.006903339862823486,
+          0.006988860130310058,
+          0.006982480049133301,
+          0.006941919803619385,
+          0.0069828200340270995
+        ]
+      }
+    }
+  }
+}

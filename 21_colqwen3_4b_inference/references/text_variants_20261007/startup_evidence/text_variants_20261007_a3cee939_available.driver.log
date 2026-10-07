@@ -1,0 +1,63 @@
+Selected physical NPU 3 as logical npu:0
+Python: /usr/local/python3.12.13/bin/python3
+START baseline raw_eager
+FINISH baseline raw_eager exit=1
+WARM_FORWARD {"phase": "text_model_load_start", "execution": "raw_eager"}
+WARM_FORWARD {"phase": "text_finished", "status": "failed"}
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/profile_warm_text.py", line 218, in <module>
+    main()
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/profile_warm_text.py", line 208, in main
+    run(args, result)
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/profile_warm_text.py", line 81, in run
+    result['runner_source_sha256'] = sha256(__file__)
+                                     ^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/run_hf_baseline.py", line 44, in sha256
+    with path.open('rb') as stream:
+         ^^^^^^^^^
+AttributeError: 'str' object has no attribute 'open'
+[ERROR] 2026-10-07-11:56:02 (PID:76001, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception
+START baseline torchair
+FINISH baseline torchair exit=1
+WARM_FORWARD {"phase": "text_model_load_start", "execution": "torchair"}
+WARM_FORWARD {"phase": "text_finished", "status": "failed"}
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/profile_warm_text.py", line 218, in <module>
+    main()
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/profile_warm_text.py", line 208, in main
+    run(args, result)
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/profile_warm_text.py", line 81, in run
+    result['runner_source_sha256'] = sha256(__file__)
+                                     ^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/run_hf_baseline.py", line 44, in sha256
+    with path.open('rb') as stream:
+         ^^^^^^^^^
+AttributeError: 'str' object has no attribute 'open'
+[ERROR] 2026-10-07-11:56:24 (PID:76044, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception
+START bsnd raw_eager
+FINISH bsnd raw_eager exit=1
+WARM_FORWARD {"phase": "text_model_load_start", "execution": "raw_eager"}
+WARM_FORWARD {"phase": "text_finished", "status": "failed"}
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/profile_warm_text.py", line 218, in <module>
+    main()
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/profile_warm_text.py", line 208, in main
+    run(args, result)
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/profile_warm_text.py", line 81, in run
+    result['runner_source_sha256'] = sha256(__file__)
+                                     ^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/run_hf_baseline.py", line 44, in sha256
+    with path.open('rb') as stream:
+         ^^^^^^^^^
+AttributeError: 'str' object has no attribute 'open'
+[ERROR] 2026-10-07-11:56:43 (PID:76181, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception
+START bsnd torchair

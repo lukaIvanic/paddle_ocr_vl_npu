@@ -153,14 +153,14 @@ comparison for latency, not these diagnostic profiled wall times or trace gaps.
 
 ## Focused next investigations
 
-The text pointwise investigation should begin with the **145 RMSNorms**, then
-the **materialized projection splits/transposes** and **rotary half-split /
-negate / concat chain**. The current baseline preserves all text math and
-weights. Change one candidate at a time, validate the frozen-input text hidden
-states, measure warmed text forward outside profiler, and capture each execution
-lane separately to verify the actual emitted-kernel change. Keep matrix/attention
-costs visible so a small pointwise saving is not described as the dominant total
-text bottleneck.
+The next experiment targets native rotary, BNSD/BSND layout and packed native
+SwiGLU, separately and in combination. Norms remain unchanged in those variants.
+Trace each kernel change back to its source operation, validate against the same
+frozen hidden-state reference, and measure warmed text forward outside profiling.
+Separate eager/compiled captures show whether the intended change lowers as
+expected. A numerical rejection remains a rejection even when diagnostic timing
+is faster. The largest overall costs, matrix projections and attention, stay
+visible in every comparison.
 
 ## Evidence and reproduction
 

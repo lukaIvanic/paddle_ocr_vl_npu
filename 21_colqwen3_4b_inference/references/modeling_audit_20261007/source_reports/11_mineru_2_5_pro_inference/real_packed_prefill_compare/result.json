@@ -1,0 +1,161 @@
+{
+  "entry_count": 8,
+  "all_tokens_exact": true,
+  "max_kv_abs": 0.0625,
+  "max_kv_mean_abs": 0.0026261070743203163,
+  "max_kv_rel_l2": 0.001770728500559926,
+  "rows": [
+    {
+      "slot": 0,
+      "request_index": 0,
+      "sequence_length": 99,
+      "pixel_rows": 296,
+      "packed_token": 25548,
+      "independent_token": 25548,
+      "token_exact": true,
+      "cache_position_packed": 99,
+      "cache_position_independent": 99,
+      "rope_delta": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rel_l2": 0.0
+      },
+      "kv_max_abs": 0.0625,
+      "kv_mean_abs_max": 0.0020274678245186806,
+      "kv_rel_l2_max": 0.0010753599926829338
+    },
+    {
+      "slot": 1,
+      "request_index": 1,
+      "sequence_length": 95,
+      "pixel_rows": 280,
+      "packed_token": 16,
+      "independent_token": 16,
+      "token_exact": true,
+      "cache_position_packed": 95,
+      "cache_position_independent": 95,
+      "rope_delta": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rel_l2": 0.0
+      },
+      "kv_max_abs": 0.03125,
+      "kv_mean_abs_max": 0.001968205440789461,
+      "kv_rel_l2_max": 0.0012060335138812661
+    },
+    {
+      "slot": 2,
+      "request_index": 2,
+      "sequence_length": 91,
+      "pixel_rows": 264,
+      "packed_token": 9033,
+      "independent_token": 9033,
+      "token_exact": true,
+      "cache_position_packed": 91,
+      "cache_position_independent": 91,
+      "rope_delta": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rel_l2": 0.0
+      },
+      "kv_max_abs": 0.0625,
+      "kv_mean_abs_max": 0.001961603993549943,
+      "kv_rel_l2_max": 0.0012355217477306724
+    },
+    {
+      "slot": 3,
+      "request_index": 3,
+      "sequence_length": 101,
+      "pixel_rows": 304,
+      "packed_token": 59,
+      "independent_token": 59,
+      "token_exact": true,
+      "cache_position_packed": 101,
+      "cache_position_independent": 101,
+      "rope_delta": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rel_l2": 0.0
+      },
+      "kv_max_abs": 0.0625,
+      "kv_mean_abs_max": 0.002434703754261136,
+      "kv_rel_l2_max": 0.001770728500559926
+    },
+    {
+      "slot": 4,
+      "request_index": 4,
+      "sequence_length": 106,
+      "pixel_rows": 324,
+      "packed_token": 78045,
+      "independent_token": 78045,
+      "token_exact": true,
+      "cache_position_packed": 106,
+      "cache_position_independent": 106,
+      "rope_delta": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rel_l2": 0.0
+      },
+      "kv_max_abs": 0.0625,
+      "kv_mean_abs_max": 0.0026261070743203163,
+      "kv_rel_l2_max": 0.0016883505741134286
+    },
+    {
+      "slot": 5,
+      "request_index": 5,
+      "sequence_length": 225,
+      "pixel_rows": 800,
+      "packed_token": 4498,
+      "independent_token": 4498,
+      "token_exact": true,
+      "cache_position_packed": 225,
+      "cache_position_independent": 225,
+      "rope_delta": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rel_l2": 0.0
+      },
+      "kv_max_abs": 0.0625,
+      "kv_mean_abs_max": 0.0023504840210080147,
+      "kv_rel_l2_max": 0.001092098536901176
+    },
+    {
+      "slot": 6,
+      "request_index": 6,
+      "sequence_length": 145,
+      "pixel_rows": 480,
+      "packed_token": 2679,
+      "independent_token": 2679,
+      "token_exact": true,
+      "cache_position_packed": 145,
+      "cache_position_independent": 145,
+      "rope_delta": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rel_l2": 0.0
+      },
+      "kv_max_abs": 0.0625,
+      "kv_mean_abs_max": 0.002238417975604534,
+      "kv_rel_l2_max": 0.0011097309179604053
+    },
+    {
+      "slot": 7,
+      "request_index": 7,
+      "sequence_length": 345,
+      "pixel_rows": 1280,
+      "packed_token": 1654,
+      "independent_token": 1654,
+      "token_exact": true,
+      "cache_position_packed": 345,
+      "cache_position_independent": 345,
+      "rope_delta": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rel_l2": 0.0
+      },
+      "kv_max_abs": 0.0625,
+      "kv_mean_abs_max": 0.00248918030411005,
+      "kv_rel_l2_max": 0.001133466954343021
+    }
+  ]
+}
