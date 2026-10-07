@@ -20,16 +20,21 @@ class Weights(nn.Module):
                 dtype=dense_dtype if matrix else torch.float32).contiguous())
             self.names[name] = key
         self.dense_dtype = dense_dtype
+        self.keep_dense_outputs = False
 
     def get(self, name):
         return getattr(self, self.names[name])
 
     def linear(self, x, name):
-        y = F.linear(x.reshape(-1, x.shape[-1]).to(self.dense_dtype), self.get(name)).float()
+        y = F.linear(x.reshape(-1, x.shape[-1]).to(self.dense_dtype), self.get(name))
+        if not self.keep_dense_outputs:
+            y = y.float()
         return y.reshape(*x.shape[:-1], y.shape[-1])
 
     def rank(self, x, name):
-        y = (x.reshape(-1, x.shape[-1]).to(self.dense_dtype) @ self.get(name)).float()
+        y = x.reshape(-1, x.shape[-1]).to(self.dense_dtype) @ self.get(name)
+        if not self.keep_dense_outputs:
+            y = y.float()
         return y.reshape(*x.shape[:-1], y.shape[-1])
 
     def norm(self, x, name):
@@ -77,7 +82,8 @@ class Block(Weights):
             v = v + (first - v) * torch.sigmoid(self.get('att.v0') +
                 self.rank(self.rank(xv, 'att.v1'), 'att.v2'))
         def layout(y):
-            return y.reshape(B, T, H, 64).permute(0, 2, 1, 3).contiguous()
+            # Existing vector operator requires FP32 inputs/state.
+            return y.float().reshape(B, T, H, 64).permute(0, 2, 1, 3).contiguous()
         state = (torch.zeros((B, H, 64, 64), device=x.device, dtype=torch.float32)
                  if matrix is None else matrix.contiguous())
         inputs = None
