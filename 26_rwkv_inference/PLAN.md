@@ -349,12 +349,13 @@ min / 25–30 min** on one/two NPUs; alternate 11-task BM25+positives: **40–45
 20–25 min**, estimated from saved batch lengths, not a measured middle run.
 [`Results, failed gates, precision comparison and estimate scope`](../tmp/26_rwkv_inference/reranker_precision_shared_7ce99dc2/precision_comparison.json).
 
-**Largest accuracy run started**, source `9d712af2`, 2026-10-07: FP32/B4,
+**Largest accuracy verified**, source `9d712af2`, 2026-10-07: FP32/B4,
 exact-length raw eager, data parallel on idle 910B2 NPUs **1/2**, same accepted
-**11-task BM25+positives** protocol (**550 queries / 57,688 pairs**). Inputs
-match the completed middle run; short/long/tail B4 parity passes. Expected
-runtime **30–35 min**; results pending.
-[`Launch and initial progress`](../tmp/26_rwkv_inference/nanobeir_large_bm25_dp2_fp32_9d712af2/command.txt).
+**11-task BM25+positives** protocol (**550 queries / 57,688 pairs**). Mean
+NDCG@10 **71.61782** versus published **71.58** (**+0.03782 points**). All worker
+parity/evaluator checks pass; prepared inputs match the completed middle run.
+Measured scoring **29m38s**, complete run **31m27s**, including setup/checks.
+[`Final results and provenance`](../tmp/26_rwkv_inference/nanobeir_large_bm25_dp2_fp32_9d712af2/probe/result.json).
 
 **Middle accuracy verified**, source `acbedbc3`, 2026-10-07: FP32/B4,
 data parallel on idle 910B2 NPUs **1/2**, accepted **11-task BM25+positives**

@@ -1,0 +1,10 @@
+{
+  "done": 28867,
+  "total": 28867,
+  "elapsed_seconds": 1777.7220546300086,
+  "pairs_per_second": 16.238196474424676,
+  "forward_and_transfer_seconds": 1775.0920031602145,
+  "estimated_remaining_seconds": -2.286639760017762e-13,
+  "task": "NanoSciFactRetrieval",
+  "queries": 275
+}

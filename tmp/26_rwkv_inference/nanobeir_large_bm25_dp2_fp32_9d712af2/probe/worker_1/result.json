@@ -1,0 +1,118 @@
+{
+  "all_checks_passed": true,
+  "physical_npu": "2",
+  "dense_dtype": "fp32",
+  "state_dtype": "fp32",
+  "cases": [
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "a352061134daa2c47861b8c4216ee5482a93be1d",
+      "offset": 32,
+      "length": 349,
+      "backend": "raw_eager_exact_length",
+      "logits": [
+        -5.978794574737549,
+        -5.063931465148926,
+        -8.9673490524292,
+        -3.9530258178710938
+      ],
+      "reference_logits": [
+        -5.978794574737549,
+        -5.063931465148926,
+        -8.9673490524292,
+        -3.9530258178710938
+      ],
+      "batch_vs_single": {
+        "max_abs": 6.9141387939453125e-06,
+        "normalized_rmse": 8.659962418278155e-07,
+        "finite": true
+      },
+      "backend_vs_exact_eager": {
+        "max_abs": 0.0,
+        "normalized_rmse": 0.0,
+        "finite": true
+      }
+    },
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "a352061134daa2c47861b8c4216ee5482a93be1d",
+      "offset": 0,
+      "length": 1242,
+      "backend": "raw_eager_exact_length",
+      "logits": [
+        4.1169304847717285,
+        -5.517318248748779,
+        -1.4325973987579346,
+        -3.9010660648345947
+      ],
+      "reference_logits": [
+        4.1169304847717285,
+        -5.517318248748779,
+        -1.4325973987579346,
+        -3.9010660648345947
+      ],
+      "batch_vs_single": {
+        "max_abs": 8.58306884765625e-06,
+        "normalized_rmse": 1.3774371154795517e-06,
+        "finite": true
+      },
+      "backend_vs_exact_eager": {
+        "max_abs": 0.0,
+        "normalized_rmse": 0.0,
+        "finite": true
+      }
+    },
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "a352061134daa2c47861b8c4216ee5482a93be1d",
+      "offset": 100,
+      "length": 318,
+      "backend": "raw_eager_exact_length",
+      "logits": [
+        -5.065433502197266,
+        -8.558694839477539,
+        -8.558696746826172,
+        -8.558696746826172
+      ],
+      "reference_logits": [
+        -5.065433502197266,
+        -8.558694839477539,
+        -8.558696746826172,
+        -8.558696746826172
+      ],
+      "batch_vs_single": {
+        "max_abs": 5.7220458984375e-06,
+        "normalized_rmse": 5.45348427749559e-07,
+        "finite": true
+      },
+      "backend_vs_exact_eager": {
+        "max_abs": 0.0,
+        "normalized_rmse": 0.0,
+        "finite": true
+      }
+    }
+  ],
+  "device": "Ascend910B2",
+  "hbm_before": {
+    "free_bytes": 65091047424,
+    "total_bytes": 65452113920
+  },
+  "device_status": "NPU 0: busy HBM=21135/65536MB AICore=0% Health=OK\nNPU 1: free HBM=3408/65536MB AICore=0% Health=OK\nNPU 2: free HBM=3407/65536MB AICore=0% Health=OK\nNPU 3: busy HBM=3467/65536MB AICore=0% Health=OK\nNPU 4: busy HBM=56976/65536MB AICore=5% Health=OK\nNPU 5: busy HBM=56975/65536MB AICore=4% Health=OK\nNPU 6: busy HBM=56975/65536MB AICore=6% Health=OK\nNPU 7: busy HBM=57130/65536MB AICore=6% Health=OK\n",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "matmul_allow_hf32": false,
+  "size": "large",
+  "checkpoint_sha256": "be7245cc832b43ed0df4873d49c1a831cb9972d27de3f8cc4950588fc8b9392d",
+  "reranker_sha256": "4ab584f4da09bb6528a027a740b3752711e138188b5885ebd02581edc58cce8a",
+  "source_commit": "9d712af2bd734e231aa38a9511607a88d0e4c9a2",
+  "inference_backend": "raw_eager",
+  "setup_and_preflight_seconds": 56.626679839988356,
+  "scoring_wall_seconds": 1752.77764991,
+  "pairs": 28821,
+  "forward_and_transfer_seconds": 1749.8235221199575,
+  "total_seconds": 1809.4043853499898,
+  "peak_hbm_bytes": {
+    "allocated": 12119448064,
+    "reserved": 15936258048
+  }
+}
