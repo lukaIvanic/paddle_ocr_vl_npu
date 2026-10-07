@@ -1,0 +1,30 @@
+{
+  "done": 57287,
+  "total": 57688,
+  "worker_elapsed_seconds": 945.1023933200049,
+  "run_elapsed_seconds": 969.6195606300025,
+  "aggregate_pairs_per_second": 60.61459626481237,
+  "estimated_remaining_seconds": 11.13899148965795,
+  "workers": [
+    {
+      "done": 28562,
+      "total": 28863,
+      "elapsed_seconds": 877.5471328999993,
+      "pairs_per_second": 32.547539532847836,
+      "forward_and_transfer_seconds": 875.5173381395289,
+      "estimated_remaining_seconds": 11.13899148965795,
+      "task": "NanoSciFactRetrieval",
+      "queries": 272
+    },
+    {
+      "done": 28725,
+      "total": 28825,
+      "elapsed_seconds": 877.2422475000058,
+      "pairs_per_second": 32.7446609894376,
+      "forward_and_transfer_seconds": 874.6117513895588,
+      "estimated_remaining_seconds": 4.759786937815041,
+      "task": "NanoSciFactRetrieval",
+      "queries": 274
+    }
+  ]
+}

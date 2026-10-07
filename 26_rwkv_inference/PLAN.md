@@ -349,12 +349,14 @@ min / 25–30 min** on one/two NPUs; alternate 11-task BM25+positives: **40–45
 20–25 min**, estimated from saved batch lengths, not a measured middle run.
 [`Results, failed gates, precision comparison and estimate scope`](../tmp/26_rwkv_inference/reranker_precision_shared_7ce99dc2/precision_comparison.json).
 
-**Middle accuracy run started**, source `acbedbc3`, 2026-10-07: FP32/B4,
+**Middle accuracy verified**, source `acbedbc3`, 2026-10-07: FP32/B4,
 data parallel on idle 910B2 NPUs **1/2**, accepted **11-task BM25+positives**
-protocol, **550 queries / 57,688 pairs**. Prepared inputs match the accepted tiny
-run; worker short/long/tail parity passes. Pinned server checkout and private
-caches isolate this run from subsequent optimizations; results pending.
-[`Launch, input checks and initial progress`](../tmp/26_rwkv_inference/nanobeir_base_bm25_dp2_fp32_acbedbc3/command.txt).
+protocol, **550 queries / 57,688 pairs**. Mean NDCG@10 **68.79119** versus
+published **68.60** (**+0.19119 points**); NanoSCIDOCS **42.98462**. All worker
+parity and evaluator checks pass; prepared inputs match the accepted tiny run.
+Measured scoring **14m52s**, complete run **16m37s**, including setup/checks.
+This verifies our accepted protocol; exact paper protocol identity remains unresolved.
+[`Final results and provenance`](../tmp/26_rwkv_inference/nanobeir_base_bm25_dp2_fp32_acbedbc3/probe/result.json).
 
 **Current middle-pair profiles**, source `3ea75a78`, shared 910B2 NPU 7,
 B1/T257: clean FP32/FP16 forward **25.78/29.18 ms**; warm real-pair disk read,
