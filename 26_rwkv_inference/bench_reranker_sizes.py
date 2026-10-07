@@ -144,13 +144,13 @@ def worker(args):
 
 
 def free_device(args):
-    deadline=time.monotonic()+600
+    deadline=time.monotonic()+args.idle_wait_seconds
     while time.monotonic()<deadline:
         status=subprocess.check_output(['/usr/local/bin/npu-status'],text=True)
         for device in args.devices:
             if any(s.startswith(f'NPU {device}: free ') and 'Health=OK' in s for s in status.splitlines()):return device
-        print('WAITING_FOR_IDLE_NPU',flush=True);time.sleep(30)
-    raise RuntimeError('No idle NPU among allowed devices for ten minutes')
+        print('WAITING_FOR_IDLE_NPU',flush=True);time.sleep(60)
+    raise RuntimeError('No idle NPU within the configured wait period')
 
 
 def coordinate(args):
@@ -208,12 +208,13 @@ def main():
         p.add_argument('--'+n,type=Path,required=True)
     p.add_argument('--devices',nargs='+',type=int,default=[7,6,4])
     p.add_argument('--repeats',type=int,default=10)
+    p.add_argument('--idle-wait-seconds',type=int,default=21600)
     p.add_argument('--worker',action='store_true');p.add_argument('--gate-only',action='store_true')
     p.add_argument('--size',choices=list(SIZES),default='base')
     p.add_argument('--dtype',choices=['fp32','fp16'],default='fp32')
     p.add_argument('--bucket',type=int,choices=[512,2048],default=512)
     args=p.parse_args()
-    if not 3<=args.repeats<=100 or not set(args.devices).issubset({4,6,7}):p.error('Use 3..100 repeats and the authorized idle-device set 4/6/7')
+    if not 0<args.idle_wait_seconds<=86400 or not 3<=args.repeats<=100 or not set(args.devices).issubset({4,6,7}):p.error('Use 3..100 repeats and the authorized idle-device set 4/6/7')
     worker(args) if args.worker else coordinate(args)
 
 
