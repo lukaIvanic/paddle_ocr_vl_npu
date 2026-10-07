@@ -325,6 +325,16 @@ and sklearn tie-averaged NDCG; independent metrics and B4/tail parity pass.
 This tests the alternate evaluator defaults, not a confirmed paper protocol.
 [`Task comparison, scores, input hashes and sources`](../tmp/26_rwkv_inference/nanobeir_reranker_bm25_positives_dp2_fp32_5f2bc78b_retry1/protocol_comparison.json).
 
+
+**Middle-pair speed smoke**, source `ec325479`, 2026-10-07, shared 910B2 NPU 7:
+0.4B backbone + released 317M reranker, FP32, B4, uncached prepared inputs.
+Eager/TorchAir medians: **156.28/104.66 ms at T512**, **327.87/355.88 ms at
+T2048** (compiled **38.22/11.24 pairs/s**). CPU numerical smoke, right-padding/B1
+and compiled parity pass; compiled states/logits equal eager. Peak reserved HBM
+**4.53 GiB**; cold compilation **180.40/134.98 s**, excluded from speed.
+These are shared-device timings, not quality results or isolated throughput.
+[`Commands, checks and timings`](../tmp/26_rwkv_inference/reranker_middle_shared_ec325479/).
+
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,
 followed by casts/normalization. These profiles precede the validated B4 benchmark path above.
