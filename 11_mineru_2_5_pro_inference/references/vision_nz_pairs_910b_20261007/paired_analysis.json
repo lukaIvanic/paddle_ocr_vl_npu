@@ -1,0 +1,3279 @@
+{
+  "scope": "Complete 32-block vision on the same two original real-crop captures, not page throughput",
+  "pairs": [
+    {
+      "name": "PromptFA D80 compiled",
+      "route": "crop_0_bucket_768",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 720,
+      "nd_wall_samples_ms": [
+        18.348619996686466,
+        17.627420005737804,
+        17.613939999137074,
+        17.549279989907518,
+        17.483999996329658,
+        17.576860002009198,
+        17.708630010019988,
+        17.639199999393895,
+        17.57462001114618,
+        17.55812000192236,
+        17.554709993419237,
+        17.526850002468564,
+        17.4867500027176,
+        17.413559995475225,
+        17.406159997335635,
+        17.36587000777945,
+        17.535250008222647,
+        17.4417100060964,
+        17.466749995946884,
+        17.428690000087954,
+        17.534779995912686,
+        17.6386300008744,
+        17.445630001020618,
+        17.431090003810823,
+        17.404210011591204,
+        17.396480005118065,
+        17.40679999056738,
+        17.418639996321872,
+        17.428530001780018,
+        17.385580009431578
+      ],
+      "nz_wall_samples_ms": [
+        19.31660000991542,
+        18.72226998966653,
+        18.694589991355315,
+        18.70946999406442,
+        18.728929993812926,
+        18.70303000032436,
+        18.717180006206036,
+        18.70341999165248,
+        18.71627000218723,
+        18.686709998291917,
+        18.708599993260577,
+        18.722280001384206,
+        18.710570002440363,
+        18.69009000074584,
+        18.72649999859277,
+        18.70057001360692,
+        18.688809999730438,
+        18.717009996180423,
+        18.73063998937141,
+        18.664770002942532,
+        18.672530000912957,
+        18.694450001930818,
+        18.659180001122877,
+        18.70436999888625,
+        18.694300000788644,
+        18.70408000831958,
+        18.786920001730323,
+        18.707580005866475,
+        18.72438999998849,
+        18.71774000755977
+      ],
+      "nd_wall_ms": 17.526578667942278,
+      "nz_wall_ms": 18.727461666761275,
+      "nd_event_ms": 17.280423418680826,
+      "nz_event_ms": 18.566280047098797,
+      "nd_tok_s": 41080.46491223904,
+      "nz_tok_s": 38446.21405782414,
+      "nz_vs_capture_l2": 0.007526037748903036,
+      "nd_vs_capture_l2": 0.0,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 384
+          }
+        },
+        "every_matmul_reports_nz_input": true,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": null,
+      "nz_format_scope": "all_matmul_inputs_nz",
+      "nz_wall_change_percent": 6.851782207873369,
+      "small_eager_comparison_caution": false
+    },
+    {
+      "name": "PromptFA D80 compiled",
+      "route": "crop_1_bucket_3072",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 3036,
+      "nd_wall_samples_ms": [
+        51.098430005367845,
+        49.979160001385026,
+        49.96910000045318,
+        49.88572000002023,
+        49.89720000594389,
+        49.73774999962188,
+        49.80327999510337,
+        49.77338000026066,
+        49.91700999380555,
+        49.82451999967452,
+        49.74420000507962,
+        49.83463000098709,
+        49.756640000850894,
+        49.649120002868585,
+        49.64106000261381,
+        49.60101000324357,
+        49.62329000409227,
+        49.52438999316655,
+        49.562419997528195,
+        50.331409991486,
+        50.58117999578826,
+        53.0124600045383,
+        49.72845000156667,
+        50.015970002277754,
+        49.59829000290483,
+        49.92628999752924,
+        49.701349998940714,
+        50.324840005487204,
+        49.66086000786163,
+        49.81430000043474
+      ],
+      "nz_wall_samples_ms": [
+        51.098399999318644,
+        50.484120001783594,
+        50.508629996329546,
+        50.460219994420186,
+        50.436949997674674,
+        50.407770002493635,
+        50.4455899936147,
+        50.442550011212006,
+        50.460040001780726,
+        50.5517499987036,
+        50.459459991543554,
+        50.436560006346554,
+        50.40947000088636,
+        50.47121999086812,
+        50.747069995850325,
+        50.42743000376504,
+        50.45684000651818,
+        50.48089999763761,
+        50.42997999407817,
+        50.43126999225933,
+        50.41525000706315,
+        50.461380000342615,
+        50.4555499937851,
+        50.41866000101436,
+        50.460009995731525,
+        50.592630010214634,
+        50.42897000384983,
+        50.43297000520397,
+        50.451269999030046,
+        50.43520999606699
+      ],
+      "nd_wall_ms": 49.98392366736274,
+      "nz_wall_ms": 50.48660399964623,
+      "nd_event_ms": 49.72844467163086,
+      "nz_event_ms": 50.30328178405762,
+      "nd_tok_s": 60739.52937757009,
+      "nz_tok_s": 60134.763669611726,
+      "nz_vs_capture_l2": 0.012792134657502174,
+      "nd_vs_capture_l2": 0.0,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 384
+          }
+        },
+        "every_matmul_reports_nz_input": true,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": null,
+      "nz_format_scope": "all_matmul_inputs_nz",
+      "nz_wall_change_percent": 1.0056840187832483,
+      "small_eager_comparison_caution": false
+    },
+    {
+      "name": "PromptFA D128 compiled",
+      "route": "crop_0_bucket_768",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 720,
+      "nd_wall_samples_ms": [
+        19.93590001075063,
+        19.190770006389357,
+        19.19718000863213,
+        19.185600001947023,
+        19.166850004694425,
+        19.176410001819022,
+        19.215530002838932,
+        19.191040002624504,
+        19.131239998387173,
+        19.157889997586608,
+        19.155229994794354,
+        19.147309998515993,
+        19.159529998432845,
+        19.14571999805048,
+        19.14998999563977,
+        19.15380998980254,
+        19.173960012267344,
+        19.423409990849905,
+        19.21845000470057,
+        19.248080003308132,
+        19.200579990865663,
+        19.224520001444034,
+        19.17942000727635,
+        19.228750010370277,
+        19.233740007621236,
+        19.193150001228787,
+        19.213020001188852,
+        19.235119994846173,
+        19.195119995856658,
+        19.217759996536188
+      ],
+      "nz_wall_samples_ms": [
+        20.562589998007752,
+        19.93856999615673,
+        19.857270002830774,
+        19.863950001308694,
+        19.835159997455776,
+        19.851549994200468,
+        19.815629988443106,
+        19.86320001014974,
+        19.799859990598634,
+        19.845239992719144,
+        19.845910006552003,
+        19.861849999870174,
+        19.793899991782382,
+        19.878370003425516,
+        19.797950008069165,
+        19.921429993701167,
+        19.87340000050608,
+        19.876649996149354,
+        19.830910008749925,
+        19.932369992602617,
+        19.814710001810454,
+        19.8771800060058,
+        19.832770005450584,
+        19.89128001150675,
+        19.830780001939274,
+        19.85072999377735,
+        19.79288000438828,
+        19.866749993525445,
+        19.797240005573258,
+        19.81779999914579
+      ],
+      "nd_wall_ms": 19.2215026676422,
+      "nz_wall_ms": 19.873929333213407,
+      "nd_event_ms": 19.0664187113444,
+      "nz_event_ms": 19.706317901611328,
+      "nd_tok_s": 37458.04958381636,
+      "nz_tok_s": 36228.3667174328,
+      "nz_vs_capture_l2": 0.007526037748903036,
+      "nd_vs_capture_l2": 0.0,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 384
+          }
+        },
+        "every_matmul_reports_nz_input": true,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": null,
+      "nz_format_scope": "all_matmul_inputs_nz",
+      "nz_wall_change_percent": 3.3942542206625514,
+      "small_eager_comparison_caution": false
+    },
+    {
+      "name": "PromptFA D128 compiled",
+      "route": "crop_1_bucket_3072",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 3036,
+      "nd_wall_samples_ms": [
+        53.79648000234738,
+        53.068670007633045,
+        53.00431000068784,
+        53.038169993669726,
+        53.040649989270605,
+        52.96873999759555,
+        53.05211000086274,
+        53.00166999222711,
+        53.004999994300306,
+        52.9905500006862,
+        53.046519999043085,
+        53.347459994256496,
+        53.06506001215894,
+        53.03379999531899,
+        53.04096000327263,
+        53.08286999934353,
+        53.03143999481108,
+        53.087689986568876,
+        53.01929000415839,
+        53.04532000445761,
+        53.05468000005931,
+        53.04496000462677,
+        53.049649999593385,
+        53.070409994688816,
+        53.03368000022601,
+        53.01766999764368,
+        53.0339700053446,
+        53.06004000885878,
+        53.052969989948906,
+        53.0184899980668
+      ],
+      "nz_wall_samples_ms": [
+        53.80013999820221,
+        53.14312998962123,
+        53.15085999609437,
+        53.112039997358806,
+        53.15155000425875,
+        53.10870999528561,
+        53.12247999245301,
+        53.1080299988389,
+        53.13785999896936,
+        53.122400000575,
+        53.1251900101779,
+        53.10889000247698,
+        53.14402999647427,
+        53.11130000336561,
+        53.091590001713485,
+        53.17528000159655,
+        53.125379999983124,
+        53.15556000277866,
+        53.106799998204224,
+        53.12012000649702,
+        53.13276000379119,
+        53.106569990632124,
+        53.14800000633113,
+        53.11198999697808,
+        53.15423000138253,
+        53.191440005321056,
+        53.09072000090964,
+        53.147819999139756,
+        53.158859998802654,
+        53.13314999511931
+      ],
+      "nd_wall_ms": 53.07344266572424,
+      "nz_wall_ms": 53.153229333111085,
+      "nd_event_ms": 52.90612920125326,
+      "nz_event_ms": 52.986620076497395,
+      "nd_tok_s": 57203.751019541494,
+      "nz_tok_s": 57117.88423942033,
+      "nz_vs_capture_l2": 0.012792134657502174,
+      "nd_vs_capture_l2": 0.0,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 384
+          }
+        },
+        "every_matmul_reports_nz_input": true,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": null,
+      "nz_format_scope": "all_matmul_inputs_nz",
+      "nz_wall_change_percent": 0.15033256442280596,
+      "small_eager_comparison_caution": false
+    },
+    {
+      "name": "Grouped QKV compiled",
+      "route": "crop_0_bucket_768",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 720,
+      "nd_wall_samples_ms": [
+        18.534830000135116,
+        17.828010008088313,
+        17.769049998605624,
+        17.768050005543046,
+        17.79680998879485,
+        17.783989998861216,
+        17.782859998987988,
+        17.81393999408465,
+        17.785350006306544,
+        17.78840000042692,
+        17.78407000529114,
+        17.81552999455016,
+        17.750049999449402,
+        17.761690003680997,
+        17.744990007486194,
+        17.760210001142696,
+        17.763650001143105,
+        17.748650003341027,
+        17.769800004316494,
+        17.75155999348499,
+        17.775419997633435,
+        17.75818000896834,
+        17.76538000558503,
+        17.776969994883984,
+        17.747279998729937,
+        17.77612000296358,
+        17.759060006937943,
+        17.7535499969963,
+        17.734470005962066,
+        17.838909989222884
+      ],
+      "nz_wall_samples_ms": [
+        19.554119993699715,
+        18.94017998711206,
+        18.918859990662895,
+        18.90248000563588,
+        18.9335099857999,
+        18.884290009737015,
+        18.898609996540472,
+        18.892270003561862,
+        18.914589993073605,
+        18.914240004960448,
+        18.924119998700917,
+        18.91415000136476,
+        18.88177999353502,
+        18.897190006100573,
+        18.872569999075495,
+        18.90465000178665,
+        18.90062000893522,
+        19.067310000536963,
+        18.927170007373206,
+        18.925780008430593,
+        18.914779997430742,
+        18.9074499940034,
+        18.89859999937471,
+        18.901949995779432,
+        18.912550003733486,
+        18.89299000322353,
+        18.87695000914391,
+        18.908790007117204,
+        18.90379999531433,
+        18.897799993283115
+      ],
+      "nd_wall_ms": 17.799561000720132,
+      "nz_wall_ms": 18.932804999834236,
+      "nd_event_ms": 17.64329662322998,
+      "nz_event_ms": 18.78994140625,
+      "nd_tok_s": 40450.43582652799,
+      "nz_tok_s": 38029.23021740856,
+      "nz_vs_capture_l2": 0.007526037748903036,
+      "nd_vs_capture_l2": 0.007828631438314915,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "GroupedMatmul": {
+            "ND;ND;ND;ND;ND;ND;ND;ND": 96
+          },
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 288
+          }
+        },
+        "every_matmul_reports_nz_input": false,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": [
+        {
+          "layer": 0,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 1,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 2,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 3,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 4,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 5,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 6,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 7,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 8,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 9,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 10,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 11,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 12,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 13,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 14,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 15,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 16,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 17,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 18,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 19,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 20,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 21,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 22,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 23,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 24,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 25,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 26,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 27,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 28,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 29,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 30,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 31,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        }
+      ],
+      "nz_format_scope": "mixed_inputs_despite_nz_parameters",
+      "nz_wall_change_percent": 6.366696341939315,
+      "small_eager_comparison_caution": false
+    },
+    {
+      "name": "Grouped QKV compiled",
+      "route": "crop_1_bucket_3072",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 3036,
+      "nd_wall_samples_ms": [
+        50.94508999900427,
+        50.20362000504974,
+        50.16248000902124,
+        50.19450999679975,
+        50.14441999082919,
+        50.1595300011104,
+        50.110180003684945,
+        50.182980005047284,
+        50.125860012485646,
+        50.13965000398457,
+        50.14567999751307,
+        50.137579994043335,
+        50.11825000110548,
+        50.158049998572096,
+        50.16150999290403,
+        50.141040002927184,
+        50.16575001354795,
+        50.117549995775335,
+        50.14093998761382,
+        50.11979999835603,
+        50.112459997762926,
+        50.176899996586144,
+        50.11120000563096,
+        50.15513999387622,
+        50.11355000897311,
+        50.14439999649767,
+        50.1332400017418,
+        50.151180010288954,
+        50.124590008636005,
+        50.15091999666765
+      ],
+      "nz_wall_samples_ms": [
+        52.63373001071159,
+        51.99308998999186,
+        51.94834999565501,
+        51.95295000157785,
+        51.93642000085674,
+        51.98048999591265,
+        51.930349989561364,
+        51.96514999261126,
+        51.91064000246115,
+        51.95087999163661,
+        51.95767999975942,
+        51.95603000174742,
+        51.943729995400645,
+        51.942379999672994,
+        51.92220000026282,
+        51.92861000250559,
+        51.90733000927139,
+        51.94320000009611,
+        51.90427000343334,
+        51.93303000123706,
+        51.936739997472614,
+        51.99802000424825,
+        51.96045999764465,
+        51.94653999933507,
+        51.93914000119548,
+        51.93119999603368,
+        51.96834998787381,
+        51.96034999971744,
+        51.93344999861438,
+        51.969399995869026
+      ],
+      "nd_wall_ms": 50.17160166753456,
+      "nz_wall_ms": 51.969471998745576,
+      "nd_event_ms": 50.010810470581056,
+      "nz_event_ms": 51.81110013326009,
+      "nd_tok_s": 60512.319700659646,
+      "nz_tok_s": 58418.91178100255,
+      "nz_vs_capture_l2": 0.012792134657502174,
+      "nd_vs_capture_l2": 0.0,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "GroupedMatmul": {
+            "ND;ND;ND;ND;ND;ND;ND;ND": 96
+          },
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 288
+          }
+        },
+        "every_matmul_reports_nz_input": false,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": [
+        {
+          "layer": 0,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 1,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 2,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 3,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 4,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 5,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 6,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 7,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 8,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 9,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 10,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 11,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 12,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 13,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 14,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 15,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 16,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 17,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 18,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 19,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 20,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 21,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 22,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 23,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 24,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 25,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 26,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 27,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 28,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 29,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 30,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 31,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        }
+      ],
+      "nz_format_scope": "mixed_inputs_despite_nz_parameters",
+      "nz_wall_change_percent": 3.5834421693864194,
+      "small_eager_comparison_caution": false
+    },
+    {
+      "name": "Grouped QKV+FC1 compiled",
+      "route": "crop_0_bucket_768",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 720,
+      "nd_wall_samples_ms": [
+        19.62509998702444,
+        18.963579990668222,
+        18.931829996290617,
+        18.98561000416521,
+        18.946729993331246,
+        18.938010005513206,
+        18.932829989353195,
+        18.9667200029362,
+        18.918479996500537,
+        18.966889998409897,
+        18.94064000225626,
+        18.89935000508558,
+        18.929899990325794,
+        18.943269998999313,
+        18.931990009150468,
+        18.918559988378547,
+        18.92570999916643,
+        18.93424999434501,
+        18.940070003736764,
+        19.020599997020327,
+        18.932029997813515,
+        18.931919999886304,
+        18.941240006824955,
+        18.953909995616414,
+        18.89917001244612,
+        18.937469998490997,
+        18.906639990746044,
+        18.93032000225503,
+        18.908240002929233,
+        18.93197999743279
+      ],
+      "nz_wall_samples_ms": [
+        21.372750008595176,
+        20.736010003020056,
+        20.705539995105937,
+        20.71404000162147,
+        20.73551999637857,
+        20.707930001663044,
+        20.70351000293158,
+        20.722970002680086,
+        20.71683999383822,
+        20.691390003776178,
+        20.678009997936897,
+        20.6808000075398,
+        20.68786000018008,
+        20.724620000692084,
+        20.720960004837252,
+        20.69264999590814,
+        20.698450010968372,
+        20.68882000457961,
+        20.690970006398857,
+        20.721100008813664,
+        20.665490010287613,
+        20.726319999084808,
+        20.693069993285462,
+        20.686860007117502,
+        20.67281999916304,
+        20.69367999501992,
+        20.691860001534224,
+        20.680989997345023,
+        20.69805999053642,
+        20.70509000623133
+      ],
+      "nd_wall_ms": 18.96110133190329,
+      "nz_wall_ms": 20.723499334902346,
+      "nd_event_ms": 18.813622411092123,
+      "nz_event_ms": 20.579785283406576,
+      "nd_tok_s": 37972.47783221078,
+      "nz_tok_s": 34743.16708604236,
+      "nz_vs_capture_l2": 0.007526037748903036,
+      "nd_vs_capture_l2": 0.009427833370864391,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "GroupedMatmul": {
+            "ND;ND;ND;ND;ND;ND;ND;ND": 192
+          },
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 192
+          }
+        },
+        "every_matmul_reports_nz_input": false,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": [
+        {
+          "layer": 0,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 0,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 1,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 1,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 2,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 2,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 3,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 3,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 4,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 4,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 5,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 5,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 6,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 6,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 7,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 7,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 8,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 8,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 9,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 9,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 10,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 10,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 11,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 11,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 12,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 12,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 13,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 13,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 14,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 14,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 15,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 15,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 16,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 16,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 17,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 17,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 18,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 18,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 19,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 19,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 20,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 20,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 21,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 21,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 22,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 22,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 23,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 23,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 24,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 24,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 25,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 25,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 26,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 26,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 27,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 27,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 28,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 28,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 29,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 29,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 30,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 30,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 31,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 31,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        }
+      ],
+      "nz_format_scope": "mixed_inputs_despite_nz_parameters",
+      "nz_wall_change_percent": 9.294808208390858,
+      "small_eager_comparison_caution": false
+    },
+    {
+      "name": "Grouped QKV+FC1 compiled",
+      "route": "crop_1_bucket_3072",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 3036,
+      "nd_wall_samples_ms": [
+        51.814860009471886,
+        51.00951000349596,
+        50.93297999701463,
+        50.958199994056486,
+        51.03528000472579,
+        50.97582000598777,
+        50.95386999892071,
+        50.98892000387423,
+        50.92773000069428,
+        50.97154001123272,
+        50.960599997779354,
+        50.95823000010569,
+        51.08427999948617,
+        50.957649989868514,
+        51.47542999475263,
+        51.142729993443936,
+        51.21491999307182,
+        51.0835900058737,
+        51.082649995805696,
+        51.367250009207055,
+        51.054569994448684,
+        51.058480006759055,
+        51.055089992587455,
+        51.05758999707177,
+        51.069919994915836,
+        51.057340009720065,
+        51.05311000079382,
+        51.0453199967742,
+        51.012769996304996,
+        51.01522999757435
+      ],
+      "nz_wall_samples_ms": [
+        53.83461999008432,
+        52.98128000868019,
+        52.9701199993724,
+        52.95230999763589,
+        52.9498599935323,
+        52.934280000044964,
+        52.97092998807784,
+        52.94012000376824,
+        52.960879998863675,
+        52.974900012486614,
+        52.956840008846484,
+        52.93173000973184,
+        53.109650005353615,
+        52.98766998748761,
+        52.96866000571754,
+        52.924139992683195,
+        52.979040003265254,
+        53.02841999218799,
+        52.9657099978067,
+        52.93499000254087,
+        52.98226000741124,
+        52.97917999268975,
+        52.9744999948889,
+        53.119949996471405,
+        52.96421000093687,
+        53.01882000640035,
+        53.275010010111146,
+        52.96417999488767,
+        52.996839993284084,
+        53.04220999823883
+      ],
+      "nd_wall_ms": 51.079181999860644,
+      "nz_wall_ms": 53.01911033311626,
+      "nd_event_ms": 50.878644180297854,
+      "nz_event_ms": 52.8437609354655,
+      "nd_tok_s": 59437.13037550764,
+      "nz_tok_s": 57262.371641564205,
+      "nz_vs_capture_l2": 0.012792134657502174,
+      "nd_vs_capture_l2": 0.0,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "GroupedMatmul": {
+            "ND;ND;ND;ND;ND;ND;ND;ND": 192
+          },
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 192
+          }
+        },
+        "every_matmul_reports_nz_input": false,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": [
+        {
+          "layer": 0,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 0,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 1,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 1,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 2,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 2,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 3,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 3,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 4,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 4,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 5,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 5,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 6,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 6,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 7,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 7,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 8,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 8,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 9,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 9,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 10,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 10,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 11,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 11,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 12,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 12,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 13,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 13,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 14,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 14,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 15,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 15,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 16,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 16,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 17,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 17,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 18,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 18,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 19,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 19,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 20,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 20,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 21,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 21,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 22,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 22,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 23,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 23,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 24,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 24,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 25,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 25,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 26,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 26,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 27,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 27,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 28,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 28,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 29,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 29,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 30,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 30,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        },
+        {
+          "layer": 31,
+          "projection": "qkv",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            3840
+          ]
+        },
+        {
+          "layer": 31,
+          "projection": "fc1",
+          "parameter_format": 29,
+          "operator_input_format": 2,
+          "operator_input_shape": [
+            1,
+            1280,
+            5120
+          ]
+        }
+      ],
+      "nz_format_scope": "mixed_inputs_despite_nz_parameters",
+      "nz_wall_change_percent": 3.7978844948239443,
+      "small_eager_comparison_caution": false
+    },
+    {
+      "name": "PromptFA D80 eager",
+      "route": "crop_0_bucket_768",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 720,
+      "nd_wall_samples_ms": [
+        56.72751000383869,
+        56.377169996267185,
+        55.952570008230396,
+        56.182760003139265,
+        56.08241001027636,
+        56.19841998850461,
+        56.130500001017936,
+        56.17567998706363,
+        56.18016999505926,
+        56.264419996296056,
+        56.33320999913849,
+        56.20189000910614,
+        56.254579991218634,
+        56.33512001077179,
+        56.21065000013914,
+        56.484410000848584,
+        56.35393998818472,
+        56.23608999303542,
+        56.68813000374939,
+        57.14339000405744,
+        57.25953000364825,
+        57.17592999280896,
+        57.30388998927083,
+        57.2792299935827,
+        57.22312000580132,
+        57.17954000283498,
+        57.706660008989275,
+        57.022060005692765,
+        57.184019999112934,
+        57.85553000168875
+      ],
+      "nz_wall_samples_ms": [
+        56.39726000663359,
+        55.38166999758687,
+        55.36189999838825,
+        55.3402899968205,
+        55.52352999802679,
+        55.37257999822032,
+        55.273500009207055,
+        55.239769993931986,
+        55.22936998750083,
+        55.345460001262836,
+        55.31770999368746,
+        55.23602999164723,
+        55.30087000806816,
+        55.21313000645023,
+        55.27540000912268,
+        55.23190999520011,
+        55.25033999583684,
+        55.538109998451546,
+        55.248980002943426,
+        55.48971000825986,
+        55.24985000374727,
+        55.18885000492446,
+        55.17226998927072,
+        55.21663998661097,
+        55.24259000958409,
+        55.29181000019889,
+        55.26096999528818,
+        55.255680010304786,
+        55.352990006213076,
+        55.2610199956689
+      ],
+      "nd_wall_ms": 56.65675099977913,
+      "nz_wall_ms": 55.335339666635264,
+      "nd_event_ms": 56.50063985188802,
+      "nz_event_ms": 55.174355824788414,
+      "nd_tok_s": 12708.10604728829,
+      "nz_tok_s": 13011.57640555928,
+      "nz_vs_capture_l2": 0.0,
+      "nd_vs_capture_l2": 0.0,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 384
+          }
+        },
+        "every_matmul_reports_nz_input": true,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": null,
+      "nz_format_scope": "all_matmul_inputs_nz",
+      "nz_wall_change_percent": -2.3323104657890004,
+      "small_eager_comparison_caution": true
+    },
+    {
+      "name": "PromptFA D80 eager",
+      "route": "crop_1_bucket_3072",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 3036,
+      "nd_wall_samples_ms": [
+        59.42854999739211,
+        58.823300001677126,
+        58.81444999249652,
+        58.87617000553291,
+        58.80646000150591,
+        58.840500001679175,
+        58.76987001101952,
+        58.86329000350088,
+        58.742319990415126,
+        58.77844999486115,
+        58.86457998713013,
+        58.83515000459738,
+        58.81272000260651,
+        58.85406999732368,
+        58.78985999152064,
+        58.831110000028275,
+        58.78007000137586,
+        58.763089997228235,
+        58.77593999321107,
+        58.76311998872552,
+        58.824230000027455,
+        58.78579001000617,
+        58.86990000726655,
+        58.81660000886768,
+        58.80388000514358,
+        58.790050010429695,
+        58.86465001094621,
+        58.82351999753155,
+        58.78348999249283,
+        58.77634999342263
+      ],
+      "nz_wall_samples_ms": [
+        60.69288001162931,
+        59.91141000413336,
+        59.79508999735117,
+        59.76047999865841,
+        59.8118699999759,
+        59.6796500030905,
+        59.83741999079939,
+        59.73649999941699,
+        59.63450999115594,
+        59.57777998992242,
+        59.756980001111515,
+        59.78926000534557,
+        59.92997999419458,
+        59.84481998893898,
+        59.665210006642155,
+        59.748550003860146,
+        59.68936000135727,
+        59.66102999809664,
+        59.78532000153791,
+        59.731109999120235,
+        59.694709998439066,
+        59.68787000165321,
+        59.67396999767516,
+        59.5137099880958,
+        59.63643999712076,
+        59.70133999653626,
+        59.60275999677833,
+        59.60408999817446,
+        59.583080001175404,
+        59.75207999290433
+      ],
+      "nd_wall_ms": 58.831717666665405,
+      "nz_wall_ms": 59.74964199849637,
+      "nd_event_ms": 58.68271509806315,
+      "nz_event_ms": 59.597954686482744,
+      "nd_tok_s": 51604.81659232985,
+      "nz_tok_s": 50812.01992936464,
+      "nz_vs_capture_l2": 0.0,
+      "nd_vs_capture_l2": 0.0,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "MatMulV3": {
+            "ND;FRACTAL_NZ;ND": 288
+          },
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 96
+          }
+        },
+        "every_matmul_reports_nz_input": true,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": null,
+      "nz_format_scope": "all_matmul_inputs_nz",
+      "nz_wall_change_percent": 1.560254176211262,
+      "small_eager_comparison_caution": false
+    },
+    {
+      "name": "Unpad D128 eager",
+      "route": "crop_0_bucket_768",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 720,
+      "nd_wall_samples_ms": [
+        55.391150002833456,
+        54.1473799967207,
+        54.13587999646552,
+        54.121859997394495,
+        54.1882399993483,
+        54.10003999713808,
+        53.88346000108868,
+        54.262580000795424,
+        53.90056000032928,
+        53.94258999149315,
+        53.63645999750588,
+        53.86813999211881,
+        53.624350010068156,
+        53.776720000314526,
+        53.613790005329065,
+        53.65802999585867,
+        53.61929000355303,
+        53.61557999276556,
+        53.789340003277175,
+        53.73382000834681,
+        53.62851999234408,
+        53.701090000686236,
+        53.7661999987904,
+        53.769310005009174,
+        53.93445999652613,
+        53.42845000268426,
+        53.64714999450371,
+        54.19147000066005,
+        53.65868999797385,
+        53.60526000731625
+      ],
+      "nz_wall_samples_ms": [
+        55.61512999702245,
+        54.92866999702528,
+        55.30469999939669,
+        54.875009998795576,
+        55.01524999272078,
+        54.98689001251478,
+        55.259300002944656,
+        54.84781999257393,
+        55.0152200012235,
+        55.25218999537174,
+        55.07211000076495,
+        54.925410004216246,
+        54.88070000137668,
+        54.82633000065107,
+        54.87257998902351,
+        54.51942999206949,
+        54.360640002414584,
+        54.374300001654774,
+        54.35480001324322,
+        54.20650000451133,
+        54.34622000029776,
+        54.46673999540508,
+        54.79376998846419,
+        54.61266999191139,
+        54.52300999604631,
+        54.95019000954926,
+        54.8483699967619,
+        54.66977000469342,
+        54.7157000110019,
+        54.839630000060424
+      ],
+      "nd_wall_ms": 53.87799533297463,
+      "nz_wall_ms": 54.80863499979023,
+      "nd_event_ms": 53.71567866007487,
+      "nz_event_ms": 54.644417190551756,
+      "nd_tok_s": 13363.52615850469,
+      "nz_tok_s": 13136.616155515561,
+      "nz_vs_capture_l2": 0.0071989367716014385,
+      "nd_vs_capture_l2": 0.0071989367716014385,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 384
+          }
+        },
+        "every_matmul_reports_nz_input": true,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": null,
+      "nz_format_scope": "all_matmul_inputs_nz",
+      "nz_wall_change_percent": 1.7273093793933825,
+      "small_eager_comparison_caution": true
+    },
+    {
+      "name": "Unpad D128 eager",
+      "route": "crop_1_bucket_3072",
+      "nd_status": "completed",
+      "nz_status": "completed",
+      "real_tokens": 3036,
+      "nd_wall_samples_ms": [
+        70.95146999927238,
+        70.40227999095805,
+        70.16527000814676,
+        70.06247999379411,
+        70.32344999606721,
+        70.25080999301281,
+        70.0092199986102,
+        70.06460000411607,
+        70.3511400060961,
+        70.2929199906066,
+        70.10795999667607,
+        70.09294998715632,
+        70.28153999999631,
+        70.24350999563467,
+        70.07451000390574,
+        70.05131999903824,
+        70.39184999302961,
+        70.38530000136234,
+        70.04864000191446,
+        70.11158000386786,
+        70.3790800034767,
+        70.46070000797044,
+        70.14055000036024,
+        70.32837001315784,
+        70.39779001206625,
+        70.07714999781456,
+        70.15569000213873,
+        70.46001999697182,
+        70.19122999918181,
+        70.00886999594513
+      ],
+      "nz_wall_samples_ms": [
+        71.3866500009317,
+        70.70883999404032,
+        70.66595999640413,
+        70.5967699905159,
+        70.68410998908803,
+        70.5708199966466,
+        70.58688999677543,
+        70.61159001023043,
+        70.52076999389101,
+        70.54687000345439,
+        70.59348000620957,
+        70.57572000485379,
+        70.5787900078576,
+        70.61053000506945,
+        70.64597000135109,
+        70.5142900114879,
+        70.64756999898236,
+        70.58676000451669,
+        70.67396999627817,
+        70.51080999372061,
+        70.66214000224136,
+        70.63649999327026,
+        70.64761000219733,
+        70.65571000566706,
+        70.72500999493059,
+        70.70393000321928,
+        72.14322999061551,
+        70.63090000883676,
+        70.69591998879332,
+        70.65643000532873
+      ],
+      "nd_wall_ms": 70.24207499974484,
+      "nz_wall_ms": 70.69915133324685,
+      "nd_event_ms": 70.09394505818685,
+      "nz_event_ms": 70.54644368489583,
+      "nd_tok_s": 43221.9577797357,
+      "nz_tok_s": 42942.52395887384,
+      "nz_vs_capture_l2": 0.021528931334614754,
+      "nd_vs_capture_l2": 0.021528931334614754,
+      "nz_kernel_audit": {
+        "requested_nz": true,
+        "profiled_forwards": 3,
+        "matmul_kernel_count": 384,
+        "input_formats_by_type": {
+          "MatMulV3": {
+            "ND;FRACTAL_NZ;ND": 288
+          },
+          "MatMulV2": {
+            "ND;FRACTAL_NZ;ND": 96
+          }
+        },
+        "every_matmul_reports_nz_input": true,
+        "interpretation": "Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul."
+      },
+      "grouped_inputs": null,
+      "nz_format_scope": "all_matmul_inputs_nz",
+      "nz_wall_change_percent": 0.6507158757819376,
+      "small_eager_comparison_caution": false
+    }
+  ]
+}

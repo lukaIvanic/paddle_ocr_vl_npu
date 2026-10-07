@@ -1,0 +1,87 @@
+{
+  "commit": "82575a912a6e9b1ab38233bfbf91c059c6111475",
+  "model": "/workspace/models/MinerU2.5-Pro-2605-1.2B",
+  "model_hashes": {
+    "config.json": "22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28",
+    "model.safetensors": "abf8681ca63b8dec7b67de257af47b821f179442f72998d0696ae2ed9232a5f0"
+  },
+  "routes": {
+    "crop_0_bucket_768": {
+      "tags": {
+        "route": "crop_0_bucket_768",
+        "real_tokens": 720,
+        "physical_tokens": 768,
+        "members": 1,
+        "member_lengths": [
+          720
+        ],
+        "image_grid_thw": [
+          [
+            1,
+            24,
+            30
+          ]
+        ],
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "bucket": 768,
+      "segments": [
+        720,
+        48
+      ],
+      "file": "crop_0_bucket_768.pt",
+      "sha256": "26db696aacbe7dd78eb85f9ee60a790aece8638c80213ccc6e90be58dff61133",
+      "baseline_cache": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/vision_cache/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq768_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403",
+      "image": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/crops/hotswap_001_code_txt_p0001_box_id_3.png",
+      "image_sha256": "d24f767f1a68b283b5e29a105d972831553a04ec12354f9e567bb4c85577a03f",
+      "merged_feature_shape": [
+        180,
+        896
+      ]
+    },
+    "crop_1_bucket_3072": {
+      "tags": {
+        "route": "crop_1_bucket_3072",
+        "real_tokens": 3036,
+        "physical_tokens": 3072,
+        "members": 1,
+        "member_lengths": [
+          3036
+        ],
+        "image_grid_thw": [
+          [
+            1,
+            46,
+            66
+          ]
+        ],
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "bucket": 3072,
+      "segments": [
+        3036,
+        36
+      ],
+      "file": "crop_1_bucket_3072.pt",
+      "sha256": "507a84ef988cadcbf1dac99ca298cb73e82f42e468c314f10745a3cc6d30493f",
+      "baseline_cache": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/vision_cache/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq3072_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403",
+      "image": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/crops/hotswap_002_code_txt_p1474_11.png",
+      "image_sha256": "e6ef3c412facb09ed97d90e4c0c69d25c44f78ebaafcc744dab8a2e9927f76a0",
+      "merged_feature_shape": [
+        759,
+        896
+      ]
+    }
+  },
+  "scope": "actual crops, patch embedding/positions -> full 32-block compiled vision -> merger",
+  "diagnostic_page_throughput_valid": false,
+  "processor": {
+    "min_pixels": 25088,
+    "max_pixels": 602112
+  },
+  "physical_device": "3"
+}

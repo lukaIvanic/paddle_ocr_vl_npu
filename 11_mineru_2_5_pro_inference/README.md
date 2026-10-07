@@ -15,6 +15,11 @@ checks all 12 committed 910B lanes without chip-specific kernel assertions.
 [New 910B tool validation](references/vision_diagnostics_910b_20261007/RESULTS.md)
 retains the 48-case calibration, internal-format checks, eight real-crop vision
 lanes and per-launch telemetry, separately from the original results.
+The [24-lane matched ND/NZ rerun](references/vision_nz_pairs_910b_20261007/RESULTS.md)
+checks the actual kernel weight inputs across D80/D128 PromptFA, eager unpad
+and both grouped projection modes. Ordinary linears consume NZ; the existing
+grouped helper converts its inputs back to ND, so those results are explicitly
+mixed-format. Compiled full-vision runs show no NZ speedup on 910B.
 
 The [KV-cache layout probe](kv_cache_probe/README.md) audits the vLLM-Ascend
 310P cache contract and preserves isolated eager attention compatibility checks.
