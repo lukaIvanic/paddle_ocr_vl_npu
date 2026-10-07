@@ -1,7 +1,9 @@
-"""Isolated layout/rotary/SwiGLU candidates for the frozen text-forward lab.
+"""Explicit candidates for the frozen text-forward lab.
 
-Norms, checkpoint projections, causal masking and DeepStack stay identical to
-OptimizedTextStage. Each native implementation follows an owned donor path.
+Historical layout/rotary/SwiGLU variants retain the original normalization.
+Portable native-RMSNorm variants change only normalization. The direct native
+call follows the reranker; the unit-gamma forms are local numerical experiments.
+All candidates retain checkpoint projections, causal masking and DeepStack.
 """
 from dataclasses import asdict, dataclass
 
