@@ -373,6 +373,15 @@ pass; weight/hash/conversion/H2D startup **3.91/4.47 s**, cached graph first cal
 those transfer-only time. No cold-storage or HBM-saturation claim.
 [`Paired traces, compressed CSVs, CPU markers and hashes`](../tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/profile_comparison.json).
 
+**Largest B4 profiling**, source `57c83b92`, idle 910B2 NPU 1, FP32:
+PyTorch CPU/NPU traces record shapes after five external + one profiler warmups,
+two active calls; forward/pipeline captured separately and all parity checks pass.
+T512/T2048 clean eager **190/694 ms**, TorchAir **214/810 ms**. Endpoint WKV
+launches **48 eager / 24 compiled vector blocks**, same shapes/dtypes; device time
+**42/170 ms eager / 84/340 ms compiled**. Core-count cause/fix remains untested;
+no batch-size or precision conclusion. Shape/stack recording inflates eager host
+trace time; use clean latency. [`Shapes, CSVs, hashes and accounting`](../tmp/26_rwkv_inference/reranker_largest_profile_b4_57c83b92/profile_comparison.json).
+
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,
 followed by casts/normalization. These profiles precede the validated B4 benchmark path above.

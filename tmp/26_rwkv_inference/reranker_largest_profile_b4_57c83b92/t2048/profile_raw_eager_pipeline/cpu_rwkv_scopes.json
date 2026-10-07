@@ -1,0 +1,164 @@
+[
+  {
+    "name": "rwkv.disk_read_pair",
+    "ph": "X",
+    "ts": "1791370356443506.230",
+    "dur": 467.9,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.cpu_tokenize",
+    "ph": "X",
+    "ts": "1791370356444012.040",
+    "dur": 6244.73,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.cpu_batch_prepare",
+    "ph": "X",
+    "ts": "1791370356450295.370",
+    "dur": 2074.55,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.h2d",
+    "ph": "X",
+    "ts": "1791370356452515.460",
+    "dur": 660.24,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_backbone",
+    "ph": "X",
+    "ts": "1791370356453214.260",
+    "dur": 557035.44,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_head",
+    "ph": "X",
+    "ts": "1791370357010298.670",
+    "dur": 476171.76,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.d2h_scores",
+    "ph": "X",
+    "ts": "1791370357486560.710",
+    "dur": 511.21,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.disk_write_scores",
+    "ph": "X",
+    "ts": "1791370357487103.920",
+    "dur": 1002.6,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_pipeline",
+    "ph": "X",
+    "ts": "1791370356443432.950",
+    "dur": 1044786.92,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.disk_read_pair",
+    "ph": "X",
+    "ts": "1791370357488820.050",
+    "dur": 459.54,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.cpu_tokenize",
+    "ph": "X",
+    "ts": "1791370357489311.660",
+    "dur": 6258.41,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.cpu_batch_prepare",
+    "ph": "X",
+    "ts": "1791370357495606.020",
+    "dur": 2123.37,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.h2d",
+    "ph": "X",
+    "ts": "1791370357497872.690",
+    "dur": 634.82,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_backbone",
+    "ph": "X",
+    "ts": "1791370357498548.910",
+    "dur": 556690.2,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_head",
+    "ph": "X",
+    "ts": "1791370358055290.440",
+    "dur": 474292.7,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.d2h_scores",
+    "ph": "X",
+    "ts": "1791370358529637.270",
+    "dur": 494.38,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.disk_write_scores",
+    "ph": "X",
+    "ts": "1791370358530163.040",
+    "dur": 685.3,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_pipeline",
+    "ph": "X",
+    "ts": "1791370357488754.460",
+    "dur": 1042209.39,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  }
+]

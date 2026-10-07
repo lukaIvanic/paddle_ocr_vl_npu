@@ -1,0 +1,56 @@
+[
+  {
+    "name": "rwkv.torchair_backbone",
+    "ph": "X",
+    "ts": "1791370413971894.490",
+    "dur": 2324.55,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.torchair_head",
+    "ph": "X",
+    "ts": "1791370413974249.090",
+    "dur": 1699.25,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.torchair_forward",
+    "ph": "X",
+    "ts": "1791370413971824.630",
+    "dur": 4214.42,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.torchair_backbone",
+    "ph": "X",
+    "ts": "1791370414784138.480",
+    "dur": 1898.06,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.torchair_head",
+    "ph": "X",
+    "ts": "1791370414786063.410",
+    "dur": 1490.8,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.torchair_forward",
+    "ph": "X",
+    "ts": "1791370414784075.820",
+    "dur": 3570.97,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  }
+]

@@ -1,0 +1,56 @@
+[
+  {
+    "name": "rwkv.raw_eager_backbone",
+    "ph": "X",
+    "ts": "1791370177987364.090",
+    "dur": 559336.73,
+    "pid": 155550,
+    "tid": 155550,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_head",
+    "ph": "X",
+    "ts": "1791370178546744.240",
+    "dur": 475564.92,
+    "pid": 155550,
+    "tid": 155550,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_forward",
+    "ph": "X",
+    "ts": "1791370177987301.370",
+    "dur": 1035138.79,
+    "pid": 155550,
+    "tid": 155550,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_backbone",
+    "ph": "X",
+    "ts": "1791370179022931.590",
+    "dur": 555669.33,
+    "pid": 155550,
+    "tid": 155550,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_head",
+    "ph": "X",
+    "ts": "1791370179578645.750",
+    "dur": 470777.52,
+    "pid": 155550,
+    "tid": 155550,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_forward",
+    "ph": "X",
+    "ts": "1791370179022874.860",
+    "dur": 1026663.01,
+    "pid": 155550,
+    "tid": 155550,
+    "cat": "cpu_op"
+  }
+]

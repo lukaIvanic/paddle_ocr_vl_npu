@@ -1,0 +1,56 @@
+[
+  {
+    "name": "rwkv.raw_eager_backbone",
+    "ph": "X",
+    "ts": "1791370333088550.410",
+    "dur": 551493.53,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_head",
+    "ph": "X",
+    "ts": "1791370333640089.840",
+    "dur": 463081.62,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_forward",
+    "ph": "X",
+    "ts": "1791370333088484.000",
+    "dur": 1014823.82,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_backbone",
+    "ph": "X",
+    "ts": "1791370334103818.980",
+    "dur": 538972.42,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_head",
+    "ph": "X",
+    "ts": "1791370334642842.540",
+    "dur": 461423.62,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.raw_eager_forward",
+    "ph": "X",
+    "ts": "1791370334103762.490",
+    "dur": 1000626.82,
+    "pid": 158363,
+    "tid": 158363,
+    "cat": "cpu_op"
+  }
+]
