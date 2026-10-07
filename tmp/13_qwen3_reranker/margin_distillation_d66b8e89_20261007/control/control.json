@@ -1,0 +1,108 @@
+{
+  "passed": true,
+  "group_id": "miracl_zh_len-500-1000/491",
+  "lengths": [
+    251,
+    175,
+    205,
+    204
+  ],
+  "dtype": "FP32 parameters, BF16 autocast",
+  "runs": {
+    "hf": {
+      "loss": 60.585289001464844,
+      "scores": [
+        9.5,
+        -3.5625,
+        -3.8125,
+        -0.4375
+      ],
+      "gradients": {}
+    },
+    "eager": {
+      "loss": 60.585289001464844,
+      "scores": [
+        9.5,
+        -3.5625,
+        -3.8125,
+        -0.4375
+      ],
+      "gradients": {
+        "embed_tokens.weight": {
+          "cosine": 1.0002098083496094,
+          "relative_l2": 2.1279320527867185e-09,
+          "max_absolute_difference": 9.5367431640625e-07
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "cosine": 1.0004490613937378,
+          "relative_l2": 0.0,
+          "max_absolute_difference": 0.0
+        },
+        "layers.27.self_attn.q_proj.weight": {
+          "cosine": 1.0006786584854126,
+          "relative_l2": 0.0,
+          "max_absolute_difference": 0.0
+        }
+      }
+    },
+    "fusion_attention": {
+      "loss": 59.392578125,
+      "scores": [
+        9.5,
+        -3.625,
+        -3.6875,
+        -0.875
+      ],
+      "gradients": {
+        "embed_tokens.weight": {
+          "cosine": 0.9976611137390137,
+          "relative_l2": 0.07676462084054947,
+          "max_absolute_difference": 24.27019500732422
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "cosine": 0.997584879398346,
+          "relative_l2": 0.0806298479437828,
+          "max_absolute_difference": 3.78125
+        },
+        "layers.27.self_attn.q_proj.weight": {
+          "cosine": 0.9992368221282959,
+          "relative_l2": 0.05360332503914833,
+          "max_absolute_difference": 0.75
+        }
+      }
+    },
+    "replay": {
+      "loss": 59.392578125,
+      "scores": [
+        9.5,
+        -3.625,
+        -3.6875,
+        -0.875
+      ],
+      "gradients": {
+        "embed_tokens.weight": {
+          "cosine": 0.9976638555526733,
+          "relative_l2": 0.07677219808101654,
+          "max_absolute_difference": 24.27019500732422
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "cosine": 0.9976406097412109,
+          "relative_l2": 0.08061657845973969,
+          "max_absolute_difference": 3.78515625
+        },
+        "layers.27.self_attn.q_proj.weight": {
+          "cosine": 0.9992480874061584,
+          "relative_l2": 0.053717225790023804,
+          "max_absolute_difference": 0.71875
+        }
+      }
+    }
+  },
+  "replay_relative_l2": {
+    "embed_tokens.weight": 0.0016699715051800013,
+    "layers.0.self_attn.q_proj.weight": 0.0021517544519156218,
+    "layers.27.self_attn.q_proj.weight": 0.002309768693521619
+  },
+  "optimizer_max_parameter_difference": 0.0,
+  "optimizer_max_update": 1.0132789611816406e-06
+}

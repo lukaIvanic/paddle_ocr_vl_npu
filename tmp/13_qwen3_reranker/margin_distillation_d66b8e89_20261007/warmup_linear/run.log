@@ -1,0 +1,124 @@
+SCORE_PROGRESS {"section": "benchmark", "pairs": 1280, "total": 10800, "seconds": 6.312304730003234}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 2560, "total": 10800, "seconds": 12.348528460002854}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 3840, "total": 10800, "seconds": 18.535377859996515}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 5120, "total": 10800, "seconds": 24.70358142000623}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 6400, "total": 10800, "seconds": 30.94061471000896}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 7680, "total": 10800, "seconds": 37.486910189996706}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 8960, "total": 10800, "seconds": 45.132888530002674}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 10240, "total": 10800, "seconds": 55.81310365999525}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 1280, "total": 7200, "seconds": 5.9616839599912055}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 2560, "total": 7200, "seconds": 12.14489027998934}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 3840, "total": 7200, "seconds": 18.311113649993786}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 5120, "total": 7200, "seconds": 24.742454409992206}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 6400, "total": 7200, "seconds": 32.396234169995296}
+EVALUATION {"step": 0, "suite": {"en": 0.6964640896839097, "zh": 0.7689844870271131}, "agreement": {"queries": 64, "pairwise_agreement": 0.8185890257558791, "teacher_nontied_comparisons": 1786, "margin_mse": 6.3826590596819575, "top3_overlap": 0.7604166666666666}, "seconds": {"benchmark": 69.9292390900082, "validation": 2.6517456799920183, "reserved_benchmark": 44.482875869987765, "total": 117.10333590999653}}
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/__init__.py:230: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  torch.ones_like(out, memory_format=torch.preserve_format)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/optim/npu_fused_optim_base.py:51: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  param_size = p.storage().size()
+UPDATE {"step": 1, "lr": 2e-07, "loss": 6.360405921936035, "gradient_norm": 501.679931640625, "seconds": 19.645134350008448, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 13.316649913787842}
+CHECKPOINT {"step": 1, "path": "/workspace/results/qwen_margin_distill/npu/d66b8e89/warmup_linear/checkpoint_001.pt", "bytes": 7770899826, "seconds": 16.61074153998925}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 1280, "total": 10800, "seconds": 5.892015730001731}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 2560, "total": 10800, "seconds": 11.960752279992448}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 3840, "total": 10800, "seconds": 18.155214750004234}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 5120, "total": 10800, "seconds": 24.2875702399906}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 6400, "total": 10800, "seconds": 30.49190443000407}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 7680, "total": 10800, "seconds": 37.030944979997}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 8960, "total": 10800, "seconds": 44.67476501999772}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 10240, "total": 10800, "seconds": 55.350240079991636}
+EVALUATION {"step": 1, "suite": {"en": 0.6940123712030408, "zh": 0.768394303441379}, "agreement": {"queries": 64, "pairwise_agreement": 0.8197088465845465, "teacher_nontied_comparisons": 1786, "margin_mse": 6.330699433256606, "top3_overlap": 0.765625}, "seconds": {"benchmark": 69.458942199999, "validation": 2.687633100009407, "total": 72.17114621000655}}
+UPDATE {"step": 2, "lr": 4e-07, "loss": 6.269898414611816, "gradient_norm": 479.12957763671875, "seconds": 17.356424190002144, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 15.037587642669678}
+UPDATE {"step": 3, "lr": 6e-07, "loss": 7.2539191246032715, "gradient_norm": 583.7109985351562, "seconds": 17.378454890000285, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 16.28592586517334}
+CHECKPOINT {"step": 3, "path": "/workspace/results/qwen_margin_distill/npu/d66b8e89/warmup_linear/checkpoint_003.pt", "bytes": 7770899826, "seconds": 17.002439620002406}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 1280, "total": 10800, "seconds": 5.858668460001354}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 2560, "total": 10800, "seconds": 11.77379863000533}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 3840, "total": 10800, "seconds": 17.970037299994146}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 5120, "total": 10800, "seconds": 24.19939670000167}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 6400, "total": 10800, "seconds": 30.488036220005597}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 7680, "total": 10800, "seconds": 37.04821380000794}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 8960, "total": 10800, "seconds": 44.70126209000591}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 10240, "total": 10800, "seconds": 55.3778850499948}
+EVALUATION {"step": 3, "suite": {"en": 0.7018310008799926, "zh": 0.7713152032785646}, "agreement": {"queries": 64, "pairwise_agreement": 0.8194288913773796, "teacher_nontied_comparisons": 1786, "margin_mse": 6.311808730991158, "top3_overlap": 0.765625}, "seconds": {"benchmark": 69.4784925700078, "validation": 2.7187321899982635, "total": 72.22152515999915}}
+UPDATE {"step": 4, "lr": 8e-07, "loss": 5.230199813842773, "gradient_norm": 432.5348815917969, "seconds": 17.306219739999506, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 18.648648262023926}
+UPDATE {"step": 5, "lr": 1e-06, "loss": 6.957429885864258, "gradient_norm": 534.2648315429688, "seconds": 17.447397180003463, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 18.648648262023926}
+UPDATE {"step": 6, "lr": 1e-06, "loss": 7.895402431488037, "gradient_norm": 662.4508056640625, "seconds": 17.539990510005737, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 18.648648262023926}
+UPDATE {"step": 7, "lr": 9.777777777777778e-07, "loss": 6.381345748901367, "gradient_norm": 456.26470947265625, "seconds": 17.424870710005052, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 18.648648262023926}
+UPDATE {"step": 8, "lr": 9.555555555555554e-07, "loss": 6.339925289154053, "gradient_norm": 508.11004638671875, "seconds": 17.43378716999723, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 9, "lr": 9.333333333333333e-07, "loss": 6.982853889465332, "gradient_norm": 433.1936340332031, "seconds": 17.370896790002007, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 10, "lr": 9.111111111111112e-07, "loss": 6.37028694152832, "gradient_norm": 378.9795837402344, "seconds": 17.45016098000633, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+CHECKPOINT {"step": 10, "path": "/workspace/results/qwen_margin_distill/npu/d66b8e89/warmup_linear/checkpoint_010.pt", "bytes": 7770899826, "seconds": 16.372568400009186}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 1280, "total": 10800, "seconds": 5.946004429992172}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 2560, "total": 10800, "seconds": 11.979666419996647}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 3840, "total": 10800, "seconds": 18.218004799986375}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 5120, "total": 10800, "seconds": 24.458153229992604}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 6400, "total": 10800, "seconds": 30.74690944000031}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 7680, "total": 10800, "seconds": 37.30638448998798}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 8960, "total": 10800, "seconds": 44.95979434000037}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 10240, "total": 10800, "seconds": 55.635869179997826}
+EVALUATION {"step": 10, "suite": {"en": 0.6985905516748033, "zh": 0.7751077473893174}, "agreement": {"queries": 64, "pairwise_agreement": 0.8222284434490481, "teacher_nontied_comparisons": 1786, "margin_mse": 5.431553092036795, "top3_overlap": 0.765625}, "seconds": {"benchmark": 69.74332467999193, "validation": 2.696601270014071, "total": 72.46449725001003}}
+UPDATE {"step": 11, "lr": 8.888888888888888e-07, "loss": 6.690957546234131, "gradient_norm": 367.5074462890625, "seconds": 17.746846789988922, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 12, "lr": 8.666666666666667e-07, "loss": 5.800683975219727, "gradient_norm": 287.7969665527344, "seconds": 17.646972529997583, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 13, "lr": 8.444444444444443e-07, "loss": 6.9690022468566895, "gradient_norm": 343.6726989746094, "seconds": 17.70729355000367, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 14, "lr": 8.222222222222221e-07, "loss": 5.880729675292969, "gradient_norm": 476.7078857421875, "seconds": 17.626554210000904, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 15, "lr": 8.000000000000001e-07, "loss": 5.165522575378418, "gradient_norm": 356.227294921875, "seconds": 17.57331026000611, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 16, "lr": 7.777777777777777e-07, "loss": 6.0975775718688965, "gradient_norm": 604.47021484375, "seconds": 18.173852070001885, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 17, "lr": 7.555555555555555e-07, "loss": 5.136213779449463, "gradient_norm": 585.0361938476562, "seconds": 17.53010815999005, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 18, "lr": 7.333333333333332e-07, "loss": 6.228590488433838, "gradient_norm": 326.9927673339844, "seconds": 17.468338150007185, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 19, "lr": 7.111111111111111e-07, "loss": 5.82968282699585, "gradient_norm": 336.5336608886719, "seconds": 17.472711499998695, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 20, "lr": 6.888888888888889e-07, "loss": 5.482308864593506, "gradient_norm": 297.0345458984375, "seconds": 17.52845304000948, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 21, "lr": 6.666666666666666e-07, "loss": 5.498894691467285, "gradient_norm": 324.4499206542969, "seconds": 17.58285473000433, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 22, "lr": 6.444444444444444e-07, "loss": 5.137573719024658, "gradient_norm": 342.42657470703125, "seconds": 17.62290622999717, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 23, "lr": 6.222222222222223e-07, "loss": 5.782879829406738, "gradient_norm": 304.8890686035156, "seconds": 17.67581868999696, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 24, "lr": 6e-07, "loss": 4.062243938446045, "gradient_norm": 224.4002685546875, "seconds": 17.542790929990588, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 25, "lr": 5.777777777777777e-07, "loss": 5.603601455688477, "gradient_norm": 294.1419677734375, "seconds": 17.219546549997176, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+CHECKPOINT {"step": 25, "path": "/workspace/results/qwen_margin_distill/npu/d66b8e89/warmup_linear/checkpoint_025.pt", "bytes": 7770899826, "seconds": 16.310739439999452}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 1280, "total": 10800, "seconds": 5.943693709996296}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 2560, "total": 10800, "seconds": 12.179694359991117}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 3840, "total": 10800, "seconds": 18.543420009998954}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 5120, "total": 10800, "seconds": 24.99145356999361}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 6400, "total": 10800, "seconds": 31.40375739999581}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 7680, "total": 10800, "seconds": 37.96860793999804}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 8960, "total": 10800, "seconds": 45.620700699990266}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 10240, "total": 10800, "seconds": 56.295211919990834}
+EVALUATION {"step": 25, "suite": {"en": 0.7097997765726356, "zh": 0.7737094478314555}, "agreement": {"queries": 64, "pairwise_agreement": 0.8236282194848824, "teacher_nontied_comparisons": 1786, "margin_mse": 4.6501982594740445, "top3_overlap": 0.765625}, "seconds": {"benchmark": 70.39793443000235, "validation": 2.6960818899970036, "total": 73.118595870008}}
+UPDATE {"step": 26, "lr": 5.555555555555555e-07, "loss": 6.261887073516846, "gradient_norm": 354.950927734375, "seconds": 17.403047189989593, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 27, "lr": 5.333333333333333e-07, "loss": 4.7180023193359375, "gradient_norm": 244.7023162841797, "seconds": 17.491519379997044, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 28, "lr": 5.111111111111111e-07, "loss": 4.208137512207031, "gradient_norm": 235.7128448486328, "seconds": 17.59345714999654, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 29, "lr": 4.888888888888889e-07, "loss": 5.93297815322876, "gradient_norm": 406.3460388183594, "seconds": 17.618502720011747, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 30, "lr": 4.6666666666666666e-07, "loss": 4.7180376052856445, "gradient_norm": 239.26951599121094, "seconds": 17.603376979997847, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 31, "lr": 4.444444444444444e-07, "loss": 5.959599018096924, "gradient_norm": 333.91741943359375, "seconds": 17.6126992500067, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 32, "lr": 4.2222222222222216e-07, "loss": 5.921697616577148, "gradient_norm": 281.7164306640625, "seconds": 17.549263940003584, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 33, "lr": 4.0000000000000003e-07, "loss": 5.221854209899902, "gradient_norm": 283.4192810058594, "seconds": 17.701737409995985, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 34, "lr": 3.7777777777777775e-07, "loss": 5.363746166229248, "gradient_norm": 326.64166259765625, "seconds": 17.529504039994208, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 35, "lr": 3.5555555555555553e-07, "loss": 4.614760875701904, "gradient_norm": 245.39617919921875, "seconds": 17.440039050008636, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 36, "lr": 3.333333333333333e-07, "loss": 4.644532680511475, "gradient_norm": 254.4971466064453, "seconds": 17.48961966999923, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 37, "lr": 3.111111111111111e-07, "loss": 6.315769195556641, "gradient_norm": 288.10968017578125, "seconds": 17.73528549000912, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 38, "lr": 2.8888888888888885e-07, "loss": 4.833491325378418, "gradient_norm": 226.9573211669922, "seconds": 17.689767149990075, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 39, "lr": 2.6666666666666667e-07, "loss": 4.137122631072998, "gradient_norm": 221.5611114501953, "seconds": 17.688313159989775, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 40, "lr": 2.4444444444444445e-07, "loss": 3.8716557025909424, "gradient_norm": 217.650634765625, "seconds": 17.685790370000177, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 41, "lr": 2.222222222222222e-07, "loss": 4.32191801071167, "gradient_norm": 216.5796356201172, "seconds": 17.896759829993243, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 42, "lr": 2.0000000000000002e-07, "loss": 4.709507942199707, "gradient_norm": 253.61337280273438, "seconds": 17.73488066000573, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 43, "lr": 1.7777777777777776e-07, "loss": 4.281824111938477, "gradient_norm": 237.8214569091797, "seconds": 17.63088111000252, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 44, "lr": 1.5555555555555556e-07, "loss": 4.180835247039795, "gradient_norm": 186.51043701171875, "seconds": 17.613694759987993, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 45, "lr": 1.3333333333333334e-07, "loss": 4.781717777252197, "gradient_norm": 217.1292724609375, "seconds": 17.7968580500019, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 46, "lr": 1.111111111111111e-07, "loss": 4.804358959197998, "gradient_norm": 228.95523071289062, "seconds": 17.651379110000562, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 47, "lr": 8.888888888888888e-08, "loss": 5.213165760040283, "gradient_norm": 249.61019897460938, "seconds": 18.349849999998696, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 48, "lr": 6.666666666666667e-08, "loss": 4.398535251617432, "gradient_norm": 296.0443115234375, "seconds": 17.652567220007768, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 49, "lr": 4.444444444444444e-08, "loss": 5.467833995819092, "gradient_norm": 250.95599365234375, "seconds": 17.643180389990448, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+UPDATE {"step": 50, "lr": 2.222222222222222e-08, "loss": 4.4619879722595215, "gradient_norm": 191.69961547851562, "seconds": 17.507960909992107, "queries": 32, "pairs": 256, "backward_microbatches": 64, "peak_allocated_gib": 22.04104709625244}
+CHECKPOINT {"step": 50, "path": "/workspace/results/qwen_margin_distill/npu/d66b8e89/warmup_linear/checkpoint_050.pt", "bytes": 7770899826, "seconds": 16.36385059999884}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 1280, "total": 10800, "seconds": 5.99525354000798}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 2560, "total": 10800, "seconds": 12.196011610009009}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 3840, "total": 10800, "seconds": 18.549564810004085}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 5120, "total": 10800, "seconds": 24.823301010008436}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 6400, "total": 10800, "seconds": 31.1089471699961}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 7680, "total": 10800, "seconds": 37.66026486000919}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 8960, "total": 10800, "seconds": 45.31079508000403}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 10240, "total": 10800, "seconds": 55.98478655000508}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 1280, "total": 7200, "seconds": 6.134421820010175}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 2560, "total": 7200, "seconds": 12.482671770005254}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 3840, "total": 7200, "seconds": 18.738620100004482}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 5120, "total": 7200, "seconds": 25.24824806000106}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 6400, "total": 7200, "seconds": 32.90837904000364}
+EVALUATION {"step": 50, "suite": {"en": 0.6993093678644422, "zh": 0.7723091869202418}, "agreement": {"queries": 64, "pairwise_agreement": 0.8317469204927211, "teacher_nontied_comparisons": 1786, "margin_mse": 4.408251510783365, "top3_overlap": 0.7604166666666666}, "seconds": {"benchmark": 70.09146109000721, "validation": 2.7018604899931233, "reserved_benchmark": 44.98254280000401, "total": 117.81529871000384}}
+FINISHED {"status": "completed", "updates": 50, "seconds": 1543.3030125499936}

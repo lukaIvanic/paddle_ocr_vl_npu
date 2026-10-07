@@ -1,0 +1,7 @@
+DOWNLOAD {"file": "miracl_zh_len-0-500/train-00000-of-00001.parquet"}
+DOWNLOAD {"file": "miracl_zh_len-500-1000/train-00000-of-00001.parquet"}
+DOWNLOAD {"file": "miracl_en_len-0-500/train-00000-of-00001.parquet"}
+DOWNLOADED {"file": "miracl_zh_len-500-1000/train-00000-of-00001.parquet", "bytes": 23012711, "seconds": 8.704246199995396}
+DOWNLOADED {"file": "miracl_zh_len-0-500/train-00000-of-00001.parquet", "bytes": 20739700, "seconds": 8.874423480010591}
+DOWNLOADED {"file": "miracl_en_len-0-500/train-00000-of-00001.parquet", "bytes": 41337112, "seconds": 14.079090530009125}
+ACQUIRED 4179 {"nq": 1044, "squad": 700, "miracl_zh": 1242, "miracl_en": 1193}

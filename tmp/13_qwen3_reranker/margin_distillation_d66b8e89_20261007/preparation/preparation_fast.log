@@ -1,0 +1,38 @@
+Using the latest cached version of the dataset since mteb/arguana couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___arguana/queries/0.0.0/c22ab2a51041ffd869aaddef7af8d8215647e41a (last modified on Wed Oct  7 09:12:40 2026).
+Using the latest cached version of the dataset since mteb/cqadupstack-gaming couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___cqadupstack-gaming/queries/0.0.0/4885aa143210c98657558c04aaf3dc47cfb54340 (last modified on Wed Oct  7 09:12:43 2026).
+Using the latest cached version of the dataset since mteb/cqadupstack-unix couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___cqadupstack-unix/queries/0.0.0/6c6430d3a6d36f8d2a829195bc5dc94d7e063e53 (last modified on Wed Oct  7 09:12:47 2026).
+Using the latest cached version of the dataset since mteb/ClimateFEVER_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___climate_fever_test_top_250_only_w_correct-v2/queries/0.0.0/3a309e201f3c2c4b13bd4a367a8f37eee2ec1d21 (last modified on Wed Oct  7 09:12:53 2026).
+Using the latest cached version of the dataset since mteb/FEVER_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___fever_test_top_250_only_w_correct-v2/queries/0.0.0/080c9ed6267b65029207906e815d44a9240bafca (last modified on Wed Oct  7 09:12:58 2026).
+Using the latest cached version of the dataset since mteb/fiqa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___fiqa/queries/0.0.0/27a168819829fe9bcd655c2df245fb19452e8e06 (last modified on Wed Oct  7 09:13:11 2026).
+Using the latest cached version of the dataset since mteb/HotpotQA_test_top_250_only_w_correct-v2 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___hotpot_qa_test_top_250_only_w_correct-v2/queries/0.0.0/617612fa63afcb60e3b134bed8b7216a99707c37 (last modified on Wed Oct  7 09:13:17 2026).
+Using the latest cached version of the dataset since mteb/scidocs couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___scidocs/queries/0.0.0/f8c2fcf00f625baaa80f62ec5bd9e1fff3b8ae88 (last modified on Wed Oct  7 09:13:37 2026).
+Using the latest cached version of the dataset since mteb/trec-covid couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___trec-covid/queries/0.0.0/bb9466bac8153a0349341eb1b22e06409e78ef4e (last modified on Wed Oct  7 09:13:47 2026).
+Using the latest cached version of the dataset since mteb/webis-touche2020-v3 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___webis-touche2020-v3/queries/0.0.0/431886eaecc48f067a3975b70d0949ea2862463c (last modified on Wed Oct  7 09:14:02 2026).
+Using the latest cached version of the dataset since C-MTEB/EcomRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___ecom_retrieval/default/0.0.0/687de13dc7294d6fd9be10c6945f9e8fec8166b9 (last modified on Sat Oct  3 07:16:21 2026).
+Using the latest cached version of the dataset since C-MTEB/VideoRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___video_retrieval/default/0.0.0/58c2597a5943a2ba48f4668c3b90d796283c5639 (last modified on Sat Oct  3 07:16:44 2026).
+Using the latest cached version of the dataset since C-MTEB/MedicalRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___medical_retrieval/default/0.0.0/2039188fb5800a9803ba5048df7b76e6fb151fc6 (last modified on Sat Oct  3 07:17:08 2026).
+Using the latest cached version of the dataset since C-MTEB/MMarcoRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___m_marco_retrieval/default/0.0.0/539bbde593d947e2a124ba72651aafc09eb33fc2 (last modified on Sat Oct  3 07:17:35 2026).
+Using the latest cached version of the dataset since C-MTEB/CmedqaRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___cmedqa_retrieval/default/0.0.0/cd540c506dae1cf9e9a59c3e06f42030d54e7301 (last modified on Sat Oct  3 07:18:09 2026).
+Using the latest cached version of the dataset since C-MTEB/DuRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___du_retrieval/default/0.0.0/a1a333e290fe30b10f3f56498e3a0d911a693ced (last modified on Sat Oct  3 07:18:53 2026).
+Using the latest cached version of the dataset since C-MTEB/CovidRetrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___covid_retrieval/default/0.0.0/1271c7809071a13532e05f25fb53511ffce77117 (last modified on Sat Oct  3 07:19:32 2026).
+Using the latest cached version of the dataset since C-MTEB/T2Retrieval couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/C-MTEB___t2_retrieval/default/0.0.0/8731a845f1bf500a4f111cf1070785c793d10e64 (last modified on Sat Oct  3 07:20:35 2026).
+PANELS_REUSED 108 72 blocked_queries 54446
+PREPARED {"train": 1600, "validation": 64, "benchmark": 108, "reserved": 72, "distribution": {"squad": 266, "miracl_zh": 800, "nq": 267, "miracl_en": 267}, "sha256": "0fc73a4a5df7f755ea0cdbc58afdee1e87141d07f9575f01ee720588bf86899e"}

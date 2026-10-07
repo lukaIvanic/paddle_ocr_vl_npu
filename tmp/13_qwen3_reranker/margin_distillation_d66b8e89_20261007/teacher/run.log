@@ -1,0 +1,27 @@
+SCORE_PROGRESS {"section": "train", "pairs": 1280, "total": 12800, "seconds": 11.483051429997431}
+SCORE_PROGRESS {"section": "train", "pairs": 2560, "total": 12800, "seconds": 27.92366165999556}
+SCORE_PROGRESS {"section": "train", "pairs": 3840, "total": 12800, "seconds": 44.364711269998224}
+SCORE_PROGRESS {"section": "train", "pairs": 5120, "total": 12800, "seconds": 60.80758897999476}
+SCORE_PROGRESS {"section": "train", "pairs": 6400, "total": 12800, "seconds": 77.24818379999488}
+SCORE_PROGRESS {"section": "train", "pairs": 7680, "total": 12800, "seconds": 93.6970424799947}
+SCORE_PROGRESS {"section": "train", "pairs": 8960, "total": 12800, "seconds": 110.14017795999825}
+SCORE_PROGRESS {"section": "train", "pairs": 10240, "total": 12800, "seconds": 129.75465406000149}
+SCORE_PROGRESS {"section": "train", "pairs": 11520, "total": 12800, "seconds": 154.10438730999886}
+SCORE_PROGRESS {"section": "train", "pairs": 12799, "total": 12800, "seconds": 183.29792029000237}
+TEACHER_SECTION {"section": "train", "seconds": 183.4024424800009}
+TEACHER_SECTION {"section": "validation", "seconds": 7.754334520010161}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 1280, "total": 10800, "seconds": 9.2753243400075}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 2560, "total": 10800, "seconds": 21.67174566000176}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 3840, "total": 10800, "seconds": 38.11081980999734}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 5120, "total": 10800, "seconds": 54.555777710003895}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 6400, "total": 10800, "seconds": 72.0843860199966}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 7680, "total": 10800, "seconds": 96.4338831500063}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 8960, "total": 10800, "seconds": 125.07427048000682}
+SCORE_PROGRESS {"section": "benchmark", "pairs": 10240, "total": 10800, "seconds": 166.5854971200024}
+TEACHER_SECTION {"section": "benchmark", "seconds": 218.04894656999386}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 1280, "total": 7200, "seconds": 9.537520579993725}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 2560, "total": 7200, "seconds": 25.977705839992268}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 3840, "total": 7200, "seconds": 42.420480920001864}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 5120, "total": 7200, "seconds": 64.59562943999481}
+SCORE_PROGRESS {"section": "reserved_benchmark", "pairs": 6400, "total": 7200, "seconds": 93.24889249999251}
+TEACHER_SECTION {"section": "reserved_benchmark", "seconds": 138.79390463000163}

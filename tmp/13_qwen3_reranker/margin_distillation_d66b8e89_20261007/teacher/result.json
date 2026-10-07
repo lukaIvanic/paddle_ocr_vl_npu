@@ -1,0 +1,72 @@
+{
+  "status": "completed",
+  "dataset_sha256": "0fc73a4a5df7f755ea0cdbc58afdee1e87141d07f9575f01ee720588bf86899e",
+  "model_sha256": {
+    "model-00001-of-00002.safetensors": "cf2e87cbf71fa628961532232e04dd6c19702a0a057f5e2aff95ea1aca4fd488",
+    "model-00002-of-00002.safetensors": "78946d22b7f6456ea7a5358dbdf3982de36c5bac1f166a5fd58e18e31db8048a"
+  },
+  "lengths": {
+    "train": {
+      "pairs": 12800,
+      "truncated": 0,
+      "tokens": 2870276,
+      "token_ids_sha256": "9e31b230fb89c5dff56bb000e21ec06ef9dd5825ccc87f053b9af1c2d1f8c3fa"
+    },
+    "validation": {
+      "pairs": 512,
+      "truncated": 0,
+      "tokens": 114832,
+      "token_ids_sha256": "0cfaa95c6a7cd5246cd6b7ed8dee6f153a90a72305c070c2dc273aefc52c453e"
+    },
+    "benchmark": {
+      "pairs": 10800,
+      "truncated": 0,
+      "tokens": 3447932,
+      "token_ids_sha256": "ff7d8151080c5bcc1cf162fe71aa9b0a297ebef098abfa6fe17ea3e6b9c4485b"
+    },
+    "reserved_benchmark": {
+      "pairs": 7200,
+      "truncated": 0,
+      "tokens": 2203815,
+      "token_ids_sha256": "8dfa0352bb4a24449eae2b59950375753bff399a84949e08191dde8eaefbfeb6"
+    }
+  },
+  "environment": {
+    "host": "liteserver-c001-4",
+    "chip": "Ascend 910B2",
+    "physical_npu": "3",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0.post2",
+    "transformers": "5.5.4"
+  },
+  "commit": "d66b8e894674f9b472fdeb2de33c316e20b0723f",
+  "config": {
+    "mode": "teacher",
+    "model": "/workspace/models/Qwen3-Reranker-4B",
+    "dataset": "/workspace/results/qwen_margin_distill/data_fast/dataset.json.gz",
+    "teacher": null,
+    "control": null,
+    "output": "/workspace/results/qwen_margin_distill/npu/d66b8e89/teacher",
+    "schedule": "constant",
+    "steps": 50,
+    "queries_per_update": 32,
+    "learning_rate": 1e-06,
+    "wall_time_limit": 2400
+  },
+  "distribution": {
+    "squad": 266,
+    "miracl_zh": 800,
+    "nq": 267,
+    "miracl_en": 267
+  },
+  "split_checks": {
+    "train_validation_queries_disjoint": true,
+    "train_validation_documents_disjoint": true,
+    "benchmark_query_texts_excluded": true,
+    "panel_candidate_texts_excluded": true
+  },
+  "evaluations": {},
+  "updates": [],
+  "checkpoints": [],
+  "total_seconds": 643.099748640001
+}
