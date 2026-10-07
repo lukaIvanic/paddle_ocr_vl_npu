@@ -30,7 +30,7 @@ from patch_embedding import LinearPatchEmbed, prepare_linear_patch_inputs
 from prepared_prefill import StageCompiler, prepare_text, finish_embeddings
 from profile_warm_forward import capture, emit, measure
 from run_hf_baseline import sha256
-from text_forward_variants import VARIANTS, VariantTextStage, variant_identity
+from text_forward_variants import VARIANTS, build_text_stage, portable_variant, variant_identity
 
 
 class TextForward:
@@ -80,15 +80,14 @@ def run(args, result):
     torch.set_num_threads(4)
     result.update(device=torch.npu.get_device_name(), torch=torch.__version__,
                   torch_npu=torch_npu.__version__, internal_format=True)
-    if '310P' in result['device'].upper() and args.variant != 'baseline':
+    if '310P' in result['device'].upper() and not portable_variant(args.variant):
         raise ValueError('Historical native-GQA/rotary/SwiGLU variants are 910B diagnostics; use baseline on 310P')
     options = Options()
     provenance = identity(args, options)
     result['input_identity'] = provenance
     emit('text_model_load_start', execution=args.execution)
     model = LocalColQwen3.from_pretrained(args.model, device=args.device)
-    text = (OptimizedTextStage(model, options) if args.variant == 'baseline' else
-            VariantTextStage(model, options, args.variant)).eval()
+    text = build_text_stage(model, options, args.variant).eval()
     result['variant'] = variant_identity(args.variant)
     result['variant_source_sha256'] = sha256(Path(__file__).with_name('text_forward_variants.py'))
     result['runner_source_sha256'] = sha256(Path(__file__))
@@ -139,7 +138,7 @@ def run(args, result):
         real_tokens=result['text_tokens'],
         physical_tokens=((result['text_tokens'] + result['variant']['attention_alignment'] - 1)
                          // result['variant']['attention_alignment'] * result['variant']['attention_alignment']),
-        norms='unchanged_manual', scope='text_prefill_no_kv_cache')
+        norms=result['variant']['norm'], scope='text_prefill_no_kv_cache')
     if len(tensors) != 7 or result['batch_size'] != 1:
         raise ValueError('Expected seven frozen B1 text tensors')
     candidate_eager = text(*tensors)

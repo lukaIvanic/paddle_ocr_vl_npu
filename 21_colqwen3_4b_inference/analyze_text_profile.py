@@ -24,7 +24,7 @@ def compiled_category(g):
         return 'matrix_projections'
     if 'FlashAttention' in kind:
         return 'attention'
-    if (kind == 'Square' or names == ['AddRsqrt'] or names == ['MulCast']
+    if ('RmsNorm' in kind or kind == 'Square' or names == ['AddRsqrt'] or names == ['MulCast']
         or kind == 'Mul' and rank == 1
         or kind == 'Cast' and g['input_dtypes'] == 'FLOAT16' and g['output_dtypes'] == 'FLOAT'):
         return 'rmsnorm_excluding_shared_residual_cast'
@@ -107,7 +107,7 @@ def analyze(directory):
                 b['ms_per_forward'] += g['ms_per_forward']
                 b['kernels_per_forward'] += g['count_per_forward']
             profile['semantic_categories'] = dict(sorted(buckets.items(), key=lambda p:-p[1]['ms_per_forward']))
-            if counts['Square'] != 4*layers+1:
+            if counts['Square'] + counts['RmsNorm'] != 4*layers+1:
                 raise ValueError('Expected two hidden plus Q/K RMSNorms per layer and a final norm')
         (destination/'kernel_shape_groups.json').write_text(json.dumps(profile, indent=2)+'\n')
         summary['profiles'][metric] = {k:v for k,v in profile.items() if k != 'groups'}

@@ -23,7 +23,7 @@ from prepared_prefill import StageCompiler
 from profile_warm_forward import emit, measure
 from profile_warm_text import TextForward, identity, validate_snapshot_identity
 from run_hf_baseline import sha256
-from text_forward_variants import VARIANTS, VariantTextStage, variant_identity
+from text_forward_variants import VARIANTS, build_text_stage, portable_variant, variant_identity
 
 
 @torch.inference_mode()
@@ -43,7 +43,7 @@ def run(args, result):
     result['reference_identity_changes'] = validate_snapshot_identity(
         saved['identity'], provenance, reference_only=bool(args.reference_snapshot))
     result['reference_identity'] = saved['identity']
-    if '310P' in torch.npu.get_device_name().upper():
+    if '310P' in torch.npu.get_device_name().upper() and not portable_variant(args.variant):
         raise ValueError('This comparison includes historical 910B variants; use profile_warm_text baseline on 310P')
     tensors = tuple(t.to(args.device).contiguous() for t in saved['text_inputs'])
     if len(tensors) != 7 or tensors[0].shape[0] != 1:
@@ -55,8 +55,8 @@ def run(args, result):
                   variant_source_sha256=sha256(Path(__file__).with_name('text_forward_variants.py')),
                   runner_source_sha256=sha256(Path(__file__)), parity={}, cache_records={})
     model = LocalColQwen3.from_pretrained(args.model, device=args.device)
-    modules = {'baseline': OptimizedTextStage(model, options).eval(),
-               args.variant: VariantTextStage(model, options, args.variant).eval()}
+    modules = {name: build_text_stage(model, options, name).eval()
+               for name in ('baseline', args.variant)}
     calls = {}
     for name, module in modules.items():
         eager = module(*tensors)
