@@ -1,5 +1,8 @@
 # MinerU full-model KV benchmark: 310P handoff
 
+**Decode-only investigation. This is not the handoff for the active vision
+bottleneck.** See [VISION_310P_TARGET.md](VISION_310P_TARGET.md).
+
 This is a complete brief for an agent with only this repository and no chat
 history. The authoring branch is `codex/mineru-full-model-kv-benchmark`.
 Read `FULL_MODEL_KV_BENCHMARK.md` for measurement and variant contracts.

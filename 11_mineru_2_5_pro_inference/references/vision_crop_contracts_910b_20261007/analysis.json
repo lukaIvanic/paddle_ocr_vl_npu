@@ -1,0 +1,1247 @@
+{
+  "scope": "32-block real-crop vision on 910B2; not page or text decode throughput",
+  "source_commit": "82575a912a6e9b1ab38233bfbf91c059c6111475",
+  "model_hashes": {
+    "config.json": "22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28",
+    "model.safetensors": "abf8681ca63b8dec7b67de257af47b821f179442f72998d0696ae2ed9232a5f0"
+  },
+  "profile_denominator": "kernel Duration(us) / (1000 * 3 forwards); PMU engine counters not elapsed time",
+  "records": [
+    {
+      "variant": "baseline",
+      "route": "crop_0_bucket_768",
+      "execution": "torchair_fullgraph",
+      "real_tokens": 720,
+      "physical_tokens": 768,
+      "wall_ms": 17.036602666970186,
+      "event_ms": 16.792718569437664,
+      "wall_real_tok_s": 42261.947060366925,
+      "event_real_tok_s": 42875.72598938104,
+      "first_call_s": 4.842728229996283,
+      "weight_conversion_s": null,
+      "relative_l2": 0.0,
+      "cosine": 1.0,
+      "max_abs": 0.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "2": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 16.892518333333335,
+      "attention_ms": 2.658526333333333,
+      "linear_ms": 4.537323,
+      "remaining_ms": 9.696669000000004,
+      "attention_share": 0.15737892248353336,
+      "matmul_input_formats": {
+        "ND;ND;ND": 384
+      },
+      "attention_input_formats": {
+        "ND;ND;ND;ND": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Data": {
+          "count": 1,
+          "ms_per_forward": 0.002193333333333333
+        },
+        "Cast": {
+          "count": 195,
+          "ms_per_forward": 0.5144900000000003
+        },
+        "ReduceMeanD": {
+          "count": 384,
+          "ms_per_forward": 0.8648636666666675
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 0.6144053333333334
+        },
+        "AutomaticBufferFusionOp": {
+          "count": 480,
+          "ms_per_forward": 1.051741666666666
+        },
+        "Mul": {
+          "count": 576,
+          "ms_per_forward": 1.3526460000000011
+        },
+        "MatMulV2": {
+          "count": 384,
+          "ms_per_forward": 4.537323000000001
+        },
+        "Unpack": {
+          "count": 96,
+          "ms_per_forward": 0.28187266666666666
+        },
+        "Transpose": {
+          "count": 384,
+          "ms_per_forward": 1.2253593333333335
+        },
+        "StridedSliceD": {
+          "count": 384,
+          "ms_per_forward": 1.672100666666667
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.48738933333333306
+        },
+        "ConcatV2D": {
+          "count": 192,
+          "ms_per_forward": 0.4947173333333334
+        },
+        "Add": {
+          "count": 384,
+          "ms_per_forward": 1.1348896666666666
+        },
+        "PromptFlashAttention": {
+          "count": 96,
+          "ms_per_forward": 2.658526333333334
+        }
+      },
+      "raw_result": "matrix/baseline_crop_0_bucket_768/result.json"
+    },
+    {
+      "variant": "baseline",
+      "route": "crop_1_bucket_3072",
+      "execution": "torchair_fullgraph",
+      "real_tokens": 3036,
+      "physical_tokens": 3072,
+      "wall_ms": 48.51338833444364,
+      "event_ms": 48.31646995544433,
+      "wall_real_tok_s": 62580.66286919181,
+      "event_real_tok_s": 62835.716326124144,
+      "first_call_s": 4.845513779990142,
+      "weight_conversion_s": null,
+      "relative_l2": 0.0,
+      "cosine": 1.0000001192092896,
+      "max_abs": 0.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "2": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 48.190456,
+      "attention_ms": 16.780939333333333,
+      "linear_ms": 13.639306333333334,
+      "remaining_ms": 17.77021033333333,
+      "attention_share": 0.34822121901758585,
+      "matmul_input_formats": {
+        "ND;ND;ND": 384
+      },
+      "attention_input_formats": {
+        "ND;ND;ND;ND": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Data": {
+          "count": 1,
+          "ms_per_forward": 0.0022600000000000003
+        },
+        "Cast": {
+          "count": 195,
+          "ms_per_forward": 0.7086793333333337
+        },
+        "ReduceMeanD": {
+          "count": 384,
+          "ms_per_forward": 1.604636333333334
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 1.0637226666666664
+        },
+        "AutomaticBufferFusionOp": {
+          "count": 480,
+          "ms_per_forward": 2.1036956666666646
+        },
+        "Mul": {
+          "count": 576,
+          "ms_per_forward": 2.4152973333333363
+        },
+        "MatMulV3": {
+          "count": 288,
+          "ms_per_forward": 11.522335999999992
+        },
+        "Unpack": {
+          "count": 96,
+          "ms_per_forward": 0.6866923333333331
+        },
+        "Transpose": {
+          "count": 384,
+          "ms_per_forward": 1.7318106666666668
+        },
+        "StridedSliceD": {
+          "count": 384,
+          "ms_per_forward": 4.365360000000002
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.5953069999999997
+        },
+        "ConcatV2D": {
+          "count": 192,
+          "ms_per_forward": 0.7903566666666667
+        },
+        "Add": {
+          "count": 384,
+          "ms_per_forward": 1.7023923333333322
+        },
+        "PromptFlashAttention": {
+          "count": 96,
+          "ms_per_forward": 16.780939333333336
+        },
+        "MatMulV2": {
+          "count": 96,
+          "ms_per_forward": 2.116970333333333
+        }
+      },
+      "raw_result": "matrix/baseline_crop_1_bucket_3072/result.json"
+    },
+    {
+      "variant": "eager_pfa",
+      "route": "crop_0_bucket_768",
+      "execution": "raw_eager",
+      "real_tokens": 720,
+      "physical_tokens": 768,
+      "wall_ms": 57.51167266862467,
+      "event_ms": 57.32911415100098,
+      "wall_real_tok_s": 12519.197696588539,
+      "event_real_tok_s": 12559.063761277892,
+      "first_call_s": 0.05646062998857815,
+      "weight_conversion_s": null,
+      "relative_l2": 0.0,
+      "cosine": 1.0,
+      "max_abs": 0.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "2": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 25.533642666666665,
+      "attention_ms": 2.8230160000000004,
+      "linear_ms": 4.735054333333333,
+      "remaining_ms": 17.975572333333332,
+      "attention_share": 0.11056064490498081,
+      "matmul_input_formats": {
+        "ND;ND;ND": 384
+      },
+      "attention_input_formats": {
+        "NCHW;NCHW;NCHW;NCHW;ND;ND": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Cast": {
+          "count": 768,
+          "ms_per_forward": 1.837786666666671
+        },
+        "ReduceMean": {
+          "count": 384,
+          "ms_per_forward": 2.097318333333334
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 1.1651840000000002
+        },
+        "Pows": {
+          "count": 192,
+          "ms_per_forward": 1.0423193333333334
+        },
+        "Add": {
+          "count": 768,
+          "ms_per_forward": 1.8338826666666646
+        },
+        "Rsqrt": {
+          "count": 192,
+          "ms_per_forward": 0.08277466666666666
+        },
+        "Mul": {
+          "count": 960,
+          "ms_per_forward": 3.8262783333333363
+        },
+        "MatMulV2": {
+          "count": 384,
+          "ms_per_forward": 4.735054333333337
+        },
+        "Slice": {
+          "count": 672,
+          "ms_per_forward": 1.9671763333333334
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.3861466666666667
+        },
+        "ConcatD": {
+          "count": 192,
+          "ms_per_forward": 0.6452526666666665
+        },
+        "Transpose": {
+          "count": 384,
+          "ms_per_forward": 2.639038666666666
+        },
+        "PromptFlashAttention": {
+          "count": 96,
+          "ms_per_forward": 2.823016000000001
+        },
+        "Sigmoid": {
+          "count": 96,
+          "ms_per_forward": 0.452414
+        }
+      },
+      "raw_result": "matrix/eager_pfa_crop_0_bucket_768/result.json"
+    },
+    {
+      "variant": "eager_pfa",
+      "route": "crop_1_bucket_3072",
+      "execution": "raw_eager",
+      "real_tokens": 3036,
+      "physical_tokens": 3072,
+      "wall_ms": 58.65787633374566,
+      "event_ms": 58.47172393798828,
+      "wall_real_tok_s": 51757.755134639956,
+      "event_real_tok_s": 51922.532730859886,
+      "first_call_s": 0.05908470999565907,
+      "weight_conversion_s": null,
+      "relative_l2": 0.0,
+      "cosine": 1.0000001192092896,
+      "max_abs": 0.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "2": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 58.051870666666666,
+      "attention_ms": 16.838503,
+      "linear_ms": 14.422748666666667,
+      "remaining_ms": 26.790619000000003,
+      "attention_share": 0.29005961059698726,
+      "matmul_input_formats": {
+        "ND;ND;ND": 384
+      },
+      "attention_input_formats": {
+        "NCHW;NCHW;NCHW;NCHW;ND;ND": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Cast": {
+          "count": 768,
+          "ms_per_forward": 2.5163953333333313
+        },
+        "ReduceMean": {
+          "count": 384,
+          "ms_per_forward": 3.0524809999999976
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 1.568973333333333
+        },
+        "Pows": {
+          "count": 192,
+          "ms_per_forward": 1.405588333333333
+        },
+        "Add": {
+          "count": 768,
+          "ms_per_forward": 2.7679540000000022
+        },
+        "Rsqrt": {
+          "count": 192,
+          "ms_per_forward": 0.10576733333333332
+        },
+        "Mul": {
+          "count": 960,
+          "ms_per_forward": 6.317136666666671
+        },
+        "MatMulV3": {
+          "count": 288,
+          "ms_per_forward": 12.205444333333338
+        },
+        "Slice": {
+          "count": 480,
+          "ms_per_forward": 2.4255356666666668
+        },
+        "SliceV2": {
+          "count": 192,
+          "ms_per_forward": 0.7436169999999998
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.5696846666666667
+        },
+        "ConcatD": {
+          "count": 192,
+          "ms_per_forward": 1.0722613333333333
+        },
+        "Transpose": {
+          "count": 384,
+          "ms_per_forward": 3.1653639999999976
+        },
+        "PromptFlashAttention": {
+          "count": 96,
+          "ms_per_forward": 16.838503000000003
+        },
+        "MatMulV2": {
+          "count": 96,
+          "ms_per_forward": 2.217304333333334
+        },
+        "Sigmoid": {
+          "count": 96,
+          "ms_per_forward": 1.0798603333333336
+        }
+      },
+      "raw_result": "matrix/eager_pfa_crop_1_bucket_3072/result.json"
+    },
+    {
+      "variant": "pfa_nz_weights",
+      "route": "crop_0_bucket_768",
+      "execution": "torchair_fullgraph",
+      "real_tokens": 720,
+      "physical_tokens": 768,
+      "wall_ms": 18.712468666490167,
+      "event_ms": 18.560748608907065,
+      "wall_real_tok_s": 38477.01833640788,
+      "event_real_tok_s": 38791.538809726735,
+      "first_call_s": 38.05048070001067,
+      "weight_conversion_s": 8.851121589992545,
+      "relative_l2": 0.007526037748903036,
+      "cosine": 0.999971866607666,
+      "max_abs": 132.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "29": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 18.455748333333336,
+      "attention_ms": 2.6879796666666667,
+      "linear_ms": 5.2503573333333335,
+      "remaining_ms": 10.517411333333335,
+      "attention_share": 0.1456445774031198,
+      "matmul_input_formats": {
+        "ND;FRACTAL_NZ;ND": 384
+      },
+      "attention_input_formats": {
+        "NCHW;NCHW;NCHW;NCHW": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Data": {
+          "count": 1,
+          "ms_per_forward": 0.0020003333333333336
+        },
+        "Cast": {
+          "count": 195,
+          "ms_per_forward": 0.6486189999999998
+        },
+        "ReduceMeanD": {
+          "count": 384,
+          "ms_per_forward": 0.915436333333334
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 0.6837939999999998
+        },
+        "AutomaticBufferFusionOp": {
+          "count": 480,
+          "ms_per_forward": 1.046265333333335
+        },
+        "Mul": {
+          "count": 576,
+          "ms_per_forward": 1.4477280000000012
+        },
+        "MatMulV2": {
+          "count": 384,
+          "ms_per_forward": 5.250357333333334
+        },
+        "Unpack": {
+          "count": 96,
+          "ms_per_forward": 0.26821233333333333
+        },
+        "Transpose": {
+          "count": 288,
+          "ms_per_forward": 1.0293243333333328
+        },
+        "StridedSliceD": {
+          "count": 384,
+          "ms_per_forward": 1.9181876666666648
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.5833956666666665
+        },
+        "ConcatV2D": {
+          "count": 192,
+          "ms_per_forward": 0.5530839999999997
+        },
+        "Add": {
+          "count": 384,
+          "ms_per_forward": 1.2458330000000006
+        },
+        "PromptFlashAttention": {
+          "count": 96,
+          "ms_per_forward": 2.687979666666667
+        },
+        "ConfusionTransposeD": {
+          "count": 96,
+          "ms_per_forward": 0.17553133333333332
+        }
+      },
+      "raw_result": "matrix/pfa_nz_weights_crop_0_bucket_768/result.json"
+    },
+    {
+      "variant": "pfa_nz_weights",
+      "route": "crop_1_bucket_3072",
+      "execution": "torchair_fullgraph",
+      "real_tokens": 3036,
+      "physical_tokens": 3072,
+      "wall_ms": 50.796629000493944,
+      "event_ms": 50.65501416524251,
+      "wall_real_tok_s": 59767.74561104199,
+      "event_real_tok_s": 59934.83665992506,
+      "first_call_s": 38.71369670999411,
+      "weight_conversion_s": 8.657269989998895,
+      "relative_l2": 0.012792134657502174,
+      "cosine": 0.9999182224273682,
+      "max_abs": 476.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "29": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 50.563924333333325,
+      "attention_ms": 16.69546666666667,
+      "linear_ms": 15.299859666666666,
+      "remaining_ms": 18.56859799999999,
+      "attention_share": 0.33018534235208663,
+      "matmul_input_formats": {
+        "ND;FRACTAL_NZ;ND": 384
+      },
+      "attention_input_formats": {
+        "NCHW;NCHW;NCHW;NCHW": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Data": {
+          "count": 1,
+          "ms_per_forward": 0.001966666666666667
+        },
+        "Cast": {
+          "count": 195,
+          "ms_per_forward": 0.8562709999999996
+        },
+        "ReduceMeanD": {
+          "count": 384,
+          "ms_per_forward": 1.6570303333333325
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 1.1324176666666665
+        },
+        "AutomaticBufferFusionOp": {
+          "count": 480,
+          "ms_per_forward": 2.0930566666666652
+        },
+        "Mul": {
+          "count": 576,
+          "ms_per_forward": 2.478465666666667
+        },
+        "MatMulV2": {
+          "count": 384,
+          "ms_per_forward": 15.299859666666668
+        },
+        "Unpack": {
+          "count": 96,
+          "ms_per_forward": 0.6823533333333331
+        },
+        "Transpose": {
+          "count": 288,
+          "ms_per_forward": 1.4648280000000007
+        },
+        "StridedSliceD": {
+          "count": 384,
+          "ms_per_forward": 4.520689333333332
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.6469673333333329
+        },
+        "ConcatV2D": {
+          "count": 192,
+          "ms_per_forward": 0.8541910000000006
+        },
+        "Add": {
+          "count": 384,
+          "ms_per_forward": 1.8364786666666666
+        },
+        "PromptFlashAttention": {
+          "count": 96,
+          "ms_per_forward": 16.69546666666667
+        },
+        "ConfusionTransposeD": {
+          "count": 96,
+          "ms_per_forward": 0.3438823333333334
+        }
+      },
+      "raw_result": "matrix/pfa_nz_weights_crop_1_bucket_3072/result.json"
+    },
+    {
+      "variant": "unpad_d128",
+      "route": "crop_0_bucket_768",
+      "execution": "raw_eager",
+      "real_tokens": 720,
+      "physical_tokens": 768,
+      "wall_ms": 53.525878334767185,
+      "event_ms": 53.367941792805986,
+      "wall_real_tok_s": 13451.437368237102,
+      "event_real_tok_s": 13491.245414621859,
+      "first_call_s": 0.05630390999431256,
+      "weight_conversion_s": null,
+      "relative_l2": 0.0071989367716014385,
+      "cosine": 0.9999749660491943,
+      "max_abs": 176.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "2": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 31.029402666666666,
+      "attention_ms": 2.3760196666666666,
+      "linear_ms": 4.616642,
+      "remaining_ms": 24.036741,
+      "attention_share": 0.07657316810739337,
+      "matmul_input_formats": {
+        "ND;ND;ND": 384
+      },
+      "attention_input_formats": {
+        "ND;ND;ND;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Cast": {
+          "count": 768,
+          "ms_per_forward": 1.8493096666666684
+        },
+        "ReduceMean": {
+          "count": 384,
+          "ms_per_forward": 1.997669333333332
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 1.170795666666667
+        },
+        "Pows": {
+          "count": 192,
+          "ms_per_forward": 1.042352333333333
+        },
+        "Add": {
+          "count": 768,
+          "ms_per_forward": 1.837943333333331
+        },
+        "Rsqrt": {
+          "count": 192,
+          "ms_per_forward": 0.08314200000000008
+        },
+        "Mul": {
+          "count": 960,
+          "ms_per_forward": 3.8847199999999984
+        },
+        "MatMulV2": {
+          "count": 384,
+          "ms_per_forward": 4.616642000000002
+        },
+        "Slice": {
+          "count": 768,
+          "ms_per_forward": 2.3707556666666676
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.3860129999999995
+        },
+        "ConcatD": {
+          "count": 192,
+          "ms_per_forward": 0.6477850000000005
+        },
+        "Transpose": {
+          "count": 768,
+          "ms_per_forward": 5.928293000000002
+        },
+        "MemSet": {
+          "count": 288,
+          "ms_per_forward": 0.7566423333333334
+        },
+        "PadV3": {
+          "count": 288,
+          "ms_per_forward": 1.6291963333333326
+        },
+        "UnpadFlashAttentionNdKernel": {
+          "count": 96,
+          "ms_per_forward": 2.376019666666667
+        },
+        "Sigmoid": {
+          "count": 96,
+          "ms_per_forward": 0.4521233333333334
+        }
+      },
+      "raw_result": "matrix/unpad_d128_crop_0_bucket_768/result.json"
+    },
+    {
+      "variant": "unpad_d128",
+      "route": "crop_1_bucket_3072",
+      "execution": "raw_eager",
+      "real_tokens": 3036,
+      "physical_tokens": 3072,
+      "wall_ms": 69.76001800018518,
+      "event_ms": 69.57873611450195,
+      "wall_real_tok_s": 43520.63097219873,
+      "event_real_tok_s": 43634.02052897051,
+      "first_call_s": 0.07023236999521032,
+      "weight_conversion_s": null,
+      "relative_l2": 0.021528931334614754,
+      "cosine": 0.9997682571411133,
+      "max_abs": 924.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "2": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 69.51618433333334,
+      "attention_ms": 19.293505,
+      "linear_ms": 14.380281666666667,
+      "remaining_ms": 35.84239766666668,
+      "attention_share": 0.2775397583314807,
+      "matmul_input_formats": {
+        "ND;ND;ND": 384
+      },
+      "attention_input_formats": {
+        "ND;ND;ND;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Cast": {
+          "count": 768,
+          "ms_per_forward": 2.6751706666666673
+        },
+        "ReduceMean": {
+          "count": 384,
+          "ms_per_forward": 3.028000666666669
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 1.604793666666667
+        },
+        "Pows": {
+          "count": 192,
+          "ms_per_forward": 1.522114666666667
+        },
+        "Add": {
+          "count": 768,
+          "ms_per_forward": 2.7786073333333343
+        },
+        "Rsqrt": {
+          "count": 192,
+          "ms_per_forward": 0.10548266666666657
+        },
+        "Mul": {
+          "count": 960,
+          "ms_per_forward": 6.512277666666668
+        },
+        "MatMulV3": {
+          "count": 288,
+          "ms_per_forward": 12.179771000000006
+        },
+        "Slice": {
+          "count": 576,
+          "ms_per_forward": 3.151821666666667
+        },
+        "SliceV2": {
+          "count": 192,
+          "ms_per_forward": 0.7574353333333338
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.5715203333333332
+        },
+        "ConcatD": {
+          "count": 192,
+          "ms_per_forward": 1.0518290000000001
+        },
+        "Transpose": {
+          "count": 768,
+          "ms_per_forward": 7.641007333333332
+        },
+        "MemSet": {
+          "count": 288,
+          "ms_per_forward": 0.75376
+        },
+        "PadV3": {
+          "count": 288,
+          "ms_per_forward": 2.6070749999999974
+        },
+        "UnpadFlashAttentionNdKernel": {
+          "count": 96,
+          "ms_per_forward": 19.293504999999996
+        },
+        "MatMulV2": {
+          "count": 96,
+          "ms_per_forward": 2.2005106666666663
+        },
+        "Sigmoid": {
+          "count": 96,
+          "ms_per_forward": 1.081501666666667
+        }
+      },
+      "raw_result": "matrix/unpad_d128_crop_1_bucket_3072/result.json"
+    },
+    {
+      "variant": "unpad_d128_nz_weights",
+      "route": "crop_0_bucket_768",
+      "execution": "raw_eager",
+      "real_tokens": 720,
+      "physical_tokens": 768,
+      "wall_ms": 55.24600933228309,
+      "event_ms": 55.06692250569662,
+      "wall_real_tok_s": 13032.61554458137,
+      "event_real_tok_s": 13074.999786405655,
+      "first_call_s": 0.05802503999439068,
+      "weight_conversion_s": 8.828294740000274,
+      "relative_l2": 0.0071989367716014385,
+      "cosine": 0.9999749660491943,
+      "max_abs": 176.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "29": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 30.976477,
+      "attention_ms": 2.451,
+      "linear_ms": 4.410975666666666,
+      "remaining_ms": 24.114501333333333,
+      "attention_share": 0.07912455635287383,
+      "matmul_input_formats": {
+        "ND;FRACTAL_NZ;ND": 384
+      },
+      "attention_input_formats": {
+        "ND;ND;ND;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Cast": {
+          "count": 768,
+          "ms_per_forward": 1.6846309999999993
+        },
+        "ReduceMean": {
+          "count": 384,
+          "ms_per_forward": 1.997076
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 1.4186906666666677
+        },
+        "Pows": {
+          "count": 192,
+          "ms_per_forward": 1.0392913333333333
+        },
+        "Add": {
+          "count": 768,
+          "ms_per_forward": 1.8295603333333328
+        },
+        "Rsqrt": {
+          "count": 192,
+          "ms_per_forward": 0.08412233333333331
+        },
+        "Mul": {
+          "count": 960,
+          "ms_per_forward": 3.8872286666666707
+        },
+        "MatMulV2": {
+          "count": 384,
+          "ms_per_forward": 4.410975666666661
+        },
+        "Slice": {
+          "count": 768,
+          "ms_per_forward": 2.375123000000001
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.3538676666666666
+        },
+        "ConcatD": {
+          "count": 192,
+          "ms_per_forward": 0.6677346666666669
+        },
+        "Transpose": {
+          "count": 768,
+          "ms_per_forward": 5.970102333333328
+        },
+        "MemSet": {
+          "count": 288,
+          "ms_per_forward": 0.7177783333333325
+        },
+        "PadV3": {
+          "count": 288,
+          "ms_per_forward": 1.6617976666666658
+        },
+        "UnpadFlashAttentionNdKernel": {
+          "count": 96,
+          "ms_per_forward": 2.451
+        },
+        "Sigmoid": {
+          "count": 96,
+          "ms_per_forward": 0.4274973333333334
+        }
+      },
+      "raw_result": "matrix/unpad_d128_nz_weights_crop_0_bucket_768/result.json"
+    },
+    {
+      "variant": "unpad_d128_nz_weights",
+      "route": "crop_1_bucket_3072",
+      "execution": "raw_eager",
+      "real_tokens": 3036,
+      "physical_tokens": 3072,
+      "wall_ms": 69.98127066569093,
+      "event_ms": 69.8127316792806,
+      "wall_real_tok_s": 43383.03621983863,
+      "event_real_tok_s": 43487.769737293354,
+      "first_call_s": 0.07071811000059824,
+      "weight_conversion_s": 8.419529070000863,
+      "relative_l2": 0.021528931334614754,
+      "cosine": 0.9997682571411133,
+      "max_abs": 924.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "29": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 69.720912,
+      "attention_ms": 19.326912333333333,
+      "linear_ms": 14.171271333333333,
+      "remaining_ms": 36.222728333333336,
+      "attention_share": 0.27720395185498053,
+      "matmul_input_formats": {
+        "ND;FRACTAL_NZ;ND": 384
+      },
+      "attention_input_formats": {
+        "ND;ND;ND;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED;UNDEFINED": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Cast": {
+          "count": 768,
+          "ms_per_forward": 2.5240736666666668
+        },
+        "ReduceMean": {
+          "count": 384,
+          "ms_per_forward": 3.073788999999998
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 1.8159470000000013
+        },
+        "Pows": {
+          "count": 192,
+          "ms_per_forward": 1.5162866666666674
+        },
+        "Add": {
+          "count": 768,
+          "ms_per_forward": 2.775851999999997
+        },
+        "Rsqrt": {
+          "count": 192,
+          "ms_per_forward": 0.10469499999999998
+        },
+        "Mul": {
+          "count": 960,
+          "ms_per_forward": 6.4691576666666695
+        },
+        "MatMulV3": {
+          "count": 288,
+          "ms_per_forward": 11.873884333333331
+        },
+        "Slice": {
+          "count": 576,
+          "ms_per_forward": 3.156696333333331
+        },
+        "SliceV2": {
+          "count": 192,
+          "ms_per_forward": 0.7422866666666668
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.5215719999999997
+        },
+        "ConcatD": {
+          "count": 192,
+          "ms_per_forward": 1.0548593333333338
+        },
+        "Transpose": {
+          "count": 768,
+          "ms_per_forward": 7.995588000000003
+        },
+        "MemSet": {
+          "count": 288,
+          "ms_per_forward": 0.7103806666666667
+        },
+        "PadV3": {
+          "count": 288,
+          "ms_per_forward": 2.7024023333333345
+        },
+        "UnpadFlashAttentionNdKernel": {
+          "count": 96,
+          "ms_per_forward": 19.326912333333336
+        },
+        "MatMulV2": {
+          "count": 96,
+          "ms_per_forward": 2.297387
+        },
+        "Sigmoid": {
+          "count": 96,
+          "ms_per_forward": 1.0591419999999996
+        }
+      },
+      "raw_result": "matrix/unpad_d128_nz_weights_crop_1_bucket_3072/result.json"
+    },
+    {
+      "variant": "pfa_d128",
+      "route": "crop_0_bucket_768",
+      "execution": "torchair_fullgraph",
+      "real_tokens": 720,
+      "physical_tokens": 768,
+      "wall_ms": 18.94240833304745,
+      "event_ms": 18.7877680460612,
+      "wall_real_tok_s": 38009.95033687813,
+      "event_real_tok_s": 38322.80653214398,
+      "first_call_s": 44.628289250002126,
+      "weight_conversion_s": null,
+      "relative_l2": 0.0,
+      "cosine": 1.0,
+      "max_abs": 0.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "2": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 18.585165333333332,
+      "attention_ms": 2.758663,
+      "linear_ms": 4.494101,
+      "remaining_ms": 11.332401333333333,
+      "attention_share": 0.1484336001602425,
+      "matmul_input_formats": {
+        "ND;ND;ND": 384
+      },
+      "attention_input_formats": {
+        "NCHW;NCHW;NCHW;NCHW": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Data": {
+          "count": 1,
+          "ms_per_forward": 0.00212
+        },
+        "Cast": {
+          "count": 195,
+          "ms_per_forward": 0.5858863333333338
+        },
+        "ReduceMeanD": {
+          "count": 384,
+          "ms_per_forward": 0.8572753333333337
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 0.6164596666666673
+        },
+        "AutomaticBufferFusionOp": {
+          "count": 480,
+          "ms_per_forward": 1.0145713333333342
+        },
+        "Mul": {
+          "count": 576,
+          "ms_per_forward": 1.3872183333333348
+        },
+        "MatMulV2": {
+          "count": 384,
+          "ms_per_forward": 4.494100999999997
+        },
+        "Unpack": {
+          "count": 96,
+          "ms_per_forward": 0.2678323333333333
+        },
+        "Transpose": {
+          "count": 288,
+          "ms_per_forward": 0.7732586666666664
+        },
+        "StridedSliceD": {
+          "count": 480,
+          "ms_per_forward": 2.0912729999999975
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.4922633333333335
+        },
+        "ConcatV2D": {
+          "count": 192,
+          "ms_per_forward": 0.49624199999999985
+        },
+        "Add": {
+          "count": 384,
+          "ms_per_forward": 1.0679290000000006
+        },
+        "te_memset_a8b1f5b1b0c44beef84d40753f2a30539fad1ae9efba5fbd957512e0b764e7d9__kernel0": {
+          "count": 288,
+          "ms_per_forward": 0.09326866666666665
+        },
+        "PadV3": {
+          "count": 288,
+          "ms_per_forward": 1.4158806666666672
+        },
+        "PromptFlashAttention": {
+          "count": 96,
+          "ms_per_forward": 2.758662999999999
+        },
+        "ConfusionTransposeD": {
+          "count": 96,
+          "ms_per_forward": 0.17092266666666667
+        }
+      },
+      "raw_result": "padding_matrix/pfa_d128_crop_0_bucket_768/result.json"
+    },
+    {
+      "variant": "pfa_d128",
+      "route": "crop_1_bucket_3072",
+      "execution": "torchair_fullgraph",
+      "real_tokens": 3036,
+      "physical_tokens": 3072,
+      "wall_ms": 51.81573899802364,
+      "event_ms": 51.58004061381022,
+      "wall_real_tok_s": 58592.23584779519,
+      "event_real_tok_s": 58859.97691880706,
+      "first_call_s": 44.53213936999964,
+      "weight_conversion_s": null,
+      "relative_l2": 0.0,
+      "cosine": 1.0000001192092896,
+      "max_abs": 0.0,
+      "nonfinite": 0,
+      "stored_weight_formats": {
+        "2": 128
+      },
+      "profile_forwards": 3,
+      "attention_calls": 96,
+      "linear_calls": 384,
+      "kernel_ms": 51.316993333333336,
+      "attention_ms": 16.80377633333333,
+      "linear_ms": 13.665040000000001,
+      "remaining_ms": 20.848177000000003,
+      "attention_share": 0.32745052353677767,
+      "matmul_input_formats": {
+        "ND;ND;ND": 384
+      },
+      "attention_input_formats": {
+        "NCHW;NCHW;NCHW;NCHW": 96
+      },
+      "conversion_calls": 0,
+      "conversion_directions": {},
+      "kernel_types": {
+        "Data": {
+          "count": 1,
+          "ms_per_forward": 0.00174
+        },
+        "Cast": {
+          "count": 195,
+          "ms_per_forward": 0.7819699999999998
+        },
+        "ReduceMeanD": {
+          "count": 384,
+          "ms_per_forward": 1.59854
+        },
+        "Sub": {
+          "count": 192,
+          "ms_per_forward": 1.0615016666666666
+        },
+        "AutomaticBufferFusionOp": {
+          "count": 480,
+          "ms_per_forward": 2.0529019999999996
+        },
+        "Mul": {
+          "count": 576,
+          "ms_per_forward": 2.4127529999999986
+        },
+        "MatMulV3": {
+          "count": 288,
+          "ms_per_forward": 11.55087733333334
+        },
+        "Unpack": {
+          "count": 96,
+          "ms_per_forward": 0.6874269999999998
+        },
+        "Transpose": {
+          "count": 288,
+          "ms_per_forward": 1.3023733333333323
+        },
+        "StridedSliceD": {
+          "count": 480,
+          "ms_per_forward": 4.9724703333333355
+        },
+        "Neg": {
+          "count": 192,
+          "ms_per_forward": 0.6266126666666665
+        },
+        "ConcatV2D": {
+          "count": 192,
+          "ms_per_forward": 0.7943749999999999
+        },
+        "Add": {
+          "count": 384,
+          "ms_per_forward": 1.6561366666666657
+        },
+        "te_memset_a8b1f5b1b0c44beef84d40753f2a30539fad1ae9efba5fbd957512e0b764e7d9__kernel0": {
+          "count": 288,
+          "ms_per_forward": 0.09293499999999996
+        },
+        "PadV3": {
+          "count": 288,
+          "ms_per_forward": 2.487433333333334
+        },
+        "PromptFlashAttention": {
+          "count": 96,
+          "ms_per_forward": 16.80377633333333
+        },
+        "ConfusionTransposeD": {
+          "count": 96,
+          "ms_per_forward": 0.31900699999999993
+        },
+        "MatMulV2": {
+          "count": 96,
+          "ms_per_forward": 2.1141626666666657
+        }
+      },
+      "raw_result": "padding_matrix/pfa_d128_crop_1_bucket_3072/result.json"
+    }
+  ]
+}

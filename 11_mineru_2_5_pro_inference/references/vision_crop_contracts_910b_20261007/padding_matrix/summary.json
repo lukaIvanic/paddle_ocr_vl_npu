@@ -1,0 +1,17 @@
+{
+  "lanes": [
+    {
+      "name": "pfa_d128_crop_0_bucket_768",
+      "exit_code": 0,
+      "wall_s": 88.83900223000092,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/padding_matrix/pfa_d128_crop_0_bucket_768.log"
+    },
+    {
+      "name": "pfa_d128_crop_1_bucket_3072",
+      "exit_code": 0,
+      "wall_s": 92.16954629000975,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/padding_matrix/pfa_d128_crop_1_bucket_3072.log"
+    }
+  ],
+  "scope": "diagnostic, not page throughput"
+}

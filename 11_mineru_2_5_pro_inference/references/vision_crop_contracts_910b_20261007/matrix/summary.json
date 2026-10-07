@@ -1,0 +1,65 @@
+{
+  "lanes": [
+    {
+      "name": "baseline_crop_0_bucket_768",
+      "exit_code": 0,
+      "wall_s": 49.87461857999733,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/matrix/baseline_crop_0_bucket_768.log"
+    },
+    {
+      "name": "baseline_crop_1_bucket_3072",
+      "exit_code": 0,
+      "wall_s": 51.17417186999228,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/matrix/baseline_crop_1_bucket_3072.log"
+    },
+    {
+      "name": "pfa_nz_weights_crop_0_bucket_768",
+      "exit_code": 0,
+      "wall_s": 91.66894375999982,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/matrix/pfa_nz_weights_crop_0_bucket_768.log"
+    },
+    {
+      "name": "pfa_nz_weights_crop_1_bucket_3072",
+      "exit_code": 0,
+      "wall_s": 99.32985441999335,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/matrix/pfa_nz_weights_crop_1_bucket_3072.log"
+    },
+    {
+      "name": "eager_pfa_crop_0_bucket_768",
+      "exit_code": 0,
+      "wall_s": 50.92529220000142,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/matrix/eager_pfa_crop_0_bucket_768.log"
+    },
+    {
+      "name": "eager_pfa_crop_1_bucket_3072",
+      "exit_code": 0,
+      "wall_s": 46.26752433000365,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/matrix/eager_pfa_crop_1_bucket_3072.log"
+    },
+    {
+      "name": "unpad_d128_crop_0_bucket_768",
+      "exit_code": 0,
+      "wall_s": 44.735739380004816,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/matrix/unpad_d128_crop_0_bucket_768.log"
+    },
+    {
+      "name": "unpad_d128_crop_1_bucket_3072",
+      "exit_code": 0,
+      "wall_s": 53.277014609993785,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/matrix/unpad_d128_crop_1_bucket_3072.log"
+    },
+    {
+      "name": "unpad_d128_nz_weights_crop_0_bucket_768",
+      "exit_code": 0,
+      "wall_s": 63.47190792999754,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/matrix/unpad_d128_nz_weights_crop_0_bucket_768.log"
+    },
+    {
+      "name": "unpad_d128_nz_weights_crop_1_bucket_3072",
+      "exit_code": 0,
+      "wall_s": 58.086334759995225,
+      "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_kv_probe/tmp/11_mineru_2_5_pro_inference/vision_crop_contracts_910B_20261007T115828Z_82575a91/matrix/unpad_d128_nz_weights_crop_1_bucket_3072.log"
+    }
+  ],
+  "scope": "diagnostic, not page throughput"
+}

@@ -1,0 +1,39 @@
+{
+  "hostname": "liteserver-c001-4",
+  "python": "/usr/local/python3.12.13/bin/python3",
+  "python_version": "3.12.13 (main, May 15 2026, 02:51:13) [GCC 11.4.0]",
+  "physical_device": "3",
+  "logical_device": "npu:0",
+  "chip": "Ascend910B2",
+  "source_commit": "82575a912a6e9b1ab38233bfbf91c059c6111475",
+  "packages": {
+    "torch": "2.10.0+cpu",
+    "torch-npu": "2.10.0",
+    "transformers": "5.5.4",
+    "Pillow": "12.2.0",
+    "torchair": "not a separate installed distribution; TorchAir imported via repository bundled-runtime helper"
+  },
+  "source_audit": {
+    "vllm-ascend": "80610e4438dba05011b05f89fc45d91e96992671",
+    "vllm": "ad7125a431e176d4161099480a66f0169609a690",
+    "vllm_ascend/_310p/ops/mm_encoder_attention.py": {
+      "sha256": "f66db784ca67ce4c761e5ca2ce4e6c57fcfe81c3c814dc69b11ce2097bda4c48",
+      "path": "/vllm-workspace/vllm-ascend/vllm_ascend/_310p/ops/mm_encoder_attention.py"
+    },
+    "vllm_ascend/ops/linear.py": {
+      "sha256": "319b0c5763bd00cc849d8cf556eeb5328d986964c948b9f66985849ebd07cc3b",
+      "path": "/vllm-workspace/vllm-ascend/vllm_ascend/ops/linear.py"
+    },
+    "vllm_ascend/utils.py": {
+      "sha256": "b9a1f29ed0810236cc3c5f82a4070e4fd1583d8a6ebb880c85530202ea467ea9",
+      "path": "/vllm-workspace/vllm-ascend/vllm_ascend/utils.py"
+    }
+  },
+  "runtime_setup": {
+    "path": "/usr/local/bin/npu-setup",
+    "CANN_setup": "/usr/local/Ascend/cann-9.0.0/set_env.sh",
+    "ATB_setup": "/usr/local/Ascend/nnal/atb/set_env.sh",
+    "ATB_library": "/usr/local/Ascend/nnal/atb/9.0.0/atb/cxx_abi_1/lib",
+    "TORCH_DEVICE_BACKEND_AUTOLOAD": "0"
+  }
+}
