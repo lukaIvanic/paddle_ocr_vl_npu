@@ -7,15 +7,21 @@ from run_cpu_reference import sha256
 CHECKPOINT_SHA256 = '6b6f36543ad71aa48bca3cca97863c529e9153515fb777184c36475b3badb6be'
 
 class Reranker(Weights):
-    def __init__(self, checkpoint, device, dense_dtype):
-        if sha256(checkpoint) != CHECKPOINT_SHA256:
+    def __init__(self, checkpoint, device, dense_dtype, expected_sha256=CHECKPOINT_SHA256):
+        if sha256(checkpoint) != expected_sha256:
             raise ValueError('Reranker checkpoint SHA256 mismatch')
         source = torch.load(checkpoint, map_location='cpu', mmap=True, weights_only=True)
         values = {k.removeprefix('reranker.'): v for k, v in source.items()
                   if k.startswith('reranker.')}
         if 'token.weight' in values:
             values['emb.weight'] = values.pop('token.weight')
-        depth = max(int(k.split('.')[1]) for k in values if k.startswith('blocks.')) + 1
+        indices = {int(k.split('.')[1]) for k in values if k.startswith('blocks.')}
+        depth = max(indices) + 1
+        self.depth = depth
+        self.heads, head_size = values['blocks.0.att.r_k'].shape
+        self.width = self.heads * head_size
+        if indices != set(range(depth)) or head_size != 64 or values['emb.weight'].numel() != self.width:
+            raise ValueError('Reranker layer indices or head dimensions mismatch')
         self.layer_indices = tuple(int(i) for i in source.get('reranker_layer_idx', range(depth)))
         if len(self.layer_indices) != depth:
             raise ValueError('Layer selection does not match reranker depth')
