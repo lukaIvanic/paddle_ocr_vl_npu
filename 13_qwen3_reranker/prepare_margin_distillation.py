@@ -21,6 +21,13 @@ def read(p):return json.loads(gzip.decompress(p.read_bytes()) if p.suffix=='.gz'
 
 
 def raw_pool(args):
+    import fcntl
+    with (args.output/'acquisition.lock').open('w') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        return _raw_pool(args)
+
+
+def _raw_pool(args):
     cached=args.output/'raw_pool.json.gz'
     if cached.exists():
         value=read(cached)
@@ -44,7 +51,8 @@ def raw_pool(args):
     config_names=['miracl_zh_len-0-500','miracl_zh_len-500-1000',
                   'miracl_en_len-0-500']
     endpoint='https://hf-mirror.com'
-    metadata=json.load(urllib.request.urlopen(f'{endpoint}/api/datasets/{MIRROR}/revision/{REVISION}',timeout=30))
+    request=lambda url:urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0'})
+    metadata=json.load(urllib.request.urlopen(request(f'{endpoint}/api/datasets/{MIRROR}/revision/{REVISION}'),timeout=30))
     assert metadata['sha']==REVISION
     args.downloads.mkdir(exist_ok=True,parents=True)
     import pyarrow.parquet as pq
@@ -59,7 +67,7 @@ def raw_pool(args):
                 started=time.monotonic()
                 print('DOWNLOAD',json.dumps({'file':name}),flush=True)
                 url=f'{endpoint}/datasets/{MIRROR}/resolve/{REVISION}/{name}?download=true'
-                with urllib.request.urlopen(url,timeout=90) as stream,p.with_suffix('.partial').open('wb') as out:
+                with urllib.request.urlopen(request(url),timeout=90) as stream,p.with_suffix('.partial').open('wb') as out:
                     while chunk:=stream.read(1024**2):out.write(chunk)
                 p.with_suffix('.partial').replace(p)
                 print('DOWNLOADED',json.dumps({'file':name,'bytes':p.stat().st_size,
