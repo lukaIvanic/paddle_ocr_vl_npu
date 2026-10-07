@@ -5,16 +5,20 @@ from margin_distillation import (lr_at,margin_loss_and_score_gradient,benchmark_
 
 
 class MarginTest(unittest.TestCase):
-    def test_swap_keeps_teacher_fingerprint_and_rejects_truncation(self):
+    def test_reordering_keeps_teacher_fingerprint_and_rejects_truncation(self):
         teacher={'train':{'pairs':8,'truncated':0,'tokens':100,'token_ids_sha256':'canonical'}}
-        student={'train':{'pairs':8,'truncated':0,'tokens':101,'token_ids_sha256':'swapped'}}
-        validate_teacher_inputs(teacher,teacher,student,'contents_swapped')
-        with self.assertRaises(AssertionError):
-            validate_teacher_inputs(teacher,student,student,'contents_swapped')
-        with self.assertRaises(AssertionError):
-            validate_teacher_inputs(teacher,teacher,teacher,'contents_swapped')
-        with self.assertRaises(AssertionError):
-            validate_teacher_inputs(teacher,teacher,{'train':student['train']|{'truncated':1}},'contents_swapped')
+        student={'train':{'pairs':8,'truncated':0,'tokens':101,'token_ids_sha256':'reordered'}}
+        for order in ['contents_swapped', 'document_first']:
+            with self.subTest(order=order):
+                validate_teacher_inputs(teacher,teacher,student,order)
+                with self.assertRaises(AssertionError):
+                    validate_teacher_inputs(teacher,student,student,order)
+                with self.assertRaises(AssertionError):
+                    validate_teacher_inputs(teacher,teacher,teacher,order)
+                with self.assertRaises(AssertionError):
+                    validate_teacher_inputs(teacher,teacher,{'train':student['train']|{'truncated':1}},order)
+                with self.assertRaises(AssertionError):
+                    validate_teacher_inputs(teacher,teacher,{'train':student['train']|{'pairs':7}},order)
         validate_teacher_inputs(teacher,teacher,teacher,'query_first')
 
     def test_all_pair_gradient_and_offset_invariance(self):
