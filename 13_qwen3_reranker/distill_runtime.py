@@ -50,9 +50,15 @@ class Runtime:
         rows = []
         truncated = 0
         token_hash = hashlib.sha256()
-        for g in groups:
-            for j, document in enumerate(g['documents']):
-                raw = self.encode(body(g['instruction'], g['query'], document, order))
+        # Batch CPU tokenization without changing pair order, padding or truncation.
+        # The resulting token stream is still checked against saved teacher hashes.
+        for start in range(0, len(groups), 32):
+            pairs = [(g, j, document) for g in groups[start:start + 32]
+                     for j, document in enumerate(g['documents'])]
+            encoded = self.tokenizer(
+                [body(g['instruction'], g['query'], document, order) for g, _, document in pairs],
+                add_special_tokens=False, padding=False, truncation=False)['input_ids']
+            for (g, j, _), raw in zip(pairs, encoded):
                 truncated += len(raw) > self.limit
                 rows.append({'ids': self.prefix + raw[:self.limit] + self.suffix,
                              'index': len(rows), 'group_id': g['id'], 'candidate': j})
