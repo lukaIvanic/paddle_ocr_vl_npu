@@ -1,0 +1,1912 @@
+[
+  {
+    "panel": "benchmark",
+    "qid": "18",
+    "query": "Should churches remain tax-exempt?",
+    "query_first": [
+      {
+        "id": "7f792826-2019-04-18T15:23:48Z-00004-000",
+        "score": 4.4375,
+        "qrel": 1,
+        "characters": 362
+      },
+      {
+        "id": "2f656c50-2019-04-18T18:20:05Z-00002-000",
+        "score": 3.75,
+        "qrel": 2,
+        "characters": 2226
+      },
+      {
+        "id": "2f656c50-2019-04-18T18:20:05Z-00001-000",
+        "score": 3.3125,
+        "qrel": 2,
+        "characters": 4860
+      },
+      {
+        "id": "7f792826-2019-04-18T15:23:48Z-00003-000",
+        "score": 2.6875,
+        "qrel": null,
+        "characters": 4809
+      },
+      {
+        "id": "b80912ea-2019-04-18T17:08:58Z-00002-000",
+        "score": 2.5625,
+        "qrel": 2,
+        "characters": 1441
+      },
+      {
+        "id": "af414960-2019-04-19T12:47:32Z-00010-000",
+        "score": 2.5,
+        "qrel": 2,
+        "characters": 1061
+      },
+      {
+        "id": "ffa16c3b-2019-04-18T15:59:53Z-00003-000",
+        "score": 2.4375,
+        "qrel": 0,
+        "characters": 721
+      },
+      {
+        "id": "5efc5feb-2019-04-18T16:38:30Z-00003-000",
+        "score": 2.4375,
+        "qrel": null,
+        "characters": 2641
+      },
+      {
+        "id": "ffa16c3b-2019-04-18T15:59:53Z-00001-000",
+        "score": 2.25,
+        "qrel": 2,
+        "characters": 7611
+      },
+      {
+        "id": "3f1c75e-2019-04-18T11:15:58Z-00005-000",
+        "score": 2.25,
+        "qrel": 1,
+        "characters": 854
+      }
+    ],
+    "swapped_untrained": [
+      {
+        "id": "f2f7c9c0-2019-04-18T12:43:51Z-00005-000",
+        "score": 6.25,
+        "qrel": 2,
+        "characters": 4540
+      },
+      {
+        "id": "37eb35dd-2019-04-18T18:23:18Z-00001-000",
+        "score": 5.4375,
+        "qrel": null,
+        "characters": 4908
+      },
+      {
+        "id": "5efc5feb-2019-04-18T16:38:30Z-00001-000",
+        "score": 5.3125,
+        "qrel": 2,
+        "characters": 6594
+      },
+      {
+        "id": "32e89ba9-2019-04-18T16:30:48Z-00001-000",
+        "score": 5.125,
+        "qrel": 2,
+        "characters": 5584
+      },
+      {
+        "id": "8a799a1-2019-04-18T19:04:58Z-00001-000",
+        "score": 5.0625,
+        "qrel": null,
+        "characters": 2510
+      },
+      {
+        "id": "b80912ea-2019-04-18T17:08:58Z-00002-000",
+        "score": 4.875,
+        "qrel": 2,
+        "characters": 1441
+      },
+      {
+        "id": "8a799a1-2019-04-18T19:04:58Z-00003-000",
+        "score": 4.75,
+        "qrel": null,
+        "characters": 3371
+      },
+      {
+        "id": "5efc5feb-2019-04-18T16:38:30Z-00000-000",
+        "score": 4.3125,
+        "qrel": null,
+        "characters": 853
+      },
+      {
+        "id": "2f656c50-2019-04-18T18:20:05Z-00001-000",
+        "score": 4.125,
+        "qrel": 2,
+        "characters": 4860
+      },
+      {
+        "id": "ffa16c3b-2019-04-18T15:59:53Z-00003-000",
+        "score": 3.6875,
+        "qrel": 0,
+        "characters": 721
+      }
+    ],
+    "swapped_trained": [
+      {
+        "id": "f2f7c9c0-2019-04-18T12:43:51Z-00005-000",
+        "score": 6.625,
+        "qrel": 2,
+        "characters": 4540
+      },
+      {
+        "id": "5efc5feb-2019-04-18T16:38:30Z-00001-000",
+        "score": 6.3125,
+        "qrel": 2,
+        "characters": 6594
+      },
+      {
+        "id": "37eb35dd-2019-04-18T18:23:18Z-00001-000",
+        "score": 5.6875,
+        "qrel": null,
+        "characters": 4908
+      },
+      {
+        "id": "b80912ea-2019-04-18T17:08:58Z-00002-000",
+        "score": 5.625,
+        "qrel": 2,
+        "characters": 1441
+      },
+      {
+        "id": "8a799a1-2019-04-18T19:04:58Z-00001-000",
+        "score": 5.5,
+        "qrel": null,
+        "characters": 2510
+      },
+      {
+        "id": "8a799a1-2019-04-18T19:04:58Z-00003-000",
+        "score": 5.25,
+        "qrel": null,
+        "characters": 3371
+      },
+      {
+        "id": "32e89ba9-2019-04-18T16:30:48Z-00001-000",
+        "score": 5.1875,
+        "qrel": 2,
+        "characters": 5584
+      },
+      {
+        "id": "2f656c50-2019-04-18T18:20:05Z-00001-000",
+        "score": 4.875,
+        "qrel": 2,
+        "characters": 4860
+      },
+      {
+        "id": "5efc5feb-2019-04-18T16:38:30Z-00000-000",
+        "score": 4.0625,
+        "qrel": null,
+        "characters": 853
+      },
+      {
+        "id": "2f656c50-2019-04-18T18:20:05Z-00000-000",
+        "score": 3.9375,
+        "qrel": 2,
+        "characters": 2653
+      }
+    ]
+  },
+  {
+    "panel": "benchmark",
+    "qid": "32",
+    "query": "Do electronic voting machines improve the voting process?",
+    "query_first": [
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00016-000",
+        "score": 3.1875,
+        "qrel": 2,
+        "characters": 1048
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00017-000",
+        "score": 2.9375,
+        "qrel": 2,
+        "characters": 1453
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00011-000",
+        "score": 2.625,
+        "qrel": null,
+        "characters": 2000
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00029-000",
+        "score": 2.5,
+        "qrel": 2,
+        "characters": 1145
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00023-000",
+        "score": 2.5,
+        "qrel": 1,
+        "characters": 2164
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00015-000",
+        "score": 2.5,
+        "qrel": 1,
+        "characters": 1257
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00014-000",
+        "score": 2.125,
+        "qrel": 2,
+        "characters": 908
+      },
+      {
+        "id": "f2c72c91-2019-04-18T19:54:40Z-00000-000",
+        "score": 0.75,
+        "qrel": 0,
+        "characters": 1448
+      },
+      {
+        "id": "bdcf90af-2019-04-15T20:24:22Z-00024-000",
+        "score": 0.3125,
+        "qrel": 2,
+        "characters": 999
+      },
+      {
+        "id": "b76ec089-2019-04-19T12:45:35Z-00014-000",
+        "score": 0.25,
+        "qrel": 1,
+        "characters": 295
+      }
+    ],
+    "swapped_untrained": [
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00011-000",
+        "score": 4.3125,
+        "qrel": null,
+        "characters": 2000
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00017-000",
+        "score": 3.3125,
+        "qrel": 2,
+        "characters": 1453
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00016-000",
+        "score": 2.875,
+        "qrel": 2,
+        "characters": 1048
+      },
+      {
+        "id": "538dd198-2019-04-18T18:14:33Z-00004-000",
+        "score": 2.75,
+        "qrel": 2,
+        "characters": 2919
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00015-000",
+        "score": 2.4375,
+        "qrel": 1,
+        "characters": 1257
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00019-000",
+        "score": 1.375,
+        "qrel": 0,
+        "characters": 1165
+      },
+      {
+        "id": "b76ec089-2019-04-19T12:45:35Z-00014-000",
+        "score": 1.25,
+        "qrel": 1,
+        "characters": 295
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00020-000",
+        "score": 1.25,
+        "qrel": 1,
+        "characters": 1182
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00023-000",
+        "score": 1.0,
+        "qrel": 1,
+        "characters": 2164
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00014-000",
+        "score": 0.875,
+        "qrel": 2,
+        "characters": 908
+      }
+    ],
+    "swapped_trained": [
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00011-000",
+        "score": 4.8125,
+        "qrel": null,
+        "characters": 2000
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00017-000",
+        "score": 3.9375,
+        "qrel": 2,
+        "characters": 1453
+      },
+      {
+        "id": "538dd198-2019-04-18T18:14:33Z-00004-000",
+        "score": 3.375,
+        "qrel": 2,
+        "characters": 2919
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00016-000",
+        "score": 3.125,
+        "qrel": 2,
+        "characters": 1048
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00015-000",
+        "score": 2.9375,
+        "qrel": 1,
+        "characters": 1257
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00019-000",
+        "score": 1.75,
+        "qrel": 0,
+        "characters": 1165
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00020-000",
+        "score": 1.625,
+        "qrel": 1,
+        "characters": 1182
+      },
+      {
+        "id": "b76ec089-2019-04-19T12:45:35Z-00014-000",
+        "score": 1.5,
+        "qrel": 1,
+        "characters": 295
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00014-000",
+        "score": 1.5,
+        "qrel": 2,
+        "characters": 908
+      },
+      {
+        "id": "2c05e9fb-2019-04-15T20:23:05Z-00023-000",
+        "score": 1.375,
+        "qrel": 1,
+        "characters": 2164
+      }
+    ]
+  },
+  {
+    "panel": "benchmark",
+    "qid": "17",
+    "query": "Should recreational marijuana be legal?",
+    "query_first": [
+      {
+        "id": "d3fcb9ba-2019-04-18T11:58:12Z-00000-000",
+        "score": 2.1875,
+        "qrel": 2,
+        "characters": 580
+      },
+      {
+        "id": "93ed752f-2019-04-18T11:37:10Z-00001-000",
+        "score": 1.125,
+        "qrel": 2,
+        "characters": 3081
+      },
+      {
+        "id": "711b9599-2019-04-18T13:44:23Z-00005-000",
+        "score": 0.875,
+        "qrel": 2,
+        "characters": 5682
+      },
+      {
+        "id": "2a5141f4-2019-04-18T12:43:08Z-00001-000",
+        "score": 0.5,
+        "qrel": 0,
+        "characters": 181
+      },
+      {
+        "id": "f703aaba-2019-04-18T13:53:50Z-00009-000",
+        "score": 0.0,
+        "qrel": 2,
+        "characters": 9931
+      },
+      {
+        "id": "99d62d9d-2019-04-18T14:32:36Z-00003-000",
+        "score": -0.125,
+        "qrel": null,
+        "characters": 4967
+      },
+      {
+        "id": "d44d94da-2019-04-18T15:44:00Z-00002-000",
+        "score": -0.1875,
+        "qrel": 2,
+        "characters": 3492
+      },
+      {
+        "id": "eec21427-2019-04-18T11:48:32Z-00001-000",
+        "score": -0.375,
+        "qrel": 2,
+        "characters": 1395
+      },
+      {
+        "id": "e3b7cf32-2019-04-18T19:40:04Z-00004-000",
+        "score": -0.5,
+        "qrel": 2,
+        "characters": 2236
+      },
+      {
+        "id": "9908ed79-2019-04-18T15:15:15Z-00004-000",
+        "score": -0.5,
+        "qrel": null,
+        "characters": 3103
+      }
+    ],
+    "swapped_untrained": [
+      {
+        "id": "99d62d9d-2019-04-18T14:32:36Z-00003-000",
+        "score": 6.125,
+        "qrel": null,
+        "characters": 4967
+      },
+      {
+        "id": "db751e93-2019-04-18T13:07:25Z-00005-000",
+        "score": 5.5625,
+        "qrel": 2,
+        "characters": 8450
+      },
+      {
+        "id": "a606d536-2019-04-18T19:03:19Z-00005-000",
+        "score": 5.375,
+        "qrel": null,
+        "characters": 5030
+      },
+      {
+        "id": "711b9599-2019-04-18T13:44:23Z-00005-000",
+        "score": 5.25,
+        "qrel": 2,
+        "characters": 5682
+      },
+      {
+        "id": "823c879a-2019-04-18T15:56:06Z-00002-000",
+        "score": 5.1875,
+        "qrel": null,
+        "characters": 4882
+      },
+      {
+        "id": "ae791dd7-2019-04-18T17:53:18Z-00003-000",
+        "score": 4.9375,
+        "qrel": null,
+        "characters": 1518
+      },
+      {
+        "id": "4f2bd943-2019-04-18T11:08:44Z-00005-000",
+        "score": 4.8125,
+        "qrel": 2,
+        "characters": 8565
+      },
+      {
+        "id": "2e663aab-2019-04-18T16:51:19Z-00000-000",
+        "score": 4.8125,
+        "qrel": null,
+        "characters": 3652
+      },
+      {
+        "id": "d267acd4-2019-04-18T12:17:49Z-00000-000",
+        "score": 4.75,
+        "qrel": null,
+        "characters": 678
+      },
+      {
+        "id": "c0722593-2019-04-18T19:00:13Z-00004-000",
+        "score": 4.75,
+        "qrel": 2,
+        "characters": 6668
+      }
+    ],
+    "swapped_trained": [
+      {
+        "id": "db751e93-2019-04-18T13:07:25Z-00005-000",
+        "score": 5.875,
+        "qrel": 2,
+        "characters": 8450
+      },
+      {
+        "id": "99d62d9d-2019-04-18T14:32:36Z-00003-000",
+        "score": 5.875,
+        "qrel": null,
+        "characters": 4967
+      },
+      {
+        "id": "711b9599-2019-04-18T13:44:23Z-00005-000",
+        "score": 5.5625,
+        "qrel": 2,
+        "characters": 5682
+      },
+      {
+        "id": "a606d536-2019-04-18T19:03:19Z-00005-000",
+        "score": 5.5,
+        "qrel": null,
+        "characters": 5030
+      },
+      {
+        "id": "823c879a-2019-04-18T15:56:06Z-00002-000",
+        "score": 5.1875,
+        "qrel": null,
+        "characters": 4882
+      },
+      {
+        "id": "4f2bd943-2019-04-18T11:08:44Z-00005-000",
+        "score": 5.125,
+        "qrel": 2,
+        "characters": 8565
+      },
+      {
+        "id": "ae791dd7-2019-04-18T17:53:18Z-00003-000",
+        "score": 5.0,
+        "qrel": null,
+        "characters": 1518
+      },
+      {
+        "id": "c0722593-2019-04-18T19:00:13Z-00004-000",
+        "score": 4.9375,
+        "qrel": 2,
+        "characters": 6668
+      },
+      {
+        "id": "6231af27-2019-04-18T14:52:04Z-00004-000",
+        "score": 4.875,
+        "qrel": null,
+        "characters": 6466
+      },
+      {
+        "id": "d44d94da-2019-04-18T15:44:00Z-00002-000",
+        "score": 4.8125,
+        "qrel": 2,
+        "characters": 3492
+      }
+    ]
+  },
+  {
+    "panel": "benchmark",
+    "qid": "35",
+    "query": "Do violent video games contribute to youth violence?",
+    "query_first": [
+      {
+        "id": "758ea5f9-2019-04-18T16:05:18Z-00004-000",
+        "score": 3.8125,
+        "qrel": 2,
+        "characters": 4733
+      },
+      {
+        "id": "50c55103-2019-04-18T16:52:42Z-00003-000",
+        "score": 3.0,
+        "qrel": 2,
+        "characters": 1641
+      },
+      {
+        "id": "d94ca2d5-2019-04-18T18:35:58Z-00006-000",
+        "score": 1.625,
+        "qrel": 1,
+        "characters": 969
+      },
+      {
+        "id": "d94ca2d5-2019-04-18T18:35:58Z-00007-000",
+        "score": 1.375,
+        "qrel": 2,
+        "characters": 787
+      },
+      {
+        "id": "7f95546c-2019-04-18T14:36:44Z-00002-000",
+        "score": 1.3125,
+        "qrel": 2,
+        "characters": 3077
+      },
+      {
+        "id": "46745944-2019-04-18T12:08:45Z-00000-000",
+        "score": 1.25,
+        "qrel": 2,
+        "characters": 2050
+      },
+      {
+        "id": "45462ad0-2019-04-18T13:17:49Z-00000-000",
+        "score": 1.25,
+        "qrel": 2,
+        "characters": 7389
+      },
+      {
+        "id": "5dce2de2-2019-04-18T15:41:55Z-00001-000",
+        "score": 1.1875,
+        "qrel": 2,
+        "characters": 7963
+      },
+      {
+        "id": "d0e5c093-2019-04-18T18:40:47Z-00006-000",
+        "score": 0.875,
+        "qrel": 2,
+        "characters": 879
+      },
+      {
+        "id": "92fc546a-2019-04-15T20:22:34Z-00008-000",
+        "score": 0.875,
+        "qrel": null,
+        "characters": 1806
+      }
+    ],
+    "swapped_untrained": [
+      {
+        "id": "1ac69d5c-2019-04-18T13:30:47Z-00002-000",
+        "score": 8.9375,
+        "qrel": 2,
+        "characters": 3264
+      },
+      {
+        "id": "7f95546c-2019-04-18T14:36:44Z-00002-000",
+        "score": 8.875,
+        "qrel": 2,
+        "characters": 3077
+      },
+      {
+        "id": "456d6b3a-2019-04-18T16:19:18Z-00004-000",
+        "score": 8.0,
+        "qrel": null,
+        "characters": 3349
+      },
+      {
+        "id": "92fc546a-2019-04-15T20:22:34Z-00010-000",
+        "score": 7.875,
+        "qrel": 2,
+        "characters": 3256
+      },
+      {
+        "id": "4f2fe78e-2019-04-18T11:10:15Z-00002-000",
+        "score": 7.875,
+        "qrel": null,
+        "characters": 6446
+      },
+      {
+        "id": "30a5cf73-2019-04-18T18:52:16Z-00002-000",
+        "score": 7.875,
+        "qrel": null,
+        "characters": 2146
+      },
+      {
+        "id": "46745944-2019-04-18T12:08:45Z-00000-000",
+        "score": 7.8125,
+        "qrel": 2,
+        "characters": 2050
+      },
+      {
+        "id": "6a618e4b-2019-04-18T16:23:33Z-00004-000",
+        "score": 7.375,
+        "qrel": null,
+        "characters": 3278
+      },
+      {
+        "id": "739f2cb1-2019-04-18T16:12:34Z-00007-000",
+        "score": 7.25,
+        "qrel": null,
+        "characters": 5573
+      },
+      {
+        "id": "5dce2de2-2019-04-18T15:41:55Z-00001-000",
+        "score": 7.25,
+        "qrel": 2,
+        "characters": 7963
+      }
+    ],
+    "swapped_trained": [
+      {
+        "id": "1ac69d5c-2019-04-18T13:30:47Z-00002-000",
+        "score": 9.8125,
+        "qrel": 2,
+        "characters": 3264
+      },
+      {
+        "id": "7f95546c-2019-04-18T14:36:44Z-00002-000",
+        "score": 9.3125,
+        "qrel": 2,
+        "characters": 3077
+      },
+      {
+        "id": "4f2fe78e-2019-04-18T11:10:15Z-00002-000",
+        "score": 8.5625,
+        "qrel": null,
+        "characters": 6446
+      },
+      {
+        "id": "30a5cf73-2019-04-18T18:52:16Z-00002-000",
+        "score": 8.5625,
+        "qrel": null,
+        "characters": 2146
+      },
+      {
+        "id": "456d6b3a-2019-04-18T16:19:18Z-00004-000",
+        "score": 8.5,
+        "qrel": null,
+        "characters": 3349
+      },
+      {
+        "id": "46745944-2019-04-18T12:08:45Z-00000-000",
+        "score": 8.3125,
+        "qrel": 2,
+        "characters": 2050
+      },
+      {
+        "id": "5dce2de2-2019-04-18T15:41:55Z-00001-000",
+        "score": 8.25,
+        "qrel": 2,
+        "characters": 7963
+      },
+      {
+        "id": "92fc546a-2019-04-15T20:22:34Z-00010-000",
+        "score": 8.1875,
+        "qrel": 2,
+        "characters": 3256
+      },
+      {
+        "id": "758ea5f9-2019-04-18T16:05:18Z-00004-000",
+        "score": 7.9375,
+        "qrel": 2,
+        "characters": 4733
+      },
+      {
+        "id": "739f2cb1-2019-04-18T16:12:34Z-00007-000",
+        "score": 7.9375,
+        "qrel": null,
+        "characters": 5573
+      }
+    ]
+  },
+  {
+    "panel": "benchmark",
+    "qid": "36",
+    "query": "Is golf a sport?",
+    "query_first": [
+      {
+        "id": "f6c3ab3f-2019-04-18T16:53:00Z-00000-000",
+        "score": 4.5625,
+        "qrel": 2,
+        "characters": 112
+      },
+      {
+        "id": "a452c48c-2019-04-18T17:19:37Z-00006-000",
+        "score": 4.5625,
+        "qrel": 1,
+        "characters": 2806
+      },
+      {
+        "id": "a452c48c-2019-04-18T17:19:37Z-00005-000",
+        "score": 4.0625,
+        "qrel": 2,
+        "characters": 1121
+      },
+      {
+        "id": "edab08a8-2019-04-18T16:34:53Z-00003-000",
+        "score": 3.9375,
+        "qrel": 2,
+        "characters": 137
+      },
+      {
+        "id": "edab08a8-2019-04-18T16:34:53Z-00001-000",
+        "score": 3.875,
+        "qrel": 1,
+        "characters": 333
+      },
+      {
+        "id": "edab086a-2019-04-18T17:21:18Z-00000-000",
+        "score": 3.5625,
+        "qrel": 2,
+        "characters": 3771
+      },
+      {
+        "id": "edab086a-2019-04-18T17:21:18Z-00002-000",
+        "score": 3.375,
+        "qrel": 2,
+        "characters": 500
+      },
+      {
+        "id": "2c13cc23-2019-04-18T16:11:23Z-00004-000",
+        "score": 3.375,
+        "qrel": 2,
+        "characters": 786
+      },
+      {
+        "id": "f6c3ab3f-2019-04-18T16:53:00Z-00001-000",
+        "score": 3.3125,
+        "qrel": 2,
+        "characters": 421
+      },
+      {
+        "id": "edab086a-2019-04-18T17:21:18Z-00003-000",
+        "score": 3.125,
+        "qrel": 2,
+        "characters": 665
+      }
+    ],
+    "swapped_untrained": [
+      {
+        "id": "edab086a-2019-04-18T17:21:18Z-00000-000",
+        "score": 6.125,
+        "qrel": 2,
+        "characters": 3771
+      },
+      {
+        "id": "8b62fc9c-2019-04-18T19:14:51Z-00003-000",
+        "score": 6.125,
+        "qrel": 2,
+        "characters": 5214
+      },
+      {
+        "id": "a452c48c-2019-04-18T17:19:37Z-00006-000",
+        "score": 5.6875,
+        "qrel": 1,
+        "characters": 2806
+      },
+      {
+        "id": "6b8ef422-2019-04-18T16:45:09Z-00002-000",
+        "score": 4.4375,
+        "qrel": 1,
+        "characters": 5234
+      },
+      {
+        "id": "bb04abe6-2019-04-18T19:54:49Z-00005-000",
+        "score": 4.25,
+        "qrel": 2,
+        "characters": 1444
+      },
+      {
+        "id": "bb04abe6-2019-04-18T19:54:49Z-00000-000",
+        "score": 4.25,
+        "qrel": 2,
+        "characters": 1082
+      },
+      {
+        "id": "8b62fc9c-2019-04-18T19:14:51Z-00004-000",
+        "score": 4.0625,
+        "qrel": 2,
+        "characters": 4643
+      },
+      {
+        "id": "f6c3ab3f-2019-04-18T16:53:00Z-00001-000",
+        "score": 4.0,
+        "qrel": 2,
+        "characters": 421
+      },
+      {
+        "id": "bb04abe6-2019-04-18T19:54:49Z-00003-000",
+        "score": 3.8125,
+        "qrel": 2,
+        "characters": 1972
+      },
+      {
+        "id": "edab086a-2019-04-18T17:21:18Z-00003-000",
+        "score": 3.5625,
+        "qrel": 2,
+        "characters": 665
+      }
+    ],
+    "swapped_trained": [
+      {
+        "id": "edab086a-2019-04-18T17:21:18Z-00000-000",
+        "score": 6.25,
+        "qrel": 2,
+        "characters": 3771
+      },
+      {
+        "id": "a452c48c-2019-04-18T17:19:37Z-00006-000",
+        "score": 6.1875,
+        "qrel": 1,
+        "characters": 2806
+      },
+      {
+        "id": "8b62fc9c-2019-04-18T19:14:51Z-00003-000",
+        "score": 5.875,
+        "qrel": 2,
+        "characters": 5214
+      },
+      {
+        "id": "bb04abe6-2019-04-18T19:54:49Z-00000-000",
+        "score": 4.6875,
+        "qrel": 2,
+        "characters": 1082
+      },
+      {
+        "id": "bb04abe6-2019-04-18T19:54:49Z-00005-000",
+        "score": 4.5,
+        "qrel": 2,
+        "characters": 1444
+      },
+      {
+        "id": "6b8ef422-2019-04-18T16:45:09Z-00002-000",
+        "score": 4.3125,
+        "qrel": 1,
+        "characters": 5234
+      },
+      {
+        "id": "f6c3ab3f-2019-04-18T16:53:00Z-00001-000",
+        "score": 4.1875,
+        "qrel": 2,
+        "characters": 421
+      },
+      {
+        "id": "bb04abe6-2019-04-18T19:54:49Z-00003-000",
+        "score": 4.0,
+        "qrel": 2,
+        "characters": 1972
+      },
+      {
+        "id": "8b62fc9c-2019-04-18T19:14:51Z-00004-000",
+        "score": 4.0,
+        "qrel": 2,
+        "characters": 4643
+      },
+      {
+        "id": "edab086a-2019-04-18T17:21:18Z-00003-000",
+        "score": 3.8125,
+        "qrel": 2,
+        "characters": 665
+      }
+    ]
+  },
+  {
+    "panel": "benchmark",
+    "qid": "31",
+    "query": "Is obesity a disease?",
+    "query_first": [
+      {
+        "id": "b5b096db-2019-04-18T18:54:54Z-00005-000",
+        "score": 5.1875,
+        "qrel": 2,
+        "characters": 472
+      },
+      {
+        "id": "b5b096db-2019-04-18T18:54:54Z-00001-000",
+        "score": 4.6875,
+        "qrel": 2,
+        "characters": 1026
+      },
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00005-000",
+        "score": 3.5,
+        "qrel": 2,
+        "characters": 468
+      },
+      {
+        "id": "3c486dec-2019-04-18T16:40:15Z-00004-000",
+        "score": 3.375,
+        "qrel": 1,
+        "characters": 1699
+      },
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00003-000",
+        "score": 3.3125,
+        "qrel": 2,
+        "characters": 2522
+      },
+      {
+        "id": "b5b096db-2019-04-18T18:54:54Z-00000-000",
+        "score": 2.6875,
+        "qrel": 2,
+        "characters": 1287
+      },
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00004-000",
+        "score": 2.5625,
+        "qrel": null,
+        "characters": 1238
+      },
+      {
+        "id": "636669d7-2019-04-18T19:49:10Z-00000-000",
+        "score": 2.4375,
+        "qrel": 0,
+        "characters": 567
+      },
+      {
+        "id": "9f203748-2019-04-19T12:46:11Z-00001-000",
+        "score": 2.375,
+        "qrel": 1,
+        "characters": 678
+      },
+      {
+        "id": "3c486dec-2019-04-18T16:40:15Z-00003-000",
+        "score": 2.25,
+        "qrel": null,
+        "characters": 3308
+      }
+    ],
+    "swapped_untrained": [
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00004-000",
+        "score": 4.75,
+        "qrel": null,
+        "characters": 1238
+      },
+      {
+        "id": "636669d7-2019-04-18T19:49:10Z-00000-000",
+        "score": 3.8125,
+        "qrel": 0,
+        "characters": 567
+      },
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00000-000",
+        "score": 3.8125,
+        "qrel": 2,
+        "characters": 1208
+      },
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00003-000",
+        "score": 3.5,
+        "qrel": 2,
+        "characters": 2522
+      },
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00001-000",
+        "score": 3.4375,
+        "qrel": 2,
+        "characters": 1154
+      },
+      {
+        "id": "c4eaae9b-2019-04-18T15:22:52Z-00003-000",
+        "score": 3.3125,
+        "qrel": null,
+        "characters": 1441
+      },
+      {
+        "id": "b5b096db-2019-04-18T18:54:54Z-00000-000",
+        "score": 3.25,
+        "qrel": 2,
+        "characters": 1287
+      },
+      {
+        "id": "b5b096db-2019-04-18T18:54:54Z-00001-000",
+        "score": 3.125,
+        "qrel": 2,
+        "characters": 1026
+      },
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00005-000",
+        "score": 3.125,
+        "qrel": 2,
+        "characters": 468
+      },
+      {
+        "id": "6388e7e9-2019-04-19T12:47:11Z-00005-000",
+        "score": 2.5625,
+        "qrel": null,
+        "characters": 1468
+      }
+    ],
+    "swapped_trained": [
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00004-000",
+        "score": 4.75,
+        "qrel": null,
+        "characters": 1238
+      },
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00000-000",
+        "score": 3.8125,
+        "qrel": 2,
+        "characters": 1208
+      },
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00001-000",
+        "score": 3.5625,
+        "qrel": 2,
+        "characters": 1154
+      },
+      {
+        "id": "b5b096db-2019-04-18T18:54:54Z-00001-000",
+        "score": 3.5,
+        "qrel": 2,
+        "characters": 1026
+      },
+      {
+        "id": "c4eaae9b-2019-04-18T15:22:52Z-00003-000",
+        "score": 3.4375,
+        "qrel": null,
+        "characters": 1441
+      },
+      {
+        "id": "636669d7-2019-04-18T19:49:10Z-00000-000",
+        "score": 3.4375,
+        "qrel": 0,
+        "characters": 567
+      },
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00005-000",
+        "score": 3.4375,
+        "qrel": 2,
+        "characters": 468
+      },
+      {
+        "id": "21e2b85c-2019-04-18T15:17:47Z-00003-000",
+        "score": 3.4375,
+        "qrel": 2,
+        "characters": 2522
+      },
+      {
+        "id": "b5b096db-2019-04-18T18:54:54Z-00000-000",
+        "score": 3.125,
+        "qrel": 2,
+        "characters": 1287
+      },
+      {
+        "id": "b5b096db-2019-04-18T18:54:54Z-00005-000",
+        "score": 2.75,
+        "qrel": 2,
+        "characters": 472
+      }
+    ]
+  },
+  {
+    "panel": "reserved_benchmark",
+    "qid": "50",
+    "query": "Should everyone get a universal basic income?",
+    "query_first": [
+      {
+        "id": "4d1037f0-2019-04-18T11:08:29Z-00000-000",
+        "score": 1.5625,
+        "qrel": 2,
+        "characters": 4406
+      },
+      {
+        "id": "4d103793-2019-04-18T11:35:54Z-00005-000",
+        "score": 1.5625,
+        "qrel": 2,
+        "characters": 5244
+      },
+      {
+        "id": "12cc98d3-2019-04-18T11:08:03Z-00002-000",
+        "score": 1.5,
+        "qrel": 2,
+        "characters": 4585
+      },
+      {
+        "id": "b7051d6f-2019-04-18T11:25:14Z-00001-000",
+        "score": 0.25,
+        "qrel": 2,
+        "characters": 7159
+      },
+      {
+        "id": "ffdf2e2e-2019-04-18T11:43:09Z-00006-000",
+        "score": 0.125,
+        "qrel": 2,
+        "characters": 7960
+      },
+      {
+        "id": "ffdf2e2e-2019-04-18T11:43:09Z-00005-000",
+        "score": -0.125,
+        "qrel": 2,
+        "characters": 2940
+      },
+      {
+        "id": "530b96d7-2019-04-18T11:55:04Z-00005-000",
+        "score": -0.125,
+        "qrel": 1,
+        "characters": 756
+      },
+      {
+        "id": "b7051d6f-2019-04-18T11:25:14Z-00000-000",
+        "score": -0.1875,
+        "qrel": null,
+        "characters": 4525
+      },
+      {
+        "id": "12cc98d3-2019-04-18T11:08:03Z-00001-000",
+        "score": -0.4375,
+        "qrel": null,
+        "characters": 1914
+      },
+      {
+        "id": "4d1037d1-2019-04-18T11:25:50Z-00002-000",
+        "score": -0.625,
+        "qrel": null,
+        "characters": 2382
+      }
+    ],
+    "swapped_untrained": [
+      {
+        "id": "4d1037b2-2019-04-18T11:26:06Z-00000-000",
+        "score": 6.4375,
+        "qrel": null,
+        "characters": 5928
+      },
+      {
+        "id": "4d1037d1-2019-04-18T11:25:50Z-00000-000",
+        "score": 6.375,
+        "qrel": null,
+        "characters": 5928
+      },
+      {
+        "id": "4d1037b2-2019-04-18T11:26:06Z-00002-000",
+        "score": 6.0625,
+        "qrel": null,
+        "characters": 1977
+      },
+      {
+        "id": "4d103793-2019-04-18T11:35:54Z-00007-000",
+        "score": 5.8125,
+        "qrel": 0,
+        "characters": 478
+      },
+      {
+        "id": "4d103793-2019-04-18T11:35:54Z-00005-000",
+        "score": 5.4375,
+        "qrel": 2,
+        "characters": 5244
+      },
+      {
+        "id": "4d1037d1-2019-04-18T11:25:50Z-00002-000",
+        "score": 5.1875,
+        "qrel": null,
+        "characters": 2382
+      },
+      {
+        "id": "4d103774-2019-04-18T13:49:55Z-00003-000",
+        "score": 5.1875,
+        "qrel": null,
+        "characters": 9463
+      },
+      {
+        "id": "4d103793-2019-04-18T11:35:54Z-00004-000",
+        "score": 4.1875,
+        "qrel": null,
+        "characters": 5526
+      },
+      {
+        "id": "d21a6c90-2019-04-18T11:39:37Z-00001-000",
+        "score": 4.125,
+        "qrel": null,
+        "characters": 2301
+      },
+      {
+        "id": "4d103793-2019-04-18T11:35:54Z-00003-000",
+        "score": 4.0625,
+        "qrel": null,
+        "characters": 3732
+      }
+    ],
+    "swapped_trained": [
+      {
+        "id": "4d1037b2-2019-04-18T11:26:06Z-00000-000",
+        "score": 6.3125,
+        "qrel": null,
+        "characters": 5928
+      },
+      {
+        "id": "4d1037d1-2019-04-18T11:25:50Z-00000-000",
+        "score": 6.1875,
+        "qrel": null,
+        "characters": 5928
+      },
+      {
+        "id": "4d1037b2-2019-04-18T11:26:06Z-00002-000",
+        "score": 6.125,
+        "qrel": null,
+        "characters": 1977
+      },
+      {
+        "id": "4d103793-2019-04-18T11:35:54Z-00007-000",
+        "score": 5.875,
+        "qrel": 0,
+        "characters": 478
+      },
+      {
+        "id": "4d103793-2019-04-18T11:35:54Z-00005-000",
+        "score": 5.6875,
+        "qrel": 2,
+        "characters": 5244
+      },
+      {
+        "id": "4d1037d1-2019-04-18T11:25:50Z-00002-000",
+        "score": 5.4375,
+        "qrel": null,
+        "characters": 2382
+      },
+      {
+        "id": "12cc98d3-2019-04-18T11:08:03Z-00002-000",
+        "score": 4.625,
+        "qrel": 2,
+        "characters": 4585
+      },
+      {
+        "id": "4d103774-2019-04-18T13:49:55Z-00003-000",
+        "score": 4.4375,
+        "qrel": null,
+        "characters": 9463
+      },
+      {
+        "id": "d21a6c90-2019-04-18T11:39:37Z-00001-000",
+        "score": 4.3125,
+        "qrel": null,
+        "characters": 2301
+      },
+      {
+        "id": "4d103793-2019-04-18T11:35:54Z-00004-000",
+        "score": 4.0,
+        "qrel": null,
+        "characters": 5526
+      }
+    ]
+  },
+  {
+    "panel": "reserved_benchmark",
+    "qid": "47",
+    "query": "Is homework beneficial?",
+    "query_first": [
+      {
+        "id": "1733bf1a-2019-04-18T15:28:10Z-00000-000",
+        "score": 3.5625,
+        "qrel": 2,
+        "characters": 431
+      },
+      {
+        "id": "d4ad3156-2019-04-18T15:31:45Z-00003-000",
+        "score": 2.625,
+        "qrel": 2,
+        "characters": 578
+      },
+      {
+        "id": "698c3c78-2019-04-18T18:17:36Z-00003-000",
+        "score": 2.4375,
+        "qrel": null,
+        "characters": 2787
+      },
+      {
+        "id": "6c734766-2019-04-18T13:20:17Z-00004-000",
+        "score": 2.375,
+        "qrel": 2,
+        "characters": 765
+      },
+      {
+        "id": "f6e16c0b-2019-04-18T12:39:51Z-00005-000",
+        "score": 2.0625,
+        "qrel": 2,
+        "characters": 2349
+      },
+      {
+        "id": "68a4cf31-2019-04-18T18:58:34Z-00003-000",
+        "score": 2.0625,
+        "qrel": 2,
+        "characters": 1410
+      },
+      {
+        "id": "779b1267-2019-04-18T11:39:15Z-00005-000",
+        "score": 1.875,
+        "qrel": null,
+        "characters": 2889
+      },
+      {
+        "id": "ea4173a6-2019-04-18T17:11:07Z-00001-000",
+        "score": 1.75,
+        "qrel": 1,
+        "characters": 4619
+      },
+      {
+        "id": "1733c6bb-2019-04-18T11:28:17Z-00000-000",
+        "score": 1.6875,
+        "qrel": 2,
+        "characters": 2385
+      },
+      {
+        "id": "952deb76-2019-04-18T14:21:08Z-00002-000",
+        "score": 1.5,
+        "qrel": null,
+        "characters": 1496
+      }
+    ],
+    "swapped_untrained": [
+      {
+        "id": "5e2b575d-2019-04-18T16:32:42Z-00004-000",
+        "score": 5.3125,
+        "qrel": null,
+        "characters": 7437
+      },
+      {
+        "id": "bc9ca527-2019-04-18T14:21:38Z-00003-000",
+        "score": 4.5,
+        "qrel": null,
+        "characters": 705
+      },
+      {
+        "id": "ba89de7c-2019-04-18T15:44:15Z-00002-000",
+        "score": 4.375,
+        "qrel": null,
+        "characters": 286
+      },
+      {
+        "id": "27354bd7-2019-04-18T18:33:09Z-00001-000",
+        "score": 4.25,
+        "qrel": null,
+        "characters": 3021
+      },
+      {
+        "id": "d686e01-2019-04-18T14:47:36Z-00005-000",
+        "score": 3.9375,
+        "qrel": 2,
+        "characters": 1058
+      },
+      {
+        "id": "f6e16c0b-2019-04-18T12:39:51Z-00005-000",
+        "score": 3.875,
+        "qrel": 2,
+        "characters": 2349
+      },
+      {
+        "id": "ea4173a6-2019-04-18T17:11:07Z-00001-000",
+        "score": 3.875,
+        "qrel": 1,
+        "characters": 4619
+      },
+      {
+        "id": "1733c6bb-2019-04-18T11:28:17Z-00000-000",
+        "score": 3.875,
+        "qrel": 2,
+        "characters": 2385
+      },
+      {
+        "id": "779b1267-2019-04-18T11:39:15Z-00005-000",
+        "score": 3.75,
+        "qrel": null,
+        "characters": 2889
+      },
+      {
+        "id": "c47ceb6b-2019-04-18T12:45:44Z-00001-000",
+        "score": 3.625,
+        "qrel": null,
+        "characters": 3413
+      }
+    ],
+    "swapped_trained": [
+      {
+        "id": "5e2b575d-2019-04-18T16:32:42Z-00004-000",
+        "score": 5.8125,
+        "qrel": null,
+        "characters": 7437
+      },
+      {
+        "id": "bc9ca527-2019-04-18T14:21:38Z-00003-000",
+        "score": 5.0,
+        "qrel": null,
+        "characters": 705
+      },
+      {
+        "id": "27354bd7-2019-04-18T18:33:09Z-00001-000",
+        "score": 4.6875,
+        "qrel": null,
+        "characters": 3021
+      },
+      {
+        "id": "ba89de7c-2019-04-18T15:44:15Z-00002-000",
+        "score": 4.5,
+        "qrel": null,
+        "characters": 286
+      },
+      {
+        "id": "1733c6bb-2019-04-18T11:28:17Z-00000-000",
+        "score": 4.4375,
+        "qrel": 2,
+        "characters": 2385
+      },
+      {
+        "id": "d686e01-2019-04-18T14:47:36Z-00005-000",
+        "score": 4.375,
+        "qrel": 2,
+        "characters": 1058
+      },
+      {
+        "id": "779b1267-2019-04-18T11:39:15Z-00005-000",
+        "score": 4.25,
+        "qrel": null,
+        "characters": 2889
+      },
+      {
+        "id": "ea4173a6-2019-04-18T17:11:07Z-00001-000",
+        "score": 4.1875,
+        "qrel": 1,
+        "characters": 4619
+      },
+      {
+        "id": "f6e16c0b-2019-04-18T12:39:51Z-00005-000",
+        "score": 4.125,
+        "qrel": 2,
+        "characters": 2349
+      },
+      {
+        "id": "59460e7f-2019-04-18T13:41:43Z-00001-000",
+        "score": 4.0,
+        "qrel": 2,
+        "characters": 851
+      }
+    ]
+  },
+  {
+    "panel": "reserved_benchmark",
+    "qid": "6",
+    "query": "Is a college education worth it?",
+    "query_first": [
+      {
+        "id": "c195ff79-2019-04-18T13:35:02Z-00000-000",
+        "score": 2.75,
+        "qrel": 2,
+        "characters": 929
+      },
+      {
+        "id": "f76890a8-2019-04-18T12:32:48Z-00003-000",
+        "score": 2.125,
+        "qrel": 2,
+        "characters": 8287
+      },
+      {
+        "id": "f76890a8-2019-04-18T12:32:48Z-00004-000",
+        "score": 2.0625,
+        "qrel": 2,
+        "characters": 7382
+      },
+      {
+        "id": "3c15c9f1-2019-04-18T19:14:38Z-00002-000",
+        "score": 1.75,
+        "qrel": 2,
+        "characters": 3651
+      },
+      {
+        "id": "561c5e25-2019-04-18T15:50:58Z-00002-000",
+        "score": 1.6875,
+        "qrel": 2,
+        "characters": 2591
+      },
+      {
+        "id": "33b011a1-2019-04-18T18:11:15Z-00005-000",
+        "score": 0.875,
+        "qrel": null,
+        "characters": 3911
+      },
+      {
+        "id": "33b011a1-2019-04-18T18:11:15Z-00000-000",
+        "score": 0.8125,
+        "qrel": null,
+        "characters": 7947
+      },
+      {
+        "id": "19e647b-2019-04-18T11:51:58Z-00001-000",
+        "score": 0.75,
+        "qrel": 2,
+        "characters": 2931
+      },
+      {
+        "id": "561c5e25-2019-04-18T15:50:58Z-00004-000",
+        "score": 0.6875,
+        "qrel": 0,
+        "characters": 361
+      },
+      {
+        "id": "1788cfe5-2019-04-18T18:14:02Z-00007-000",
+        "score": 0.625,
+        "qrel": null,
+        "characters": 4345
+      }
+    ],
+    "swapped_untrained": [
+      {
+        "id": "33b011a1-2019-04-18T18:11:15Z-00000-000",
+        "score": 5.875,
+        "qrel": null,
+        "characters": 7947
+      },
+      {
+        "id": "f76890a8-2019-04-18T12:32:48Z-00003-000",
+        "score": 5.5625,
+        "qrel": 2,
+        "characters": 8287
+      },
+      {
+        "id": "f76890a8-2019-04-18T12:32:48Z-00004-000",
+        "score": 4.6875,
+        "qrel": 2,
+        "characters": 7382
+      },
+      {
+        "id": "1788cfe5-2019-04-18T18:14:02Z-00006-000",
+        "score": 4.375,
+        "qrel": null,
+        "characters": 6872
+      },
+      {
+        "id": "1fbb46b4-2019-04-18T18:01:59Z-00002-000",
+        "score": 4.3125,
+        "qrel": null,
+        "characters": 7591
+      },
+      {
+        "id": "33b011a1-2019-04-18T18:11:15Z-00006-000",
+        "score": 4.0,
+        "qrel": null,
+        "characters": 6318
+      },
+      {
+        "id": "561c5e25-2019-04-18T15:50:58Z-00002-000",
+        "score": 3.5625,
+        "qrel": 2,
+        "characters": 2591
+      },
+      {
+        "id": "1788cfe5-2019-04-18T18:14:02Z-00007-000",
+        "score": 3.5,
+        "qrel": null,
+        "characters": 4345
+      },
+      {
+        "id": "f76890a8-2019-04-18T12:32:48Z-00001-000",
+        "score": 3.375,
+        "qrel": 2,
+        "characters": 6656
+      },
+      {
+        "id": "c195ff79-2019-04-18T13:35:02Z-00000-000",
+        "score": 3.3125,
+        "qrel": 2,
+        "characters": 929
+      }
+    ],
+    "swapped_trained": [
+      {
+        "id": "f76890a8-2019-04-18T12:32:48Z-00003-000",
+        "score": 6.3125,
+        "qrel": 2,
+        "characters": 8287
+      },
+      {
+        "id": "33b011a1-2019-04-18T18:11:15Z-00000-000",
+        "score": 5.9375,
+        "qrel": null,
+        "characters": 7947
+      },
+      {
+        "id": "f76890a8-2019-04-18T12:32:48Z-00004-000",
+        "score": 5.8125,
+        "qrel": 2,
+        "characters": 7382
+      },
+      {
+        "id": "1fbb46b4-2019-04-18T18:01:59Z-00002-000",
+        "score": 5.125,
+        "qrel": null,
+        "characters": 7591
+      },
+      {
+        "id": "1788cfe5-2019-04-18T18:14:02Z-00006-000",
+        "score": 4.625,
+        "qrel": null,
+        "characters": 6872
+      },
+      {
+        "id": "33b011a1-2019-04-18T18:11:15Z-00006-000",
+        "score": 4.1875,
+        "qrel": null,
+        "characters": 6318
+      },
+      {
+        "id": "1788cfe5-2019-04-18T18:14:02Z-00007-000",
+        "score": 3.875,
+        "qrel": null,
+        "characters": 4345
+      },
+      {
+        "id": "c195ff79-2019-04-18T13:35:02Z-00003-000",
+        "score": 3.8125,
+        "qrel": 2,
+        "characters": 753
+      },
+      {
+        "id": "c195ff79-2019-04-18T13:35:02Z-00000-000",
+        "score": 3.8125,
+        "qrel": 2,
+        "characters": 929
+      },
+      {
+        "id": "f76890a8-2019-04-18T12:32:48Z-00001-000",
+        "score": 3.75,
+        "qrel": 2,
+        "characters": 6656
+      }
+    ]
+  },
+  {
+    "panel": "reserved_benchmark",
+    "qid": "3",
+    "query": "Should insider trading be allowed?",
+    "query_first": [
+      {
+        "id": "82973dd4-2019-04-18T18:46:16Z-00004-000",
+        "score": -0.75,
+        "qrel": 2,
+        "characters": 4617
+      },
+      {
+        "id": "920c32e3-2019-04-18T13:42:05Z-00002-000",
+        "score": -1.3125,
+        "qrel": 0,
+        "characters": 8078
+      },
+      {
+        "id": "a1db94b6-2019-04-18T18:22:29Z-00002-000",
+        "score": -1.375,
+        "qrel": 0,
+        "characters": 4439
+      },
+      {
+        "id": "73e98031-2019-04-18T18:31:37Z-00004-000",
+        "score": -2.0,
+        "qrel": 0,
+        "characters": 3262
+      },
+      {
+        "id": "82973dd4-2019-04-18T18:46:16Z-00002-000",
+        "score": -2.125,
+        "qrel": 2,
+        "characters": 7602
+      },
+      {
+        "id": "82973dd4-2019-04-18T18:46:16Z-00003-000",
+        "score": -2.3125,
+        "qrel": 2,
+        "characters": 7911
+      },
+      {
+        "id": "73e98031-2019-04-18T18:31:37Z-00003-000",
+        "score": -3.0,
+        "qrel": null,
+        "characters": 3376
+      },
+      {
+        "id": "5461331e-2019-04-18T18:07:49Z-00001-000",
+        "score": -3.0,
+        "qrel": 0,
+        "characters": 391
+      },
+      {
+        "id": "8723f9b4-2019-04-18T17:03:13Z-00001-000",
+        "score": -3.4375,
+        "qrel": null,
+        "characters": 3213
+      },
+      {
+        "id": "6e953160-2019-04-18T14:03:29Z-00003-000",
+        "score": -3.9375,
+        "qrel": null,
+        "characters": 266
+      }
+    ],
+    "swapped_untrained": [
+      {
+        "id": "5461331e-2019-04-18T18:07:49Z-00001-000",
+        "score": 2.0625,
+        "qrel": 0,
+        "characters": 391
+      },
+      {
+        "id": "9dd3f3ac-2019-04-15T20:23:01Z-00014-000",
+        "score": -0.25,
+        "qrel": 0,
+        "characters": 898
+      },
+      {
+        "id": "8723f9b4-2019-04-18T17:03:13Z-00001-000",
+        "score": -1.125,
+        "qrel": null,
+        "characters": 3213
+      },
+      {
+        "id": "c51e1d6e-2019-04-18T16:11:32Z-00002-000",
+        "score": -1.5,
+        "qrel": null,
+        "characters": 346
+      },
+      {
+        "id": "bdfff0f7-2019-04-18T15:54:30Z-00004-000",
+        "score": -1.5625,
+        "qrel": null,
+        "characters": 107
+      },
+      {
+        "id": "601edf69-2019-04-18T19:23:30Z-00005-000",
+        "score": -1.625,
+        "qrel": null,
+        "characters": 3953
+      },
+      {
+        "id": "b004ca79-2019-04-17T11:47:36Z-00075-000",
+        "score": -1.875,
+        "qrel": null,
+        "characters": 235
+      },
+      {
+        "id": "34a77a0a-2019-04-17T11:47:33Z-00079-000",
+        "score": -1.9375,
+        "qrel": null,
+        "characters": 430
+      },
+      {
+        "id": "6e953160-2019-04-18T14:03:29Z-00003-000",
+        "score": -2.0,
+        "qrel": null,
+        "characters": 266
+      },
+      {
+        "id": "a1db94b6-2019-04-18T18:22:29Z-00003-000",
+        "score": -2.8125,
+        "qrel": 0,
+        "characters": 665
+      }
+    ],
+    "swapped_trained": [
+      {
+        "id": "5461331e-2019-04-18T18:07:49Z-00001-000",
+        "score": 2.1875,
+        "qrel": 0,
+        "characters": 391
+      },
+      {
+        "id": "9dd3f3ac-2019-04-15T20:23:01Z-00014-000",
+        "score": -0.25,
+        "qrel": 0,
+        "characters": 898
+      },
+      {
+        "id": "8723f9b4-2019-04-18T17:03:13Z-00001-000",
+        "score": -0.5,
+        "qrel": null,
+        "characters": 3213
+      },
+      {
+        "id": "601edf69-2019-04-18T19:23:30Z-00005-000",
+        "score": -1.125,
+        "qrel": null,
+        "characters": 3953
+      },
+      {
+        "id": "bdfff0f7-2019-04-18T15:54:30Z-00004-000",
+        "score": -1.25,
+        "qrel": null,
+        "characters": 107
+      },
+      {
+        "id": "c51e1d6e-2019-04-18T16:11:32Z-00002-000",
+        "score": -1.375,
+        "qrel": null,
+        "characters": 346
+      },
+      {
+        "id": "b004ca79-2019-04-17T11:47:36Z-00075-000",
+        "score": -1.6875,
+        "qrel": null,
+        "characters": 235
+      },
+      {
+        "id": "82973dd4-2019-04-18T18:46:16Z-00004-000",
+        "score": -1.6875,
+        "qrel": 2,
+        "characters": 4617
+      },
+      {
+        "id": "6e953160-2019-04-18T14:03:29Z-00003-000",
+        "score": -1.75,
+        "qrel": null,
+        "characters": 266
+      },
+      {
+        "id": "34a77a0a-2019-04-17T11:47:33Z-00079-000",
+        "score": -1.75,
+        "qrel": null,
+        "characters": 430
+      }
+    ]
+  }
+]

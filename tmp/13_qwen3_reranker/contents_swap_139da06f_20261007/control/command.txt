@@ -1,0 +1,4 @@
+139da06fe810d6861c7e3402796dcf09cc7ddd9d
+liteserver-c001-4
+chip=Ascend 910B2 physical_npu=3
+/usr/local/python3.12.13/bin/python3 13_qwen3_reranker/check_margin_distillation.py --model /workspace/models/Qwen3-Reranker-0.6B --dataset /workspace/results/qwen_margin_distill/data_fast/dataset.json.gz --student-order contents_swapped --output /workspace/results/qwen_margin_distill/npu/contents_swap_139da06f/control/control.json

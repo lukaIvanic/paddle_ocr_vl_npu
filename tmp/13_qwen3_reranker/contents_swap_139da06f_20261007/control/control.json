@@ -1,0 +1,109 @@
+{
+  "passed": true,
+  "prompt_order": "contents_swapped",
+  "group_id": "miracl_zh_len-500-1000/491",
+  "lengths": [
+    251,
+    175,
+    205,
+    204
+  ],
+  "dtype": "FP32 parameters, BF16 autocast",
+  "runs": {
+    "hf": {
+      "loss": 43.09049606323242,
+      "scores": [
+        6.125,
+        -5.3125,
+        -3.8125,
+        0.0625
+      ],
+      "gradients": {}
+    },
+    "eager": {
+      "loss": 43.09049606323242,
+      "scores": [
+        6.125,
+        -5.3125,
+        -3.8125,
+        0.0625
+      ],
+      "gradients": {
+        "embed_tokens.weight": {
+          "cosine": 1.000201940536499,
+          "relative_l2": 0.0,
+          "max_absolute_difference": 0.0
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "cosine": 1.0006728172302246,
+          "relative_l2": 0.0,
+          "max_absolute_difference": 0.0
+        },
+        "layers.27.self_attn.q_proj.weight": {
+          "cosine": 1.0009933710098267,
+          "relative_l2": 0.0,
+          "max_absolute_difference": 0.0
+        }
+      }
+    },
+    "fusion_attention": {
+      "loss": 43.18668746948242,
+      "scores": [
+        6.0,
+        -5.53125,
+        -3.8125,
+        0.0
+      ],
+      "gradients": {
+        "embed_tokens.weight": {
+          "cosine": 0.9933148622512817,
+          "relative_l2": 0.11833880096673965,
+          "max_absolute_difference": 36.840675354003906
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "cosine": 0.9896059036254883,
+          "relative_l2": 0.14842097461223602,
+          "max_absolute_difference": 5.5
+        },
+        "layers.27.self_attn.q_proj.weight": {
+          "cosine": 1.0004067420959473,
+          "relative_l2": 0.03589316084980965,
+          "max_absolute_difference": 0.625
+        }
+      }
+    },
+    "replay": {
+      "loss": 43.18668746948242,
+      "scores": [
+        6.0,
+        -5.53125,
+        -3.8125,
+        0.0
+      ],
+      "gradients": {
+        "embed_tokens.weight": {
+          "cosine": 0.9933144450187683,
+          "relative_l2": 0.11835119873285294,
+          "max_absolute_difference": 36.840675354003906
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "cosine": 0.9896655678749084,
+          "relative_l2": 0.1484195739030838,
+          "max_absolute_difference": 5.65625
+        },
+        "layers.27.self_attn.q_proj.weight": {
+          "cosine": 1.000427484512329,
+          "relative_l2": 0.03561606630682945,
+          "max_absolute_difference": 0.56640625
+        }
+      }
+    }
+  },
+  "replay_relative_l2": {
+    "embed_tokens.weight": 0.0011045712744817138,
+    "layers.0.self_attn.q_proj.weight": 0.002111193258315325,
+    "layers.27.self_attn.q_proj.weight": 0.00209788721986115
+  },
+  "optimizer_max_parameter_difference": 0.0,
+  "optimizer_max_update": 1.0132789611816406e-06
+}

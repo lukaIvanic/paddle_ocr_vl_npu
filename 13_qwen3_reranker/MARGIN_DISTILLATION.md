@@ -21,14 +21,35 @@ bash 13_qwen3_reranker/run_margin_distillation_experiment.sh \
   contents_swapped /workspace/results/qwen_margin_distill/npu/d66b8e89
 ```
 
-The query-first results below are the accuracy reference; swapped results must
-come from the follow-up's own recorded artifacts. This run does not benchmark
-cached-document inference.
+The follow-up completed all 50 updates on Ascend 910B2, physical NPU 3, on
+2026-10-07. The real-input backward/replay/optimizer control passed. The
+[completed report and artifacts](../tmp/13_qwen3_reranker/contents_swap_139da06f_20261007/README.md)
+retain the full comparison, per-task scores and all evaluation score arrays.
+
+Frequent-panel scores are percentage NDCG@10 on six queries per task:
+
+| Model | English | Chinese | Held-out teacher agreement | Teacher margin MSE |
+|---|---:|---:|---:|---:|
+| Original query-first 0.6B | 69.646 | 76.898 | 81.859% | 6.3827 |
+| Untrained contents swap | 54.626 | 64.088 | 70.241% | 15.0516 |
+| Contents swap, 50 updates | 55.358 | 65.575 | 75.364% | 8.4936 |
+
+Teacher error decreased by 43.57%, but benchmark recovery was limited and did
+not restore the original query-first accuracy. Across the frequent and reserved
+panels combined (10 queries/task), original versus final scores were
+71.179 versus 56.690 for English and 73.225 versus 66.285 for Chinese. These
+are small diagnostic samples, not full-suite results.
+
+Training averaged 17.29 seconds/update; frequent evaluation took 72.34 seconds.
+The process completed in 25.87 minutes including preparation, evaluations and
+saves, with 22.04 GiB peak allocated NPU memory. All five evaluated nonzero
+checkpoints remain on the server, including model/optimizer/RNG state. This run
+does not benchmark cached-document inference.
 
 ## Query-first pilot
 
 This experiment adapts Qwen3-Reranker-0.6B to a frozen Qwen3-Reranker-4B's
-within-query score differences. Document-first adaptation is a later experiment.
+within-query score differences. It provided the query-first control for the follow-up above.
 The real-input implementation control and both 50-update training arms completed
 on an Ascend 910B2 on 2026-10-07. The numerical evidence is in the
 [run report and artifacts](../tmp/13_qwen3_reranker/margin_distillation_d66b8e89_20261007/README.md).
@@ -49,7 +70,7 @@ across tasks; teacher agreement uses 64 separate mixture queries.
 Both arms reduced held-out teacher margin error while preserving the sampled
 suite means. The separate four-query-per-task endpoint panel and per-task
 regressions are reported in the linked evidence. These small samples do not
-establish full-suite parity, and no document-first model was trained.
+establish full-suite parity; these two control arms used query-first inputs.
 
 Training took approximately 18 seconds per update, with 256 pairs per update.
 Frequent evaluation took about 72–74 seconds; the additional baseline/endpoint
@@ -85,8 +106,11 @@ per-task NDCG@10 and hole@10. Small samples are diagnostics, not full-suite scor
 Each query has scores s and teacher scores t, both raw yes-minus-no logits. Minimize
 the mean of `((s_i-s_j)-(t_i-t_j))**2` over all 28 unordered candidate pairs,
 then average equally across 32 queries per optimizer update (256 model inputs).
-Save frozen teacher targets once. Assert teacher/student token IDs and truncation
-are identical using per-section token hashes.
+Save frozen teacher targets once. For query-first controls, assert teacher/student
+token IDs and truncation are identical using per-section token hashes. For the
+contents swap, validate teacher hashes against canonical query-first encoding,
+then separately validate candidate alignment and absence of truncation in the
+swapped student inputs.
 
 Use deterministic score-gradient replay to bound activation memory: first obtain
 eight scores without autograd, analytically compute their loss gradients, then

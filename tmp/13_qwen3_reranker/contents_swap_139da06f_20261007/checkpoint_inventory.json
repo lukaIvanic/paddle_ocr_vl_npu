@@ -1,0 +1,22 @@
+[
+  {
+    "path": "/workspace/results/qwen_margin_distill/npu/contents_swap_139da06f/warmup_linear/checkpoint_001.pt",
+    "bytes": 7770900018
+  },
+  {
+    "path": "/workspace/results/qwen_margin_distill/npu/contents_swap_139da06f/warmup_linear/checkpoint_003.pt",
+    "bytes": 7770900018
+  },
+  {
+    "path": "/workspace/results/qwen_margin_distill/npu/contents_swap_139da06f/warmup_linear/checkpoint_010.pt",
+    "bytes": 7770900018
+  },
+  {
+    "path": "/workspace/results/qwen_margin_distill/npu/contents_swap_139da06f/warmup_linear/checkpoint_025.pt",
+    "bytes": 7770900018
+  },
+  {
+    "path": "/workspace/results/qwen_margin_distill/npu/contents_swap_139da06f/warmup_linear/checkpoint_050.pt",
+    "bytes": 7770900018
+  }
+]
