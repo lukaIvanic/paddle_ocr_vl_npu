@@ -8,6 +8,8 @@ and includes per-layer CPU metadata handling. No candidate outputs enter OCR.
 from __future__ import annotations
 
 import argparse
+import collections
+import csv
 import hashlib
 import importlib
 import json
@@ -33,6 +35,8 @@ from vision_prefill_compile import MinerUVisionPrefillRuntime, StaticMinerUVisio
 VARIANTS = ('baseline', 'pfa_d128', 'pfa_approx', 'pfa_d128_approx',
             'unpad_d80', 'unpad_d128', 'eager_pfa', 'pfa_nz_weights',
             'eager_pfa_nz_weights', 'unpad_d128_nz_weights',
+            'pfa_d128_nz_weights', 'grouped_qkv_nz_weights',
+            'grouped_qkv_mlp_fc1_nz_weights',
             'grouped_qkv', 'grouped_qkv_mlp_fc1', 'internal_format_opposite')
 
 
@@ -303,14 +307,13 @@ def replay(args):
     lengths = mask_segments(bundle['inputs'][3])
     if lengths != entry['segments']:
         raise ValueError('captured mask/segment mismatch')
-    configure_npu()
     import torch_npu
     cfg = load_config(args.config_json, manifest.get('vision_config'))
     capture_cfg = load_config(inherited=manifest.get('vision_config'))
     if args.variant == 'internal_format_opposite':
         cfg['allow_internal_format'] = not cfg['allow_internal_format']
     if args.variant.startswith('grouped_'):
-        cfg['projection_impl'] = args.variant
+        cfg['projection_impl'] = args.variant.removesuffix('_nz_weights')
     if 'd128' in args.variant:
         cfg['promptfa_pad_head_dim_to'] = 128
     if 'approx' in args.variant:
@@ -318,6 +321,7 @@ def replay(args):
     if args.variant.startswith('unpad_'):
         cfg['approximate_precision'] = False
     torch.npu.config.allow_internal_format = cfg['allow_internal_format']
+    configure_npu()
     device_name = torch.npu.get_device_name(0)
     result = dict(variant=args.variant, route=args.route, tags=entry['tags'], segments=lengths,
         vision_config=cfg, capture_config=capture_cfg, profile_forwards=3,
@@ -361,6 +365,23 @@ def replay(args):
         for index, block in enumerate(model.visual.blocks)
         for name, linear in (('qkv', block.attn.qkv), ('out', block.attn.proj),
                              ('fc1', block.mlp.fc1), ('fc2', block.mlp.fc2))]
+    if args.variant.startswith('grouped_'):
+        # Inspect the existing production helper's exact transformation outside
+        # timing. Do not substitute a different GMM layout or prepack its work.
+        result['grouped_weight_inputs'] = []
+        for index, block in enumerate(model.visual.blocks):
+            selected = [('qkv', block.attn.qkv)]
+            if cfg['projection_impl'] == 'grouped_qkv_mlp_fc1':
+                selected.append(('fc1', block.mlp.fc1))
+            for name, linear in selected:
+                prepared = linear.weight.transpose(0, 1).contiguous().unsqueeze(0)
+                result['grouped_weight_inputs'].append(dict(layer=index, projection=name,
+                    parameter_format=int(torch_npu.get_npu_format(linear.weight)),
+                    operator_input_format=int(torch_npu.get_npu_format(prepared)),
+                    operator_input_shape=list(prepared.shape)))
+                del prepared
+        synchronize()
+        result['grouped_weight_scope'] = 'Original in-forward transpose/contiguous/unsqueeze preserved; profiler determines compiled input formats.'
     inputs = [v.to('npu:0') for v in bundle['inputs']]
     expected = bundle['expected'].to('npu:0')
     module = StaticMinerUVisionBlocks(model.visual, **runtime_options(cfg)).eval()
@@ -447,6 +468,23 @@ def replay(args):
                 synchronize()
                 recording.step()
         result['profile'] = _run_parser(root / 'profile', root, topn=60)
+        files = list((root / 'profile').rglob('kernel_details.csv'))
+        if len(files) != 1:
+            raise RuntimeError('missing or ambiguous kernel CSV for actual weight-format audit')
+        rows = list(csv.DictReader(files[0].open()))
+        from analyze_vision_diagnostics import bucket
+        matmuls = [row for row in rows if bucket(row) == 'matmul']
+        formats = collections.defaultdict(collections.Counter)
+        for row in matmuls:
+            formats[row['Type']][row.get('Input Formats', 'MISSING')] += 1
+        result['weight_kernel_audit'] = dict(
+            requested_nz=args.variant.endswith('_nz_weights'),
+            profiled_forwards=3,
+            matmul_kernel_count=len(matmuls),
+            input_formats_by_type={key:dict(value) for key,value in formats.items()},
+            every_matmul_reports_nz_input=bool(matmuls) and all(
+                'FRACTAL_NZ' in row.get('Input Formats','') for row in matmuls),
+            interpretation='Execution success alone is not proof of NZ consumption; inspect each projection type, especially GroupedMatmul.')
         phase('profile_finish')
     write_json(root / 'result.json', result)
     phase('complete', variant=args.variant, route=args.route, device_ms=timing['device_ms'], parity=result['full_encoder_parity'])
