@@ -195,6 +195,17 @@ def worker(args):
                 input_ids=c['input_ids'], valid_length=len(c['input_ids']), bucket=args.bucket,static_tokens=static_tokens) for c in cases])
             report['valid_tokens'] = lengths.cpu().tolist()
             eager = backbone(ids, lengths); expected = ranker(eager[1])
+            if args.retain_dense_outputs:
+                weights=[model,*model.blocks,ranker,*ranker.blocks]
+                for module in weights:module.keep_dense_outputs=False
+                default_states=backbone(ids,lengths);default_logits=ranker(default_states[1])
+                for module in weights:module.keep_dense_outputs=True
+                report['retained_vs_default_state_diagnostics']=[metrics(a,b) for a,b in zip(eager,default_states)]
+                report['retained_vs_default_logit_diagnostics']=dict(comparison=metrics(expected,default_logits),retained=expected.cpu().tolist(),default=default_logits.cpu().tolist())
+                save(args.output/'result.json',report)
+                report['retained_vs_default_states']=[require_state(a,b,args.dtype) for a,b in zip(eager,default_states)]
+                report['retained_vs_default_logits']=require(expected,default_logits,.02,.005)
+                del default_states,default_logits
             singles = []
             report['padding_state_checks'] = []
             for i,c in enumerate(cases):
