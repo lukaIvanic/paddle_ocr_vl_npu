@@ -1,0 +1,7 @@
+{
+  "source_commit": "e74f0ebcbababdfe86b9d5ba5630b1c6ed79cc05",
+  "physical_npu": 3,
+  "commands": [
+    "source /usr/local/bin/npu-setup; export TORCH_DEVICE_BACKEND_AUTOLOAD=0 OMP_NUM_THREADS=1 ASCEND_RT_VISIBLE_DEVICES=3; source /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/bin/set_env.bash; source /workspace/rwkv_reference/wkv7_endpoint_d7348673/install/vendors/rwkv_endpoint/bin/set_env.bash; export PATH=/usr/local/python3.12.13/bin:$PATH; cd /workspace/repos/rwkv-matrix-a3822c41; exec /workspace/venvs/rwkv_cpu_py312/bin/python -u /workspace/repos/rwkv-matrix-a3822c41/26_rwkv_inference/bench_reranker_sizes.py --models /workspace/rwkv_reference/models --cases-root /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference --upstream /workspace/rwkv_reference/upstream/reranker --reference-build /workspace/rwkv_reference/wkv7_build_178d16e6 --build-root /workspace/rwkv_reference/wkv7_endpoint_d7348673 --download-status /workspace/rwkv_reference/large_models_download/status.json --worker --size large --dtype fp16 --profile-invalid-compile --repeats 10 --profile --profile-warmup 5 --profile-active 2 --profile-data /workspace/rwkv_reference/nanobeir/NanoSCIDOCSRetrieval/data.json --runtime /workspace/rwkv_reference/runtime --batch-size 1 --bucket 512 --recurrence matrix --matrix-chunk-size 16 --matrix-compute-dtype fp16 --output /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_fp16_c16_e74f0ebc/matrix_fp16_b1_t512_c16"
+  ]
+}

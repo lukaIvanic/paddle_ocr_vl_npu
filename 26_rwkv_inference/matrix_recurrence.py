@@ -27,18 +27,3 @@ class MatrixRecurrence(torch.nn.Module):
             dense_prefix_algorithm='tree_root',
             diagnostic_tensors=self.diagnostic_tensors if self.capture_diagnostics else None)
         return out[:, :T].reshape(B, T, C//64, 64).permute(0, 2, 1, 3).contiguous(), final
-
-
-class DiagnosticScoring(torch.nn.Module):
-    """Expose first-layer tensors during complete scoring; never a timing path."""
-    def __init__(self, backbone, head):
-        super().__init__()
-        self.backbone, self.head = backbone, head
-        self.selected = backbone.model.blocks[0].matrix_recurrence
-        self.selected.capture_diagnostics = True
-
-    def forward(self, ids, lengths):
-        self.selected.diagnostic_tensors = []
-        states = self.backbone(ids, lengths)
-        logits = self.head(states[1])
-        return logits, states, tuple(value for _, value in self.selected.diagnostic_tensors)

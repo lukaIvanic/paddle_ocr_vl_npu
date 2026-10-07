@@ -1,0 +1,1 @@
+Stopped own coordinator only; running vector baseline child continues. Matrix successor replaced by committed diag_embed adaptation.

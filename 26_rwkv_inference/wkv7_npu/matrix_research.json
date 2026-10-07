@@ -125,5 +125,19 @@
     "hf_triton": "dplr_prefill_triton.py includes CUDA-device gates; not a ready Ascend path merely because it lives in this repository",
     "other_vector_scan": "direct AscendC prefill scan and SGLang recurrent Triton scan still process tokens recurrently; not the matrix path requested"
   },
-  "next_validation": "Isolated recurrence probe using actual largest-model layer inputs, FP32 chunk16/32/64 then documented chunk128 BF16/native path; compare all outputs, final/nonzero/split states; warmed PyTorch CPU/NPU profiler B1/B4 T512/T2048 to confirm AI_CORE matmul shapes and latency; preserve valid EOS states; integrate only after parity and speed evidence"
+  "next_validation": "Full largest-reranker system comparison on identical real document/query batches: vector versus matrix, eager/TorchAir pairs, FP32 projections/state and matrix compute first; warmed PyTorch CPU/NPU profiler B1/B4 T512/T2048. Clean end-to-end disk/preparation/transfers/scoring/output timings separately. Validate states, logits, continuation and valid EOS behavior outside timing; no isolated-kernel benchmarks.",
+  "full_system_measurements": {
+    "date": "2026-10-07",
+    "source_runtime_commits": [
+      "223e4942",
+      "af22661c",
+      "e74f0ebc",
+      "69d5a725",
+      "57635286"
+    ],
+    "evidence": "../../tmp/26_rwkv_inference/reranker_fp16_full_comparison/summary.json",
+    "scope": "Largest pair; real B1/T512 and B4/T2048; warm full pipeline; PyTorch CPU/NPU profiler; original compiler configuration. No isolated timing comparisons.",
+    "matrix_result": "Pure PyTorch FP16 chunk16 passes B1 but slower than vector; B4 fails numerical gates. FP16 chunk32 nonfinite. Optional native helpers untested.",
+    "normalization_result": "Equivalent per-head LayerNorm plus original channel affine reduces compiled B4 full pipeline from 680 to 582ms; maximum score delta0.0078125; full-suite accuracy not evaluated."
+  }
 }

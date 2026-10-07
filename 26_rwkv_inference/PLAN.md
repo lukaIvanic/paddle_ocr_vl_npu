@@ -383,17 +383,28 @@ no batch-size or precision conclusion. Shape/stack recording inflates eager host
 trace time; use clean latency. [`Shapes, CSVs, hashes and accounting`](../tmp/26_rwkv_inference/reranker_largest_profile_b4_57c83b92/profile_comparison.json).
 
 
-**Matrix recurrence source audit, 2026-10-07:** the imported RWKV-Vibe kernel
-still uses vector token recurrence; its 48-token load tiles are not a multi-token
-matrix factorization. Priority is testing a matrix replacement, not adjusting
-its launch count. `rwkv-rs/rwkv7-ascend-npu` at `b6391271` supplies Apache-2.0
-`rwkv7_chunk_scan.py`: DPLR/WY factorization with batched matmuls, FP32 state,
-FP32/FP16/BF16 compute, optional AscendC helpers and dense tree prefix. Authors
-report 910B2C runs, but a different language-model checkpoint/runtime and BF16
-factor math; B4/T2048 lacks a full-length reference check. No candidate ran here.
-First isolate real largest-model recurrence inputs, validate outputs/continuation
-and EOS states, then warmed PyTorch profiling at B1/B4 T512/T2048; only integrate
-with measured parity/speed. [Pinned sources, hashes, contracts and limitations](wkv7_npu/matrix_research.json).
+**Matrix recurrence and FP16 full-system tests, 2026-10-07:** the imported
+RWKV-Vibe kernel uses vector token recurrence; 48-token load tiles are not a
+matrix factorization. Apache-2.0 `rwkv-rs/rwkv7-ascend-npu` at `b6391271`
+supplies a DPLR/WY matrix prototype with optional native helpers. Our pure-PyTorch
+adapter has not integrated those helpers. FP16 chunk32 produces NaNs; chunk16
+passes B1 states/logits/continuation but is slower (**94 vs 55 ms compiled
+pipeline**), and fails B4 state/score gates (maximum score error **0.0703**).
+[Source contracts and limitations](wkv7_npu/matrix_research.json).
+
+Largest pair, real B4/T2048 on idle 910B2 devices, identical inputs/checkpoints,
+original TorchAir settings: warm full-pipeline eager/compiled **703/818 ms FP32**,
+**552/680 ms FP16**, **514/686 ms with retained FP16 linear outputs**, and
+**452/582 ms with equivalent per-head LayerNorm plus original affine**.
+PyTorch full-forward traces show matmuls **254→75 ms**, unchanged FP32
+recurrence **340 ms**, and GroupNorm **106 ms** replaced by 64-channel
+LayerNorm **2.94 ms** plus affine. Norm-path maximum score delta **0.0078**;
+full-suite accuracy of these opt-ins remains untested, and defaults stay unchanged.
+Ten clean calls follow three warmups; separate CPU/NPU shape/stack captures use
+five external + one profiler warmups and two active calls. Pipeline includes warm
+file read, tokenization/preparation, H2D, full scoring, D2H and JSON write;
+setup/compile/profiling are excluded. No isolated timing comparisons.
+[Matched inputs, numerical gates, kernel shapes, commands and hashes](../tmp/26_rwkv_inference/reranker_fp16_full_comparison/summary.json).
 
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,

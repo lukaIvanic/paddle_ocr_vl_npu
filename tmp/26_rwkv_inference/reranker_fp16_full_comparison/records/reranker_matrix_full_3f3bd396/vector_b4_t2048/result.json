@@ -1,0 +1,1554 @@
+{
+  "run": "reranker_matrix_full_3f3bd396/vector_b4_t2048",
+  "source_commit": "3f3bd3966693701fdb3bb45252dcd69b53667586",
+  "dtype": "fp32",
+  "batch": 4,
+  "static_tokens": 2048,
+  "valid_tokens": [
+    1038,
+    2046,
+    1039,
+    2035
+  ],
+  "physical_npu": "3",
+  "all_checks_passed": true,
+  "recurrence": "vector",
+  "matrix_chunk_size": null,
+  "matrix_compute_dtype": null,
+  "retain_dense_outputs": false,
+  "group_norm_impl": "group_norm",
+  "input_sha256": "3e8d17da269c92a35dcdb43c9e68f95cdab9bbd0d9b9e946ca204f2fd93a776d",
+  "checkpoint_sha256": "be7245cc832b43ed0df4873d49c1a831cb9972d27de3f8cc4950588fc8b9392d",
+  "reranker_sha256": "4ab584f4da09bb6528a027a740b3752711e138188b5885ebd02581edc58cce8a",
+  "compiler_helper_sha256": "a7a65478cdb8bb5fd6e0f3c17a5d719fa24fdf158fbaefce012c09e4068ebbfb",
+  "clean_pipeline_ms": {
+    "raw_eager_pipeline_total": 703.4819499967853,
+    "torchair_pipeline_total": 817.6140149953426
+  },
+  "clean_scoring_ms": {
+    "eager_total": 694.0539000061108,
+    "torchair_total": 808.8431250071153
+  },
+  "compile_and_first_call_seconds": 101.16777981999621,
+  "compiled_state_errors": [
+    {
+      "max_abs": 0.0,
+      "normalized_rmse": 0.0,
+      "finite": true
+    },
+    {
+      "max_abs": 0.0,
+      "normalized_rmse": 0.0,
+      "finite": true
+    }
+  ],
+  "compiled_score_error": {
+    "max_abs": 4.76837158203125e-07,
+    "normalized_rmse": 3.536871417963994e-08,
+    "finite": true
+  },
+  "padding_state_errors": null,
+  "padding_score_error": {
+    "max_abs": 3.337860107421875e-06,
+    "normalized_rmse": 4.784592988471559e-07,
+    "finite": true
+  },
+  "matrix_score_error": null,
+  "matrix_state_errors": null,
+  "matrix_continuation": null,
+  "implementation_vs_default_scores": null,
+  "implementation_vs_default_states": null,
+  "matrix_first_layer_finiteness": null,
+  "cpu_anchor": {
+    "input_ids": [
+      33193,
+      8872,
+      59,
+      36733,
+      332,
+      39415,
+      45,
+      57129,
+      7225,
+      4423,
+      332,
+      58825,
+      21700,
+      37268,
+      50118,
+      65535
+    ],
+    "states": [
+      {
+        "max_abs": 2.6702880859375e-05,
+        "normalized_rmse": 1.2749158031510888e-06,
+        "finite": true
+      },
+      {
+        "max_abs": 0.00014495849609375,
+        "normalized_rmse": 9.144640102931589e-07,
+        "finite": true
+      }
+    ],
+    "hidden": {
+      "max_abs": 0.0002117156982421875,
+      "normalized_rmse": 2.461646317897248e-06,
+      "finite": true
+    },
+    "logits": {
+      "max_abs": 3.337860107421875e-06,
+      "normalized_rmse": 8.342654496118485e-07,
+      "finite": true
+    },
+    "cpu_logits": [
+      -4.000957012176514
+    ],
+    "npu_logits": [
+      -4.000953674316406
+    ],
+    "seconds": 17.885266500001308
+  },
+  "source_sha256": {
+    "bench_reranker_sizes.py": "8d4398993f24581c04880cab1ccce38666118379e77a48e94e98f919f1e61451",
+    "local_modeling_rwkv_embedding.py": "c795f8b5c1bb65cedc092718fa203baaf37f6efe1df609511ce55409e2592c58",
+    "local_modeling_rwkv_reranker.py": "62d3ce3f2f5d8a54924794422778fc61827962e41c0d4cd2d62591b9dfeb5896",
+    "probe_reranker_endpoint.py": "a7a65478cdb8bb5fd6e0f3c17a5d719fa24fdf158fbaefce012c09e4068ebbfb",
+    "run_reranker_smoke.py": "91c62ae2fb96f0745eb0fea42d742b10ddf48323c9b7b76ca9ab987d5d5ecaf9",
+    "wkv7_endpoint.py": "73b1b8f8b7ac791c60efdadba6fae8e81bff2b850b14904ea3628f7e54160647"
+  },
+  "error": [],
+  "profiles": {
+    "profile_torchair_forward": {
+      "kernel_count_per_call": 2420.0,
+      "kernel_sum_ms_per_call": 808.3432515000001,
+      "core_ms_per_call": {
+        "AI_VECTOR_CORE": 551.1682249999969,
+        "AI_CORE": 253.10257149999984,
+        "AI_CPU": 4.072455000000001
+      },
+      "type_ms_per_call": {
+        "RwkvEndpointWkv7": 339.7107575,
+        "MatMulV3": 148.583095,
+        "GroupNormSilu": 105.72821149999996,
+        "MatMul": 104.5194765,
+        "AutomaticBufferFusionOp": 37.06149599999998,
+        "Add": 20.092527000000015,
+        "Transpose": 15.061426999999995,
+        "StridedSliceD": 9.361816999999999,
+        "LayerNormV3": 7.651842499999995,
+        "Mul": 6.920988499999996,
+        "GatherElements": 4.072455000000001,
+        "ConcatV2D": 1.5848535000000006,
+        "RealDiv": 1.2705850000000019,
+        "LpNormV2": 1.261406000000001,
+        "BroadcastTo": 1.214753500000001,
+        "ReduceSumD": 1.0349339999999998,
+        "GatherV2": 0.8816519999999994,
+        "Neg": 0.7423524999999997,
+        "Tanh": 0.384799,
+        "RwkvReferenceWkv7": 0.34728900000000007,
+        "Sigmoid": 0.3168590000000003,
+        "Pack": 0.2522475,
+        "ClipByValueV2": 0.21951549999999995,
+        "Sub": 0.06679150000000005,
+        "Cast": 0.0011200000000000001
+      },
+      "type_count_per_call": {
+        "GatherV2": 119.0,
+        "LayerNormV3": 99.0,
+        "StridedSliceD": 47.0,
+        "ConcatV2D": 95.0,
+        "AutomaticBufferFusionOp": 284.0,
+        "MatMul": 622.0,
+        "Tanh": 49.0,
+        "Sigmoid": 48.0,
+        "Transpose": 168.0,
+        "Mul": 144.0,
+        "LpNormV2": 48.0,
+        "ClipByValueV2": 48.0,
+        "BroadcastTo": 97.0,
+        "RealDiv": 48.0,
+        "Neg": 48.0,
+        "Add": 143.0,
+        "ReduceSumD": 48.0,
+        "RwkvEndpointWkv7": 24.0,
+        "GroupNormSilu": 48.0,
+        "Cast": 1.0,
+        "Sub": 48.0,
+        "GatherElements": 48.0,
+        "Pack": 26.0,
+        "MatMulV3": 46.0,
+        "RwkvReferenceWkv7": 24.0
+      },
+      "top_shapes": [
+        {
+          "type": "RwkvEndpointWkv7",
+          "input_shapes": "\"4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,64,64;4\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 339.7107575
+        },
+        {
+          "type": "GroupNormSilu",
+          "input_shapes": "\"8192,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 105.3297345
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 96.0,
+          "ms_per_call": 81.52124800000003
+        },
+        {
+          "type": "MatMulV3",
+          "input_shapes": "\"8192,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 23.0,
+          "ms_per_call": 75.17945999999999
+        },
+        {
+          "type": "MatMulV3",
+          "input_shapes": "\"8192,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 23.0,
+          "ms_per_call": 73.403635
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,1,2048;4,2048,2048;4,2048,2048;;1,1,2048;;4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 14.797609000000007
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,2048,32,64;4\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 144.0,
+          "ms_per_call": 12.54552749999999
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"4,2048,2048;4,2048,2048;1,1,2048;4,2048,2048;1,1,2048;4,2048,2048;1,1,2048;4,2048,2048;1,1,2048;1,1,2048;4,2048,2048;1,1,2048;4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 23.0,
+          "ms_per_call": 9.954836499999999
+        },
+        {
+          "type": "StridedSliceD",
+          "input_shapes": "\"4,2048,2048\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "4",
+          "calls_per_call": 47.0,
+          "ms_per_call": 9.361816999999999
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"4,2048,8192\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 23.0,
+          "ms_per_call": 9.189695000000004
+        },
+        {
+          "type": "LayerNormV3",
+          "input_shapes": "\"4,2048,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 49.0,
+          "ms_per_call": 7.531388999999999
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,1,2048;4,2048,2048;4,2048,2048;4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 23.0,
+          "ms_per_call": 6.4898515
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"4,2048,2048;4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 5.312177000000002
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 48.0,
+          "ms_per_call": 5.130611999999998
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 47.0,
+          "ms_per_call": 5.053562999999999
+        },
+        {
+          "type": "GatherElements",
+          "input_shapes": "\"4,2048,2048;4,1,2048\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_CPU",
+          "block_num": "1",
+          "calls_per_call": 48.0,
+          "ms_per_call": 4.072455000000001
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,1,2048;4,2048,2048;\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 3.4175969999999993
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,2048;2048,256\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 3.1701999999999995
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,256;256,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.8858795
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,96;96,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 48.0,
+          "ms_per_call": 2.5606815
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,32,2048,64;4\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.5158994999999997
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,32,1;4,2048,32,64\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.2972654999999995
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.2803359999999993
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,2048;2048,64\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 23.0,
+          "ms_per_call": 1.9555005000000003
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.9188859999999996
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"4,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 96.0,
+          "ms_per_call": 1.9068650000000011
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"4,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.6585739999999998
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"4,2048,2048;4,2048,2048;1,1,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 23.0,
+          "ms_per_call": 1.5015205
+        },
+        {
+          "type": "ConcatV2D",
+          "input_shapes": "\"4,1,2048;4,2047,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "46",
+          "calls_per_call": 47.0,
+          "ms_per_call": 1.4448505000000011
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"4,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.2519049999999998
+        }
+      ],
+      "record_shapes": true,
+      "recorded_calls": 2,
+      "cpu_marker_mean_ms": {
+        "rwkv.torchair_backbone": 3.11282,
+        "rwkv.torchair_head": 2.44781,
+        "rwkv.torchair_forward": 5.78321
+      },
+      "kernel_details_gzip_sha256": "cd4dd454ac91e1acc6db750937d2232b29bc535e6c16b63be17e1f326e912592",
+      "raw_profile_files": {
+        "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_forward/liteserver-c001-4_170358_20261007112739291_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_forward/liteserver-c001-4_170358_20261007112739291_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_forward/liteserver-c001-4_170358_20261007112739291_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_forward/liteserver-c001-4_170358_20261007112739291_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_forward/liteserver-c001-4_170358_20261007112739291_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_forward/liteserver-c001-4_170358_20261007112739291_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_forward/liteserver-c001-4_170358_20261007112739291_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_forward/liteserver-c001-4_170358_20261007112739291_ascend_pt/profiler_metadata.json"
+      }
+    },
+    "profile_raw_eager_pipeline": {
+      "kernel_count_per_call": 3982.0,
+      "kernel_sum_ms_per_call": 694.717524,
+      "core_ms_per_call": {
+        "AI_VECTOR_CORE": 438.60954850000047,
+        "AI_CORE": 253.4453830000001,
+        "MIX_AIV": 2.6625924999999997
+      },
+      "type_ms_per_call": {
+        "RwkvEndpointWkv7": 170.2039425,
+        "MatMulV3": 154.343886,
+        "GroupNormSilu": 106.57225049999998,
+        "MatMulV2": 99.10149699999981,
+        "Add": 38.66780900000007,
+        "Mul": 36.39515750000003,
+        "Transpose": 27.206020999999982,
+        "Sub": 14.17494,
+        "Pows": 10.149111499999998,
+        "Relu": 9.696943,
+        "LayerNormV3": 7.894415499999994,
+        "Neg": 2.785844499999999,
+        "GatherElementsV2": 2.6778340000000003,
+        "Sigmoid": 2.541556999999997,
+        "ConcatD": 1.9448794999999997,
+        "SliceV2": 1.7499585000000004,
+        "BroadcastTo": 1.7155334999999987,
+        "RealDiv": 1.5890414999999989,
+        "LpNormV2": 1.4204189999999997,
+        "ReduceSum": 1.2421734999999992,
+        "Pack": 0.6168004999999999,
+        "Tanh": 0.45468200000000003,
+        "ClipByValueV2": 0.44901800000000003,
+        "RwkvReferenceWkv7": 0.4152465,
+        "ZerosLike": 0.3616450000000001,
+        "Cast": 0.26088599999999984,
+        "GatherV2": 0.0860315
+      },
+      "type_count_per_call": {
+        "GatherV2": 1.0,
+        "LayerNormV3": 100.0,
+        "ZerosLike": 72.0,
+        "SliceV2": 48.0,
+        "ConcatD": 48.0,
+        "Sub": 238.0,
+        "Cast": 96.0,
+        "BroadcastTo": 97.0,
+        "Transpose": 312.0,
+        "GatherElementsV2": 48.0,
+        "Mul": 814.0,
+        "Add": 717.0,
+        "MatMulV2": 622.0,
+        "Tanh": 49.0,
+        "Sigmoid": 190.0,
+        "LpNormV2": 48.0,
+        "ClipByValueV2": 48.0,
+        "RealDiv": 48.0,
+        "Neg": 48.0,
+        "RwkvEndpointWkv7": 24.0,
+        "GroupNormSilu": 48.0,
+        "ReduceSum": 48.0,
+        "MatMulV3": 48.0,
+        "Relu": 48.0,
+        "Pows": 48.0,
+        "Pack": 50.0,
+        "RwkvReferenceWkv7": 24.0
+      },
+      "top_shapes": [
+        {
+          "type": "RwkvEndpointWkv7",
+          "input_shapes": "\"4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,64,64;4\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 170.2039425
+        },
+        {
+          "type": "GroupNormSilu",
+          "input_shapes": "\"8192,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 106.20478399999998
+        },
+        {
+          "type": "MatMulV3",
+          "input_shapes": "\"8192,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 78.000519
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 96.0,
+          "ms_per_call": 77.02035100000002
+        },
+        {
+          "type": "MatMulV3",
+          "input_shapes": "\"8192,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 76.34336700000001
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 263.0,
+          "ms_per_call": 34.61479149999996
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,2048,32,64;4\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 144.0,
+          "ms_per_call": 18.165572500000007
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 216.0,
+          "ms_per_call": 17.40859799999999
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 119.0,
+          "ms_per_call": 13.789672999999999
+        },
+        {
+          "type": "Sub",
+          "input_shapes": "\"4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 71.0,
+          "ms_per_call": 10.695180500000001
+        },
+        {
+          "type": "Pows",
+          "input_shapes": "\"4,2048,8192;\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 9.830865499999998
+        },
+        {
+          "type": "Relu",
+          "input_shapes": "\"4,2048,8192\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 9.552931000000003
+        },
+        {
+          "type": "LayerNormV3",
+          "input_shapes": "\"4,2048,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 50.0,
+          "ms_per_call": 7.566959999999996
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,2048,2048;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 5.0127299999999995
+        },
+        {
+          "type": "Sub",
+          "input_shapes": "\"4,2048,2048;\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 3.1138330000000005
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,32,2048,64;4\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.901726
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,2048;2048,256\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.7771745
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"4,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 97.0,
+          "ms_per_call": 2.749461000000001
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 48.0,
+          "ms_per_call": 2.749094
+        },
+        {
+          "type": "Neg",
+          "input_shapes": "\"4,2048,2048\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.723614
+        },
+        {
+          "type": "GatherElementsV2",
+          "input_shapes": "\"4,2048,2048;4,2048,1\"",
+          "input_dtypes": "FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 2.6778340000000003
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,256;256,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.6332535
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,96;96,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 48.0,
+          "ms_per_call": 2.5506330000000004
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,1,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 71.0,
+          "ms_per_call": 2.4756629999999986
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"4,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.381659
+        },
+        {
+          "type": "Sigmoid",
+          "input_shapes": "\"4,2048,2048\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 71.0,
+          "ms_per_call": 2.1766769999999998
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,2048;2048,64\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 23.0,
+          "ms_per_call": 1.9633405000000002
+        },
+        {
+          "type": "ConcatD",
+          "input_shapes": "\"4,1,2048;4,2047,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "46",
+          "calls_per_call": 48.0,
+          "ms_per_call": 1.9448794999999997
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,32,1;4,2048,32,64\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.7643845
+        },
+        {
+          "type": "SliceV2",
+          "input_shapes": "\"4,2048,2048;3;3\"",
+          "input_dtypes": "FLOAT;INT64;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 1.7499585000000004
+        }
+      ],
+      "record_shapes": true,
+      "recorded_calls": 2,
+      "cpu_marker_mean_ms": {
+        "rwkv.disk_read_pair": 0.515055,
+        "rwkv.cpu_tokenize": 6.372305,
+        "rwkv.cpu_batch_prepare": 2.2073650000000002,
+        "rwkv.h2d": 0.7024349999999999,
+        "rwkv.raw_eager_backbone": 611.64532,
+        "rwkv.raw_eager_head": 521.134845,
+        "rwkv.d2h_scores": 0.5348999999999999,
+        "rwkv.disk_write_scores": 1.04722,
+        "rwkv.raw_eager_pipeline": 1144.8159649999998
+      },
+      "kernel_details_gzip_sha256": "0a2182a9eacd7c84469a0036926795c869a7a7a1f9eb703eb0ab504bbdedbea5",
+      "raw_profile_files": {
+        "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_pipeline/liteserver-c001-4_170358_20261007112506383_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_pipeline/liteserver-c001-4_170358_20261007112506383_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_pipeline/liteserver-c001-4_170358_20261007112506383_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_pipeline/liteserver-c001-4_170358_20261007112506383_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_pipeline/liteserver-c001-4_170358_20261007112506383_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_pipeline/liteserver-c001-4_170358_20261007112506383_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_pipeline/liteserver-c001-4_170358_20261007112506383_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_pipeline/liteserver-c001-4_170358_20261007112506383_ascend_pt/profiler_metadata.json"
+      }
+    },
+    "profile_torchair_pipeline": {
+      "kernel_count_per_call": 2420.0,
+      "kernel_sum_ms_per_call": 808.154035,
+      "core_ms_per_call": {
+        "AI_VECTOR_CORE": 551.0873944999984,
+        "AI_CORE": 253.03752849999992,
+        "AI_CPU": 4.0291120000000005
+      },
+      "type_ms_per_call": {
+        "RwkvEndpointWkv7": 339.70668750000004,
+        "MatMulV3": 148.57557799999998,
+        "GroupNormSilu": 105.67938900000001,
+        "MatMul": 104.46195049999992,
+        "AutomaticBufferFusionOp": 37.04725550000001,
+        "Add": 20.098099999999985,
+        "Transpose": 15.055973,
+        "StridedSliceD": 9.367125999999997,
+        "LayerNormV3": 7.627551499999995,
+        "Mul": 6.919697999999995,
+        "GatherElements": 4.0291120000000005,
+        "ConcatV2D": 1.5853589999999989,
+        "RealDiv": 1.2721045000000009,
+        "LpNormV2": 1.263704000000001,
+        "BroadcastTo": 1.2156559999999998,
+        "ReduceSumD": 1.0348909999999998,
+        "GatherV2": 0.881630499999999,
+        "Neg": 0.7423745000000005,
+        "Tanh": 0.384725,
+        "RwkvReferenceWkv7": 0.34689549999999986,
+        "Sigmoid": 0.3164850000000001,
+        "Pack": 0.2534235,
+        "ClipByValueV2": 0.21999399999999994,
+        "Sub": 0.06704150000000002,
+        "Cast": 0.00133
+      },
+      "type_count_per_call": {
+        "GatherV2": 119.0,
+        "LayerNormV3": 99.0,
+        "StridedSliceD": 47.0,
+        "ConcatV2D": 95.0,
+        "AutomaticBufferFusionOp": 284.0,
+        "MatMul": 622.0,
+        "Tanh": 49.0,
+        "Sigmoid": 48.0,
+        "Transpose": 168.0,
+        "Mul": 144.0,
+        "LpNormV2": 48.0,
+        "ClipByValueV2": 48.0,
+        "BroadcastTo": 97.0,
+        "RealDiv": 48.0,
+        "Neg": 48.0,
+        "Add": 143.0,
+        "ReduceSumD": 48.0,
+        "RwkvEndpointWkv7": 24.0,
+        "GroupNormSilu": 48.0,
+        "Cast": 1.0,
+        "Sub": 48.0,
+        "GatherElements": 48.0,
+        "Pack": 26.0,
+        "MatMulV3": 46.0,
+        "RwkvReferenceWkv7": 24.0
+      },
+      "top_shapes": [
+        {
+          "type": "RwkvEndpointWkv7",
+          "input_shapes": "\"4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,64,64;4\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 339.70668750000004
+        },
+        {
+          "type": "GroupNormSilu",
+          "input_shapes": "\"8192,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 105.28176100000002
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 96.0,
+          "ms_per_call": 81.46020650000001
+        },
+        {
+          "type": "MatMulV3",
+          "input_shapes": "\"8192,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 23.0,
+          "ms_per_call": 75.16996049999999
+        },
+        {
+          "type": "MatMulV3",
+          "input_shapes": "\"8192,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 23.0,
+          "ms_per_call": 73.40561749999999
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,1,2048;4,2048,2048;4,2048,2048;;1,1,2048;;4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 14.805374500000001
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,2048,32,64;4\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 144.0,
+          "ms_per_call": 12.546641500000003
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"4,2048,2048;4,2048,2048;1,1,2048;4,2048,2048;1,1,2048;4,2048,2048;1,1,2048;4,2048,2048;1,1,2048;1,1,2048;4,2048,2048;1,1,2048;4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 23.0,
+          "ms_per_call": 9.949559500000003
+        },
+        {
+          "type": "StridedSliceD",
+          "input_shapes": "\"4,2048,2048\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "4",
+          "calls_per_call": 47.0,
+          "ms_per_call": 9.367125999999997
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"4,2048,8192\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 23.0,
+          "ms_per_call": 9.187514499999999
+        },
+        {
+          "type": "LayerNormV3",
+          "input_shapes": "\"4,2048,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 49.0,
+          "ms_per_call": 7.506759499999999
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,1,2048;4,2048,2048;4,2048,2048;4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 23.0,
+          "ms_per_call": 6.485281
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"4,2048,2048;4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 5.310138
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 48.0,
+          "ms_per_call": 5.132362000000003
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 47.0,
+          "ms_per_call": 5.051009500000001
+        },
+        {
+          "type": "GatherElements",
+          "input_shapes": "\"4,2048,2048;4,1,2048\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_CPU",
+          "block_num": "1",
+          "calls_per_call": 48.0,
+          "ms_per_call": 4.0291120000000005
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,1,2048;4,2048,2048;\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 3.4167279999999995
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,2048;2048,256\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 3.1713560000000003
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,256;256,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.8786370000000003
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,96;96,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 48.0,
+          "ms_per_call": 2.5508209999999996
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,32,2048,64;4\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.5093315
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,32,1;4,2048,32,64\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.295525
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.2809255
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"8192,2048;2048,64\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 23.0,
+          "ms_per_call": 1.9616005
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.9190194999999992
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"4,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 96.0,
+          "ms_per_call": 1.9106105000000007
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"4,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.6634324999999999
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"4,2048,2048;4,2048,2048;1,1,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 23.0,
+          "ms_per_call": 1.5034195000000001
+        },
+        {
+          "type": "ConcatV2D",
+          "input_shapes": "\"4,1,2048;4,2047,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "46",
+          "calls_per_call": 47.0,
+          "ms_per_call": 1.4447664999999994
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"4,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.251695
+        }
+      ],
+      "record_shapes": true,
+      "recorded_calls": 2,
+      "cpu_marker_mean_ms": {
+        "rwkv.disk_read_pair": 0.44676000000000005,
+        "rwkv.cpu_tokenize": 6.306005000000001,
+        "rwkv.cpu_batch_prepare": 2.27307,
+        "rwkv.h2d": 0.785175,
+        "rwkv.torchair_backbone": 2.9978550000000004,
+        "rwkv.torchair_head": 2.42114,
+        "rwkv.d2h_scores": 804.863515,
+        "rwkv.disk_write_scores": 0.7373350000000001,
+        "rwkv.torchair_pipeline": 821.41897
+      },
+      "kernel_details_gzip_sha256": "4315c4438b6f5c62d0539a0079162c198920a5cab4a0bb136e17e512b0a5fd48",
+      "raw_profile_files": {
+        "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_pipeline/liteserver-c001-4_170358_20261007112754430_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_pipeline/liteserver-c001-4_170358_20261007112754430_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_pipeline/liteserver-c001-4_170358_20261007112754430_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_pipeline/liteserver-c001-4_170358_20261007112754430_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_pipeline/liteserver-c001-4_170358_20261007112754430_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_pipeline/liteserver-c001-4_170358_20261007112754430_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_pipeline/liteserver-c001-4_170358_20261007112754430_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_torchair_pipeline/liteserver-c001-4_170358_20261007112754430_ascend_pt/profiler_metadata.json"
+      }
+    },
+    "profile_raw_eager_forward": {
+      "kernel_count_per_call": 3982.0,
+      "kernel_sum_ms_per_call": 694.8225060000001,
+      "core_ms_per_call": {
+        "AI_VECTOR_CORE": 438.648299000001,
+        "AI_CORE": 253.49087400000025,
+        "MIX_AIV": 2.6833329999999997
+      },
+      "type_ms_per_call": {
+        "RwkvEndpointWkv7": 170.19225949999998,
+        "MatMulV3": 154.3865435,
+        "GroupNormSilu": 106.57170900000003,
+        "MatMulV2": 99.1043304999999,
+        "Add": 38.67150250000002,
+        "Mul": 36.397573500000014,
+        "Transpose": 27.271679499999998,
+        "Sub": 14.172126499999994,
+        "Pows": 10.143941000000002,
+        "Relu": 9.705373000000003,
+        "LayerNormV3": 7.892268999999996,
+        "Neg": 2.7886370000000005,
+        "GatherElementsV2": 2.672641999999999,
+        "Sigmoid": 2.5509424999999992,
+        "ConcatD": 1.9372569999999993,
+        "SliceV2": 1.7467735000000006,
+        "BroadcastTo": 1.7223354999999996,
+        "RealDiv": 1.5818134999999993,
+        "LpNormV2": 1.4398475,
+        "ReduceSum": 1.2434855000000002,
+        "Pack": 0.6089424999999999,
+        "Tanh": 0.4550275,
+        "ClipByValueV2": 0.4482320000000001,
+        "RwkvReferenceWkv7": 0.40967800000000004,
+        "ZerosLike": 0.36131849999999993,
+        "Cast": 0.2605945000000002,
+        "GatherV2": 0.0856715
+      },
+      "type_count_per_call": {
+        "GatherV2": 1.0,
+        "LayerNormV3": 100.0,
+        "ZerosLike": 72.0,
+        "SliceV2": 48.0,
+        "ConcatD": 48.0,
+        "Sub": 238.0,
+        "Cast": 96.0,
+        "BroadcastTo": 97.0,
+        "Transpose": 312.0,
+        "GatherElementsV2": 48.0,
+        "Mul": 814.0,
+        "Add": 717.0,
+        "MatMulV2": 622.0,
+        "Tanh": 49.0,
+        "Sigmoid": 190.0,
+        "LpNormV2": 48.0,
+        "ClipByValueV2": 48.0,
+        "RealDiv": 48.0,
+        "Neg": 48.0,
+        "RwkvEndpointWkv7": 24.0,
+        "GroupNormSilu": 48.0,
+        "ReduceSum": 48.0,
+        "MatMulV3": 48.0,
+        "Relu": 48.0,
+        "Pows": 48.0,
+        "Pack": 50.0,
+        "RwkvReferenceWkv7": 24.0
+      },
+      "top_shapes": [
+        {
+          "type": "RwkvEndpointWkv7",
+          "input_shapes": "\"4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,2048,64;4,32,64,64;4\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 170.19225949999998
+        },
+        {
+          "type": "GroupNormSilu",
+          "input_shapes": "\"8192,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 106.204301
+        },
+        {
+          "type": "MatMulV3",
+          "input_shapes": "\"8192,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 78.0464685
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 96.0,
+          "ms_per_call": 77.02401049999996
+        },
+        {
+          "type": "MatMulV3",
+          "input_shapes": "\"8192,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 76.34007500000001
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 263.0,
+          "ms_per_call": 34.621284499999994
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,2048,32,64;4\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 144.0,
+          "ms_per_call": 18.2017855
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 216.0,
+          "ms_per_call": 17.3864085
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 119.0,
+          "ms_per_call": 13.797825999999999
+        },
+        {
+          "type": "Sub",
+          "input_shapes": "\"4,2048,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 71.0,
+          "ms_per_call": 10.696005500000002
+        },
+        {
+          "type": "Pows",
+          "input_shapes": "\"4,2048,8192;\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 9.826336500000002
+        },
+        {
+          "type": "Relu",
+          "input_shapes": "\"4,2048,8192\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 9.559841
+        },
+        {
+          "type": "LayerNormV3",
+          "input_shapes": "\"4,2048,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 50.0,
+          "ms_per_call": 7.566450999999996
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,2048,2048;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 5.012800500000001
+        },
+        {
+          "type": "Sub",
+          "input_shapes": "\"4,2048,2048;\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 3.1112614999999995
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,32,2048,64;4\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.918588
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,2048;2048,256\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.777717
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 48.0,
+          "ms_per_call": 2.7570759999999996
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"4,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 97.0,
+          "ms_per_call": 2.745199999999997
+        },
+        {
+          "type": "Neg",
+          "input_shapes": "\"4,2048,2048\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.7263360000000003
+        },
+        {
+          "type": "GatherElementsV2",
+          "input_shapes": "\"4,2048,2048;4,2048,1\"",
+          "input_dtypes": "FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 2.672641999999999
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,256;256,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.6305899999999993
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,96;96,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 48.0,
+          "ms_per_call": 2.5496805000000005
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,1,2048;4,2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 71.0,
+          "ms_per_call": 2.4753339999999997
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"4,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.385308500000001
+        },
+        {
+          "type": "Sigmoid",
+          "input_shapes": "\"4,2048,2048\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 71.0,
+          "ms_per_call": 2.1807365
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"8192,2048;2048,64\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 23.0,
+          "ms_per_call": 1.96175
+        },
+        {
+          "type": "ConcatD",
+          "input_shapes": "\"4,1,2048;4,2047,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "46",
+          "calls_per_call": 48.0,
+          "ms_per_call": 1.9372569999999993
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,2048,32,1;4,2048,32,64\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.7658364999999998
+        },
+        {
+          "type": "SliceV2",
+          "input_shapes": "\"4,2048,2048;3;3\"",
+          "input_dtypes": "FLOAT;INT64;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 1.7467735000000006
+        }
+      ],
+      "record_shapes": true,
+      "recorded_calls": 2,
+      "cpu_marker_mean_ms": {
+        "rwkv.raw_eager_backbone": 593.879025,
+        "rwkv.raw_eager_head": 506.09482499999996,
+        "rwkv.raw_eager_forward": 1100.23644
+      },
+      "kernel_details_gzip_sha256": "45c2c2d9ec479fad0bc783b5b50669f492f29981147a33056a140f2a3cd5d0ab",
+      "raw_profile_files": {
+        "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_forward/liteserver-c001-4_170358_20261007112442464_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_forward/liteserver-c001-4_170358_20261007112442464_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_forward/liteserver-c001-4_170358_20261007112442464_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_forward/liteserver-c001-4_170358_20261007112442464_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_forward/liteserver-c001-4_170358_20261007112442464_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_forward/liteserver-c001-4_170358_20261007112442464_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_forward/liteserver-c001-4_170358_20261007112442464_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b4_t2048/profile_raw_eager_forward/liteserver-c001-4_170358_20261007112442464_ascend_pt/profiler_metadata.json"
+      }
+    }
+  }
+}

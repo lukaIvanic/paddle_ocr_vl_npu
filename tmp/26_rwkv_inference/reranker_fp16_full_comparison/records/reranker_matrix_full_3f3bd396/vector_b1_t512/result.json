@@ -1,0 +1,1539 @@
+{
+  "run": "reranker_matrix_full_3f3bd396/vector_b1_t512",
+  "source_commit": "3f3bd3966693701fdb3bb45252dcd69b53667586",
+  "dtype": "fp32",
+  "batch": 1,
+  "static_tokens": 512,
+  "valid_tokens": [
+    257
+  ],
+  "physical_npu": "1",
+  "all_checks_passed": true,
+  "recurrence": "vector",
+  "matrix_chunk_size": null,
+  "matrix_compute_dtype": null,
+  "retain_dense_outputs": false,
+  "group_norm_impl": "group_norm",
+  "input_sha256": "42c9f18da9672a00956f67fb849317989a890ea3e766d93523aff3c573ddad9a",
+  "checkpoint_sha256": "be7245cc832b43ed0df4873d49c1a831cb9972d27de3f8cc4950588fc8b9392d",
+  "reranker_sha256": "4ab584f4da09bb6528a027a740b3752711e138188b5885ebd02581edc58cce8a",
+  "compiler_helper_sha256": "a7a65478cdb8bb5fd6e0f3c17a5d719fa24fdf158fbaefce012c09e4068ebbfb",
+  "clean_pipeline_ms": {
+    "raw_eager_pipeline_total": 139.68988499982515,
+    "torchair_pipeline_total": 61.697165001532994
+  },
+  "clean_scoring_ms": {
+    "eager_total": 134.84727499599103,
+    "torchair_total": 60.03493999742204
+  },
+  "compile_and_first_call_seconds": 124.6349266400066,
+  "compiled_state_errors": [
+    {
+      "max_abs": 0.0,
+      "normalized_rmse": 0.0,
+      "finite": true
+    },
+    {
+      "max_abs": 0.0,
+      "normalized_rmse": 0.0,
+      "finite": true
+    }
+  ],
+  "compiled_score_error": {
+    "max_abs": 2.86102294921875e-06,
+    "normalized_rmse": 6.874370228615589e-07,
+    "finite": true
+  },
+  "padding_state_errors": null,
+  "padding_score_error": {
+    "max_abs": 5.245208740234375e-06,
+    "normalized_rmse": 1.2602996548594092e-06,
+    "finite": true
+  },
+  "matrix_score_error": null,
+  "matrix_state_errors": null,
+  "matrix_continuation": null,
+  "implementation_vs_default_scores": null,
+  "implementation_vs_default_states": null,
+  "matrix_first_layer_finiteness": null,
+  "cpu_anchor": {
+    "input_ids": [
+      33193,
+      8872,
+      59,
+      36733,
+      332,
+      39415,
+      45,
+      57129,
+      33563,
+      36240,
+      33944,
+      21700,
+      37533,
+      43927,
+      63218,
+      65535
+    ],
+    "states": [
+      {
+        "max_abs": 3.814697265625e-05,
+        "normalized_rmse": 1.3920026731284452e-06,
+        "finite": true
+      },
+      {
+        "max_abs": 0.0001373291015625,
+        "normalized_rmse": 9.6068299626495e-07,
+        "finite": true
+      }
+    ],
+    "hidden": {
+      "max_abs": 0.0002117156982421875,
+      "normalized_rmse": 2.47687808041519e-06,
+      "finite": true
+    },
+    "logits": {
+      "max_abs": 1.0013580322265625e-05,
+      "normalized_rmse": 2.431470193187124e-06,
+      "finite": true
+    },
+    "cpu_logits": [
+      -4.11832332611084
+    ],
+    "npu_logits": [
+      -4.118333339691162
+    ],
+    "seconds": 17.714603330008686
+  },
+  "source_sha256": {
+    "bench_reranker_sizes.py": "8d4398993f24581c04880cab1ccce38666118379e77a48e94e98f919f1e61451",
+    "local_modeling_rwkv_embedding.py": "c795f8b5c1bb65cedc092718fa203baaf37f6efe1df609511ce55409e2592c58",
+    "local_modeling_rwkv_reranker.py": "62d3ce3f2f5d8a54924794422778fc61827962e41c0d4cd2d62591b9dfeb5896",
+    "probe_reranker_endpoint.py": "a7a65478cdb8bb5fd6e0f3c17a5d719fa24fdf158fbaefce012c09e4068ebbfb",
+    "run_reranker_smoke.py": "91c62ae2fb96f0745eb0fea42d742b10ddf48323c9b7b76ca9ab987d5d5ecaf9",
+    "wkv7_endpoint.py": "73b1b8f8b7ac791c60efdadba6fae8e81bff2b850b14904ea3628f7e54160647"
+  },
+  "error": [],
+  "profiles": {
+    "profile_torchair_forward": {
+      "kernel_count_per_call": 2278.0,
+      "kernel_sum_ms_per_call": 60.1105805,
+      "core_ms_per_call": {
+        "AI_VECTOR_CORE": 35.10692649999999,
+        "AI_CORE": 23.03786350000002,
+        "AI_CPU": 1.9657904999999998
+      },
+      "type_ms_per_call": {
+        "MatMul": 23.03786350000002,
+        "RwkvEndpointWkv7": 14.512469999999997,
+        "GroupNormSilu": 7.346078999999998,
+        "AutomaticBufferFusionOp": 2.6908009999999973,
+        "StridedSliceD": 2.1155110000000006,
+        "GatherElements": 1.9657904999999998,
+        "Add": 1.5957319999999997,
+        "Transpose": 1.3142559999999985,
+        "LayerNormV3": 1.0495729999999996,
+        "Mul": 0.8797889999999997,
+        "GatherV2": 0.7180645000000014,
+        "BroadcastTo": 0.4547599999999999,
+        "LpNormV2": 0.4045674999999998,
+        "ReduceSumD": 0.3755769999999999,
+        "Sigmoid": 0.2659645,
+        "Tanh": 0.26136300000000007,
+        "RealDiv": 0.24641449999999993,
+        "Pack": 0.241184,
+        "Neg": 0.2291035,
+        "RwkvReferenceWkv7": 0.20983300000000008,
+        "ClipByValueV2": 0.1281325,
+        "Sub": 0.058361500000000024,
+        "ConcatV2D": 0.008230000000000001,
+        "Cast": 0.0011600000000000002
+      },
+      "type_count_per_call": {
+        "GatherV2": 119.0,
+        "LayerNormV3": 99.0,
+        "StridedSliceD": 47.0,
+        "AutomaticBufferFusionOp": 284.0,
+        "MatMul": 668.0,
+        "Tanh": 49.0,
+        "Sigmoid": 72.0,
+        "Transpose": 168.0,
+        "Mul": 144.0,
+        "LpNormV2": 48.0,
+        "ClipByValueV2": 48.0,
+        "BroadcastTo": 96.0,
+        "RealDiv": 48.0,
+        "Neg": 48.0,
+        "Add": 72.0,
+        "ReduceSumD": 48.0,
+        "RwkvEndpointWkv7": 24.0,
+        "GroupNormSilu": 48.0,
+        "Cast": 1.0,
+        "Sub": 48.0,
+        "GatherElements": 48.0,
+        "Pack": 26.0,
+        "ConcatV2D": 1.0,
+        "RwkvReferenceWkv7": 24.0
+      },
+      "top_shapes": [
+        {
+          "type": "RwkvEndpointWkv7",
+          "input_shapes": "\"1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,64,64;1\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 14.512469999999997
+        },
+        {
+          "type": "GroupNormSilu",
+          "input_shapes": "\"512,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 7.1245235
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 96.0,
+          "ms_per_call": 5.3408375
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 23.0,
+          "ms_per_call": 4.825915499999999
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 23.0,
+          "ms_per_call": 4.7859454999999995
+        },
+        {
+          "type": "StridedSliceD",
+          "input_shapes": "\"1,512,2048\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "1",
+          "calls_per_call": 47.0,
+          "ms_per_call": 2.1155110000000006
+        },
+        {
+          "type": "GatherElements",
+          "input_shapes": "\"1,512,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_CPU",
+          "block_num": "1",
+          "calls_per_call": 48.0,
+          "ms_per_call": 1.9657904999999998
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"1,8192;2048,8192;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.6621729999999997
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"1,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 73.0,
+          "ms_per_call": 1.3822059999999996
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"1,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.2254150000000001
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,1,2048;1,512,2048;1,512,2048;;1,1,2048;;1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.1755234999999995
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"512,32,64;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 144.0,
+          "ms_per_call": 1.0275905000000003
+        },
+        {
+          "type": "LayerNormV3",
+          "input_shapes": "\"1,512,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 49.0,
+          "ms_per_call": 0.9454894999999999
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,512,2048;1,512,2048;1,1,2048;1,512,2048;1,1,2048;1,512,2048;1,1,2048;1,512,2048;1,1,2048;1,1,2048;1,512,2048;1,1,2048;1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 23.0,
+          "ms_per_call": 0.7630539999999999
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.6366535000000001
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"2,1,2048;;1\"",
+          "input_dtypes": "FLOAT;INT64;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 94.0,
+          "ms_per_call": 0.4911199999999997
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,1,2048;1,512,2048;1,512,2048;1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 22.0,
+          "ms_per_call": 0.45300949999999995
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,96;96,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "16",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.4450905
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"1,2048;2048,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 23.0,
+          "ms_per_call": 0.42567849999999996
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 47.0,
+          "ms_per_call": 0.4189585000000001
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"1,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "6",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.41746000000000005
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,2048;2048,256\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "16",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.3753679999999999
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,1,2048;1,512,2048;\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "43",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.374847
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,256;256,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "16",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.336986
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"32,512,64;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.28666550000000013
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,512,8192\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 23.0,
+          "ms_per_call": 0.27984650000000005
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,512,2048;1,512,2048;1,1,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "43",
+          "calls_per_call": 23.0,
+          "ms_per_call": 0.2727555
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "\"1,512,32,64\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.26454399999999995
+        },
+        {
+          "type": "ReduceSumD",
+          "input_shapes": "\"1,512,32,64\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.24880499999999994
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"1,512,32,1;1,512,32,64\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "46",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.24681450000000008
+        }
+      ],
+      "record_shapes": true,
+      "recorded_calls": 2,
+      "cpu_marker_mean_ms": {
+        "rwkv.torchair_backbone": 2.7512,
+        "rwkv.torchair_head": 2.16507,
+        "rwkv.torchair_forward": 5.119275
+      },
+      "kernel_details_gzip_sha256": "0aee7d6f441a7f547f8a0f89a33c1999b02affacb15a61d5deeef26cde0b4043",
+      "raw_profile_files": {
+        "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_forward/liteserver-c001-4_162328_20261007111944159_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_forward/liteserver-c001-4_162328_20261007111944159_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_forward/liteserver-c001-4_162328_20261007111944159_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_forward/liteserver-c001-4_162328_20261007111944159_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_forward/liteserver-c001-4_162328_20261007111944159_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_forward/liteserver-c001-4_162328_20261007111944159_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_forward/liteserver-c001-4_162328_20261007111944159_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_forward/liteserver-c001-4_162328_20261007111944159_ascend_pt/profiler_metadata.json"
+      }
+    },
+    "profile_raw_eager_pipeline": {
+      "kernel_count_per_call": 3933.0,
+      "kernel_sum_ms_per_call": 65.6160245,
+      "core_ms_per_call": {
+        "AI_VECTOR_CORE": 38.49329150000034,
+        "AI_CORE": 25.924089500000026,
+        "MIX_AIV": 1.1986434999999993
+      },
+      "type_ms_per_call": {
+        "MatMulV2": 25.924089500000026,
+        "RwkvEndpointWkv7": 7.469288999999998,
+        "GroupNormSilu": 7.175616000000002,
+        "Transpose": 5.799026500000002,
+        "Mul": 4.510266500000002,
+        "Add": 3.436204999999997,
+        "LayerNormV3": 1.7525345000000003,
+        "GatherElementsV2": 1.4040439999999998,
+        "Sub": 1.2066424999999956,
+        "ConcatD": 0.8978490000000003,
+        "Sigmoid": 0.8881865000000004,
+        "Pows": 0.7540815000000003,
+        "ReduceSum": 0.6092624999999998,
+        "BroadcastTo": 0.5900740000000003,
+        "LpNormV2": 0.5893810000000004,
+        "Pack": 0.5151485,
+        "Relu": 0.33852449999999995,
+        "RwkvReferenceWkv7": 0.32872549999999995,
+        "ZerosLike": 0.2912459999999999,
+        "Tanh": 0.2839759999999999,
+        "RealDiv": 0.2780454999999999,
+        "Neg": 0.22291299999999994,
+        "ClipByValueV2": 0.19032350000000003,
+        "Cast": 0.14333349999999997,
+        "GatherV2": 0.0172405
+      },
+      "type_count_per_call": {
+        "GatherV2": 1.0,
+        "LayerNormV3": 100.0,
+        "ZerosLike": 72.0,
+        "ConcatD": 48.0,
+        "Sub": 238.0,
+        "Cast": 96.0,
+        "BroadcastTo": 96.0,
+        "Transpose": 312.0,
+        "GatherElementsV2": 48.0,
+        "Mul": 814.0,
+        "Add": 717.0,
+        "MatMulV2": 670.0,
+        "Tanh": 49.0,
+        "Sigmoid": 190.0,
+        "LpNormV2": 48.0,
+        "ClipByValueV2": 48.0,
+        "RealDiv": 48.0,
+        "Neg": 48.0,
+        "RwkvEndpointWkv7": 24.0,
+        "GroupNormSilu": 48.0,
+        "ReduceSum": 48.0,
+        "Relu": 48.0,
+        "Pows": 48.0,
+        "Pack": 50.0,
+        "RwkvReferenceWkv7": 24.0
+      },
+      "top_shapes": [
+        {
+          "type": "RwkvEndpointWkv7",
+          "input_shapes": "\"1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,64,64;1\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 7.469288999999998
+        },
+        {
+          "type": "GroupNormSilu",
+          "input_shapes": "\"512,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 6.900660500000002
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 96.0,
+          "ms_per_call": 5.441699999999998
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 5.016719
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 5.007759
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"512,32,64;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 144.0,
+          "ms_per_call": 3.2619299999999996
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"1,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 97.0,
+          "ms_per_call": 2.6791515
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"1,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.3656875
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"1,512,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "43",
+          "calls_per_call": 216.0,
+          "ms_per_call": 1.9064985
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 263.0,
+          "ms_per_call": 1.8678940000000002
+        },
+        {
+          "type": "LayerNormV3",
+          "input_shapes": "\"1,512,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 50.0,
+          "ms_per_call": 1.4586974999999995
+        },
+        {
+          "type": "GatherElementsV2",
+          "input_shapes": "\"1,2048,512;1,2048,1\"",
+          "input_dtypes": "FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 1.4040439999999998
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"1,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.284535
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"1,512,2048;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.9689079999999999
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 119.0,
+          "ms_per_call": 0.9465220000000013
+        },
+        {
+          "type": "ConcatD",
+          "input_shapes": "\"1,1,2048;1,511,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.8978490000000003
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"1,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "6",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.8528269999999999
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,1,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "43",
+          "calls_per_call": 71.0,
+          "ms_per_call": 0.8282865000000007
+        },
+        {
+          "type": "Sub",
+          "input_shapes": "\"1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 71.0,
+          "ms_per_call": 0.7001759999999999
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.6875244999999998
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"32,512,64;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.5649339999999999
+        },
+        {
+          "type": "Sigmoid",
+          "input_shapes": "\"1,512,2048\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 71.0,
+          "ms_per_call": 0.5525399999999998
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"1,1,2048;3\"",
+          "input_dtypes": "INT64;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.5259735
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"1,1,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "2",
+          "calls_per_call": 335.0,
+          "ms_per_call": 0.5115885000000001
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,1,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "2",
+          "calls_per_call": 334.0,
+          "ms_per_call": 0.49211850000000007
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"1,2048,1;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.47728100000000007
+        },
+        {
+          "type": "Pack",
+          "input_shapes": "\"1,2048;1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.4486570000000001
+        },
+        {
+          "type": "Pows",
+          "input_shapes": "\"1,512,8192;\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.4472960000000001
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,96;96,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "16",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.4321280000000001
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,256;256,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "16",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.38330400000000003
+        }
+      ],
+      "record_shapes": true,
+      "recorded_calls": 2,
+      "cpu_marker_mean_ms": {
+        "rwkv.disk_read_pair": 0.332835,
+        "rwkv.cpu_tokenize": 0.657015,
+        "rwkv.cpu_batch_prepare": 0.5970500000000001,
+        "rwkv.h2d": 0.6948399999999999,
+        "rwkv.raw_eager_backbone": 610.182865,
+        "rwkv.raw_eager_head": 521.813405,
+        "rwkv.d2h_scores": 0.5116499999999999,
+        "rwkv.disk_write_scores": 0.824405,
+        "rwkv.raw_eager_pipeline": 1136.08034
+      },
+      "kernel_details_gzip_sha256": "882b7a40c05732d2682faa3fea03826e94ee32096f319c19242b9643a6bf52c1",
+      "raw_profile_files": {
+        "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_pipeline/liteserver-c001-4_162328_20261007111716166_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_pipeline/liteserver-c001-4_162328_20261007111716166_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_pipeline/liteserver-c001-4_162328_20261007111716166_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_pipeline/liteserver-c001-4_162328_20261007111716166_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_pipeline/liteserver-c001-4_162328_20261007111716166_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_pipeline/liteserver-c001-4_162328_20261007111716166_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_pipeline/liteserver-c001-4_162328_20261007111716166_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_pipeline/liteserver-c001-4_162328_20261007111716166_ascend_pt/profiler_metadata.json"
+      }
+    },
+    "profile_torchair_pipeline": {
+      "kernel_count_per_call": 2278.0,
+      "kernel_sum_ms_per_call": 60.1279605,
+      "core_ms_per_call": {
+        "AI_VECTOR_CORE": 35.11568850000009,
+        "AI_CORE": 23.017512499999988,
+        "AI_CPU": 1.9947594999999996
+      },
+      "type_ms_per_call": {
+        "MatMul": 23.017512499999988,
+        "RwkvEndpointWkv7": 14.508919999999998,
+        "GroupNormSilu": 7.341286000000003,
+        "AutomaticBufferFusionOp": 2.6923524999999975,
+        "StridedSliceD": 2.116671999999999,
+        "GatherElements": 1.9947594999999996,
+        "Add": 1.5961700000000012,
+        "Transpose": 1.3157275000000006,
+        "LayerNormV3": 1.0533324999999998,
+        "Mul": 0.8800265000000002,
+        "GatherV2": 0.7228624999999996,
+        "BroadcastTo": 0.4546294999999998,
+        "LpNormV2": 0.40475850000000013,
+        "ReduceSumD": 0.3754679999999999,
+        "Sigmoid": 0.26754300000000003,
+        "Tanh": 0.26315600000000017,
+        "RealDiv": 0.24633349999999998,
+        "Pack": 0.2402655,
+        "Neg": 0.229315,
+        "RwkvReferenceWkv7": 0.21070549999999996,
+        "ClipByValueV2": 0.12842300000000004,
+        "Sub": 0.058421000000000035,
+        "ConcatV2D": 0.008150500000000001,
+        "Cast": 0.00117
+      },
+      "type_count_per_call": {
+        "GatherV2": 119.0,
+        "LayerNormV3": 99.0,
+        "StridedSliceD": 47.0,
+        "AutomaticBufferFusionOp": 284.0,
+        "MatMul": 668.0,
+        "Tanh": 49.0,
+        "Sigmoid": 72.0,
+        "Transpose": 168.0,
+        "Mul": 144.0,
+        "LpNormV2": 48.0,
+        "ClipByValueV2": 48.0,
+        "BroadcastTo": 96.0,
+        "RealDiv": 48.0,
+        "Neg": 48.0,
+        "Add": 72.0,
+        "ReduceSumD": 48.0,
+        "RwkvEndpointWkv7": 24.0,
+        "GroupNormSilu": 48.0,
+        "Cast": 1.0,
+        "Sub": 48.0,
+        "GatherElements": 48.0,
+        "Pack": 26.0,
+        "ConcatV2D": 1.0,
+        "RwkvReferenceWkv7": 24.0
+      },
+      "top_shapes": [
+        {
+          "type": "RwkvEndpointWkv7",
+          "input_shapes": "\"1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,64,64;1\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 14.508919999999998
+        },
+        {
+          "type": "GroupNormSilu",
+          "input_shapes": "\"512,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 7.120542000000001
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 96.0,
+          "ms_per_call": 5.343027
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 23.0,
+          "ms_per_call": 4.827658
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 23.0,
+          "ms_per_call": 4.785036
+        },
+        {
+          "type": "StridedSliceD",
+          "input_shapes": "\"1,512,2048\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "1",
+          "calls_per_call": 47.0,
+          "ms_per_call": 2.116671999999999
+        },
+        {
+          "type": "GatherElements",
+          "input_shapes": "\"1,512,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_CPU",
+          "block_num": "1",
+          "calls_per_call": 48.0,
+          "ms_per_call": 1.9947594999999996
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"1,8192;2048,8192;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.649693
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"1,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 73.0,
+          "ms_per_call": 1.3832885000000008
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"1,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.2240050000000002
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,1,2048;1,512,2048;1,512,2048;;1,1,2048;;1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.1749720000000006
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"512,32,64;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 144.0,
+          "ms_per_call": 1.0285225000000005
+        },
+        {
+          "type": "LayerNormV3",
+          "input_shapes": "\"1,512,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 49.0,
+          "ms_per_call": 0.9485090000000004
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,512,2048;1,512,2048;1,1,2048;1,512,2048;1,1,2048;1,512,2048;1,1,2048;1,512,2048;1,1,2048;1,1,2048;1,512,2048;1,1,2048;1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 23.0,
+          "ms_per_call": 0.7614154999999997
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.6340634999999999
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"2,1,2048;;1\"",
+          "input_dtypes": "FLOAT;INT64;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 94.0,
+          "ms_per_call": 0.4949595000000001
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,1,2048;1,512,2048;1,512,2048;1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 22.0,
+          "ms_per_call": 0.45349000000000006
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,96;96,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "16",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.44382949999999993
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"1,2048;2048,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 23.0,
+          "ms_per_call": 0.42308850000000015
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 47.0,
+          "ms_per_call": 0.419718
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"1,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "6",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.417668
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,1,2048;1,512,2048;\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "43",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.3771075
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,2048;2048,256\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "16",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.375227
+        },
+        {
+          "type": "MatMul",
+          "input_shapes": "\"512,256;256,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "16",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.3369059999999999
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"32,512,64;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.2872050000000001
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,512,8192\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 23.0,
+          "ms_per_call": 0.2801755
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,512,2048;1,512,2048;1,1,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "43",
+          "calls_per_call": 23.0,
+          "ms_per_call": 0.2737045
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "\"1,512,32,64\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.2648845000000001
+        },
+        {
+          "type": "ReduceSumD",
+          "input_shapes": "\"1,512,32,64\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.24928449999999994
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"1,512,32,1;1,512,32,64\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "46",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.2466055
+        }
+      ],
+      "record_shapes": true,
+      "recorded_calls": 2,
+      "cpu_marker_mean_ms": {
+        "rwkv.disk_read_pair": 0.30255,
+        "rwkv.cpu_tokenize": 0.58013,
+        "rwkv.cpu_batch_prepare": 0.6242949999999999,
+        "rwkv.h2d": 0.71506,
+        "rwkv.torchair_backbone": 2.78973,
+        "rwkv.torchair_head": 2.25059,
+        "rwkv.d2h_scores": 56.97703,
+        "rwkv.disk_write_scores": 0.588695,
+        "rwkv.torchair_pipeline": 65.231775
+      },
+      "kernel_details_gzip_sha256": "694e619211c631cc52624e123fc7bf89f05b0eabf7881a3ed7d5e3d630291fb2",
+      "raw_profile_files": {
+        "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_pipeline/liteserver-c001-4_162328_20261007111953183_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_pipeline/liteserver-c001-4_162328_20261007111953183_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_pipeline/liteserver-c001-4_162328_20261007111953183_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_pipeline/liteserver-c001-4_162328_20261007111953183_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_pipeline/liteserver-c001-4_162328_20261007111953183_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_pipeline/liteserver-c001-4_162328_20261007111953183_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_pipeline/liteserver-c001-4_162328_20261007111953183_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_torchair_pipeline/liteserver-c001-4_162328_20261007111953183_ascend_pt/profiler_metadata.json"
+      }
+    },
+    "profile_raw_eager_forward": {
+      "kernel_count_per_call": 3933.0,
+      "kernel_sum_ms_per_call": 65.749534,
+      "core_ms_per_call": {
+        "AI_VECTOR_CORE": 38.491536999999994,
+        "AI_CORE": 26.067571999999956,
+        "MIX_AIV": 1.1904249999999998
+      },
+      "type_ms_per_call": {
+        "MatMulV2": 26.067571999999956,
+        "RwkvEndpointWkv7": 7.479320000000003,
+        "GroupNormSilu": 7.1684540000000005,
+        "Transpose": 5.799216,
+        "Mul": 4.501889000000014,
+        "Add": 3.4453429999999963,
+        "LayerNormV3": 1.7544020000000013,
+        "GatherElementsV2": 1.405638,
+        "Sub": 1.2033414999999976,
+        "ConcatD": 0.8987370000000002,
+        "Sigmoid": 0.8914160000000008,
+        "Pows": 0.7564430000000003,
+        "ReduceSum": 0.6089544999999998,
+        "BroadcastTo": 0.5892745000000001,
+        "LpNormV2": 0.5814705,
+        "Pack": 0.5158595000000001,
+        "Relu": 0.337255,
+        "RwkvReferenceWkv7": 0.3082650000000002,
+        "ZerosLike": 0.29313500000000003,
+        "Tanh": 0.28274449999999984,
+        "RealDiv": 0.27946350000000003,
+        "Neg": 0.22303400000000007,
+        "ClipByValueV2": 0.19188249999999998,
+        "Cast": 0.1477430000000001,
+        "GatherV2": 0.018680999999999996
+      },
+      "type_count_per_call": {
+        "GatherV2": 1.0,
+        "LayerNormV3": 100.0,
+        "ZerosLike": 72.0,
+        "ConcatD": 48.0,
+        "Sub": 238.0,
+        "Cast": 96.0,
+        "BroadcastTo": 96.0,
+        "Transpose": 312.0,
+        "GatherElementsV2": 48.0,
+        "Mul": 814.0,
+        "Add": 717.0,
+        "MatMulV2": 670.0,
+        "Tanh": 49.0,
+        "Sigmoid": 190.0,
+        "LpNormV2": 48.0,
+        "ClipByValueV2": 48.0,
+        "RealDiv": 48.0,
+        "Neg": 48.0,
+        "RwkvEndpointWkv7": 24.0,
+        "GroupNormSilu": 48.0,
+        "ReduceSum": 48.0,
+        "Relu": 48.0,
+        "Pows": 48.0,
+        "Pack": 50.0,
+        "RwkvReferenceWkv7": 24.0
+      },
+      "top_shapes": [
+        {
+          "type": "RwkvEndpointWkv7",
+          "input_shapes": "\"1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,512,64;1,32,64,64;1\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 7.479320000000003
+        },
+        {
+          "type": "GroupNormSilu",
+          "input_shapes": "\"512,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 6.894316499999998
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 96.0,
+          "ms_per_call": 5.502839999999999
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 5.0201835
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 24.0,
+          "ms_per_call": 5.014023000000001
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"512,32,64;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 144.0,
+          "ms_per_call": 3.2761180000000016
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"1,2048;2048,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 97.0,
+          "ms_per_call": 2.7348945000000002
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"1,8192;2048,8192\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 2.375528
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"1,512,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "43",
+          "calls_per_call": 216.0,
+          "ms_per_call": 1.9122760000000003
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 263.0,
+          "ms_per_call": 1.8681434999999997
+        },
+        {
+          "type": "LayerNormV3",
+          "input_shapes": "\"1,512,2048;2048;2048\"",
+          "input_dtypes": "FLOAT;FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 50.0,
+          "ms_per_call": 1.460479
+        },
+        {
+          "type": "GatherElementsV2",
+          "input_shapes": "\"1,2048,512;1,2048,1\"",
+          "input_dtypes": "FLOAT;INT32",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 1.405638
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"1,2048;8192,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "22",
+          "calls_per_call": 24.0,
+          "ms_per_call": 1.2946464999999998
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"1,512,2048;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.9563185000000002
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 119.0,
+          "ms_per_call": 0.936885000000001
+        },
+        {
+          "type": "ConcatD",
+          "input_shapes": "\"1,1,2048;1,511,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.8987370000000002
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"1,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "6",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.8519664999999996
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,1,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "43",
+          "calls_per_call": 71.0,
+          "ms_per_call": 0.8356929999999999
+        },
+        {
+          "type": "Sub",
+          "input_shapes": "\"1,512,2048;1,512,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 71.0,
+          "ms_per_call": 0.6982735000000001
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,2048;2048,96\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "24",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.6867720000000002
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"32,512,64;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.5687189999999999
+        },
+        {
+          "type": "Sigmoid",
+          "input_shapes": "\"1,512,2048\"",
+          "input_dtypes": "FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 71.0,
+          "ms_per_call": 0.5565904999999997
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"1,1,2048;3\"",
+          "input_dtypes": "INT64;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.5225025
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"1,1,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "2",
+          "calls_per_call": 335.0,
+          "ms_per_call": 0.5101424999999996
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,1,2048;1,1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "2",
+          "calls_per_call": 334.0,
+          "ms_per_call": 0.4938005000000001
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"1,2048,1;3\"",
+          "input_dtypes": "FLOAT;INT64",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.47555799999999987
+        },
+        {
+          "type": "Pack",
+          "input_shapes": "\"1,2048;1,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "47",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.45290850000000005
+        },
+        {
+          "type": "Pows",
+          "input_shapes": "\"1,512,8192;\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_VECTOR_CORE",
+          "block_num": "48",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.4462369999999999
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,96;96,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "16",
+          "calls_per_call": 48.0,
+          "ms_per_call": 0.4314365000000001
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,256;256,2048\"",
+          "input_dtypes": "FLOAT;FLOAT",
+          "core": "AI_CORE",
+          "block_num": "16",
+          "calls_per_call": 24.0,
+          "ms_per_call": 0.3829754999999999
+        }
+      ],
+      "record_shapes": true,
+      "recorded_calls": 2,
+      "cpu_marker_mean_ms": {
+        "rwkv.raw_eager_backbone": 589.57298,
+        "rwkv.raw_eager_head": 503.25936,
+        "rwkv.raw_eager_forward": 1093.04709
+      },
+      "kernel_details_gzip_sha256": "baa69b2c81e6ed1a3349d1b32f8f6d013c3382c3513699bada08b9d4a3cfc18d",
+      "raw_profile_files": {
+        "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_forward/liteserver-c001-4_162328_20261007111656013_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_forward/liteserver-c001-4_162328_20261007111656013_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_forward/liteserver-c001-4_162328_20261007111656013_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_forward/liteserver-c001-4_162328_20261007111656013_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_forward/liteserver-c001-4_162328_20261007111656013_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_forward/liteserver-c001-4_162328_20261007111656013_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_forward/liteserver-c001-4_162328_20261007111656013_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_matrix_full_3f3bd396/vector_b1_t512/profile_raw_eager_forward/liteserver-c001-4_162328_20261007111656013_ascend_pt/profiler_metadata.json"
+      }
+    }
+  }
+}
