@@ -24,12 +24,12 @@ def load_cases(a):
     jobs=[jobs[i] for i in [0,len(jobs)//2,len(jobs)-1]]
     indices={d:i for i,d in enumerate(sorted(data['documents']))}
     old={x['query_id']:x for x in map(json.loads,(a.cache_task/'scores.jsonl').read_text().splitlines())}
-    pairs=[]
+    pairs=[];count=getattr(a,'candidates_per_query',32)
     for job in jobs:
         q=job['query_id'];reference=old[q];assert reference['corpus_ids']==job['corpus_ids']
-        for d,score in zip(job['corpus_ids'][:32],reference['scores']['cached'][:32]):
+        for d,score in zip(job['corpus_ids'][:count],reference['scores']['cached'][:count]):
             pairs.append((indices[d],data['queries'][q],score,q,d))
-    assert len(pairs)==96
+    assert len(pairs)==3*count
     cache=np.load(a.cache_task/'document_states.npy',mmap_mode='r')
     assert cache.shape==(len(indices),3244032) and cache.dtype==np.float32
     return pairs,cache
