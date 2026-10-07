@@ -30,10 +30,19 @@ class Recurrence(torch.nn.Module):
         return torch.ops.rwkv_endpoint.wkv7.default(k,v,w,r,a,b,hi,lengths)
 
 
-def compiled(call, cache):
+def compiled(call, cache, precision=None, optimization_level="O3"):
     import torchair
     from torchair.configs.compiler_config import CompilerConfig
-    config=CompilerConfig()
+    if precision is not None:
+        class ExplicitPrecisionConfig(CompilerConfig):
+            def as_dict(self):
+                local, global_options = super().as_dict()
+                global_options['ge.exec.precision_mode'] = precision
+                return local, global_options
+        config=ExplicitPrecisionConfig()
+    else:
+        config=CompilerConfig()
+    config.ge_config.oo_level=optimization_level
     config.debug.graph_dump.type='pbtxt'
     config.debug.graph_dump.path=str(cache/'graphs')
     return torchair.inference.cache_compile(call,config=config,dynamic=False,fullgraph=True,
