@@ -1,0 +1,8 @@
+{
+  "task": "NanoQuoraRetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 95.86317317382387,
+  "bm25_ndcg_at_10": 86.86790666432586,
+  "metric_crosscheck_passed": true
+}

@@ -1,0 +1,8 @@
+{
+  "task": "NanoMSMARCORetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "ndcg_at_10": 64.4607321857688,
+  "bm25_ndcg_at_10": 54.04259879670521,
+  "metric_crosscheck_passed": true
+}

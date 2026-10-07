@@ -1,0 +1,8 @@
+{
+  "task": "NanoDBPediaRetrieval",
+  "queries": 50,
+  "pairs": 5326,
+  "ndcg_at_10": 72.59020323307304,
+  "bm25_ndcg_at_10": 61.43523354429893,
+  "metric_crosscheck_passed": true
+}

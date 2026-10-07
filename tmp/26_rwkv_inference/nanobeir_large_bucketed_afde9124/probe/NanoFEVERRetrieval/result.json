@@ -1,0 +1,8 @@
+{
+  "task": "NanoFEVERRetrieval",
+  "queries": 50,
+  "pairs": 5001,
+  "ndcg_at_10": 94.70271900606043,
+  "bm25_ndcg_at_10": 80.94126772085316,
+  "metric_crosscheck_passed": true
+}

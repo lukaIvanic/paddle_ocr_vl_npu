@@ -1,0 +1,17 @@
+{
+  "scope": "Compact benchmark reports, commands, real token IDs, complete shape/type aggregates and compressed raw reports are committed. Detailed profile CSVs are retained locally and on the server; records_sha256.json covers these retained files too.",
+  "retained_profile_root_local": "/home/luka/.codex/worktrees/rwkv-reference/paddle_ocr_vl_npu/tmp/26_rwkv_inference/reranker_shape_matrix_300d63a0",
+  "retained_profile_root_server": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_shape_matrix_300d63a0",
+  "committed_files": [
+    "records_sha256.json",
+    "summary.json",
+    "b4_b1_t512/result.json",
+    "b4_b1_t512/raw_result.json.gz",
+    "b4_b1_t512/inputs.json",
+    "b4_b1_t512/command.json",
+    "b4_b1_t2048/result.json",
+    "b4_b1_t2048/raw_result.json.gz",
+    "b4_b1_t2048/inputs.json",
+    "b4_b1_t2048/command.json"
+  ]
+}

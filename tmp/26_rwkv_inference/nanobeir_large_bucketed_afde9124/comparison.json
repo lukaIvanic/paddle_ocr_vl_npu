@@ -1,0 +1,84 @@
+{
+  "chip": "Ascend910B2",
+  "protocol": "bm25-positives",
+  "pairs": 57688,
+  "queries": 550,
+  "all_checks_passed": true,
+  "identical_candidate_label_and_prepared_token_checks_passed": true,
+  "previous_total_seconds": 1886.6525883799914,
+  "current_total_seconds": 1502.9223665699974,
+  "previous_ndcg": 71.61781751519408,
+  "current_ndcg": 71.68843837574643,
+  "ndcg_delta": 0.07062086055235284,
+  "two_npu_scoring_seconds": 1398.7009152300016,
+  "one_npu_scoring_seconds_estimate": 2782.5750089799985,
+  "one_npu_estimate_scope": "Sum of observed worker scoring times; one-NPU execution was not measured. Setup must be added.",
+  "tasks": [
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "ndcg": 46.819925274602944,
+      "previous_ndcg": 46.819925274602944,
+      "delta": 0.0
+    },
+    {
+      "task": "NanoClimateFeverRetrieval",
+      "ndcg": 43.463088457298525,
+      "previous_ndcg": 43.4770394352192,
+      "delta": -0.013950977920671903
+    },
+    {
+      "task": "NanoDBPediaRetrieval",
+      "ndcg": 72.59020323307304,
+      "previous_ndcg": 72.566433044177,
+      "delta": 0.023770188896037325
+    },
+    {
+      "task": "NanoFEVERRetrieval",
+      "ndcg": 94.70271900606043,
+      "previous_ndcg": 94.70271900606043,
+      "delta": 0.0
+    },
+    {
+      "task": "NanoFiQA2018Retrieval",
+      "ndcg": 64.17660987333372,
+      "previous_ndcg": 63.43846938047663,
+      "delta": 0.7381404928570845
+    },
+    {
+      "task": "NanoHotpotQARetrieval",
+      "ndcg": 93.34990342820834,
+      "previous_ndcg": 93.34990342820834,
+      "delta": 0.0
+    },
+    {
+      "task": "NanoMSMARCORetrieval",
+      "ndcg": 64.4607321857688,
+      "previous_ndcg": 64.4607321857688,
+      "delta": 0.0
+    },
+    {
+      "task": "NanoNFCorpusRetrieval",
+      "ndcg": 51.03977912584972,
+      "previous_ndcg": 51.03977912584972,
+      "delta": 0.0
+    },
+    {
+      "task": "NanoNQRetrieval",
+      "ndcg": 77.76200278933008,
+      "previous_ndcg": 77.76200278933008,
+      "delta": 0.0
+    },
+    {
+      "task": "NanoQuoraRetrieval",
+      "ndcg": 95.86317317382387,
+      "previous_ndcg": 95.83430341158038,
+      "delta": 0.02886976224348814
+    },
+    {
+      "task": "NanoSciFactRetrieval",
+      "ndcg": 84.34468558586128,
+      "previous_ndcg": 84.34468558586128,
+      "delta": 0.0
+    }
+  ]
+}

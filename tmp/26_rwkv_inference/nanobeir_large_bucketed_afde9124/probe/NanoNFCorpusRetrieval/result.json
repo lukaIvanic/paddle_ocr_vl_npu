@@ -1,0 +1,8 @@
+{
+  "task": "NanoNFCorpusRetrieval",
+  "queries": 50,
+  "pairs": 7159,
+  "ndcg_at_10": 51.03977912584972,
+  "bm25_ndcg_at_10": 32.504049401014555,
+  "metric_crosscheck_passed": true
+}

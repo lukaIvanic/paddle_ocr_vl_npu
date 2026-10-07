@@ -399,7 +399,8 @@ original TorchAir settings: warm full-pipeline eager/compiled **703/818 ms FP32*
 PyTorch full-forward traces show matmuls **254→75 ms**, unchanged FP32
 recurrence **340 ms**, and GroupNorm **106 ms** replaced by 64-channel
 LayerNorm **2.94 ms** plus affine. Norm-path maximum score delta **0.0078**;
-full-suite accuracy of these opt-ins remains untested, and defaults stay unchanged.
+full-suite accuracy was untested at this stage; the later rerun below validates
+the selected combination. Defaults stay unchanged.
 Ten clean calls follow three warmups; separate CPU/NPU shape/stack captures use
 five external + one profiler warmups and two active calls. Pipeline includes warm
 file read, tokenization/preparation, H2D, full scoring, D2H and JSON write;
@@ -427,6 +428,42 @@ diagnostic opt-in. `bench_reranker_sizes.py` with `--vector-variant aiv-fp32|aiv
 and `--vector-build PATH` selects the independently built package from
 `wkv7_vector_variants.py`; original packages/defaults remain intact.
 [Measurements, precision/shape/block evidence and provenance](../tmp/26_rwkv_inference/reranker_vector_precision_9db3477a/summary.json).
+
+**Matched B1/B4 shape sweep**, source `300d63a0`, 910B2 NPUs 1/3:
+FP16 dense, corrected FP32 recurrence, per-head LayerNorm; unchanged TorchAir
+configuration. Each cell measures the same four real pairs, either four sequential
+B1 scores or one B4 score. CPU preparation is shared once per group, so these are
+not four independent request-arrival latencies. All numerical gates pass;
+maximum B1/B4 score delta is **0.0078125** at both buckets.
+
+| Bucket | 4×B1 eager | B4 eager | 4×B1 TorchAir | B4 TorchAir |
+| --- | ---: | ---: | ---: | ---: |
+| T512 | 689.6 ms | 167.3 ms | 175.8 ms | 109.2 ms |
+| T2048 | 766.5 ms | 459.2 ms | 430.8 ms | 408.8 ms |
+
+Warm complete-pipeline times; setup/compile/profiling excluded. Separate warmed
+PyTorch CPU/NPU traces show T2048 compiled summed recurrence **173.2→170.5 ms**,
+matmuls **90.9→74.6 ms**, but casts **31.7→50.8 ms**, for 4×B1→B4.
+These are kernel-duration sums, not exclusive wall-time accounting.
+[Inputs, timings, profiles, shapes and hashes](../tmp/26_rwkv_inference/reranker_shape_matrix_300d63a0/summary.json).
+
+**Largest optimized accuracy rerun**, source `afde9124`, 2026-10-07:
+910B2 NPUs **1/3**, B4 data parallel, FP16 dense / **FP32 recurrence**,
+per-head LayerNorm, TorchAir T512/T2048 buckets with unchanged compiler settings.
+Reused and hash-verified the accepted run's exact candidates, labels and prepared
+tokens: **11 tasks / 550 queries / 57,688 pairs**, BM25+positives, excluding
+ArguAna and Touché. All worker and evaluator checks pass. Mean NDCG@10
+**71.68844**, versus previous **71.61782** (**+0.07062 points**) and published
+**71.58**. Seven task scores match exactly; largest change is FiQA **+0.73814**.
+This supports quality preservation on our accepted protocol, not exact paper
+protocol identity or FP16-recurrence accuracy.
+
+Measured **23m19s scoring / 25m03s complete**, versus previous **29m38s /
+31m27s**: **20.3% less total time**. Summing actual shard scoring gives a
+**46m23s one-NPU scoring estimate**, approximately **48–50 minutes with setup**;
+one-NPU execution was not measured. Total includes cache load/preflight and
+aggregation, excludes the prior profiling work; both runs reuse prepared tokens.
+[Final comparison and provenance](../tmp/26_rwkv_inference/nanobeir_large_bucketed_afde9124/comparison.json).
 
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,

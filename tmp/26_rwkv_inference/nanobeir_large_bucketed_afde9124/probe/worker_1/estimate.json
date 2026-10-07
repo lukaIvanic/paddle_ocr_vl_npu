@@ -1,0 +1,70 @@
+{
+  "predicted_scoring_seconds": 1411.7463873274414,
+  "samples": [
+    {
+      "length": 452,
+      "bucket": 512,
+      "seconds": 0.10021588999370579,
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+      "offset": 0
+    },
+    {
+      "length": 936,
+      "bucket": 2048,
+      "seconds": 0.3134956399881048,
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "c1173b8d8efb8c2d989ce0e51fe21f6b0b8d1478",
+      "offset": 64
+    },
+    {
+      "length": 538,
+      "bucket": 2048,
+      "seconds": 0.2822894100099802,
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "3f64d4fab50db41c0145759b7410fb4c8b977452",
+      "offset": 0
+    },
+    {
+      "length": 1909,
+      "bucket": 2048,
+      "seconds": 0.38919004998751916,
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "01d208b33561362f7714f714d3bc4a1f7aa1637c",
+      "offset": 32
+    },
+    {
+      "length": 1468,
+      "bucket": 2048,
+      "seconds": 0.35454531000868883,
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "01d208b33561362f7714f714d3bc4a1f7aa1637c",
+      "offset": 64
+    },
+    {
+      "length": 229,
+      "bucket": 512,
+      "seconds": 0.08210716999019496,
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "5bb6b779de7929c573f39cd84169cafbd72e5bae",
+      "offset": 96
+    },
+    {
+      "length": 1699,
+      "bucket": 2048,
+      "seconds": 0.37274700999842025,
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "0ce7927d613e66a2062516e9e85e1b9a36d54029",
+      "offset": 32
+    },
+    {
+      "length": 1130,
+      "bucket": 2048,
+      "seconds": 0.32837052999821026,
+      "task": "NanoSCIDOCSRetrieval",
+      "query_id": "901a4c9388b3cb9d30edc3e4a7ea7efb0b4e228b",
+      "offset": 96
+    }
+  ],
+  "scope": "Per-shard interpolation of warmed complete scoring plus transfers on actual saved token batches"
+}

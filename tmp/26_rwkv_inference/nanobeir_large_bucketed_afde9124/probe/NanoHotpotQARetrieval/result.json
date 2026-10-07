@@ -1,0 +1,8 @@
+{
+  "task": "NanoHotpotQARetrieval",
+  "queries": 50,
+  "pairs": 5004,
+  "ndcg_at_10": 93.34990342820834,
+  "bm25_ndcg_at_10": 82.77161322069782,
+  "metric_crosscheck_passed": true
+}
