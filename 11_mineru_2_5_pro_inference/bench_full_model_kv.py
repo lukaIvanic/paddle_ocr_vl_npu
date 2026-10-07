@@ -15,6 +15,8 @@ import subprocess
 import sys
 import time
 import traceback
+import types
+import warnings
 
 VARIANTS = {
     "increfa_nd": ("increfa", "dense", 2),
@@ -235,17 +237,22 @@ def run(args, report):
         first = ids.flatten().cpu().tolist()
         history = []
         torch.npu.synchronize()
-        began = time.perf_counter()
-        for _ in range(args.max_new_tokens-1):
-            if all(t == eos for t in (history[-1] if history else first)):
-                break
-            ids, positions = fn(ids, positions, rope, *caches)
-            history.append(ids.flatten().cpu().tolist())
-        torch.npu.synchronize()
-        duration = time.perf_counter() - began
+        before_graphs = int(torch._dynamo.utils.counters["stats"]["unique_graphs"])
+        with warnings.catch_warnings(record=True) as caught:
+            began = time.perf_counter()
+            for _ in range(args.max_new_tokens-1):
+                if all(t == eos for t in (history[-1] if history else first)):
+                    break
+                ids, positions = fn(ids, positions, rope, *caches)
+                history.append(ids.flatten().cpu().tolist())
+            torch.npu.synchronize()
+            duration = time.perf_counter() - began
+        after_graphs = int(torch._dynamo.utils.counters["stats"]["unique_graphs"])
         return {**token_metrics(first, history, eos, args.max_new_tokens),
                 "decode_s":duration, "forward_calls":len(history),
-                "raw_batch_slots":len(history)*len(first)}
+                "raw_batch_slots":len(history)*len(first),
+                "new_graphs_during_generation":after_graphs-before_graphs,
+                "recompile_warning_count":sum("recompiled" in str(w.message) for w in caught)}
 
     variants = args.variants.split(",")
     report["batches"] = []
@@ -295,6 +302,16 @@ def run(args, report):
                 root = args.cache_dir / variant / f"b{batch}_kv{args.cache_length}"
                 root.mkdir(parents=True,exist_ok=True)
                 module = FullStep(variant,batch).eval()
+                # Dynamo keys by Python code object, not just cache directory.
+                # Distinct paths must not share this forward's specialization
+                # cache, or TorchAir can repeatedly invalidate cached functions.
+                method = module.forward
+                isolated = types.FunctionType(method.__func__.__code__.replace(
+                    co_name=f"forward_{variant}_b{batch}_{start}"),
+                    method.__func__.__globals__, name=f"forward_{variant}_b{batch}_{start}",
+                    argdefs=method.__func__.__defaults__, closure=method.__func__.__closure__)
+                isolated.__qualname__ = f"FullStep.forward_{variant}_b{batch}_{start}"
+                module.forward = types.MethodType(isolated,module)
                 fn = tng.inference.cache_compile(module.forward, config=cfg, dynamic=False,
                     cache_dir=str(root), ge_cache=True, fullgraph=True)
                 state["compile"] = {"api":"torchair.inference.cache_compile", "fullgraph":True,
@@ -335,9 +352,12 @@ def run(args, report):
                 measured["cache_formats_after"] = [int(torch_npu.get_npu_format(t)) for t in caches]
                 acceptable = (0,2) if VARIANTS[variant][2] == 2 else (29,)
                 measured["format_match"] = all(f in acceptable for f in measured["cache_formats_after"])
+                measured["no_compile_in_timing"] = (measured["new_graphs_during_generation"] == 0 and
+                                                       measured["recompile_warning_count"] == 0)
                 state = batch_report["variants"][variant]
                 state["samples"].append(measured)
-                state["status"] = "passed" if all(s["token_match"] and s["format_match"] for s in state["samples"]) else "validation_failed"
+                state["status"] = "passed" if all(s["token_match"] and s["format_match"] and s["no_compile_in_timing"]
+                                                     for s in state["samples"]) else "validation_failed"
                 del caches
                 save(args.output,report)
         if args.profile and functions:

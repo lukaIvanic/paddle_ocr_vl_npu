@@ -43,6 +43,9 @@ to that bank before the timer. Validated variants alternate forward/reverse
 order on successive repeats (AB/BA), with per-trial results and min/median/max
 throughput; small differences require inspecting that variation and repeat order.
 Do not use a single isolated-kernel median to claim a model speedup.
+Each variant has a distinct Python forward code object as well as its own GE
+cache directory. Timed generation records Dynamo's new-graph counter and
+TorchAir recompilation warnings; either occurring invalidates the measurement.
 
 ## Correctness and format gates
 
