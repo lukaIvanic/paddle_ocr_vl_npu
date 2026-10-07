@@ -92,7 +92,8 @@ def capture(fn, args, metric):
             for index in range(args.profile_steps):
                 torch.npu.synchronize()
                 before = time.perf_counter()
-                with torch.profiler.record_function(f'colqwen.{args.execution}.forward.step{index}'):
+                scope = getattr(fn, 'profile_scope', 'forward')
+                with torch.profiler.record_function(f'colqwen.{args.execution}.{scope}.step{index}'):
                     output = fn()
                     torch.npu.synchronize()
                 timings.append((time.perf_counter()-before)*1000)
