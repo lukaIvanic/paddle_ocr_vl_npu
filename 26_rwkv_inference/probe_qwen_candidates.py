@@ -1,5 +1,5 @@
 """Audit saved Qwen candidates and time the largest RWKV pair; no full evaluation."""
-import argparse,ast,gzip,hashlib,importlib.metadata,json,math,os,random,subprocess,sys,time
+import argparse,ast,gzip,hashlib,importlib,importlib.metadata,json,math,os,random,subprocess,sys,time
 from pathlib import Path
 os.environ['TORCH_DEVICE_BACKEND_AUTOLOAD']='0'
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'22_qwen3_embedding_benchmark'))
@@ -26,6 +26,14 @@ def prepare(a):
     class Tokens:
         def encode(self,s):return c.tokenize(s).tolist()
     tokenizer=ns['TokenizerWrapper'](Tokens(),PREFIX+SUFFIX)
+    module=importlib.import_module('mteb.abstasks.AbsTaskRetrieval');original_loader=module.load_dataset
+    english_repos={r[0] for r in ENGLISH.values()}
+    def cached_loader(repo,*args,**kwargs):
+        # Offline datasets cache needs an explicit default qrels configuration.
+        if repo in english_repos and not args and kwargs.get('name') is None:kwargs['name']='default'
+        return original_loader(repo,*args,**kwargs)
+    module.load_dataset=cached_loader
+
     report=dict(baseline_sha256=digest(a.baseline),source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),source_sha256=digest(__file__),mteb='1.38.9',tasks=[],all_checks_passed=False,preparation='Saved candidate order; no positive injection; released RWKV document-first format, per-query logical B32 left padding then last2048/EOS, split into B4 without additional padding.',sampling='Two uniformly sampled queries per task, seed 20261007; all 100 candidates, not a quality estimate.')
     jobs=[]
     try:
@@ -59,7 +67,8 @@ def prepare(a):
         with gzip.open(a.output/'sample.json.gz','wt') as f:json.dump(jobs,f)
         report.update(all_checks_passed=True,total_pairs=sum(r['pairs'] for r in report['tasks']),sample_pairs=sum(len(j['document_ids']) for j in jobs),sample_sha256=digest(a.output/'sample.json.gz'),total_seconds=time.perf_counter()-start)
         save(a.output/'audit.json',report)
-    finally:c.close()
+    finally:
+        module.load_dataset=original_loader;c.close()
 
 def measure(a):
     import numpy as np,torch,torch_npu
