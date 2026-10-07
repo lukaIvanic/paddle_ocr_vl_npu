@@ -64,7 +64,7 @@ def worker(args):
         source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
         source_sha256={n: sha256(root/n) for n in ['bench_reranker_sizes.py', 'local_modeling_rwkv_embedding.py',
             'local_modeling_rwkv_reranker.py', 'probe_reranker_endpoint.py', 'run_reranker_smoke.py', 'wkv7_endpoint.py']},
-        physical_npu=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), all_checks_passed=False,
+        physical_npu=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), shared_device=args.allow_shared_device, all_checks_passed=False,
         scope='Prepared device inputs; uncached backbone plus state-readout head. Synchronized steady calls exclude CPU checks, compile, input transfers and tokenization.',
         timings={})
     try:
@@ -72,10 +72,17 @@ def worker(args):
         torch.set_num_threads(4)
         status = subprocess.check_output(['/usr/local/bin/npu-status'], text=True)
         selected = next(s for s in status.splitlines() if s.startswith('NPU '+report['physical_npu']+': '))
-        assert ': free ' in selected and 'Health=OK' in selected, selected
+        assert 'Health=OK' in selected and (args.allow_shared_device or ': free ' in selected), selected
+        report['npu_status_before']=selected
         torch.npu.set_device(0); torch.npu.set_compile_mode(jit_compile=False)
         torch.npu.config.allow_internal_format=False; torch.npu.matmul.allow_hf32=False
-        free, total = torch.npu.mem_get_info(); assert free > 24*1024**3
+        free, total = torch.npu.mem_get_info()
+        if args.allow_shared_device:
+            assert free > 6*1024**3, 'Shared probe requires at least 6 GiB free'
+            budget=min(free-2*1024**3,6*1024**3)
+            torch.npu.set_per_process_memory_fraction(budget/total,0)
+            report['allocator_budget_bytes']=budget
+        else:assert free > 24*1024**3
         report.update(device=torch.npu.get_device_name(0), torch=torch.__version__, torch_npu=torch_npu.__version__,
                       hbm_before=dict(free_bytes=free, total_bytes=total), state_dtype='fp32')
         load_bridge(root/'wkv7_npu', args.reference_build); load_endpoint(args.build_root); register_converter()
@@ -211,12 +218,15 @@ def main():
     p.add_argument('--devices',nargs='+',type=int,default=[7,6,4,3,2,1,0])
     p.add_argument('--repeats',type=int,default=10)
     p.add_argument('--idle-wait-seconds',type=int,default=21600)
+    p.add_argument('--allow-shared-device',action='store_true',help='Explicit middle-model worker probe only; reserve 2 GiB headroom and cap allocator at 6 GiB')
     p.add_argument('--worker',action='store_true');p.add_argument('--gate-only',action='store_true')
     p.add_argument('--size',choices=list(SIZES),default='base')
     p.add_argument('--dtype',choices=['fp32','fp16'],default='fp32')
     p.add_argument('--bucket',type=int,choices=[512,2048],default=512)
     args=p.parse_args()
     if not 0<args.idle_wait_seconds<=86400 or not 3<=args.repeats<=100 or not set(args.devices).issubset({0,1,2,3,4,6,7}):p.error('Use 3..100 repeats and healthy idle devices 0/1/2/3/4/6/7')
+    if args.allow_shared_device and (not args.worker or args.size!='base'):
+        p.error('Shared-device mode is limited to an explicit middle-model worker')
     worker(args) if args.worker else coordinate(args)
 
 
