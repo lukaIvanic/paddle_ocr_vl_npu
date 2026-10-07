@@ -100,6 +100,8 @@ this machine's existing successful 310P work. The inventory's `candidate` path
 preserves virtual environments; do not replace it with a resolved system-Python
 symlink. Select the ColQwen-compatible HF dependencies listed below. Metadata
 discovery is not proof of importability: the preflight tests actual imports.
+An absent top-level `torchair` distribution is not by itself a failure: some
+stacks bundle it under `torch_npu.dynamo.torchair`, which the preflight checks.
 If no compatible interpreter exists, report the candidate/version matrix and
 missing or mismatched packages. Do not install packages or create an environment
 under this execution-only brief; provisioning must be arranged by Luka.
@@ -146,9 +148,10 @@ export PYTHON_BIN=/absolute/path/to/colqwen/python
 export COLQWEN_MODEL=/absolute/path/to/Ops-Colqwen3-4B
 export HR_DATASET=/absolute/path/to/ViDoRe_v3_hr_mteb_reference
 export RUN_ROOT="$WORK_SERVER_REPO/tmp/21_colqwen3_4b_inference/310p_$(git rev-parse --short HEAD)_$(date -u +%Y%m%dT%H%M%SZ)"
-export COLQWEN_CACHE="$WORK_SERVER_REPO/.runtime_cache/21_colqwen3/310p_portable_b1"
+export COLQWEN_CACHE="$WORK_SERVER_REPO/.runtime_cache/21_colqwen3/310p_portable_b1_npu${ASCEND_RT_VISIBLE_DEVICES}"
 export TORCH_DEVICE_BACKEND_AUTOLOAD=0 PYTHONDONTWRITEBYTECODE=1
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+export HF_HOME="$RUN_ROOT/hf_home" HF_MODULES_CACHE="$RUN_ROOT/hf_modules"
 test -x "$PYTHON_BIN" && test -d "$COLQWEN_MODEL" && test -d "$HR_DATASET"
 mkdir -p "$RUN_ROOT"
 
@@ -173,6 +176,10 @@ call, source the same setup scripts and repeat the assignments and function
 definition in that shell. Keep the SAME recorded RUN_ROOT; do not regenerate it
 for every command. Never rerun a completed phase into its existing output
 directory. A retry must use a clearly labeled new RUN_ROOT and explain why.
+Keep the chosen cache exclusive to this process; do not run concurrent writers
+or copy 910B compiled graphs. The local 310P smoke creates its own graphs and
+the full run reuses them. HF cache directories above are local writable scratch;
+they do not replace the explicit existing model and dataset paths.
 
 ## Execute in order
 
