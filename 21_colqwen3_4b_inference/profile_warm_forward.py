@@ -75,6 +75,27 @@ class Forward:
             return finish_embeddings(self.model, prepared, hidden)
 
 
+class PageEndToEnd:
+    """Serial file-to-CPU-embedding calls; model/processor/graphs already loaded."""
+    def __init__(self, forward, processor, image, device, signature):
+        self.forward, self.processor = forward, processor
+        self.image, self.device, self.signature = image, device, signature
+
+    def preprocess(self):
+        from PIL import Image
+        with Image.open(self.image) as original:
+            image = original.convert('RGB')
+        return self.processor.process_images([image])
+
+    def __call__(self):
+        inputs = self.preprocess()
+        signature = {k: (tuple(v.shape), str(v.dtype)) for k,v in inputs.items()}
+        if signature != self.signature:
+            raise RuntimeError('Image preprocessing changed the warmed graph input contract')
+        self.forward.batch = {k:v.to(self.device) for k,v in inputs.items()}
+        return self.forward().cpu()
+
+
 def capture(fn, args, metric):
     import torch_npu.profiler as prof
     metrics = dict(pipe=prof.AiCMetrics.PipeUtilization, memory=prof.AiCMetrics.Memory)
@@ -142,6 +163,8 @@ def run(args, result):
     vision, text = OptimizedVisionStage(model, options).eval(), OptimizedTextStage(model, options).eval()
     eager = Forward(model, batch, patch, vision, text)
     expected = eager()
+    result['optimized_eager_vs_reference'] = compare(expected, reference)
+    result['optimized_eager_vs_hf'] = compare(expected, hf_anchor)
     fn = eager
     if args.execution == 'torchair':
         compiler = StageCompiler(args.model, args.cache_root, emit)
@@ -187,6 +210,37 @@ def run(args, result):
     if not result['final_replay_parity']['passed'] or not result['finite'] or result['max_unit_norm_error'] > .002:
         raise RuntimeError('Output validity/replay gate failed')
     torch.save(replay.cpu(), args.output_dir/'embeddings.pt')
+    if args.e2e_image:
+        from transformers import AutoProcessor
+        processor = AutoProcessor.from_pretrained(args.model, trust_remote_code=True,
+                                                  local_files_only=True)
+        signature = {k:(tuple(v.shape),str(v.dtype)) for k,v in batch.items()}
+        pipeline = PageEndToEnd(fn, processor, args.e2e_image, args.device, signature)
+        fresh = pipeline.preprocess()
+        matches = {k: k in fresh and fresh[k].dtype == v.dtype and
+                   torch.equal(fresh[k].cpu(),v.cpu()) for k,v in batch.items()}
+        if set(fresh) != set(batch) or not all(matches.values()):
+            raise RuntimeError(f'Fresh image preprocessing differs from saved benchmark input: {matches}')
+        result['e2e'] = dict(
+            scope='Serial B1: file read/decode, processor, CPU-to-NPU transfer, complete model '
+                  'forward, NPU-to-CPU embedding transfer. Warm filesystem/model/processor/graphs. '
+                  'No index insertion, retrieval scoring, or network serving.',
+            image=str(args.e2e_image), image_sha256=sha256(args.e2e_image),
+            batch_size=1, distinct_pages=1, preprocessing_exact_to_anchor=matches,
+            processor_image_config=processor.image_processor.to_dict(), blocks=[])
+        for _ in range(args.warmups):
+            pipeline()
+        for block in range(2):
+            timing, embeddings = measure(pipeline, args.repeats)
+            parity = compare(embeddings, output)
+            if not parity['passed']:
+                raise RuntimeError('File-to-embedding output differs from same optimized forward')
+            result['e2e']['blocks'].append(dict(timing=timing, parity=parity))
+        samples = [v for b in result['e2e']['blocks'] for v in b['timing']['wall_samples_ms']]
+        result['e2e']['wall_ms'] = distribution(samples)
+        result['e2e']['pages_per_second'] = 1000/result['e2e']['wall_ms']['mean']
+        emit('page_e2e_finish', execution=args.execution, wall_ms=result['e2e']['wall_ms'],
+             pages_per_second=result['e2e']['pages_per_second'])
     result['status'] = 'completed'
     emit('warm_final', execution=args.execution, timing=result['after_profile'])
 
@@ -203,7 +257,13 @@ def main():
     parser.add_argument('--repeats', type=int, default=30)
     parser.add_argument('--profile-steps', type=int, default=3)
     parser.add_argument('--metrics', nargs='+', choices=('pipe','memory'), default=['pipe','memory'])
+    parser.add_argument('--skip-profile', action='store_true',
+                        help='Measure warmed forward timing and validation without capturing profiler traces')
+    parser.add_argument('--e2e-image', type=Path,
+                        help='Also time repeated file-to-CPU-embedding calls; processed inputs must exactly match anchor')
     args = parser.parse_args()
+    if args.skip_profile:
+        args.metrics = []
     if not args.device.startswith('npu:') or min(args.warmups,args.repeats,args.profile_steps) < 1:
         parser.error('NPU and positive warmups/repeats/profile steps required')
     args.output_dir.mkdir(parents=True, exist_ok=False)
@@ -211,7 +271,8 @@ def main():
         commit=subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
         physical_npu=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), execution=args.execution,
         anchor=str(args.anchor), anchor_sha256=sha256(args.anchor),
-        scope=__doc__, warmups=args.warmups, repeats=args.repeats, profile_steps=args.profile_steps)
+        scope=__doc__, warmups=args.warmups, repeats=args.repeats, profile_steps=args.profile_steps,
+        profiles_enabled=bool(args.metrics))
     try:
         run(args, result)
     except Exception:
