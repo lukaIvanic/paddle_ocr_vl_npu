@@ -101,7 +101,10 @@ def aligned_promptfa_mask(mask, alignment=128):
     if physical == length:
         return mask.contiguous()
     # No fully blocked dummy rows: those are outside the PromptFA contract.
-    padded = F.pad(mask, (0, physical-length, 0, physical-length), value=True)
+    # GE's bool constant-pad lowering did not preserve the eager mask on 910B.
+    # Pad exact 0/1 FP16 values and convert back to bool before PromptFA.
+    padded = F.pad(mask.to(torch.float16),
+                   (0, physical-length, 0, physical-length), value=1).bool()
     positions = torch.arange(physical, device=mask.device)
     dummy_diagonal = (positions[:, None] == positions[None, :]) & (positions[:, None] >= length)
     return (padded & ~dummy_diagonal).contiguous()

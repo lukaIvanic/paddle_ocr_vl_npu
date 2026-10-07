@@ -36,6 +36,7 @@ def main():
     p.add_argument('--anchor', type=Path, required=True)
     p.add_argument('--reference-snapshot', type=Path, required=True)
     p.add_argument('--cache-root', type=Path, required=True)
+    p.add_argument('--padding-only', action='store_true')
     args = p.parse_args()
     import torch_npu
     torch.npu.set_device('npu:0')
@@ -62,6 +63,18 @@ def main():
     configure_compiler(compiler, options)
     compiler.identity['probe_source'] = Path(__file__).read_text()
     compiler.identity['internal_format'] = True
+    module = Padding()
+    expected = module(*tensors)
+    compiled = compiler.get('padding', module, tensors)
+    actual = compiled(*tensors)
+    torch.npu.synchronize()
+    for name, a, b in zip(('hidden','cos','sin','mask','deep0','deep1','deep2'), actual, expected):
+        print('PADDING_PARITY', name, 'exact', bool(torch.equal(a,b)), flush=True)
+        if name == 'mask':
+            print('MASK_MISMATCHES', int((a != b).sum()),
+                  'compiled_blocked', int(a.sum()), 'eager_blocked', int(b.sum()), flush=True)
+    if args.padding_only:
+        return
     for layout in ('BSND', 'BNSD'):
         inputs = (q, k, v) if layout == 'BSND' else tuple(a.transpose(1,2).contiguous() for a in (q,k,v))
         for gqa in ('repeat', 'native'):
@@ -78,13 +91,6 @@ def main():
     actual = compiled(*call_args)
     torch.npu.synchronize()
     print('FIRST_BLOCK_PARITY', json.dumps(compare(actual, expected)), flush=True)
-    module = Padding()
-    expected = module(*tensors)
-    compiled = compiler.get('padding', module, tensors)
-    actual = compiled(*tensors)
-    torch.npu.synchronize()
-    for name, a, b in zip(('hidden','cos','sin','mask','deep0','deep1','deep2'), actual, expected):
-        print('PADDING_PARITY', name, 'exact', bool(torch.equal(a,b)), flush=True)
     expected = text(*prepared)
     compiled = compiler.get('prealigned_stack', text, prepared)
     actual = compiled(*prepared)
