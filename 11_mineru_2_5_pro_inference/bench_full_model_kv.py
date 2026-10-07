@@ -101,6 +101,12 @@ def run(args, report):
     processor = AutoProcessor.from_pretrained(args.model, use_fast=False, local_files_only=True)
     processor.image_processor.min_pixels = 25088
     processor.image_processor.max_pixels = args.max_pixels
+    if isinstance(getattr(processor.image_processor,"size",None), dict):
+        processor.image_processor.size["shortest_edge"] = 25088
+        processor.image_processor.size["longest_edge"] = args.max_pixels
+    report["processor"] = {"class":type(processor.image_processor).__name__,
+        "min_pixels":processor.image_processor.min_pixels,"max_pixels":processor.image_processor.max_pixels,
+        "size":getattr(processor.image_processor,"size",None)}
     report["model_identity"] = collect_model_identity(args.model, hash_model_files=True)
     report["model_layers"] = model.config.text_config.num_hidden_layers
     if report["model_layers"] != 24:
@@ -124,12 +130,16 @@ def run(args, report):
             {"role":"user", "content":[{"type":"image"}, {"type":"text", "text":prompt}]},
         ], tokenize=False, add_generation_prompt=True)
         inp = processor(text=[chat], images=[image], return_tensors="pt", padding=True)
+        raw_vision_tokens = sum(int(t)*int(h)*int(w) for t,h,w in inp.image_grid_thw.tolist())
+        if raw_vision_tokens * 196 > args.max_pixels:
+            raise RuntimeError(f"{path.name}: processor ignored the requested pixel cap")
         n = int(inp.input_ids.shape[1])
         if n + args.max_new_tokens > args.cache_length:
             raise ValueError(f"{path.name}: {n} prompt + generation cap exceeds KV capacity")
         items.append({"id":entry["id"], "file":str(path), "image_sha256":hashlib.sha256(path.read_bytes()).hexdigest(),
                       "source_image":entry.get("source_image"), "category":kind, "prompt":prompt,
                       "input_tokens":n, "input_ids":inp.input_ids[0].tolist(),
+                      "raw_vision_tokens":raw_vision_tokens,
                       "image_grid_thw":inp.image_grid_thw.tolist()})
         prepared.append(inp.to(device="npu:0", dtype=torch.float16))
     report["inputs"] = items
