@@ -27,7 +27,7 @@ def main():
     p.add_argument('--profile-updates', type=int, default=3)
     p.add_argument('--profile-eval', action='store_true', help='Time unchanged-weight evaluation during optimizer-free profiling')
     p.add_argument('--queries-per-update', type=int, default=32)
-    p.add_argument('--learning-rate', type=float, default=1e-6)
+    p.add_argument('--learning-rate', type=float, default=1e-5)
     p.add_argument('--wall-time-limit', type=float, default=2400)
     p.add_argument('--student-order', choices=['query_first', 'contents_swapped', 'document_first'], default='query_first')
     p.add_argument('--query-first-reference', type=Path,
@@ -148,6 +148,21 @@ def main():
                                       'seconds': time.monotonic() - t})
         print('CHECKPOINT', json.dumps(result['checkpoints'][-1]), flush=True)
 
+    # Both curves have fixed membership; the 180-query view never replaces 108.
+    import hashlib
+    panel_key = lambda g: (g['task'], str(g['qid']))
+    frequent_keys = {panel_key(g) for g in data['benchmark']}
+    reserved_keys = {panel_key(g) for g in data['reserved_benchmark']}
+    assert len(data['benchmark']) == len(frequent_keys) == 108
+    assert len(data['reserved_benchmark']) == len(reserved_keys) == 72
+    assert not frequent_keys & reserved_keys
+    result['evaluation_panels'] = {
+        'trajectory_108': {'queries': 108, 'steps': [0, 1, 3, 10, 25, 50]},
+        'baseline_endpoint_180': {'queries': 180, 'steps': [0, args.steps]},
+        'membership_sha256': hashlib.sha256(json.dumps(
+            {'frequent': sorted(frequent_keys), 'reserved': sorted(reserved_keys)}
+        ).encode()).hexdigest()}
+
     def evaluate(step, endpoint=False):
         t = time.monotonic()
         scores, seconds = runtime.score(model, records['benchmark'], 'benchmark')
@@ -156,15 +171,20 @@ def main():
                 'agreement': agreement(data['validation'], val, teacher['scores']['validation']),
                 'seconds': {'benchmark': seconds, 'validation': val_s},
                 'benchmark_scores': scores, 'validation_scores': val}
+        item['trajectory_108'] = item['benchmark']
         if endpoint or step == 0:
             rs, rt = runtime.score(model, records['reserved_benchmark'], 'reserved_benchmark')
             item['reserved_benchmark'] = benchmark_metrics(data['reserved_benchmark'], rs)
             item['reserved_scores'] = rs
+            item['baseline_endpoint_180'] = benchmark_metrics(
+                data['benchmark'] + data['reserved_benchmark'], scores | rs)
             item['seconds']['reserved_benchmark'] = rt
         item['seconds']['total'] = time.monotonic() - t
         result['evaluations'][str(step)] = item
         save(args.output / 'result.json', result)
-        print('EVALUATION', json.dumps({'step': step, 'suite': item['benchmark']['suite_macro_ndcg10'],
+        print('EVALUATION', json.dumps({'step': step,
+              'trajectory_108': item['trajectory_108']['suite_macro_ndcg10'],
+              'baseline_endpoint_180': item.get('baseline_endpoint_180', {}).get('suite_macro_ndcg10'),
               'agreement': item['agreement'], 'seconds': item['seconds']}), flush=True)
         if 'query_first_baseline' in result:
             original = result['query_first_baseline']['benchmark']['suite_macro_ndcg10']

@@ -1,5 +1,5 @@
 {
-  "status": "awaiting_user_review_before_training",
+  "status": "user_reviewed_with_learning_rate_and_reporting_corrections",
   "dataset_sha256": "4fae73c3df2f29d7ed2abefb4537b28863bbae6f3207d77052c72bb70cc9eb81",
   "schedule_sha256": "6c9ca1afcf700ce9a0da35b39764c5cec842d90261c0b87a914e819b0355f2e7",
   "dataset_revision": "a69db8b86e9c1767d193ee0de95e5c4001a71eae",
@@ -30,7 +30,7 @@
   },
   "optimizer": {
     "name": "fresh NpuFusedAdamW",
-    "learning_rate_peak": 1e-06,
+    "learning_rate_peak": 1e-05,
     "betas": [
       0.9,
       0.999
@@ -43,7 +43,7 @@
   "schedule": {
     "type": "warmup_linear",
     "warmup_updates": 5,
-    "last_update_lr": 2.222222222222222e-08
+    "last_update_lr": 2.2222222222222224e-07
   },
   "execution": {
     "chip": "Ascend 910B2",
@@ -68,7 +68,20 @@
     "baseline_endpoint_benchmark_queries": 180,
     "target_tasks": 18,
     "fixed_candidates_per_query": 100,
-    "heldout_teacher_queries": 64
+    "heldout_teacher_queries": 64,
+    "trajectory_108_steps": [
+      0,
+      1,
+      3,
+      10,
+      25,
+      50
+    ],
+    "combined_180_steps": [
+      0,
+      50
+    ],
+    "reporting_rule": "Keep the fixed 108-query trajectory separate from the fixed 180-query baseline/endpoint comparison. Never splice their means."
   },
   "saved_checkpoints": [
     1,
@@ -89,7 +102,8 @@
     ],
     "frequent_evaluation_seconds": 73.18684210999345,
     "baseline_endpoint_evaluation_seconds": 116.74231900999439,
-    "peak_allocated_gib_without_optimizer_moments": 24.725028038024902
+    "peak_allocated_gib_without_optimizer_moments": 24.725028038024902,
+    "note": "Profiling applied no optimizer updates. Its nominal 1e-6 setting does not change the forward/backward timing; the reviewed training peak is 1e-5."
   },
   "implementation_source_commit": "8e88af57ce558431baa6c86ba7084dd68361c55f",
   "server_source_commit": "b03f93c2d89ed03dbbe20e296168fbb2e2047210",
@@ -126,8 +140,8 @@
       "basis": "bounded runtime configuration for user review; no source or language quotas"
     },
     {
-      "choice": "peak1e-6, five warmup updates and linear decay",
-      "basis": "previously agreed conservative trial settings, retained in this review configuration"
+      "choice": "peak1e-5, five warmup updates and linear decay",
+      "basis": "explicit user correction; latest agreed learning-rate recipe"
     },
     {
       "choice": "microbatching with score-gradient replay on Ascend",
