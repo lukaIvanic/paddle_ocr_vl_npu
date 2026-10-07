@@ -1,0 +1,47 @@
+[
+  {
+    "name": "rwkv.torchair_backbone",
+    "ph": "X",
+    "ts": "1791362675700782.850",
+    "dur": 2382.28,
+    "pid": 123291,
+    "tid": 123291,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.torchair_head",
+    "ph": "X",
+    "ts": "1791362675703194.800",
+    "dur": 1792.24,
+    "pid": 123291,
+    "tid": 123291,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.torchair_backbone",
+    "ph": "X",
+    "ts": "1791362675705030.760",
+    "dur": 1831.96,
+    "pid": 123291,
+    "tid": 123291,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.torchair_head",
+    "ph": "X",
+    "ts": "1791362675706889.580",
+    "dur": 1420.05,
+    "pid": 123291,
+    "tid": 123291,
+    "cat": "cpu_op"
+  },
+  {
+    "name": "rwkv.forward",
+    "ph": "X",
+    "ts": "1791362675700710.740",
+    "dur": 7701.05,
+    "pid": 123291,
+    "tid": 123291,
+    "cat": "cpu_op"
+  }
+]

@@ -1,0 +1,1204 @@
+{
+  "aggregation_note": "BroadcastTo is a layout/broadcast operation, not a Cast; CPU d2h marker includes waiting for queued device work; Pipe utilization counter anomalies prevent utilization claims.",
+  "scope": "910B2 NPU 7 shared; middle pair B1/T257, two calls per profile. Kernel durations are summed across tasks and normalized per score; idle derived from interval union, not subtracting overlapping CPU scopes. Clean timing is measured outside profiler. Pipe counters are not used to claim HBM saturation.",
+  "runs": {
+    "fp32": {
+      "all_checks_passed": true,
+      "timings_ms": {
+        "eager_total": 137.09294999716803,
+        "torchair_total": 25.778495000849944,
+        "torchair_head_only": 4.086194996489212,
+        "pipeline_total": 27.411579998442903
+      },
+      "startup_seconds": {
+        "checkpoint_hash_load_convert_h2d_seconds": 3.9128504899999825,
+        "copy_private_graph_cache_seconds": 0.02698615999543108,
+        "compile_and_first_call_seconds": 5.802682060006191,
+        "pipeline_setup_seconds": 1.4350044900056673
+      },
+      "profiles": {
+        "forward": {
+          "kernel_count_per_score": 2278.0,
+          "kernel_sum_ms_per_score": 25.88004,
+          "device_span_ms_per_score": 25.989625,
+          "device_busy_union_ms_per_score": 25.828875,
+          "device_gap_ms_per_score": 0.16075,
+          "groups": {
+            "layout_gather_slice_broadcast": {
+              "count_per_score": 478.0,
+              "ms_per_score": 3.4860300000000035
+            },
+            "normalization": {
+              "count_per_score": 195.0,
+              "ms_per_score": 3.4139799999999996
+            },
+            "other_pointwise_and_control": {
+              "count_per_score": 888.0,
+              "ms_per_score": 4.394820000000009
+            },
+            "matmul": {
+              "count_per_score": 668.0,
+              "ms_per_score": 7.199470000000007
+            },
+            "cast": {
+              "count_per_score": 1.0,
+              "ms_per_score": 0.00117
+            },
+            "wkv": {
+              "count_per_score": 48.0,
+              "ms_per_score": 7.384569999999999
+            }
+          },
+          "kernel_types": [
+            {
+              "type": "RwkvEndpointWkv7",
+              "count_per_score": 24.0,
+              "ms_per_score": 7.242489999999998,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+              ]
+            },
+            {
+              "type": "MatMul",
+              "count_per_score": 668.0,
+              "ms_per_score": 7.199470000000007,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "GroupNormSilu",
+              "count_per_score": 48.0,
+              "ms_per_score": 2.4812200000000004,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "AutomaticBufferFusionOp",
+              "count_per_score": 284.0,
+              "ms_per_score": 1.5619100000000001,
+              "input_dtypes": [
+                "FLOAT",
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Transpose",
+              "count_per_score": 168.0,
+              "ms_per_score": 1.1461900000000003,
+              "input_dtypes": [
+                "FLOAT;INT32"
+              ]
+            },
+            {
+              "type": "GatherElements",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.7755099999999999,
+              "input_dtypes": [
+                "FLOAT;INT64"
+              ]
+            },
+            {
+              "type": "Mul",
+              "count_per_score": 144.0,
+              "ms_per_score": 0.7151900000000008,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Add",
+              "count_per_score": 72.0,
+              "ms_per_score": 0.6992999999999997,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "LayerNormV3",
+              "count_per_score": 99.0,
+              "ms_per_score": 0.6630200000000003,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "GatherV2",
+              "count_per_score": 119.0,
+              "ms_per_score": 0.6188799999999994,
+              "input_dtypes": [
+                "FLOAT;INT64;INT64"
+              ]
+            },
+            {
+              "type": "StridedSliceD",
+              "count_per_score": 47.0,
+              "ms_per_score": 0.5846400000000004,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "BroadcastTo",
+              "count_per_score": 96.0,
+              "ms_per_score": 0.36080999999999985,
+              "input_dtypes": [
+                "FLOAT;INT64",
+                "INT64;INT64"
+              ]
+            },
+            {
+              "type": "LpNormV2",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.26974000000000004,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "ReduceSumD",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.2607999999999999,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "RealDiv",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.23516000000000017,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Neg",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.22783000000000014,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "Sigmoid",
+              "count_per_score": 72.0,
+              "ms_per_score": 0.21238000000000007,
+              "input_dtypes": [
+                "FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Pack",
+              "count_per_score": 26.0,
+              "ms_per_score": 0.19783,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Tanh",
+              "count_per_score": 49.0,
+              "ms_per_score": 0.14399,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "RwkvReferenceWkv7",
+              "count_per_score": 24.0,
+              "ms_per_score": 0.14207999999999998,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "ClipByValueV2",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.07248999999999996,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Sub",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.06024000000000001,
+              "input_dtypes": [
+                "INT64;INT64"
+              ]
+            },
+            {
+              "type": "ConcatV2D",
+              "count_per_score": 1.0,
+              "ms_per_score": 0.007699999999999999,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Cast",
+              "count_per_score": 1.0,
+              "ms_per_score": 0.00117,
+              "input_dtypes": [
+                "INT32"
+              ]
+            }
+          ],
+          "cpu_marker_ms_per_call": {
+            "rwkv.torchair_backbone": {
+              "count": 2,
+              "ms_per_call": 2.625805
+            },
+            "rwkv.torchair_head": {
+              "count": 2,
+              "ms_per_call": 1.89473
+            },
+            "rwkv.forward": {
+              "count": 1,
+              "ms_per_call": 9.33459
+            }
+          },
+          "trace_sha256": {
+            "operator_details": "78c7c6e361057058e4ca0cb2611d980cc5fd9c36c6bba69bfaeb51df41bc7b8c",
+            "kernel_details": "09c32ea4c1c6dca7a2f56509d74919a0f318c2deed065611449603cc792bb897",
+            "op_statistic": "dd8ca547b9e4e736cdd0ab99b0e51050cd411f8b9f0201f291d1dc024ab8692b",
+            "api_statistic": "3e39e7ff10f4d046c18f055917d9f81998a257f5f68286e2aeb1b6794da6841c",
+            "step_trace_time": "3d9a04a91d3fd933f0f184bf3d1bad0712a2c7f76805289a52a596ffe70fe38e",
+            "trace_view": "17c477178e3958255fbb5908979106d3ccbfc8e8e442350bedf6569be56462d6",
+            "profiler_info": "a6e05eacb68b0b7ed8105adf17ea6e143c97d3df4cde2be41af2651ac7cbc0b4",
+            "profiler_metadata": "b93c96387d644d6ef4f51faa287aa41791193175e8fadc27a7e07dfaca17afb0"
+          },
+          "step_trace_totals_us": {
+            "Bubble": 0.0,
+            "Communication": 0.0,
+            "Communication(Not Overlapped and Exclude Receive)": 0.0,
+            "Communication(Not Overlapped)": 0.0,
+            "Computing": 51760.080000000045,
+            "Free": 244.0200000000139,
+            "Overlapped": 0.0,
+            "Preparing": 2292.0,
+            "Stage": 52004.0
+          }
+        },
+        "pipeline": {
+          "kernel_count_per_score": 2278.0,
+          "kernel_sum_ms_per_score": 25.84934,
+          "device_span_ms_per_score": 28.221875,
+          "device_busy_union_ms_per_score": 25.806,
+          "device_gap_ms_per_score": 2.415875,
+          "groups": {
+            "layout_gather_slice_broadcast": {
+              "count_per_score": 478.0,
+              "ms_per_score": 3.494229999999998
+            },
+            "normalization": {
+              "count_per_score": 195.0,
+              "ms_per_score": 3.4942900000000012
+            },
+            "other_pointwise_and_control": {
+              "count_per_score": 888.0,
+              "ms_per_score": 4.278040000000007
+            },
+            "matmul": {
+              "count_per_score": 668.0,
+              "ms_per_score": 7.045549999999994
+            },
+            "cast": {
+              "count_per_score": 1.0,
+              "ms_per_score": 0.00133
+            },
+            "wkv": {
+              "count_per_score": 48.0,
+              "ms_per_score": 7.535899999999998
+            }
+          },
+          "kernel_types": [
+            {
+              "type": "RwkvEndpointWkv7",
+              "count_per_score": 24.0,
+              "ms_per_score": 7.39168,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+              ]
+            },
+            {
+              "type": "MatMul",
+              "count_per_score": 668.0,
+              "ms_per_score": 7.045549999999994,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "GroupNormSilu",
+              "count_per_score": 48.0,
+              "ms_per_score": 2.5595100000000004,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "AutomaticBufferFusionOp",
+              "count_per_score": 284.0,
+              "ms_per_score": 1.503389999999998,
+              "input_dtypes": [
+                "FLOAT",
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Transpose",
+              "count_per_score": 168.0,
+              "ms_per_score": 1.1117500000000002,
+              "input_dtypes": [
+                "FLOAT;INT32"
+              ]
+            },
+            {
+              "type": "GatherElements",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.7782100000000003,
+              "input_dtypes": [
+                "FLOAT;INT64"
+              ]
+            },
+            {
+              "type": "Add",
+              "count_per_score": 72.0,
+              "ms_per_score": 0.6918099999999995,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Mul",
+              "count_per_score": 144.0,
+              "ms_per_score": 0.6843200000000003,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "LayerNormV3",
+              "count_per_score": 99.0,
+              "ms_per_score": 0.66217,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "GatherV2",
+              "count_per_score": 119.0,
+              "ms_per_score": 0.6467099999999997,
+              "input_dtypes": [
+                "FLOAT;INT64;INT64"
+              ]
+            },
+            {
+              "type": "StridedSliceD",
+              "count_per_score": 47.0,
+              "ms_per_score": 0.6051900000000004,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "BroadcastTo",
+              "count_per_score": 96.0,
+              "ms_per_score": 0.35237000000000035,
+              "input_dtypes": [
+                "FLOAT;INT64",
+                "INT64;INT64"
+              ]
+            },
+            {
+              "type": "LpNormV2",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.27261,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "ReduceSumD",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.2632899999999999,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "RealDiv",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.23378999999999997,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Neg",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.22667000000000007,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "Sigmoid",
+              "count_per_score": 72.0,
+              "ms_per_score": 0.20530000000000018,
+              "input_dtypes": [
+                "FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Pack",
+              "count_per_score": 26.0,
+              "ms_per_score": 0.19603,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "RwkvReferenceWkv7",
+              "count_per_score": 24.0,
+              "ms_per_score": 0.14421999999999996,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Tanh",
+              "count_per_score": 49.0,
+              "ms_per_score": 0.1347,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "ClipByValueV2",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.07264999999999999,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Sub",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.05864999999999999,
+              "input_dtypes": [
+                "INT64;INT64"
+              ]
+            },
+            {
+              "type": "ConcatV2D",
+              "count_per_score": 1.0,
+              "ms_per_score": 0.0074399999999999996,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Cast",
+              "count_per_score": 1.0,
+              "ms_per_score": 0.00133,
+              "input_dtypes": [
+                "INT32"
+              ]
+            }
+          ],
+          "cpu_marker_ms_per_call": {
+            "rwkv.disk_read_pair": {
+              "count": 2,
+              "ms_per_call": 0.437745
+            },
+            "rwkv.cpu_tokenize": {
+              "count": 2,
+              "ms_per_call": 0.75198
+            },
+            "rwkv.cpu_batch_prepare": {
+              "count": 2,
+              "ms_per_call": 0.58462
+            },
+            "rwkv.h2d": {
+              "count": 2,
+              "ms_per_call": 0.73979
+            },
+            "rwkv.torchair_backbone": {
+              "count": 2,
+              "ms_per_call": 2.91983
+            },
+            "rwkv.torchair_head": {
+              "count": 2,
+              "ms_per_call": 1.8743899999999998
+            },
+            "rwkv.d2h_scores": {
+              "count": 2,
+              "ms_per_call": 23.278695
+            },
+            "rwkv.disk_write_scores": {
+              "count": 2,
+              "ms_per_call": 0.740105
+            },
+            "rwkv.pipeline": {
+              "count": 1,
+              "ms_per_call": 63.42771
+            }
+          },
+          "trace_sha256": {
+            "operator_details": "af282f6577372c6940f8ec50db29fe033e2bcbf071b7e1e9ec0c3f5868866dee",
+            "kernel_details": "c8d6652e3b724a0eb411cfd44e3918133809b036a4b007d2a8e50b1f942e3352",
+            "op_statistic": "a76232b561fa5db7733db34a57aa15519e7e3e58be01a68f5bfd03a6ef4c7011",
+            "api_statistic": "d2a5d87f497107b63481f17b521de9dea6b708bff80a51b0455f44088e4cd36a",
+            "step_trace_time": "a71fc601dffce8fa46e30e17efbab57c3beab8a68d36180e8b236e9c2bbd3459",
+            "trace_view": "380d66d22cc2132cb64d9e08c67b7c13e8f96b1b8522eecde2fc401305c6e211",
+            "profiler_info": "03561b3a7a9fe24a1980853c1cafcc70a01d8df84ee47412d467ea249d57e067",
+            "profiler_metadata": "b93c96387d644d6ef4f51faa287aa41791193175e8fadc27a7e07dfaca17afb0"
+          },
+          "step_trace_totals_us": {
+            "Bubble": 0.0,
+            "Communication": 0.0,
+            "Communication(Not Overlapped and Exclude Receive)": 0.0,
+            "Communication(Not Overlapped)": 0.0,
+            "Computing": 51698.680000000095,
+            "Free": 4766.520000000779,
+            "Overlapped": 0.0,
+            "Preparing": 6171.5,
+            "Stage": 56465.25
+          }
+        }
+      }
+    },
+    "fp16": {
+      "all_checks_passed": true,
+      "timings_ms": {
+        "eager_total": 154.98775000014575,
+        "torchair_total": 29.179350000049453,
+        "torchair_head_only": 4.656400000385474,
+        "pipeline_total": 30.620404999353923
+      },
+      "startup_seconds": {
+        "checkpoint_hash_load_convert_h2d_seconds": 4.466134469999815,
+        "copy_private_graph_cache_seconds": 0.029935939994174987,
+        "compile_and_first_call_seconds": 5.960108400002355,
+        "pipeline_setup_seconds": 1.6327632199972868
+      },
+      "profiles": {
+        "forward": {
+          "kernel_count_per_score": 3713.0,
+          "kernel_sum_ms_per_score": 29.58664,
+          "device_span_ms_per_score": 29.731375,
+          "device_busy_union_ms_per_score": 29.50525,
+          "device_gap_ms_per_score": 0.226125,
+          "groups": {
+            "layout_gather_slice_broadcast": {
+              "count_per_score": 763.0,
+              "ms_per_score": 5.251699999999996
+            },
+            "normalization": {
+              "count_per_score": 195.0,
+              "ms_per_score": 3.47619
+            },
+            "other_pointwise_and_control": {
+              "count_per_score": 838.0,
+              "ms_per_score": 4.203509999999988
+            },
+            "cast": {
+              "count_per_score": 1201.0,
+              "ms_per_score": 4.371060000000007
+            },
+            "matmul": {
+              "count_per_score": 668.0,
+              "ms_per_score": 4.73542999999999
+            },
+            "wkv": {
+              "count_per_score": 48.0,
+              "ms_per_score": 7.54875
+            }
+          },
+          "kernel_types": [
+            {
+              "type": "RwkvEndpointWkv7",
+              "count_per_score": 24.0,
+              "ms_per_score": 7.397500000000002,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+              ]
+            },
+            {
+              "type": "MatMul",
+              "count_per_score": 668.0,
+              "ms_per_score": 4.73542999999999,
+              "input_dtypes": [
+                "FLOAT16;FLOAT16"
+              ]
+            },
+            {
+              "type": "Cast",
+              "count_per_score": 1201.0,
+              "ms_per_score": 4.371060000000007,
+              "input_dtypes": [
+                "FLOAT",
+                "FLOAT16",
+                "FLOAT16;FLOAT",
+                "INT32"
+              ]
+            },
+            {
+              "type": "GroupNormSilu",
+              "count_per_score": 48.0,
+              "ms_per_score": 2.5394499999999995,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Transpose",
+              "count_per_score": 168.0,
+              "ms_per_score": 1.4337299999999988,
+              "input_dtypes": [
+                "FLOAT;INT32"
+              ]
+            },
+            {
+              "type": "TransData",
+              "count_per_score": 285.0,
+              "ms_per_score": 1.3455600000000012,
+              "input_dtypes": [
+                "FLOAT16"
+              ]
+            },
+            {
+              "type": "AutomaticBufferFusionOp",
+              "count_per_score": 189.0,
+              "ms_per_score": 1.04454,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Mul",
+              "count_per_score": 142.0,
+              "ms_per_score": 0.807340000000001,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "GatherV2",
+              "count_per_score": 119.0,
+              "ms_per_score": 0.75267,
+              "input_dtypes": [
+                "FLOAT;INT64;INT64"
+              ]
+            },
+            {
+              "type": "GatherElements",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.7275600000000004,
+              "input_dtypes": [
+                "FLOAT;INT64"
+              ]
+            },
+            {
+              "type": "Add",
+              "count_per_score": 96.0,
+              "ms_per_score": 0.6545299999999995,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "LayerNormV3",
+              "count_per_score": 99.0,
+              "ms_per_score": 0.64815,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "StridedSliceD",
+              "count_per_score": 47.0,
+              "ms_per_score": 0.5763800000000001,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "BroadcastTo",
+              "count_per_score": 96.0,
+              "ms_per_score": 0.41580000000000006,
+              "input_dtypes": [
+                "FLOAT;INT64",
+                "INT64;INT64"
+              ]
+            },
+            {
+              "type": "ReduceSumD",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.31292999999999993,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "LpNormV2",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.28859000000000007,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "Square",
+              "count_per_score": 47.0,
+              "ms_per_score": 0.2512400000000001,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "Neg",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.24386,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "RealDiv",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.2325900000000001,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Pack",
+              "count_per_score": 26.0,
+              "ms_per_score": 0.21643999999999994,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Sigmoid",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.17353,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "RwkvReferenceWkv7",
+              "count_per_score": 24.0,
+              "ms_per_score": 0.15125,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Tanh",
+              "count_per_score": 49.0,
+              "ms_per_score": 0.12929999999999997,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "ClipByValueV2",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.07125999999999998,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Sub",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.058520000000000016,
+              "input_dtypes": [
+                "INT64;INT64"
+              ]
+            },
+            {
+              "type": "ConcatV2D",
+              "count_per_score": 1.0,
+              "ms_per_score": 0.00743,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            }
+          ],
+          "cpu_marker_ms_per_call": {
+            "rwkv.torchair_backbone": {
+              "count": 2,
+              "ms_per_call": 2.10712
+            },
+            "rwkv.torchair_head": {
+              "count": 2,
+              "ms_per_call": 1.606145
+            },
+            "rwkv.forward": {
+              "count": 1,
+              "ms_per_call": 7.70105
+            }
+          },
+          "trace_sha256": {
+            "operator_details": "030cab5d99674878678652b64d6c85bfc032665e8246b75722e3b18757edcd8a",
+            "kernel_details": "1e1079840e28130653cab48dfc8ba3db479c45c54d4ac3f45b3aac133357e8e6",
+            "op_statistic": "8344dd5d5dcd671875d4dc68cd1e6c7e5cf0b2e8fe5535f5923df2f93becf5c7",
+            "api_statistic": "644a906a83ffd2ff17f32cae2c90d6e3fcd99ed74ea190ccdd527459ffb7564b",
+            "step_trace_time": "f8a3b4fdb381c46431feece994db65b9b27a8def66186d6dead9a06622e2133c",
+            "trace_view": "75e7f04aecdffe7fe37966e8ad3441058ff01e6326f3899259fcfead8a1d7950",
+            "profiler_info": "713db8ff29c532973a8802db7b3cd53876595943c9bea9a00cbd7c1f35a77a94",
+            "profiler_metadata": "b93c96387d644d6ef4f51faa287aa41791193175e8fadc27a7e07dfaca17afb0"
+          },
+          "step_trace_totals_us": {
+            "Bubble": 0.0,
+            "Communication": 0.0,
+            "Communication(Not Overlapped and Exclude Receive)": 0.0,
+            "Communication(Not Overlapped)": 0.0,
+            "Computing": 59173.28000000015,
+            "Free": 310.2599999999976,
+            "Overlapped": 0.0,
+            "Preparing": 1525.75,
+            "Stage": 59483.5
+          }
+        },
+        "pipeline": {
+          "kernel_count_per_score": 3713.0,
+          "kernel_sum_ms_per_score": 29.53493,
+          "device_span_ms_per_score": 31.805375,
+          "device_busy_union_ms_per_score": 29.454,
+          "device_gap_ms_per_score": 2.351375,
+          "groups": {
+            "layout_gather_slice_broadcast": {
+              "count_per_score": 763.0,
+              "ms_per_score": 5.257660000000002
+            },
+            "normalization": {
+              "count_per_score": 195.0,
+              "ms_per_score": 3.4732800000000053
+            },
+            "other_pointwise_and_control": {
+              "count_per_score": 838.0,
+              "ms_per_score": 4.257060000000006
+            },
+            "cast": {
+              "count_per_score": 1201.0,
+              "ms_per_score": 4.4009500000000115
+            },
+            "matmul": {
+              "count_per_score": 668.0,
+              "ms_per_score": 4.7551899999999945
+            },
+            "wkv": {
+              "count_per_score": 48.0,
+              "ms_per_score": 7.390790000000001
+            }
+          },
+          "kernel_types": [
+            {
+              "type": "RwkvEndpointWkv7",
+              "count_per_score": 24.0,
+              "ms_per_score": 7.246450000000001,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+              ]
+            },
+            {
+              "type": "MatMul",
+              "count_per_score": 668.0,
+              "ms_per_score": 4.7551899999999945,
+              "input_dtypes": [
+                "FLOAT16;FLOAT16"
+              ]
+            },
+            {
+              "type": "Cast",
+              "count_per_score": 1201.0,
+              "ms_per_score": 4.4009500000000115,
+              "input_dtypes": [
+                "FLOAT",
+                "FLOAT16",
+                "FLOAT16;FLOAT",
+                "INT32"
+              ]
+            },
+            {
+              "type": "GroupNormSilu",
+              "count_per_score": 48.0,
+              "ms_per_score": 2.4583200000000027,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Transpose",
+              "count_per_score": 168.0,
+              "ms_per_score": 1.4216399999999996,
+              "input_dtypes": [
+                "FLOAT;INT32"
+              ]
+            },
+            {
+              "type": "TransData",
+              "count_per_score": 285.0,
+              "ms_per_score": 1.3375800000000022,
+              "input_dtypes": [
+                "FLOAT16"
+              ]
+            },
+            {
+              "type": "AutomaticBufferFusionOp",
+              "count_per_score": 189.0,
+              "ms_per_score": 1.0636300000000003,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Mul",
+              "count_per_score": 142.0,
+              "ms_per_score": 0.81053,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "GatherV2",
+              "count_per_score": 119.0,
+              "ms_per_score": 0.7449499999999994,
+              "input_dtypes": [
+                "FLOAT;INT64;INT64"
+              ]
+            },
+            {
+              "type": "GatherElements",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.7381700000000002,
+              "input_dtypes": [
+                "FLOAT;INT64"
+              ]
+            },
+            {
+              "type": "LayerNormV3",
+              "count_per_score": 99.0,
+              "ms_per_score": 0.7284400000000001,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Add",
+              "count_per_score": 96.0,
+              "ms_per_score": 0.6629000000000004,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "StridedSliceD",
+              "count_per_score": 47.0,
+              "ms_per_score": 0.59899,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "BroadcastTo",
+              "count_per_score": 96.0,
+              "ms_per_score": 0.41633000000000026,
+              "input_dtypes": [
+                "FLOAT;INT64",
+                "INT64;INT64"
+              ]
+            },
+            {
+              "type": "ReduceSumD",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.30317000000000005,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "LpNormV2",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.2865199999999999,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "Neg",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.24695999999999996,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "Square",
+              "count_per_score": 47.0,
+              "ms_per_score": 0.24574000000000001,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "Pack",
+              "count_per_score": 26.0,
+              "ms_per_score": 0.23571999999999999,
+              "input_dtypes": [
+                "FLOAT;FLOAT",
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "RealDiv",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.23456,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Sigmoid",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.1706000000000001,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "RwkvReferenceWkv7",
+              "count_per_score": 24.0,
+              "ms_per_score": 0.14434000000000002,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Tanh",
+              "count_per_score": 49.0,
+              "ms_per_score": 0.13064000000000003,
+              "input_dtypes": [
+                "FLOAT"
+              ]
+            },
+            {
+              "type": "ClipByValueV2",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.07338000000000001,
+              "input_dtypes": [
+                "FLOAT;FLOAT;FLOAT"
+              ]
+            },
+            {
+              "type": "Sub",
+              "count_per_score": 48.0,
+              "ms_per_score": 0.07181999999999995,
+              "input_dtypes": [
+                "INT64;INT64"
+              ]
+            },
+            {
+              "type": "ConcatV2D",
+              "count_per_score": 1.0,
+              "ms_per_score": 0.00741,
+              "input_dtypes": [
+                "FLOAT;FLOAT"
+              ]
+            }
+          ],
+          "cpu_marker_ms_per_call": {
+            "rwkv.disk_read_pair": {
+              "count": 2,
+              "ms_per_call": 0.33579
+            },
+            "rwkv.cpu_tokenize": {
+              "count": 2,
+              "ms_per_call": 0.625575
+            },
+            "rwkv.cpu_batch_prepare": {
+              "count": 2,
+              "ms_per_call": 0.5385699999999999
+            },
+            "rwkv.h2d": {
+              "count": 2,
+              "ms_per_call": 0.694175
+            },
+            "rwkv.torchair_backbone": {
+              "count": 2,
+              "ms_per_call": 2.0884099999999997
+            },
+            "rwkv.torchair_head": {
+              "count": 2,
+              "ms_per_call": 1.74746
+            },
+            "rwkv.d2h_scores": {
+              "count": 2,
+              "ms_per_call": 27.156055000000002
+            },
+            "rwkv.disk_write_scores": {
+              "count": 2,
+              "ms_per_call": 0.698495
+            },
+            "rwkv.pipeline": {
+              "count": 1,
+              "ms_per_call": 68.48347
+            }
+          },
+          "trace_sha256": {
+            "operator_details": "e6e1f3aa6059e84f0913fdc20f6450346b978131e18066eeb44ba7368ea0639c",
+            "kernel_details": "27f64719b58ac7e2097bdb8a32f38e9343edbca36ad726449a296930a39d7c69",
+            "op_statistic": "0f59edb313c5b0afcbe3bc16165be84bd4d2063a7b8be42c7dc2dceafdf4436f",
+            "api_statistic": "ebdce04f4f67b95ecfd57b05bdddd3275c5ed06dac22a2c593cbf84ee37f43fd",
+            "step_trace_time": "2889f89b6debbf9a1893ffd2922e41c4d11d07a985e351426268bedaec95f615",
+            "trace_view": "6b7d92416b496541f6ffe1e70ff25f636ea1761a7fb8b617ef5be32d7218ea06",
+            "profiler_info": "267374cfd6b1b6499e115b5a8fb2b451cfe7673c360af3fc52a484c555d9a0c4",
+            "profiler_metadata": "b93c96387d644d6ef4f51faa287aa41791193175e8fadc27a7e07dfaca17afb0"
+          },
+          "step_trace_totals_us": {
+            "Bubble": 0.0,
+            "Communication": 0.0,
+            "Communication(Not Overlapped and Exclude Receive)": 0.0,
+            "Communication(Not Overlapped)": 0.0,
+            "Computing": 59069.86000000008,
+            "Free": 4561.600000001283,
+            "Overlapped": 0.0,
+            "Preparing": 4056.0,
+            "Stage": 63631.5
+          }
+        }
+      }
+    }
+  }
+}

@@ -349,6 +349,17 @@ min / 25–30 min** on one/two NPUs; alternate 11-task BM25+positives: **40–45
 20–25 min**, estimated from saved batch lengths, not a measured middle run.
 [`Results, failed gates, precision comparison and estimate scope`](../tmp/26_rwkv_inference/reranker_precision_shared_7ce99dc2/precision_comparison.json).
 
+**Current middle-pair profiles**, source `3ea75a78`, shared 910B2 NPU 7,
+B1/T257: clean FP32/FP16 forward **25.78/29.18 ms**; warm real-pair disk read,
+tokenization, preparation, H2D, scoring, D2H and JSON write **27.41/30.62 ms**.
+Matmuls improve **7.20→4.74 ms**, offset by Cast **0.001→4.37 ms** and added
+TransData **1.35 ms** (1,200 extra casts, 285 format conversions). WKV stays
+**~7.4–7.5 ms**; graph kernel gaps only **0.16/0.23 ms**. All numerical gates
+pass; weight/hash/conversion/H2D startup **3.91/4.47 s**, cached graph first call
+**5.80/5.96 s** separately. CPU D2H scopes include queued-work waits; do not call
+those transfer-only time. No cold-storage or HBM-saturation claim.
+[`Paired traces, compressed CSVs, CPU markers and hashes`](../tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/profile_comparison.json).
+
 Profiles show eager dispatch gaps and 2,441 kernels/score versus compiled 1,750;
 WKV occupies 32% of compiled device kernel time at T256 and 62% at T2048,
 followed by casts/normalization. These profiles precede the validated B4 benchmark path above.

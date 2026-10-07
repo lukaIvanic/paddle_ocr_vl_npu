@@ -1,0 +1,3903 @@
+{
+  "parser_sha256": "9ae82d05402c94375da2384cb36c6c38cb1add9cfc1618130f16d37f6214e965",
+  "profile_iterations": 2,
+  "runs": [
+    {
+      "run_root": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt",
+      "ascend_output_dir": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT",
+      "files": {
+        "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/profiler_metadata.json"
+      },
+      "operator_details": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "row_count": 107,
+        "total_device_us": 52415.68,
+        "total_host_us": 291628.61999999994,
+        "top_by_device_total_us": [
+          {
+            "name": "rwkv.pipeline",
+            "count": 1,
+            "device_total_us": 26207.84,
+            "host_total_us": 63427.71,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(57): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "rwkv.disk_read_pair",
+            "count": 2,
+            "device_total_us": 26207.84,
+            "host_total_us": 875.49,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(80): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "rwkv.cpu_tokenize",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 1503.96,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(82): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "rwkv.cpu_batch_prepare",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 1169.24,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(84): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "aten::empty",
+            "count": 12,
+            "device_total_us": 0.0,
+            "host_total_us": 1527.64,
+            "input_shape_samples": [
+              ";\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(85): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(86): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "aten::to",
+            "count": 10,
+            "device_total_us": 0.0,
+            "host_total_us": 47186.490000000005,
+            "input_shape_samples": [
+              "1,257;\r\n;\r\n;\r\n;\r\n;\r\n",
+              "1;\r\n;\r\n;\r\n;\r\n;\r\n",
+              "1,257;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(85): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(86): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "aten::lift_fresh",
+            "count": 4,
+            "device_total_us": 0.0,
+            "host_total_us": 122.53999999999999,
+            "input_shape_samples": [
+              "1,257",
+              "1"
+            ],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(85): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(86): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "aten::detach_",
+            "count": 4,
+            "device_total_us": 0.0,
+            "host_total_us": 118.05,
+            "input_shape_samples": [
+              "1,257",
+              "1"
+            ],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(85): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(86): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "rwkv.h2d",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 1479.58,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(95): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "aten::_to_copy",
+            "count": 6,
+            "device_total_us": 0.0,
+            "host_total_us": 46822.28999999999,
+            "input_shape_samples": [
+              "1,257;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n",
+              "1;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(96): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(99): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "aten::empty_strided",
+            "count": 4,
+            "device_total_us": 0.0,
+            "host_total_us": 352.46999999999997,
+            "input_shape_samples": [
+              ";\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(96): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "empty_tensor",
+            "count": 10,
+            "device_total_us": 0.0,
+            "host_total_us": 756.04,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(96): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(863): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/probe_reranker_endpoint.py(23): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(90): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "aten::copy_",
+            "count": 6,
+            "device_total_us": 0.0,
+            "host_total_us": 46168.17,
+            "input_shape_samples": [
+              "1,257;\r\n1,257;\r\n",
+              "1;\r\n1;\r\n"
+            ],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(96): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(99): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "rwkv.torchair_backbone",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 5839.66,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(89): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "cache_compiler inference",
+            "count": 4,
+            "device_total_us": 0.0,
+            "host_total_us": 8871.349999999999,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(598): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(90): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(598): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(92): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          }
+        ],
+        "top_by_host_total_us": [
+          {
+            "name": "rwkv.pipeline",
+            "count": 1,
+            "device_total_us": 26207.84,
+            "host_total_us": 63427.71,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(57): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "aten::to",
+            "count": 10,
+            "device_total_us": 0.0,
+            "host_total_us": 47186.490000000005,
+            "input_shape_samples": [
+              "1,257;\r\n;\r\n;\r\n;\r\n;\r\n",
+              "1;\r\n;\r\n;\r\n;\r\n;\r\n",
+              "1,257;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(85): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(86): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "aten::_to_copy",
+            "count": 6,
+            "device_total_us": 0.0,
+            "host_total_us": 46822.28999999999,
+            "input_shape_samples": [
+              "1,257;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n",
+              "1;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(96): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(99): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "rwkv.d2h_scores",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 46557.39,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(98): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "aten::copy_",
+            "count": 6,
+            "device_total_us": 0.0,
+            "host_total_us": 46168.17,
+            "input_shape_samples": [
+              "1,257;\r\n1,257;\r\n",
+              "1;\r\n1;\r\n"
+            ],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(96): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(99): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "cache_compiler inference",
+            "count": 4,
+            "device_total_us": 0.0,
+            "host_total_us": 8871.349999999999,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(598): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(90): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(598): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(92): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "TorchNpuGraphBase::Run",
+            "count": 4,
+            "device_total_us": 0.0,
+            "host_total_us": 6790.34,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(863): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/probe_reranker_endpoint.py(23): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(90): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(860): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/local_modeling_rwkv_reranker.py(54): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(92): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "rwkv.torchair_backbone",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 5839.66,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(89): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "rwkv.torchair_head",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 3748.7799999999997,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(91): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "RefreshAtTensorFromGeTensor",
+            "count": 4,
+            "device_total_us": 0.0,
+            "host_total_us": 2389.62,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(863): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/probe_reranker_endpoint.py(23): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(90): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(860): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/local_modeling_rwkv_reranker.py(54): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(92): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "AssembleOutputs",
+            "count": 4,
+            "device_total_us": 0.0,
+            "host_total_us": 1574.74,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(863): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/probe_reranker_endpoint.py(23): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(90): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;\r\n<string>(860): kernel;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/local_modeling_rwkv_reranker.py(54): forward;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(92): forward;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(97): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "aten::empty",
+            "count": 12,
+            "device_total_us": 0.0,
+            "host_total_us": 1527.64,
+            "input_shape_samples": [
+              ";\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "call_stack_samples": [
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(85): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>",
+              "/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(86): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "rwkv.cpu_tokenize",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 1503.96,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(82): prepare;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(94): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "rwkv.disk_write_scores",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 1480.21,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(100): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          },
+          {
+            "name": "rwkv.h2d",
+            "count": 2,
+            "device_total_us": 0.0,
+            "host_total_us": 1479.58,
+            "input_shape_samples": [],
+            "call_stack_samples": [
+              "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;\r\n/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(95): pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/run_reranker_buckets.py(59): profile;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(113): profile_pipeline;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(220): worker;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(325): main;\r\n/workspace/repos/rwkv-cpu-reference/26_rwkv_inference/bench_reranker_sizes.py(328): <module>"
+            ]
+          }
+        ]
+      },
+      "kernel_details": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "row_count": 4556,
+        "total_duration_us": 51698.680000000095,
+        "total_wait_us": 4885.300000000043,
+        "total_aicore_time_us": 15754.057999999994,
+        "weighted_cube_utilization_pct": 93.57761255402342,
+        "top_kernel_names": [
+          {
+            "name": "RwkvEndpointWkv7_12",
+            "count": 2,
+            "duration_us": 901.2,
+            "wait_us": 0.03,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_12"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_21",
+            "count": 2,
+            "duration_us": 611.04,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_21"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_16",
+            "count": 2,
+            "duration_us": 610.38,
+            "wait_us": 0.06,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_16"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_17",
+            "count": 2,
+            "duration_us": 606.96,
+            "wait_us": 0.07,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_17"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_9",
+            "count": 2,
+            "duration_us": 606.9200000000001,
+            "wait_us": 0.14,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_9"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_1",
+            "count": 2,
+            "duration_us": 604.3199999999999,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_1"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_13",
+            "count": 2,
+            "duration_us": 604.24,
+            "wait_us": 0.02,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_13"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_4",
+            "count": 2,
+            "duration_us": 604.0,
+            "wait_us": 0.07,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_4"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_20",
+            "count": 2,
+            "duration_us": 603.44,
+            "wait_us": 0.36,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_20"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_5",
+            "count": 2,
+            "duration_us": 602.8399999999999,
+            "wait_us": 0.13,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_5"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7",
+            "count": 2,
+            "duration_us": 602.78,
+            "wait_us": 0.12000000000000001,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_8",
+            "count": 2,
+            "duration_us": 602.66,
+            "wait_us": 0.16,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_8"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_7",
+            "count": 2,
+            "duration_us": 602.5799999999999,
+            "wait_us": 0.03,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_7"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_19",
+            "count": 2,
+            "duration_us": 602.3,
+            "wait_us": 0.17,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_19"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "RwkvEndpointWkv7_22",
+            "count": 2,
+            "duration_us": 602.28,
+            "wait_us": 0.03,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7_22"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          }
+        ],
+        "top_kernel_types": [
+          {
+            "name": "RwkvEndpointWkv7",
+            "count": 48,
+            "duration_us": 14783.36,
+            "wait_us": 2.8299999999999996,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7",
+              "RwkvEndpointWkv7_1",
+              "RwkvEndpointWkv7_2"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "MatMul",
+            "count": 1336,
+            "duration_us": 14091.099999999988,
+            "wait_us": 73.52000000000008,
+            "aicore_time_us": 15754.057999999994,
+            "kernel_name_samples": [
+              "MatMul_1",
+              "MatMul_5",
+              "MatMul_7"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,64\"",
+              "\"257,1024;1024,128\"",
+              "\"257,64;64,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,64\"",
+              "\"257,128\"",
+              "\"257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "GroupNormSilu",
+            "count": 96,
+            "duration_us": 5119.02,
+            "wait_us": 4.639999999999998,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GroupNorm",
+              "GroupNorm_1",
+              "GroupNorm_2"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024;1024\"",
+              "\"1,1024;1024;1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024;257,16;257,16\"",
+              "\"1,1024;1,16;1,16\""
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "output_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "AutomaticBufferFusionOp",
+            "count": 568,
+            "duration_us": 3006.779999999996,
+            "wait_us": 28.229999999999983,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "SubMulAddMul_1Add_1Mul_3Add_3Mul_4Add_4Mul_5Add_5Mul_6Add_7",
+              "Add_2SigmoidMul_2",
+              "Add_10Mul_14"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024\"",
+              "\"1,1,1024;1,257,1024;\"",
+              "\"1,257,1024;1,257,1024;1,257,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024;1,257,1024;1,257,1024;1,257,1024;1,257,1024;1,257,1024\"",
+              "\"1,257,1024\"",
+              "\"1,257,4096\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND",
+              "ND;ND;ND",
+              "ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND;ND;ND;ND",
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "Transpose",
+            "count": 336,
+            "duration_us": 2223.5000000000005,
+            "wait_us": 17.779999999999994,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Transpose_3",
+              "Transpose_4",
+              "Transpose_5"
+            ],
+            "input_shape_samples": [
+              "\"257,16,64;3\"",
+              "\"16,257,64;3\""
+            ],
+            "output_shape_samples": [
+              "\"16,257,64\"",
+              "\"257,16,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "GatherElements",
+            "count": 96,
+            "duration_us": 1556.4200000000005,
+            "wait_us": 5.499999999999998,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GatherElements",
+              "GatherElements_1",
+              "GatherElements_2"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ]
+          },
+          {
+            "name": "Add",
+            "count": 144,
+            "duration_us": 1383.619999999999,
+            "wait_us": 7.569999999999998,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_6Sigmoid_1Mul_10Sub_2Mul_8Add_8Mul_9Mul_11",
+              "Add_11",
+              "Add_13"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1024;1,257,1024;1,257,1024;;1,1,1024;;1,257,1024;1,257,1024\"",
+              "\"1,257,1024;1,257,1024\"",
+              "\"1,1,1024;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024;1,257,1024;1,257,1024\"",
+              "\"1,257,1024\"",
+              "\"1,1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND",
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND",
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "Mul",
+            "count": 288,
+            "duration_us": 1368.6400000000006,
+            "wait_us": 14.829999999999988,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Mul_7",
+              "Mul_12",
+              "Mul_13"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1,1,1024\"",
+              "\"1,257,1024;1024\"",
+              "\"1,257,16,1;1,257,16,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024\"",
+              "\"1,257,16,64\"",
+              "\"1,1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "LayerNormV3",
+            "count": 198,
+            "duration_us": 1324.3400000000001,
+            "wait_us": 96.25,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "LayerNormV4_LayerNormV3",
+              "LayerNormV4_1_LayerNormV3",
+              "LayerNormV4_2_LayerNormV3"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1024;1024\"",
+              "\"1,1,1024;1024;1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024;1,257,1;1,257,1\"",
+              "\"1,1,1024;1,1,1;1,1,1\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "GatherV2",
+            "count": 238,
+            "duration_us": 1293.4199999999994,
+            "wait_us": 4565.350000000006,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GatherV2",
+              "GatherV2_1",
+              "GatherV2_2"
+            ],
+            "input_shape_samples": [
+              "\"65536,1024;1,257;1\"",
+              "\"2,1,1024;;1\"",
+              "\"24,1,16,64,64;;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024\"",
+              "\"1,1024\"",
+              "\"1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND",
+              "NCDHW;NCDHW;NCDHW"
+            ],
+            "output_format_samples": [
+              "ND",
+              "NCDHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64;INT64"
+            ]
+          },
+          {
+            "name": "StridedSliceD",
+            "count": 94,
+            "duration_us": 1210.3800000000008,
+            "wait_us": 5.390000000000001,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "StridedSliceV2",
+              "StridedSliceV2_1",
+              "StridedSliceV2_2"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,256,1024\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT"
+            ]
+          },
+          {
+            "name": "BroadcastTo",
+            "count": 192,
+            "duration_us": 704.7400000000007,
+            "wait_us": 10.119999999999996,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "BroadcastTo_1",
+              "BroadcastTo",
+              "BroadcastTo_11"
+            ],
+            "input_shape_samples": [
+              "\"1,257,16,1;4\"",
+              "\"1,1,1;3\"",
+              "\"1,1,16,1;4\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,16,64\"",
+              "\"1,1,1024\"",
+              "\"1,1,16,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64",
+              "INT64;INT64"
+            ]
+          },
+          {
+            "name": "LpNormV2",
+            "count": 96,
+            "duration_us": 545.22,
+            "wait_us": 5.369999999999998,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "LpNormV2",
+              "LpNormV2_1",
+              "LpNormV2_2"
+            ],
+            "input_shape_samples": [
+              "\"1,257,16,64\"",
+              "\"1,1,16,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,16,1\"",
+              "\"1,1,16,1\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT"
+            ]
+          },
+          {
+            "name": "ReduceSumD",
+            "count": 96,
+            "duration_us": 526.5799999999998,
+            "wait_us": 5.21,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "ReduceSum",
+              "ReduceSum_1",
+              "ReduceSum_2"
+            ],
+            "input_shape_samples": [
+              "\"1,257,16,64\"",
+              "\"1,1,16,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,16,1\"",
+              "\"1,1,16,1\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT"
+            ]
+          },
+          {
+            "name": "RealDiv",
+            "count": 96,
+            "duration_us": 467.5799999999999,
+            "wait_us": 5.749999999999999,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RealDiv",
+              "RealDiv_1",
+              "RealDiv_2"
+            ],
+            "input_shape_samples": [
+              "\"1,257,16,64;1,257,16,64\"",
+              "\"1,1,16,64;1,1,16,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,16,64\"",
+              "\"1,1,16,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          }
+        ],
+        "top_core_types": [
+          {
+            "name": "AI_VECTOR_CORE",
+            "count": 3220,
+            "duration_us": 37607.580000000075,
+            "wait_us": 4811.780000000032,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GatherV2",
+              "LayerNormV4_LayerNormV3",
+              "LayerNormV4_1_LayerNormV3"
+            ],
+            "input_shape_samples": [
+              "\"65536,1024;1,257;1\"",
+              "\"1,257,1024;1024;1024\"",
+              "\"1,257,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024\"",
+              "\"1,257,1024;1,257,1;1,257,1\"",
+              "\"1,256,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND",
+              "ND",
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND",
+              "ND;ND;ND",
+              "ND;ND;ND;ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64;INT64",
+              "FLOAT;FLOAT;FLOAT",
+              "FLOAT"
+            ]
+          },
+          {
+            "name": "AI_CORE",
+            "count": 1336,
+            "duration_us": 14091.099999999988,
+            "wait_us": 73.52000000000008,
+            "aicore_time_us": 15754.057999999994,
+            "kernel_name_samples": [
+              "MatMul_1",
+              "MatMul_5",
+              "MatMul_7"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,64\"",
+              "\"257,1024;1024,128\"",
+              "\"257,64;64,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,64\"",
+              "\"257,128\"",
+              "\"257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          }
+        ],
+        "top_input_formats": [
+          {
+            "name": "ND;ND",
+            "count": 2396,
+            "duration_us": 19921.899999999987,
+            "wait_us": 131.2300000000002,
+            "aicore_time_us": 14053.194000000007,
+            "kernel_name_samples": [
+              "MatMul_1",
+              "MatMul_5",
+              "MatMul_7"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,64\"",
+              "\"257,1024;1024,128\"",
+              "\"257,64;64,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,64\"",
+              "\"257,128\"",
+              "\"257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT;INT64",
+              "INT64;INT64"
+            ]
+          },
+          {
+            "name": "ND;ND;ND;ND;ND;ND;ND;ND",
+            "count": 96,
+            "duration_us": 15372.779999999997,
+            "wait_us": 5.039999999999999,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_6Sigmoid_1Mul_10Sub_2Mul_8Add_8Mul_9Mul_11",
+              "RwkvEndpointWkv7",
+              "Add_20Sigmoid_4Mul_27Sub_7Mul_24Add_22Mul_25Mul_28"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1024;1,257,1024;1,257,1024;;1,1,1024;;1,257,1024;1,257,1024\"",
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024;1,257,1024;1,257,1024\"",
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND",
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "ND;ND;ND",
+            "count": 866,
+            "duration_us": 5158.400000000005,
+            "wait_us": 4682.790000000011,
+            "aicore_time_us": 1700.8639999999998,
+            "kernel_name_samples": [
+              "GatherV2",
+              "LayerNormV4_LayerNormV3",
+              "LayerNormV4_1_LayerNormV3"
+            ],
+            "input_shape_samples": [
+              "\"65536,1024;1,257;1\"",
+              "\"1,257,1024;1024;1024\"",
+              "\"2,1,1024;;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024\"",
+              "\"1,257,1024;1,257,1;1,257,1\"",
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND",
+              "ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64;INT64",
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "NCHW;NCHW;NCHW",
+            "count": 96,
+            "duration_us": 5119.02,
+            "wait_us": 4.639999999999998,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GroupNorm",
+              "GroupNorm_1",
+              "GroupNorm_2"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024;1024\"",
+              "\"1,1024;1024;1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024;257,16;257,16\"",
+              "\"1,1024;1,16;1,16\""
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "output_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "ND",
+            "count": 672,
+            "duration_us": 3814.499999999992,
+            "wait_us": 38.370000000000026,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "StridedSliceV2",
+              "Tanh",
+              "Sigmoid_2"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024\"",
+              "\"1,257,64\"",
+              "\"1,257,128\""
+            ],
+            "output_shape_samples": [
+              "\"1,256,1024\"",
+              "\"1,257,64\"",
+              "\"1,257,128\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT",
+              "INT32"
+            ]
+          },
+          {
+            "name": "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND",
+            "count": 96,
+            "duration_us": 863.1200000000002,
+            "wait_us": 4.48,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "SubMulAddMul_1Add_1Mul_3Add_3Mul_4Add_4Mul_5Add_5Mul_6Add_7",
+              "Sub_5Mul_16Add_14Mul_17Add_15Mul_19Add_17Mul_20Mul_21Add_19Mul_22Add_21Add_18",
+              "Sub_11Mul_33Add_30Mul_34Add_31Mul_36Add_33Mul_37Mul_38Add_35Mul_39Add_37Add_34"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024\"",
+              "\"1,257,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,257,1024\"",
+              "\"1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024;1,257,1024;1,257,1024;1,257,1024;1,257,1024;1,257,1024\"",
+              "\"1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND;ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "ND;ND;ND;ND",
+            "count": 140,
+            "duration_us": 416.7600000000002,
+            "wait_us": 6.640000000000001,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sub_3Mul_15Add_12",
+              "Sub_9Mul_32Add_28",
+              "Sub_15Mul_49Add_44"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1,257,1024;1,1,1024;1,257,1024\"",
+              "\"1,1,1024;1,1,1024;1,1,1024;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024\"",
+              "\"1,1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "ND;ND;ND;ND;ND",
+            "count": 46,
+            "duration_us": 388.84,
+            "wait_us": 2.8400000000000003,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_23Sigmoid_6Sub_8Mul_26Add_24",
+              "Sub_14Add_39Sigmoid_10Mul_43Add_40",
+              "Add_55Sigmoid_14Sub_20Mul_60Add_56"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1024;1,257,1024;1,257,1024;1,257,1024;1,257,1024\"",
+              "\"1,257,1024;1,257,1024;1,1,1024;1,257,1024;1,257,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "NCDHW;NCDHW;NCDHW;NCDHW;NCDHW;NCDHW;NCDHW",
+            "count": 48,
+            "duration_us": 288.43999999999994,
+            "wait_us": 2.66,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvReferenceWkv7",
+              "RwkvReferenceWkv7_1",
+              "RwkvReferenceWkv7_2"
+            ],
+            "input_shape_samples": [
+              "\"1,16,1,64;1,16,1,64;1,16,1,64;1,16,1,64;1,16,1,64;1,16,1,64;1,16,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,1,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "NCDHW;NCDHW;NCDHW;NCDHW;NCDHW;NCDHW;NCDHW"
+            ],
+            "output_format_samples": [
+              "NCDHW;NCDHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "NCDHW;NCDHW;NCDHW",
+            "count": 48,
+            "duration_us": 234.37999999999988,
+            "wait_us": 3.37,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GatherV2",
+              "GatherV2_3",
+              "GatherV2_6"
+            ],
+            "input_shape_samples": [
+              "\"24,1,16,64,64;;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "NCDHW;NCDHW;NCDHW"
+            ],
+            "output_format_samples": [
+              "NCDHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64;INT64"
+            ]
+          },
+          {
+            "name": "ND;ND;ND;ND;ND;ND;ND",
+            "count": 48,
+            "duration_us": 74.38000000000001,
+            "wait_us": 3.04,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sigmoid_1Mul_10Sub_1Mul_8Add_8Mul_9Mul_11",
+              "Sigmoid_4Mul_27Sub_4Mul_24Add_22Mul_25Mul_28",
+              "Sigmoid_8Mul_44Sub_8Mul_41Add_38Mul_42Mul_45"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1024;1,1,1024;;1,1,1024;;1,1,1024;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,1024;1,1,1024;1,1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND",
+            "count": 4,
+            "duration_us": 46.160000000000004,
+            "wait_us": 0.2,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Pack_24",
+              "Pack_25"
+            ],
+            "input_shape_samples": [
+              "\"2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024\"",
+              "\"1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"24,2,1,1024\"",
+              "\"24,1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          }
+        ],
+        "top_input_dtypes": [
+          {
+            "name": "FLOAT;FLOAT",
+            "count": 1676,
+            "duration_us": 15319.93999999998,
+            "wait_us": 92.58000000000013,
+            "aicore_time_us": 14053.194000000007,
+            "kernel_name_samples": [
+              "MatMul_1",
+              "MatMul_5",
+              "MatMul_7"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,64\"",
+              "\"257,1024;1024,128\"",
+              "\"257,64;64,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,64\"",
+              "\"257,128\"",
+              "\"257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32",
+            "count": 48,
+            "duration_us": 14783.36,
+            "wait_us": 2.8299999999999996,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7",
+              "RwkvEndpointWkv7_1",
+              "RwkvEndpointWkv7_2"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT",
+            "count": 772,
+            "duration_us": 9218.379999999992,
+            "wait_us": 125.44999999999986,
+            "aicore_time_us": 1700.8639999999998,
+            "kernel_name_samples": [
+              "LayerNormV4_LayerNormV3",
+              "LayerNormV4_1_LayerNormV3",
+              "Add_2SigmoidMul_2"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1024;1024\"",
+              "\"1,1,1024;1,257,1024;\"",
+              "\"1,257,16,1;;\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024;1,257,1;1,257,1\"",
+              "\"1,257,1024\"",
+              "\"1,257,16,1\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND",
+              "NCHW;NCHW;NCHW"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND",
+              "ND",
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT",
+            "count": 670,
+            "duration_us": 3811.839999999992,
+            "wait_us": 38.300000000000026,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "StridedSliceV2",
+              "Tanh",
+              "Sigmoid_2"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024\"",
+              "\"1,257,64\"",
+              "\"1,257,128\""
+            ],
+            "output_shape_samples": [
+              "\"1,256,1024\"",
+              "\"1,257,64\"",
+              "\"1,257,128\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;INT32",
+            "count": 336,
+            "duration_us": 2223.5000000000005,
+            "wait_us": 17.779999999999994,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Transpose_3",
+              "Transpose_4",
+              "Transpose_5"
+            ],
+            "input_shape_samples": [
+              "\"257,16,64;3\"",
+              "\"16,257,64;3\""
+            ],
+            "output_shape_samples": [
+              "\"16,257,64\"",
+              "\"257,16,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "FLOAT;INT64",
+            "count": 192,
+            "duration_us": 2106.5800000000017,
+            "wait_us": 10.669999999999993,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "BroadcastTo_1",
+              "GatherElements",
+              "GatherElements_1"
+            ],
+            "input_shape_samples": [
+              "\"1,257,16,1;4\"",
+              "\"1,257,1024;1,1,1024\"",
+              "\"1,1,16,1;4\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,16,64\"",
+              "\"1,1,1024\"",
+              "\"1,1,16,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ]
+          },
+          {
+            "name": "FLOAT;INT64;INT64",
+            "count": 238,
+            "duration_us": 1293.4199999999994,
+            "wait_us": 4565.350000000006,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GatherV2",
+              "GatherV2_1",
+              "GatherV2_2"
+            ],
+            "input_shape_samples": [
+              "\"65536,1024;1,257;1\"",
+              "\"2,1,1024;;1\"",
+              "\"24,1,16,64,64;;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024\"",
+              "\"1,1024\"",
+              "\"1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND",
+              "NCDHW;NCDHW;NCDHW"
+            ],
+            "output_format_samples": [
+              "ND",
+              "NCDHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64;INT64"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 96,
+            "duration_us": 863.1200000000002,
+            "wait_us": 4.48,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "SubMulAddMul_1Add_1Mul_3Add_3Mul_4Add_4Mul_5Add_5Mul_6Add_7",
+              "Sub_5Mul_16Add_14Mul_17Add_15Mul_19Add_17Mul_20Mul_21Add_19Mul_22Add_21Add_18",
+              "Sub_11Mul_33Add_30Mul_34Add_31Mul_36Add_33Mul_37Mul_38Add_35Mul_39Add_37Add_34"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024\"",
+              "\"1,257,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,1,1024;1,1,1024;1,257,1024;1,1,1024;1,257,1024;1,257,1024\"",
+              "\"1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024;1,257,1024;1,257,1024;1,257,1024;1,257,1024;1,257,1024\"",
+              "\"1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024;1,1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND;ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 48,
+            "duration_us": 589.4199999999998,
+            "wait_us": 2.21,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_6Sigmoid_1Mul_10Sub_2Mul_8Add_8Mul_9Mul_11",
+              "Add_20Sigmoid_4Mul_27Sub_7Mul_24Add_22Mul_25Mul_28",
+              "Add_36Sigmoid_8Mul_44Sub_13Mul_41Add_38Mul_42Mul_45"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1024;1,257,1024;1,257,1024;;1,1,1024;;1,257,1024;1,257,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024;1,257,1024;1,257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 140,
+            "duration_us": 416.7600000000002,
+            "wait_us": 6.640000000000001,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sub_3Mul_15Add_12",
+              "Sub_9Mul_32Add_28",
+              "Sub_15Mul_49Add_44"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1,257,1024;1,1,1024;1,257,1024\"",
+              "\"1,1,1024;1,1,1024;1,1,1024;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024\"",
+              "\"1,1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 46,
+            "duration_us": 388.84,
+            "wait_us": 2.8400000000000003,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_23Sigmoid_6Sub_8Mul_26Add_24",
+              "Sub_14Add_39Sigmoid_10Mul_43Add_40",
+              "Add_55Sigmoid_14Sub_20Mul_60Add_56"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1024;1,257,1024;1,257,1024;1,257,1024;1,257,1024\"",
+              "\"1,257,1024;1,257,1024;1,1,1024;1,257,1024;1,257,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 96,
+            "duration_us": 362.8200000000001,
+            "wait_us": 5.699999999999998,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sigmoid_1Mul_10Sub_1Mul_8Add_8Mul_9Mul_11",
+              "RwkvReferenceWkv7",
+              "Sigmoid_4Mul_27Sub_4Mul_24Add_22Mul_25Mul_28"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1024;1,1,1024;;1,1,1024;;1,1,1024;1,1,1024\"",
+              "\"1,16,1,64;1,16,1,64;1,16,1,64;1,16,1,64;1,16,1,64;1,16,1,64;1,16,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,1024;1,1,1024;1,1,1024\"",
+              "\"1,16,1,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND",
+              "NCDHW;NCDHW;NCDHW;NCDHW;NCDHW;NCDHW;NCDHW"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND",
+              "NCDHW;NCDHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "INT64;INT64",
+            "count": 192,
+            "duration_us": 271.88000000000017,
+            "wait_us": 10.199999999999996,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Sub_1",
+              "Sub_10",
+              "Sub_100"
+            ],
+            "input_shape_samples": [
+              "\"1;\"",
+              "\"1,1,1;3\""
+            ],
+            "output_shape_samples": [
+              "\"1\"",
+              "\"1,1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "INT64;INT64"
+            ]
+          },
+          {
+            "name": "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT",
+            "count": 4,
+            "duration_us": 46.160000000000004,
+            "wait_us": 0.2,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Pack_24",
+              "Pack_25"
+            ],
+            "input_shape_samples": [
+              "\"2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024;2,1,1024\"",
+              "\"1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64;1,16,64,64\""
+            ],
+            "output_shape_samples": [
+              "\"24,2,1,1024\"",
+              "\"24,1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "INT32",
+            "count": 2,
+            "duration_us": 2.66,
+            "wait_us": 0.07,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Cast_1"
+            ],
+            "input_shape_samples": [
+              "\"1\""
+            ],
+            "output_shape_samples": [
+              "\"1\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "INT32"
+            ]
+          }
+        ],
+        "top_shape_signatures": [
+          {
+            "name": "RwkvEndpointWkv7 | \"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\" -> \"1,16,257,64;1,16,64,64\"",
+            "count": 48,
+            "duration_us": 14783.36,
+            "wait_us": 2.8299999999999996,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "RwkvEndpointWkv7",
+              "RwkvEndpointWkv7_1",
+              "RwkvEndpointWkv7_2"
+            ],
+            "input_shape_samples": [
+              "\"1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,257,64;1,16,64,64;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,16,257,64;1,16,64,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND;ND;ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "GroupNormSilu | \"257,1024;1024;1024\" -> \"257,1024;257,16;257,16\"",
+            "count": 48,
+            "duration_us": 4823.24,
+            "wait_us": 1.88,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GroupNorm",
+              "GroupNorm_1",
+              "GroupNorm_2"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024;1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024;257,16;257,16\""
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "output_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,1024;1024,1024\" -> \"257,1024\"",
+            "count": 192,
+            "duration_us": 2423.1200000000003,
+            "wait_us": 9.989999999999991,
+            "aicore_time_us": 3346.528999999998,
+            "kernel_name_samples": [
+              "MatMul",
+              "MatMul_3",
+              "MatMul_4"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,1024;4096,1024\" -> \"257,4096\"",
+            "count": 46,
+            "duration_us": 1947.2000000000005,
+            "wait_us": 2.74,
+            "aicore_time_us": 2018.7410000000002,
+            "kernel_name_samples": [
+              "MatMul_10",
+              "MatMul_24",
+              "MatMul_38"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;4096,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,4096\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,4096;1024,4096\" -> \"257,1024\"",
+            "count": 46,
+            "duration_us": 1946.8399999999997,
+            "wait_us": 2.3999999999999995,
+            "aicore_time_us": 1660.7390000000003,
+            "kernel_name_samples": [
+              "MatMul_11",
+              "MatMul_25",
+              "MatMul_39"
+            ],
+            "input_shape_samples": [
+              "\"257,4096;1024,4096\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "Transpose | \"257,16,64;3\" -> \"16,257,64\"",
+            "count": 288,
+            "duration_us": 1813.6200000000003,
+            "wait_us": 15.149999999999984,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Transpose_3",
+              "Transpose_4",
+              "Transpose_5"
+            ],
+            "input_shape_samples": [
+              "\"257,16,64;3\""
+            ],
+            "output_shape_samples": [
+              "\"16,257,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT32"
+            ]
+          },
+          {
+            "name": "GatherElements | \"1,257,1024;1,1,1024\" -> \"1,1,1024\"",
+            "count": 96,
+            "duration_us": 1556.4200000000005,
+            "wait_us": 5.499999999999998,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GatherElements",
+              "GatherElements_1",
+              "GatherElements_2"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,1024;1024,1024\" -> \"1,1024\"",
+            "count": 146,
+            "duration_us": 1223.2399999999998,
+            "wait_us": 8.439999999999996,
+            "aicore_time_us": 952.2889999999999,
+            "kernel_name_samples": [
+              "MatMul",
+              "MatMul_3",
+              "MatMul_4"
+            ],
+            "input_shape_samples": [
+              "\"1,1024;1024,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "StridedSliceD | \"1,257,1024\" -> \"1,256,1024\"",
+            "count": 94,
+            "duration_us": 1210.3800000000008,
+            "wait_us": 5.390000000000001,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "StridedSliceV2",
+              "StridedSliceV2_1",
+              "StridedSliceV2_2"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,256,1024\""
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,4096;1024,4096;1,1,1024\" -> \"1,1024\"",
+            "count": 48,
+            "duration_us": 1099.16,
+            "wait_us": 2.48,
+            "aicore_time_us": 995.3110000000003,
+            "kernel_name_samples": [
+              "MatMul_11",
+              "MatMul_25",
+              "MatMul_39"
+            ],
+            "input_shape_samples": [
+              "\"1,4096;1024,4096;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "LayerNormV3 | \"1,257,1024;1024;1024\" -> \"1,257,1024;1,257,1;1,257,1\"",
+            "count": 98,
+            "duration_us": 1064.22,
+            "wait_us": 6.550000000000001,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "LayerNormV4_LayerNormV3",
+              "LayerNormV4_1_LayerNormV3",
+              "LayerNormV4_2_LayerNormV3"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1024;1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024;1,257,1;1,257,1\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "GatherV2 | \"2,1,1024;;1\" -> \"1,1024\"",
+            "count": 188,
+            "duration_us": 1032.8600000000001,
+            "wait_us": 9.319999999999993,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "GatherV2_1",
+              "GatherV2_2",
+              "GatherV2_3"
+            ],
+            "input_shape_samples": [
+              "\"2,1,1024;;1\""
+            ],
+            "output_shape_samples": [
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;INT64;INT64"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,1024;4096,1024\" -> \"1,4096\"",
+            "count": 48,
+            "duration_us": 910.1799999999998,
+            "wait_us": 2.33,
+            "aicore_time_us": 806.3919999999999,
+            "kernel_name_samples": [
+              "MatMul_10",
+              "MatMul_24",
+              "MatMul_38"
+            ],
+            "input_shape_samples": [
+              "\"1,1024;4096,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,4096\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,1024;1024,64\" -> \"257,64\"",
+            "count": 96,
+            "duration_us": 838.6600000000001,
+            "wait_us": 4.889999999999998,
+            "aicore_time_us": 2187.2650000000003,
+            "kernel_name_samples": [
+              "MatMul_1",
+              "MatMul_5",
+              "MatMul_13"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,64\""
+            ],
+            "output_shape_samples": [
+              "\"257,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "Add | \"1,257,1024;1,257,1024\" -> \"1,257,1024\"",
+            "count": 94,
+            "duration_us": 787.6800000000002,
+            "wait_us": 5.109999999999999,
+            "aicore_time_us": 0.0,
+            "kernel_name_samples": [
+              "Add_11",
+              "Add_13",
+              "Add_27"
+            ],
+            "input_shape_samples": [
+              "\"1,257,1024;1,257,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          }
+        ],
+        "top_matmul_names": [
+          {
+            "name": "MatMul_81",
+            "count": 4,
+            "duration_us": 253.67999999999998,
+            "wait_us": 0.1,
+            "aicore_time_us": 154.70100000000002,
+            "kernel_name_samples": [
+              "MatMul_81"
+            ],
+            "input_shape_samples": [
+              "\"257,4096;1024,4096\"",
+              "\"1,4096;1024,4096;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\"",
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_123",
+            "count": 4,
+            "duration_us": 202.4,
+            "wait_us": 0.27,
+            "aicore_time_us": 145.38500000000002,
+            "kernel_name_samples": [
+              "MatMul_123"
+            ],
+            "input_shape_samples": [
+              "\"257,4096;1024,4096\"",
+              "\"1,4096;1024,4096;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\"",
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_192",
+            "count": 4,
+            "duration_us": 190.44000000000003,
+            "wait_us": 0.21000000000000002,
+            "aicore_time_us": 132.893,
+            "kernel_name_samples": [
+              "MatMul_192"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;4096,1024\"",
+              "\"1,1024;4096,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,4096\"",
+              "\"1,4096\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_67",
+            "count": 4,
+            "duration_us": 177.8,
+            "wait_us": 0.14,
+            "aicore_time_us": 107.143,
+            "kernel_name_samples": [
+              "MatMul_67"
+            ],
+            "input_shape_samples": [
+              "\"257,4096;1024,4096\"",
+              "\"1,4096;1024,4096;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\"",
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_276",
+            "count": 4,
+            "duration_us": 170.33999999999997,
+            "wait_us": 0.31,
+            "aicore_time_us": 151.83200000000002,
+            "kernel_name_samples": [
+              "MatMul_276"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;4096,1024\"",
+              "\"1,1024;4096,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,4096\"",
+              "\"1,4096\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_122",
+            "count": 4,
+            "duration_us": 145.82,
+            "wait_us": 0.41000000000000003,
+            "aicore_time_us": 216.13,
+            "kernel_name_samples": [
+              "MatMul_122"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;4096,1024\"",
+              "\"1,1024;4096,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,4096\"",
+              "\"1,4096\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_25",
+            "count": 4,
+            "duration_us": 141.27999999999997,
+            "wait_us": 0.33999999999999997,
+            "aicore_time_us": 109.43900000000001,
+            "kernel_name_samples": [
+              "MatMul_25"
+            ],
+            "input_shape_samples": [
+              "\"257,4096;1024,4096\"",
+              "\"1,4096;1024,4096;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\"",
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_277",
+            "count": 4,
+            "duration_us": 132.0,
+            "wait_us": 0.16,
+            "aicore_time_us": 121.03899999999999,
+            "kernel_name_samples": [
+              "MatMul_277"
+            ],
+            "input_shape_samples": [
+              "\"257,4096;1024,4096\"",
+              "\"1,4096;1024,4096;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\"",
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_80",
+            "count": 4,
+            "duration_us": 131.3,
+            "wait_us": 0.32999999999999996,
+            "aicore_time_us": 123.33299999999998,
+            "kernel_name_samples": [
+              "MatMul_80"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;4096,1024\"",
+              "\"1,1024;4096,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,4096\"",
+              "\"1,4096\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_11",
+            "count": 4,
+            "duration_us": 130.64,
+            "wait_us": 0.36,
+            "aicore_time_us": 121.49799999999999,
+            "kernel_name_samples": [
+              "MatMul_11"
+            ],
+            "input_shape_samples": [
+              "\"257,4096;1024,4096\"",
+              "\"1,4096;1024,4096;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\"",
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_305",
+            "count": 4,
+            "duration_us": 129.86,
+            "wait_us": 0.37,
+            "aicore_time_us": 121.561,
+            "kernel_name_samples": [
+              "MatMul_305"
+            ],
+            "input_shape_samples": [
+              "\"257,4096;1024,4096\"",
+              "\"1,4096;1024,4096;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\"",
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_108",
+            "count": 4,
+            "duration_us": 128.6,
+            "wait_us": 0.0,
+            "aicore_time_us": 103.003,
+            "kernel_name_samples": [
+              "MatMul_108"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;4096,1024\"",
+              "\"1,1024;4096,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,4096\"",
+              "\"1,4096\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_283",
+            "count": 4,
+            "duration_us": 127.59999999999998,
+            "wait_us": 0.11,
+            "aicore_time_us": 49.058,
+            "kernel_name_samples": [
+              "MatMul_283"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,64\"",
+              "\"1,1024;1024,64\""
+            ],
+            "output_shape_samples": [
+              "\"257,64\"",
+              "\"1,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_282",
+            "count": 4,
+            "duration_us": 127.38,
+            "wait_us": 0.08,
+            "aicore_time_us": 56.557,
+            "kernel_name_samples": [
+              "MatMul_282"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,1024\"",
+              "\"1,1024;1024,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\"",
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul_53",
+            "count": 4,
+            "duration_us": 123.24000000000001,
+            "wait_us": 0.11,
+            "aicore_time_us": 112.73400000000001,
+            "kernel_name_samples": [
+              "MatMul_53"
+            ],
+            "input_shape_samples": [
+              "\"257,4096;1024,4096\"",
+              "\"1,4096;1024,4096;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\"",
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          }
+        ],
+        "top_matmul_shape_signatures": [
+          {
+            "name": "MatMul | \"257,1024;1024,1024\" -> \"257,1024\" | ND;ND -> ND",
+            "count": 192,
+            "duration_us": 2423.1200000000003,
+            "wait_us": 9.989999999999991,
+            "aicore_time_us": 3346.528999999998,
+            "kernel_name_samples": [
+              "MatMul",
+              "MatMul_3",
+              "MatMul_4"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,1024;4096,1024\" -> \"257,4096\" | ND;ND -> ND",
+            "count": 46,
+            "duration_us": 1947.2000000000005,
+            "wait_us": 2.74,
+            "aicore_time_us": 2018.7410000000002,
+            "kernel_name_samples": [
+              "MatMul_10",
+              "MatMul_24",
+              "MatMul_38"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;4096,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,4096\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,4096;1024,4096\" -> \"257,1024\" | ND;ND -> ND",
+            "count": 46,
+            "duration_us": 1946.8399999999997,
+            "wait_us": 2.3999999999999995,
+            "aicore_time_us": 1660.7390000000003,
+            "kernel_name_samples": [
+              "MatMul_11",
+              "MatMul_25",
+              "MatMul_39"
+            ],
+            "input_shape_samples": [
+              "\"257,4096;1024,4096\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,1024;1024,1024\" -> \"1,1024\" | ND;ND -> ND",
+            "count": 146,
+            "duration_us": 1223.2399999999998,
+            "wait_us": 8.439999999999996,
+            "aicore_time_us": 952.2889999999999,
+            "kernel_name_samples": [
+              "MatMul",
+              "MatMul_3",
+              "MatMul_4"
+            ],
+            "input_shape_samples": [
+              "\"1,1024;1024,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,4096;1024,4096;1,1,1024\" -> \"1,1024\" | ND;ND;ND -> ND",
+            "count": 48,
+            "duration_us": 1099.16,
+            "wait_us": 2.48,
+            "aicore_time_us": 995.3110000000003,
+            "kernel_name_samples": [
+              "MatMul_11",
+              "MatMul_25",
+              "MatMul_39"
+            ],
+            "input_shape_samples": [
+              "\"1,4096;1024,4096;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,1024;4096,1024\" -> \"1,4096\" | ND;ND -> ND",
+            "count": 48,
+            "duration_us": 910.1799999999998,
+            "wait_us": 2.33,
+            "aicore_time_us": 806.3919999999999,
+            "kernel_name_samples": [
+              "MatMul_10",
+              "MatMul_24",
+              "MatMul_38"
+            ],
+            "input_shape_samples": [
+              "\"1,1024;4096,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,4096\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,1024;1024,64\" -> \"257,64\" | ND;ND -> ND",
+            "count": 96,
+            "duration_us": 838.6600000000001,
+            "wait_us": 4.889999999999998,
+            "aicore_time_us": 2187.2650000000003,
+            "kernel_name_samples": [
+              "MatMul_1",
+              "MatMul_5",
+              "MatMul_13"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,64\""
+            ],
+            "output_shape_samples": [
+              "\"257,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,1024;1024,64\" -> \"1,64\" | ND;ND -> ND",
+            "count": 96,
+            "duration_us": 574.9599999999999,
+            "wait_us": 5.37,
+            "aicore_time_us": 762.075,
+            "kernel_name_samples": [
+              "MatMul_1",
+              "MatMul_5",
+              "MatMul_13"
+            ],
+            "input_shape_samples": [
+              "\"1,1024;1024,64\""
+            ],
+            "output_shape_samples": [
+              "\"1,64\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,64;64,1024\" -> \"257,1024\" | ND;ND -> ND",
+            "count": 96,
+            "duration_us": 566.2200000000001,
+            "wait_us": 5.629999999999999,
+            "aicore_time_us": 492.07599999999974,
+            "kernel_name_samples": [
+              "MatMul_2",
+              "MatMul_6",
+              "MatMul_14"
+            ],
+            "input_shape_samples": [
+              "\"257,64;64,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,1024;1024,128\" -> \"257,128\" | ND;ND -> ND",
+            "count": 48,
+            "duration_us": 425.26,
+            "wait_us": 2.1100000000000003,
+            "aicore_time_us": 380.26099999999985,
+            "kernel_name_samples": [
+              "MatMul_7",
+              "MatMul_19",
+              "MatMul_33"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,128\""
+            ],
+            "output_shape_samples": [
+              "\"257,128\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,1024;1024,1024;1,1,1024\" -> \"1,1024\" | ND;ND;ND -> ND",
+            "count": 46,
+            "duration_us": 345.84000000000003,
+            "wait_us": 2.4299999999999997,
+            "aicore_time_us": 358.171,
+            "kernel_name_samples": [
+              "MatMul_23",
+              "MatMul_37",
+              "MatMul_51"
+            ],
+            "input_shape_samples": [
+              "\"1,1024;1024,1024;1,1,1024\""
+            ],
+            "output_shape_samples": [
+              "\"1,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,32;32,1024\" -> \"257,1024\" | ND;ND -> ND",
+            "count": 46,
+            "duration_us": 334.7799999999998,
+            "wait_us": 2.63,
+            "aicore_time_us": 191.38700000000003,
+            "kernel_name_samples": [
+              "MatMul_22",
+              "MatMul_36",
+              "MatMul_50"
+            ],
+            "input_shape_samples": [
+              "\"257,32;32,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,1024;1024,32\" -> \"257,32\" | ND;ND -> ND",
+            "count": 46,
+            "duration_us": 284.03999999999996,
+            "wait_us": 2.9799999999999995,
+            "aicore_time_us": 338.19300000000004,
+            "kernel_name_samples": [
+              "MatMul_21",
+              "MatMul_35",
+              "MatMul_49"
+            ],
+            "input_shape_samples": [
+              "\"257,1024;1024,32\""
+            ],
+            "output_shape_samples": [
+              "\"257,32\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"1,1024;1024,128\" -> \"1,128\" | ND;ND -> ND",
+            "count": 48,
+            "duration_us": 249.07999999999996,
+            "wait_us": 3.1300000000000012,
+            "aicore_time_us": 401.3150000000002,
+            "kernel_name_samples": [
+              "MatMul_7",
+              "MatMul_19",
+              "MatMul_33"
+            ],
+            "input_shape_samples": [
+              "\"1,1024;1024,128\""
+            ],
+            "output_shape_samples": [
+              "\"1,128\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          },
+          {
+            "name": "MatMul | \"257,128;128,1024\" -> \"257,1024\" | ND;ND -> ND",
+            "count": 48,
+            "duration_us": 244.6200000000001,
+            "wait_us": 2.4699999999999998,
+            "aicore_time_us": 178.99300000000005,
+            "kernel_name_samples": [
+              "MatMul_8",
+              "MatMul_20",
+              "MatMul_34"
+            ],
+            "input_shape_samples": [
+              "\"257,128;128,1024\""
+            ],
+            "output_shape_samples": [
+              "\"257,1024\""
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "output_format_samples": [
+              "ND"
+            ],
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ]
+          }
+        ],
+        "top_transdata_names": [],
+        "top_transdata_shape_signatures": [],
+        "suspect_kernel_rows": [
+          {
+            "name": "GroupNorm_21",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 181.18,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"257,1024;1024;1024\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"257,1024;257,16;257,16\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_4",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 176.38,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"257,1024;1024;1024\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"257,1024;257,16;257,16\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_1",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 174.92,
+            "wait_us": 0.03,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"257,1024;1024;1024\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"257,1024;257,16;257,16\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "MatMul_81",
+            "type": "MatMul",
+            "count": 1,
+            "duration_us": 173.44,
+            "wait_us": 0.0,
+            "aicore_time_us": 81.153,
+            "input_shapes": "\"257,4096;1024,4096\"",
+            "input_dtypes": "FLOAT;FLOAT",
+            "input_formats": "ND;ND",
+            "output_shapes": "\"257,1024\"",
+            "output_formats": "ND"
+          },
+          {
+            "name": "GroupNorm_9",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 157.56,
+            "wait_us": 0.03,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"257,1024;1024;1024\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"257,1024;257,16;257,16\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_8",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 156.18,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"257,1024;1024;1024\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"257,1024;257,16;257,16\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "GroupNorm_17",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 151.94,
+            "wait_us": 0.0,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"257,1024;1024;1024\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"257,1024;257,16;257,16\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "MatMul_123",
+            "type": "MatMul",
+            "count": 1,
+            "duration_us": 123.92,
+            "wait_us": 0.16,
+            "aicore_time_us": 74.043,
+            "input_shapes": "\"257,4096;1024,4096\"",
+            "input_dtypes": "FLOAT;FLOAT",
+            "input_formats": "ND;ND",
+            "output_shapes": "\"257,1024\"",
+            "output_formats": "ND"
+          },
+          {
+            "name": "MatMul_192",
+            "type": "MatMul",
+            "count": 1,
+            "duration_us": 118.2,
+            "wait_us": 0.0,
+            "aicore_time_us": 69.188,
+            "input_shapes": "\"257,1024;4096,1024\"",
+            "input_dtypes": "FLOAT;FLOAT",
+            "input_formats": "ND;ND",
+            "output_shapes": "\"257,4096\"",
+            "output_formats": "ND"
+          },
+          {
+            "name": "MatMul_283",
+            "type": "MatMul",
+            "count": 1,
+            "duration_us": 107.38,
+            "wait_us": 0.0,
+            "aicore_time_us": 30.879,
+            "input_shapes": "\"257,1024;1024,64\"",
+            "input_dtypes": "FLOAT;FLOAT",
+            "input_formats": "ND;ND",
+            "output_shapes": "\"257,64\"",
+            "output_formats": "ND"
+          },
+          {
+            "name": "MatMul_67",
+            "type": "MatMul",
+            "count": 1,
+            "duration_us": 102.4,
+            "wait_us": 0.0,
+            "aicore_time_us": 37.301,
+            "input_shapes": "\"257,4096;1024,4096\"",
+            "input_dtypes": "FLOAT;FLOAT",
+            "input_formats": "ND;ND",
+            "output_shapes": "\"257,1024\"",
+            "output_formats": "ND"
+          },
+          {
+            "name": "MatMul_22",
+            "type": "MatMul",
+            "count": 1,
+            "duration_us": 102.02,
+            "wait_us": 0.0,
+            "aicore_time_us": 21.307,
+            "input_shapes": "\"257,32;32,1024\"",
+            "input_dtypes": "FLOAT;FLOAT",
+            "input_formats": "ND;ND",
+            "output_shapes": "\"257,1024\"",
+            "output_formats": "ND"
+          },
+          {
+            "name": "GroupNorm_13",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 94.24,
+            "wait_us": 0.02,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"257,1024;1024;1024\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"257,1024;257,16;257,16\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          },
+          {
+            "name": "MatMul_282",
+            "type": "MatMul",
+            "count": 1,
+            "duration_us": 92.8,
+            "wait_us": 0.05,
+            "aicore_time_us": 32.804,
+            "input_shapes": "\"1,1024;1024,1024\"",
+            "input_dtypes": "FLOAT;FLOAT",
+            "input_formats": "ND;ND",
+            "output_shapes": "\"1,1024\"",
+            "output_formats": "ND"
+          },
+          {
+            "name": "GroupNorm_5",
+            "type": "GroupNormSilu",
+            "count": 1,
+            "duration_us": 91.96,
+            "wait_us": 0.01,
+            "aicore_time_us": 0.0,
+            "input_shapes": "\"257,1024;1024;1024\"",
+            "input_dtypes": "FLOAT;FLOAT;FLOAT",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "output_shapes": "\"257,1024;257,16;257,16\"",
+            "output_formats": "NCHW;NCHW;NCHW"
+          }
+        ]
+      },
+      "op_statistic": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "row_count": 24,
+        "top_op_types": [
+          {
+            "op_type": "RwkvEndpointWkv7",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 48,
+            "total_time_us": 14783.36,
+            "avg_time_us": 307.986,
+            "ratio_pct": 28.595
+          },
+          {
+            "op_type": "MatMul",
+            "core_type": "AI_CORE",
+            "count": 1336,
+            "total_time_us": 14091.1,
+            "avg_time_us": 10.547,
+            "ratio_pct": 27.256
+          },
+          {
+            "op_type": "GroupNormSilu",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 96,
+            "total_time_us": 5119.02,
+            "avg_time_us": 53.323,
+            "ratio_pct": 9.902
+          },
+          {
+            "op_type": "AutomaticBufferFusionOp",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 568,
+            "total_time_us": 3006.78,
+            "avg_time_us": 5.293,
+            "ratio_pct": 5.816
+          },
+          {
+            "op_type": "Transpose",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 336,
+            "total_time_us": 2223.5,
+            "avg_time_us": 6.617,
+            "ratio_pct": 4.301
+          },
+          {
+            "op_type": "GatherElements",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 96,
+            "total_time_us": 1556.42,
+            "avg_time_us": 16.212,
+            "ratio_pct": 3.011
+          },
+          {
+            "op_type": "Add",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 144,
+            "total_time_us": 1383.62,
+            "avg_time_us": 9.608,
+            "ratio_pct": 2.676
+          },
+          {
+            "op_type": "Mul",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 288,
+            "total_time_us": 1368.64,
+            "avg_time_us": 4.752,
+            "ratio_pct": 2.647
+          },
+          {
+            "op_type": "LayerNormV3",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 198,
+            "total_time_us": 1324.34,
+            "avg_time_us": 6.688,
+            "ratio_pct": 2.562
+          },
+          {
+            "op_type": "GatherV2",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 238,
+            "total_time_us": 1293.42,
+            "avg_time_us": 5.434,
+            "ratio_pct": 2.502
+          },
+          {
+            "op_type": "StridedSliceD",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 94,
+            "total_time_us": 1210.38,
+            "avg_time_us": 12.876,
+            "ratio_pct": 2.341
+          },
+          {
+            "op_type": "BroadcastTo",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 192,
+            "total_time_us": 704.74,
+            "avg_time_us": 3.67,
+            "ratio_pct": 1.363
+          },
+          {
+            "op_type": "LpNormV2",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 96,
+            "total_time_us": 545.22,
+            "avg_time_us": 5.679,
+            "ratio_pct": 1.055
+          },
+          {
+            "op_type": "ReduceSumD",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 96,
+            "total_time_us": 526.58,
+            "avg_time_us": 5.485,
+            "ratio_pct": 1.019
+          },
+          {
+            "op_type": "RealDiv",
+            "core_type": "AI_VECTOR_CORE",
+            "count": 96,
+            "total_time_us": 467.58,
+            "avg_time_us": 4.87,
+            "ratio_pct": 0.904
+          }
+        ]
+      },
+      "api_statistic": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "row_count": 9,
+        "top_apis": [
+          {
+            "level": "model",
+            "api_name": "ModelLoad",
+            "count": 2,
+            "time_us": 610838.56,
+            "avg_us": 305419.28,
+            "max_us": 389573.05
+          },
+          {
+            "level": "acl",
+            "api_name": "aclrtSynchronizeStream",
+            "count": 6,
+            "time_us": 45637.65,
+            "avg_us": 7606.275,
+            "max_us": 22841.36
+          },
+          {
+            "level": "node",
+            "api_name": "launch",
+            "count": 2278,
+            "time_us": 32252.41,
+            "avg_us": 14.158,
+            "max_us": 215.25
+          },
+          {
+            "level": "acl",
+            "api_name": "aclrtMemcpy",
+            "count": 6,
+            "time_us": 265.66,
+            "avg_us": 44.277,
+            "max_us": 73.07
+          },
+          {
+            "level": "model",
+            "api_name": "ModelExecute",
+            "count": 4,
+            "time_us": 231.99,
+            "avg_us": 57.998,
+            "max_us": 143.44
+          },
+          {
+            "level": "node",
+            "api_name": "step_info",
+            "count": 8,
+            "time_us": 177.92,
+            "avg_us": 22.24,
+            "max_us": 112.57
+          },
+          {
+            "level": "model",
+            "api_name": "InputCopy",
+            "count": 4,
+            "time_us": 130.8,
+            "avg_us": 32.7,
+            "max_us": 50.29
+          },
+          {
+            "level": "acl",
+            "api_name": "aclrtSynchronizeDeviceWithTimeout",
+            "count": 2,
+            "time_us": 30.88,
+            "avg_us": 15.44,
+            "max_us": 18.03
+          },
+          {
+            "level": "model",
+            "api_name": "OutputCopy",
+            "count": 4,
+            "time_us": 1.64,
+            "avg_us": 0.41,
+            "max_us": 0.87
+          }
+        ]
+      },
+      "step_trace_time": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "row_count": 1,
+        "totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 51698.680000000095,
+          "Free": 4766.520000000779,
+          "Overlapped": 0.0,
+          "Preparing": 6171.5,
+          "Stage": 56465.25
+        }
+      },
+      "trace_view": {
+        "path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/reranker_profile_b1_3ea75a78/fp32/profile_pipeline/liteserver-c001-4_121135_20261007084341009_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+        "event_count": 29509,
+        "top_trace_events": [
+          {
+            "name": "Model@ModelLoad",
+            "count": 2,
+            "duration_us": 610838.56
+          },
+          {
+            "name": "bench_reranker_sizes.py(328): <module>",
+            "count": 1,
+            "duration_us": 64307.17
+          },
+          {
+            "name": "bench_reranker_sizes.py(325): main",
+            "count": 1,
+            "duration_us": 64302.06
+          },
+          {
+            "name": "bench_reranker_sizes.py(220): worker",
+            "count": 1,
+            "duration_us": 64287.59
+          },
+          {
+            "name": "bench_reranker_sizes.py(113): profile_pipeline",
+            "count": 1,
+            "duration_us": 64283.49
+          },
+          {
+            "name": "run_reranker_buckets.py(51): profile",
+            "count": 1,
+            "duration_us": 64280.85
+          },
+          {
+            "name": "ProfilerStep#0",
+            "count": 1,
+            "duration_us": 63951.53
+          },
+          {
+            "name": "rwkv.pipeline",
+            "count": 1,
+            "duration_us": 63427.71
+          },
+          {
+            "name": "bench_reranker_sizes.py(93): pipeline",
+            "count": 2,
+            "duration_us": 63242.16
+          },
+          {
+            "name": "NOTIFY_WAIT",
+            "count": 4,
+            "duration_us": 51773.54000000001
+          },
+          {
+            "name": "Computing",
+            "count": 4556,
+            "duration_us": 51698.680000000095
+          },
+          {
+            "name": "aten::to",
+            "count": 10,
+            "duration_us": 47186.490000000005
+          },
+          {
+            "name": "aten::_to_copy",
+            "count": 6,
+            "duration_us": 46822.28999999999
+          },
+          {
+            "name": "rwkv.d2h_scores",
+            "count": 2,
+            "duration_us": 46557.39
+          },
+          {
+            "name": "aten::copy_",
+            "count": 6,
+            "duration_us": 46168.17
+          }
+        ],
+        "top_trace_categories": [
+          {
+            "name": "unknown",
+            "count": 16005,
+            "duration_us": 849516.9700001053
+          },
+          {
+            "name": "python_function",
+            "count": 1952,
+            "duration_us": 543793.5100000001
+          },
+          {
+            "name": "cpu_op",
+            "count": 108,
+            "duration_us": 355580.1499999999
+          },
+          {
+            "name": "Iteration Time",
+            "count": 4,
+            "duration_us": 51905.439999999995
+          }
+        ]
+      },
+      "profiler_info": {
+        "config": {
+          "common_config": {
+            "activities": [
+              "ProfilerActivity.CPU",
+              "ProfilerActivity.NPU"
+            ],
+            "schedule": {
+              "wait": 0,
+              "active": 1,
+              "warmup": 0,
+              "repeat": 1,
+              "skip_first": 0
+            },
+            "record_shapes": true,
+            "profile_memory": false,
+            "with_stack": true,
+            "with_flops": false,
+            "with_modules": false
+          },
+          "experimental_config": {
+            "_profiler_level": "Level1",
+            "_aic_metrics": "ACL_AICORE_PIPE_UTILIZATION",
+            "_l2_cache": false,
+            "_msprof_tx": false,
+            "_mstx": false,
+            "_data_simplification": true,
+            "record_op_args": false,
+            "_export_type": [
+              "text"
+            ],
+            "_host_sys": [],
+            "_op_attr": false,
+            "_gc_detect_threshold": null,
+            "_mstx_domain_include": [],
+            "_mstx_domain_exclude": [],
+            "_sys_io": false,
+            "_sys_interconnection": false
+          }
+        },
+        "start_info": {
+          "syscnt_enable": true,
+          "freq": 100,
+          "start_cnt": 7247078483263,
+          "start_monotonic": 72317809046100
+        },
+        "end_info": {
+          "collectionTimeEnd": 1791362621407068020,
+          "MonotonicTimeEnd": 72318178725660
+        },
+        "torch_npu_version": "2.10.0.post2",
+        "cann_version": "9.0.1"
+      }
+    }
+  ]
+}
