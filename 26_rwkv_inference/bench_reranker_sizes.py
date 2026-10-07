@@ -349,6 +349,31 @@ def worker(args):
             if args.profile:
                 report['profiling_backend']='torchair'
                 profile_pipeline(args,report,cases,static_tokens,encode,head,ids,lengths)
+            if args.compare_b1:
+                # Same four real padded rows and lengths: compare complete B1
+                # scoring sequentially with the B4 pipeline, not different texts.
+                report['serial_b1_scope']='Four complete B1 backbone/head calls on the exact B4 rows; timings are for all four pairs'
+                for label,enc_one,head_one in [
+                    ('raw_eager_b1_serial',backbone,ranker),
+                    ('torchair_b1_serial',compiled(backbone.forward,args.output/'b1_backbone_cache'),
+                     compiled(ranker.forward,args.output/'b1_head_cache'))]:
+                    row_checks=[]
+                    for i in range(args.batch_size):
+                        one=enc_one(ids[i:i+1].contiguous(),lengths[i:i+1].contiguous())
+                        row_checks.append([require_state(one[0],eager[0][:,:,i:i+1],args.dtype),
+                                           require_state(one[1],eager[1][:,i:i+1],args.dtype)])
+                    report[label+'_state_checks']=row_checks
+                    def serial_encode(ni,lens):
+                        values=[head_one(enc_one(ni[i:i+1].contiguous(),lens[i:i+1].contiguous())[1])
+                                for i in range(args.batch_size)]
+                        return None,torch.cat(values)
+                    def identity(value):return value
+                    report[label+'_score_check']=require(serial_encode(ids,lengths)[1],expected,.02,.005)
+                    report['timings'][label+'_total']=measure(lambda:serial_encode(ids,lengths)[1],args.repeats,args.batch_size)
+                    if args.profile:
+                        report['profiling_backend']=label
+                        profile_pipeline(args,report,cases,static_tokens,serial_encode,identity,ids,lengths)
+                    save(args.output/'result.json',report)
             report['all_checks_passed']=report.get('vector_accuracy_passed',True)
             print('TIMINGS',json.dumps(report['timings']),flush=True)
     except Exception as e:
@@ -429,6 +454,7 @@ def main():
         p.add_argument('--'+n,type=Path,required=True)
     p.add_argument('--devices',nargs='+',type=int,default=[7,6,4,3,2,1,0])
     p.add_argument('--repeats',type=int,default=10)
+    p.add_argument('--compare-b1',action='store_true',help='Compare four sequential complete B1 calls against the same B4 rows')
     p.add_argument('--vector-variant',choices=['stock','aiv-fp32','aiv-fp16'],default='stock')
     p.add_argument('--vector-build',type=Path)
     p.add_argument('--recurrence',choices=['vector','matrix'],default='vector')
@@ -465,6 +491,8 @@ def main():
     if not 3<=args.profile_warmup<=20 or not 2<=args.profile_active<=5:
         p.error('Use profile warmup 3..20 and active 2..5')
     if args.warm_cache_from and not args.worker:p.error('Warm cache is for an explicit worker')
+    if args.compare_b1 and (not args.worker or args.batch_size!=4 or args.backend!='torchair' or args.gate_only):
+        p.error('B1 comparison requires a full B4 TorchAir worker')
     if args.vector_variant != 'stock' and (not args.worker or not args.vector_build or args.recurrence != 'vector' or args.warm_cache_from or args.gate_only):
         p.error('Vector variants require a build, vector recurrence and fresh full-model run')
     if args.recurrence == 'matrix' and (not args.worker or args.gate_only or args.warm_cache_from):
