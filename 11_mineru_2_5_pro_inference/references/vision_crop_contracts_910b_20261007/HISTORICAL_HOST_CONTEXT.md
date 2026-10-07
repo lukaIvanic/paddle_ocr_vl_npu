@@ -20,7 +20,7 @@ is being passed off as historical evidence.
 | pfa_d128 / crop_0_bucket_768 | Unavailable | Unavailable; run-boundary snapshots only | Unavailable |
 | pfa_d128 / crop_1_bucket_3072 | Unavailable | Unavailable; run-boundary snapshots only | Unavailable |
 
-The available initial occupancy snapshot showed other PIDs on cards 0, 2 and
+The available initial occupancy snapshot showed other PIDs on cards 0, 1, 2 and
 4–7; card 3 was free when selected. The run used card 3. This does not establish
 those jobs or host load stayed constant across individual lanes. Consult the
 raw snapshots for the recorded PIDs and memory, without inferring job ownership.

@@ -63,10 +63,11 @@ def worker(a):
         if not torch.equal(torch_npu.npu_format_cast(weight,2).cpu(),original):
             raise RuntimeError('weight logical values changed on conversion')
     result['weight_format_actual']=int(torch_npu.get_npu_format(weight))
-    def linear(x,w,b): return F.linear(x,w,b)
+    def linear(self,x,w,b): return F.linear(x,w,b)
     # Unique code identity avoids sharing Dynamo guards across calibration cases.
     fn=types.FunctionType(linear.__code__.replace(co_name=f'mm_{m}_{k}_{n}_{a.weight_format}'),
                           linear.__globals__,argdefs=linear.__defaults__,closure=linear.__closure__)
+    fn=types.MethodType(fn,torch.nn.Module().eval())
     if a.execution=='compiled':
         try:
             import torchair
