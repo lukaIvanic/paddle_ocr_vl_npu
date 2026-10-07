@@ -1,0 +1,20 @@
+{
+  "final_split_constructed": false,
+  "training_launched": false,
+  "unapproved_proposals": [
+    "12-source quotas",
+    "6400 training / 320 validation groups",
+    "source length-bucket block sampling",
+    "8192-token rejection policy",
+    "lexical near-duplicate threshold",
+    "adding KaLM Multi-CPR release"
+  ],
+  "candidate_policy_fixed": "No invented supplementation; complete raw positive and negative pools required before selection",
+  "kalm_mining_caveats": [
+    "Published launcher leaves mining checkpoint blank",
+    "Code retains existing negatives before adding mined negatives",
+    "Code has random-corpus fallback if pool remains short",
+    "Released rows have no per-negative mining rank/checkpoint provenance"
+  ],
+  "bge_mirror_caveat": "Mirror claims format conversion; not independently compared to complete original BGE tar archive"
+}

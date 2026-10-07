@@ -1,0 +1,7 @@
+Host: blue_zone_npu_server / container research_vllm_ascend_023_external_workspace
+CPU data provenance checks only; no model inference or training.
+DuReader audit source commit dbc74ecf / server 0c67ef43db15edeb6cc94b8d4662a3e1e0d8a665
+Multi-CPR audit source commit fb511691 / server 9788102e4f88bbd0ce89821a477004bec96bfdfd
+export TORCH_DEVICE_BACKEND_AUTOLOAD=0 HF_HOME=/workspace/.cache/huggingface HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1
+/workspace/venvs/qwen3_embedding_eval_py312/bin/python -u 13_qwen3_reranker/audit_dureader_source.py --output /workspace/results/qwen_margin_distill/missing_source_audit
+/workspace/venvs/qwen3_embedding_eval_py312/bin/python -u 13_qwen3_reranker/audit_kalm_cpr.py --output /workspace/results/qwen_margin_distill/missing_source_audit

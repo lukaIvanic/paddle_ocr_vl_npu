@@ -1,4 +1,7 @@
-"""Audited, quota-controlled BGE retrieval split; no model training.
+"""Proposed quota-controlled BGE retrieval split; no model training.
+
+Source quotas, sample budget and length policy below are unapproved proposals.
+Inspection acquisitions are not a finalized training dataset.
 
 Reopened benchmark families require membership in pinned upstream training
 queries. Other sources retain the BGE authors' training-release provenance.
@@ -15,7 +18,8 @@ sys.path.insert(0, str(ROOT/'22_qwen3_embedding_benchmark'))
 from protocol import TASKS
 from suite_protocol import ENGLISH
 
-# Engineering quotas, not an attempt to reconstruct unpublished Qwen weights.
+# Proposed engineering quotas, pending user agreement after source audits.
+# Not an attempt to reconstruct unpublished Qwen weights.
 # source: language, train queries, validation queries, instruction
 GENERIC = 'Given a web search query, retrieve relevant passages that answer the query'
 SPECS = {
@@ -33,9 +37,9 @@ SPECS = {
  'law_gpt': ('zh',160,8,'Given a legal question, retrieve answers that address the legal question'),
 }
 PENDING = {
- 'msmarco/mmarco_chinese':'Need original query-ID mapping across English and Chinese translations',
- 'dureader':'Need verify exact upstream variant and training-query membership',
- 'Multi-CPR':'Not in this BGE mirror inventory; acquire official train data separately',
+ 'msmarco/mmarco_chinese':'Mapping audited; final builder integration and row-level filtering pending',
+ 'dureader':'Official training registry acquired and BGE spot check passed; final row-level filtering pending',
+ 'Multi-CPR':'Official queries/qrels audited; adding KaLM candidate pools requires explicit source choice',
  'lecardv2':'Defer case retrieval until long-query handling is explicit',
  'NLI/sentence-matching':'No generic passage-relevance relabeling; separate task design required',
 }
