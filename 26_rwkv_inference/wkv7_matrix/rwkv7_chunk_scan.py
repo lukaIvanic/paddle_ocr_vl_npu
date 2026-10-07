@@ -124,6 +124,7 @@ def rwkv7_chunk_scan(
     dense_prefix_algorithm: str = "hillis",
     inverse_backend: str = "native",
     inverse_base_size: int = 32,
+    diagnostic_tensors=None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Apply the RWKV-7 recurrence through a DPLR chunk factorization.
 
@@ -248,6 +249,9 @@ def rwkv7_chunk_scan(
         bg = beta_c.float() * torch.exp(-inclusive + offset.unsqueeze(-2))
         qg_f, kg_f, ag_f, bg_f = map(flat, (qg, kg, ag, bg))
         v_f = flat(v_c)
+    if diagnostic_tensors is not None:
+        diagnostic_tensors.extend((name, value.clone()) for name, value in
+            [("inclusive", inclusive), ("qg", qg_f), ("kg", kg_f), ("ag", ag_f), ("bg", bg_f)])
     _stage_end(stage_events, "input_and_gates", stage)
 
     stage = _stage_start(stage_events, "intra_matrices")
@@ -274,6 +278,8 @@ def rwkv7_chunk_scan(
         a_qb = _cube_bmm(qg_f, bg_f.transpose(1, 2), compute_dtype)
         a_ak = _cube_bmm(ag_f, kg_f.transpose(1, 2), compute_dtype)
         a_ab = _cube_bmm(ag_f, bg_f.transpose(1, 2), compute_dtype)
+    if diagnostic_tensors is not None:
+        diagnostic_tensors.append(("a_ab_unmasked", a_ab.clone()))
     _stage_end(stage_events, "intra_bmm", detail)
     detail = _stage_start(stage_events, "intra_mask")
     if use_native_bf16_intra:
@@ -306,6 +312,9 @@ def rwkv7_chunk_scan(
         a_qb.masked_fill_(~lower, 0.0)
         a_ak.masked_fill_(~strict_lower, 0.0)
         a_ab.masked_fill_(~strict_lower, 0.0)
+    if diagnostic_tensors is not None:
+        diagnostic_tensors.extend((name, value.clone()) for name, value in
+            [("a_ab_masked", a_ab), ("a_ak_masked", a_ak), ("a_qk_masked", a_qk)])
     _stage_end(stage_events, "intra_mask", detail)
     _stage_end(stage_events, "intra_matrices", stage)
 
@@ -405,6 +414,8 @@ def rwkv7_chunk_scan(
             torch.float32,
             identity,
         )
+    if diagnostic_tensors is not None:
+        diagnostic_tensors.append(("inverse", inverse.clone()))
     _stage_end(stage_events, "neumann_inverse", stage)
     stage = _stage_start(stage_events, "wy_u_factors")
     wy_centered = _cube_bmm(inverse, ag_f, compute_dtype)
@@ -419,6 +430,8 @@ def rwkv7_chunk_scan(
         wy = wy_centered * torch.exp(offset).reshape(groups, 1, width)
     if compute_dtype == torch.bfloat16:
         wy = wy.to(compute_dtype)
+    if diagnostic_tensors is not None:
+        diagnostic_tensors.extend((name, value.clone()) for name, value in [("wy", wy), ("u", u)])
     _stage_end(stage_events, "wy_u_factors", stage)
 
     stage = _stage_start(stage_events, "factor_post")
@@ -506,6 +519,9 @@ def rwkv7_chunk_scan(
             additive = additive.to(compute_dtype)
             output_base = output_base.to(compute_dtype)
             output_query = output_query.to(compute_dtype)
+        if diagnostic_tensors is not None:
+            diagnostic_tensors.extend((name, value.clone()) for name, value in
+                [("transition", transition), ("additive", additive), ("output_base", output_base), ("output_query", output_query)])
         _stage_end(stage_events, "dense_chunk_summary", detail)
 
         detail = _stage_start(stage_events, "dense_chunk_prefix")
@@ -702,6 +718,8 @@ def rwkv7_chunk_scan(
             final_state = _cube_bmm(
                 transition[:, -1], initial, compute_dtype
             ) + additive[:, -1]
+        if diagnostic_tensors is not None:
+            diagnostic_tensors.extend((name, value.clone()) for name, value in [("starts", starts), ("final_state", final_state)])
         _stage_end(stage_events, "dense_chunk_prefix", detail)
 
         detail = _stage_start(stage_events, "dense_chunk_output")
@@ -733,6 +751,8 @@ def rwkv7_chunk_scan(
         current = final_state.reshape(batch, heads, width, width)
         _stage_end(stage_events, "dense_chunk_output", detail)
         _stage_end(stage_events, "chunk_apply", stage)
+        if diagnostic_tensors is not None:
+            diagnostic_tensors.append(("output", output.clone()))
         return output, current.transpose(-1, -2).contiguous()
 
     output_chunks = []
