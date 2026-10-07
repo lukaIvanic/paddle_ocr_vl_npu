@@ -1,4 +1,31 @@
-# Query-first ranking distillation pilot
+# Qwen3 ranking distillation pilots
+
+## Contents-swapped follow-up
+
+The follow-up keeps the same dataset, candidate order, instruction, system prefix,
+assistant suffix and query-first 4B teacher targets. The student alone receives
+`<Query>: document content` followed by `<Document>: query content`. It starts
+from the released 0.6B weights with fresh optimizer state, using the same
+50-update warmup/linear-decay schedule, peak LR 1e-6 and evaluation cadence.
+
+Record the untrained swapped baseline and compare all updates against the original
+query-first baseline saved in the completed pilot. Revalidate the canonical
+query-first token hashes against the teacher, retain separate swapped hashes,
+and reject any teacher or student truncation for this pilot. Run the real-input
+backward/replay/optimizer control with swapped prompts first.
+
+```bash
+bash 13_qwen3_reranker/run_margin_distillation_experiment.sh \
+  /workspace/results/qwen_margin_distill/data_fast/dataset.json.gz \
+  /workspace/results/qwen_margin_distill/npu/contents_swap_RUN_COMMIT \
+  contents_swapped /workspace/results/qwen_margin_distill/npu/d66b8e89
+```
+
+The query-first results below are the accuracy reference; swapped results must
+come from the follow-up's own recorded artifacts. This run does not benchmark
+cached-document inference.
+
+## Query-first pilot
 
 This experiment adapts Qwen3-Reranker-0.6B to a frozen Qwen3-Reranker-4B's
 within-query score differences. Document-first adaptation is a later experiment.
