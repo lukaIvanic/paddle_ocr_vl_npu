@@ -1,7 +1,7 @@
 """Acquire upstream query/label assets and audit their pinned benchmark mapping.
 No final training selection, candidate generation, or model execution.
 """
-import argparse,concurrent.futures,collections,hashlib,json,pathlib,time,urllib.request
+import base64,argparse,concurrent.futures,collections,hashlib,json,pathlib,time,urllib.request
 from broader_split import key,read,save,download
 
 MMARCO_REV='6d039c4638c0ba3e46a9cb7b498b145e7edc6230'
@@ -27,11 +27,22 @@ def main():
  for domain in ['ecom','video','medical']:
   for fn in ['train.query.txt','dev.query.txt','qrels.train.tsv','qrels.dev.tsv']:
    jobs[f'cpr-{domain}-{fn}']=f'https://raw.githubusercontent.com/Alibaba-NLP/Multi-CPR/{CPR_REV}/data/{domain}/{fn}'
+ tree=json.load(urllib.request.urlopen(f"https://api.github.com/repos/Alibaba-NLP/Multi-CPR/git/trees/{CPR_REV}?recursive=1",timeout=45))
+ blobs={r["path"]:r for r in tree["tree"] if r["type"]=="blob"}
  def get(item):
   name,url=item;t=time.monotonic()
   for attempt in range(3):
    try:
-    f=download(url,out/name);break
+    if name.startswith('cpr-'):
+     path=url.split('/'+CPR_REV+'/')[1];blob=blobs[path];f=out/name
+     if not f.exists():
+      payload=json.load(urllib.request.urlopen(blob['url'],timeout=60));data=base64.b64decode(payload['content'])
+      assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==blob['sha']
+      f.write_bytes(data)
+     else:
+      data=f.read_bytes();assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==blob['sha']
+    else:f=download(url,out/name)
+    break
    except Exception:
     if attempt==2:raise
     time.sleep(2)
