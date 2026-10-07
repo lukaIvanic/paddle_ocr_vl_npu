@@ -196,7 +196,7 @@ def worker(args):
                 from matrix_recurrence import MatrixRecurrence
                 report['matrix_source_sha256']={n:sha256(root/n) for n in
                     ['matrix_recurrence.py','wkv7_matrix/rwkv7_chunk_scan.py','wkv7_matrix/provenance.json']}
-                matrix_dtype={'fp32':torch.float32,'bf16':torch.bfloat16}[args.matrix_compute_dtype]
+                matrix_dtype={'fp32':torch.float32,'fp16':torch.float16,'bf16':torch.bfloat16}[args.matrix_compute_dtype]
                 for block in model.blocks:
                     block.matrix_recurrence=MatrixRecurrence(args.matrix_chunk_size,matrix_dtype)
                 candidate=backbone(ids,lengths);candidate_logits=ranker(candidate[1])
@@ -369,7 +369,7 @@ def main():
     p.add_argument('--repeats',type=int,default=10)
     p.add_argument('--recurrence',choices=['vector','matrix'],default='vector')
     p.add_argument('--matrix-chunk-size',type=int,choices=[16,32,64,128],default=64)
-    p.add_argument('--matrix-compute-dtype',choices=['fp32','bf16'],default='fp32')
+    p.add_argument('--matrix-compute-dtype',choices=['fp32','fp16','bf16'],default='fp32')
     p.add_argument('--diagnose-matrix-compile',action='store_true',help='Full-scoring numerical diagnosis with first-layer outputs, no timing')
     p.add_argument('--profile-invalid-compile',action='store_true',help='Diagnostic full-forward capture; invalid output is never accepted for speed')
     p.add_argument('--profile',action='store_true',help='Explicit B1/B4 worker: eager and optional compiled CPU/NPU traces with shapes')
