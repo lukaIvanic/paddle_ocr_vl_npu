@@ -1,0 +1,194 @@
+"""Frozen teacher scoring and bounded, recoverable grouped Margin-MSE training."""
+import argparse
+import collections
+import os
+from pathlib import Path
+import platform
+import subprocess
+import time
+import json
+
+from distill_runtime import Runtime, read, digest, model_manifest, save, plans
+from margin_distillation import agreement, benchmark_metrics, lr_at, margin_loss_and_score_gradient
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--mode', choices=['teacher', 'train'], required=True)
+    p.add_argument('--model', type=Path, required=True)
+    p.add_argument('--dataset', type=Path, required=True)
+    p.add_argument('--teacher', type=Path)
+    p.add_argument('--control', type=Path)
+    p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--schedule', choices=['constant', 'warmup_linear'], default='constant')
+    p.add_argument('--steps', type=int, default=50)
+    p.add_argument('--queries-per-update', type=int, default=32)
+    p.add_argument('--learning-rate', type=float, default=1e-6)
+    p.add_argument('--wall-time-limit', type=float, default=2400)
+    args = p.parse_args()
+    started = time.monotonic()
+    args.output.mkdir(parents=True, exist_ok=True)
+    data = read(args.dataset)
+    runtime = Runtime(args.model)
+    torch = runtime.torch
+    import torch_npu
+    import transformers
+    records = {s: runtime.records(data[s], s) for s in
+               ['train', 'validation', 'benchmark', 'reserved_benchmark']}
+    model = runtime.load(args.model)
+    result = {'status': 'running', 'dataset_sha256': digest(args.dataset),
+              'model_sha256': model_manifest(args.model), 'lengths': runtime.lengths,
+              'environment': {'host': platform.node(), 'chip': 'Ascend 910B2',
+                              'physical_npu': os.getenv('ASCEND_RT_VISIBLE_DEVICES'),
+                              'torch': torch.__version__, 'torch_npu': torch_npu.__version__,
+                              'transformers': transformers.__version__},
+              'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'config': {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
+              'distribution': data['distribution'], 'split_checks': data['checks'],
+              'evaluations': {}, 'updates': [], 'checkpoints': []}
+    save(args.output / 'result.json', result)
+    if args.mode == 'teacher':
+        target_path = args.output / 'teacher.json'
+        target = read(target_path) if target_path.exists() else {
+            'dataset_sha256': result['dataset_sha256'], 'model_sha256': result['model_sha256'],
+            'scoring': 'FP32 weights, BF16 autocast, yes-minus-no logits, query first, total max8192',
+            'scores': {}, 'seconds': {}}
+        assert target['dataset_sha256'] == result['dataset_sha256']
+        assert target['model_sha256'] == result['model_sha256']
+        for section, rows in records.items():
+            if section in target['scores']:
+                continue
+            scores, seconds = runtime.score(model, rows, section)
+            target['scores'][section], target['seconds'][section] = scores, seconds
+            if 'benchmark' in section:
+                target.setdefault('metrics', {})[section] = benchmark_metrics(data[section], scores)
+            save(target_path, target)
+            print('TEACHER_SECTION', json.dumps({'section': section, 'seconds': seconds}), flush=True)
+        result['status'] = 'completed'
+        result['total_seconds'] = time.monotonic() - started
+        save(args.output / 'result.json', result)
+        return
+    assert args.teacher and args.control
+    control = read(args.control)
+    assert control['passed'], 'Implementation control must pass before training'
+    teacher = read(args.teacher)
+    assert teacher['dataset_sha256'] == result['dataset_sha256']
+    result['teacher_sha256'] = digest(args.teacher)
+    result['control_sha256'] = digest(args.control)
+    result['recipe'] = {'loss': 'mean all unordered within-query Margin-MSE pairs, equal query weights',
+        'optimizer': 'fresh NpuFusedAdamW, betas0.9/0.999, eps1e-8, weight_decay0',
+        'gradient_clip': 1.0, 'microbatch_max': 4, 'train_token_budget': 8192,
+        'padding': 'left, microbatch max rounded up to128', 'prompt_order': 'query_first',
+        'score_gradient_replay': 'deterministic no-grad pass followed by microbatch backward',
+        'weights': 'FP32', 'autocast': 'BF16', 'warmup_updates': 5}
+    optimizer = torch_npu.optim.NpuFusedAdamW(model.parameters(), lr=args.learning_rate,
+                        betas=(.9, .999), eps=1e-8, weight_decay=0)
+    assert not optimizer.state
+    by_group = collections.defaultdict(list)
+    for r in records['train']:
+        by_group[r['group_id']].append(r)
+    assert len(data['train']) >= args.steps * args.queries_per_update
+    assert all(len(g['documents']) == 8 for g in data['train'])
+
+    def checkpoint(step):
+        t = time.monotonic()
+        def cpu(x):
+            if isinstance(x, torch.Tensor): return x.detach().cpu()
+            if isinstance(x, dict): return {k: cpu(v) for k, v in x.items()}
+            if isinstance(x, list): return [cpu(v) for v in x]
+            if isinstance(x, tuple): return tuple(cpu(v) for v in x)
+            return x
+        state = {'model': cpu(model.state_dict()), 'optimizer': cpu(optimizer.state_dict()),
+                 'scheduler': {'schedule': args.schedule, 'completed_updates': step,
+                               'steps': args.steps, 'peak_lr': args.learning_rate, 'warmup': 5},
+                 'rng': torch.get_rng_state(), 'npu_rng': torch.npu.get_rng_state(),
+                 'dataset_sha256': result['dataset_sha256'], 'teacher_sha256': result['teacher_sha256'],
+                 'training_order_ids': [g['id'] for g in data['train']], 'config': result['config']}
+        path = args.output / f'checkpoint_{step:03d}.pt'
+        torch.save(state, path.with_suffix('.partial'))
+        path.with_suffix('.partial').replace(path)
+        result['checkpoints'].append({'step': step, 'path': str(path), 'bytes': path.stat().st_size,
+                                      'seconds': time.monotonic() - t})
+        print('CHECKPOINT', json.dumps(result['checkpoints'][-1]), flush=True)
+
+    def evaluate(step, endpoint=False):
+        t = time.monotonic()
+        scores, seconds = runtime.score(model, records['benchmark'], 'benchmark')
+        val, val_s = runtime.score(model, records['validation'], 'validation')
+        item = {'benchmark': benchmark_metrics(data['benchmark'], scores),
+                'agreement': agreement(data['validation'], val, teacher['scores']['validation']),
+                'seconds': {'benchmark': seconds, 'validation': val_s},
+                'benchmark_scores': scores, 'validation_scores': val}
+        if endpoint or step == 0:
+            rs, rt = runtime.score(model, records['reserved_benchmark'], 'reserved_benchmark')
+            item['reserved_benchmark'] = benchmark_metrics(data['reserved_benchmark'], rs)
+            item['reserved_scores'] = rs
+            item['seconds']['reserved_benchmark'] = rt
+        item['seconds']['total'] = time.monotonic() - t
+        result['evaluations'][str(step)] = item
+        save(args.output / 'result.json', result)
+        print('EVALUATION', json.dumps({'step': step, 'suite': item['benchmark']['suite_macro_ndcg10'],
+              'agreement': item['agreement'], 'seconds': item['seconds']}), flush=True)
+        assert seconds + val_s < 180, 'Frequent evaluation exceeds three-minute budget; resize fixture before training'
+
+    try:
+        evaluate(0)
+        torch.npu.reset_peak_memory_stats()
+        for step in range(1, args.steps + 1):
+            if time.monotonic() - started > args.wall_time_limit:
+                result['status'] = 'time_limit'
+                checkpoint(step - 1)
+                break
+            begin = time.monotonic()
+            # This checkpoint has no dropout: eval mode retains full autograd.
+            model.eval()
+            optimizer.zero_grad(set_to_none=False)
+            learning_rate = lr_at(step, args.steps, args.learning_rate, args.schedule)
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = learning_rate
+            window = data['train'][(step-1)*args.queries_per_update:step*args.queries_per_update]
+            total_loss = torch.zeros((), device=runtime.device)
+            micros = 0
+            for group in window:
+                rows = by_group[group['id']]
+                microplan = list(plans(rows, 4, 8192))
+                values = torch.empty(8, device=runtime.device)
+                with torch.no_grad():
+                    for micro in microplan:
+                        z = runtime.logits(model, micro)
+                        values[[r['candidate'] for r in micro]] = z
+                target = torch.tensor(teacher['scores']['train'][group['id']], device=runtime.device)
+                loss, gradient = margin_loss_and_score_gradient(values, target)
+                total_loss += loss.detach() / args.queries_per_update
+                for micro in microplan:
+                    z = runtime.logits(model, micro)
+                    indices = [r['candidate'] for r in micro]
+                    assert torch.equal(z.detach(), values[indices]), 'Replay must be deterministic'
+                    (z * (gradient[indices] / args.queries_per_update)).sum().backward()
+                    micros += 1
+            norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0, error_if_nonfinite=True)
+            optimizer.step()
+            torch.npu.synchronize()
+            row = {'step': step, 'lr': learning_rate, 'loss': total_loss.item(), 'gradient_norm': norm.item(),
+                   'seconds': time.monotonic() - begin, 'queries': len(window), 'pairs': len(window)*8,
+                   'backward_microbatches': micros, 'peak_allocated_gib': torch.npu.max_memory_allocated()/1024**3}
+            result['updates'].append(row)
+            print('UPDATE', json.dumps(row), flush=True)
+            if step in {1, 3, 10, 25, 50} or step == args.steps:
+                checkpoint(step)
+                evaluate(step, endpoint=step == args.steps)
+            save(args.output / 'result.json', result)
+        else:
+            result['status'] = 'completed'
+    except Exception as e:
+        result.update(status='failed', error=repr(e))
+        raise
+    finally:
+        result['total_seconds'] = time.monotonic() - started
+        save(args.output / 'result.json', result)
+        print('FINISHED', json.dumps({'status': result['status'], 'updates': len(result['updates']),
+                                    'seconds': result['total_seconds']}), flush=True)
+
+
+if __name__ == '__main__':
+    main()
