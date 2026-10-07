@@ -14,7 +14,10 @@ stage() (
     output="$run_root/$name"
     mkdir -p "$output"
     unset ASCEND_RT_VISIBLE_DEVICES
-    source npu-setup
+    # Vendor environment scripts reference optional unset variables.
+    set +u
+    source npu-setup || { echo 'NPU environment setup failed' >&2; exit 77; }
+    set -u
     if [[ -z ${ASCEND_RT_VISIBLE_DEVICES:-} ]]; then
         echo 'No free NPU selected; stop without a CPU fallback.' >&2
         exit 77
