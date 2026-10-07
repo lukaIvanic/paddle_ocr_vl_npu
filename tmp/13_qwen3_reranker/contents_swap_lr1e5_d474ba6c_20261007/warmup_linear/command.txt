@@ -1,0 +1,4 @@
+d474ba6cb3e196e87b7a1a0246794471c1ad889b
+liteserver-c001-4
+chip=Ascend 910B2 physical_npu=2
+/usr/local/python3.12.13/bin/python3 13_qwen3_reranker/run_margin_distillation.py --mode train --model /workspace/models/Qwen3-Reranker-0.6B --dataset /workspace/results/qwen_margin_distill/data_fast/dataset.json.gz --teacher /workspace/results/qwen_margin_distill/npu/d66b8e89/teacher/teacher.json --control /workspace/results/qwen_margin_distill/npu/contents_swap_lr1e5_d474ba6c/control/control.json --query-first-reference /workspace/results/qwen_margin_distill/npu/d66b8e89/warmup_linear/result.json --student-order contents_swapped --output /workspace/results/qwen_margin_distill/npu/contents_swap_lr1e5_d474ba6c/warmup_linear --schedule warmup_linear --steps 50 --queries-per-update 32 --learning-rate 1e-5 --wall-time-limit 2400

@@ -48,7 +48,7 @@ does not benchmark cached-document inference.
 
 ## Higher-learning-rate contents swap
 
-The next matched arm restarts from the same released 0.6B weights and fresh
+The matched arm restarted from the same released 0.6B weights and fresh
 optimizer, retaining the data order, query-first 4B targets, contents-swapped
 prompt, 50 updates and five-step warmup/linear decay. Only the peak learning rate
 changes from 1e-6 to 1e-5. Evaluate at 0, 1, 3, 10, 25 and 50; compare against
@@ -62,6 +62,22 @@ bash 13_qwen3_reranker/run_margin_distillation_experiment.sh \
   /workspace/results/qwen_margin_distill/npu/contents_swap_lr1e5_RUN_COMMIT \
   contents_swapped /workspace/results/qwen_margin_distill/npu/d66b8e89 1e-5
 ```
+
+The 1e-5 arm completed all 50 updates on Ascend 910B2, physical NPU 2.
+The [matched comparison report](../tmp/13_qwen3_reranker/contents_swap_lr1e5_d474ba6c_20261007/README.md)
+retains all trajectories, per-task scores, original/swapped baseline checks and
+five saved-checkpoint inventory entries. The untrained baseline scores and token
+hashes match the 1e-6 arm exactly, with no truncation.
+
+Combined endpoint results (10 fixed queries/task), percentage NDCG@10:
+
+| Model | English | Chinese | Teacher agreement | Teacher margin MSE |
+|---|---:|---:|---:|---:|
+| Original query-first | 71.179 | 73.225 | 81.859% | 6.3827 |
+| Swapped, peak LR 1e-6 | 56.690 | 66.285 | 75.364% | 8.4936 |
+| Swapped, peak LR 1e-5 | 62.502 | 66.722 | 80.627% | 4.7424 |
+
+The higher learning rate produced better endpoint recovery than 1e-6 in both sampled suite means. Accuracy remains substantially below the original query-first baseline. These small panels do not establish full-suite accuracy.
 
 ## Query-first pilot
 
