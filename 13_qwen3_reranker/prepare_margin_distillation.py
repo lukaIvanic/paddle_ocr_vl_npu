@@ -46,8 +46,7 @@ def _raw_pool(args):
             if identity in seen:continue
             seen.add(identity)
             rows.append(z['row']|{'id':identity,'source':source,'language':allowed[source]})
-    # MIRACL's short retrieval rows have few supplied negatives; later lexical
-    # mining supplements them from a disjoint source-specific document bank.
+    # Acquire released candidate pools without constructing additional negatives.
     config_names=['miracl_zh_len-0-500','miracl_zh_len-500-1000',
                   'miracl_en_len-0-500']
     endpoint='https://hf-mirror.com'
@@ -139,27 +138,14 @@ def build_groups(rows,blocked_queries,blocked_docs,seed,train_queries,val_querie
     assert len(train)==train_queries and len(validation)==val_queries, (len(train),len(validation))
 
     def expand(selected):
-        from sklearn.feature_extraction.text import TfidfVectorizer
         result=[]
-        for source in sorted({r['source'] for r in selected}):
-            rs=[r for r in selected if r['source']==source]
-            need_mining=any(len(r['neg'])<7 for r in rs)
-            # Candidate bank stays inside this split and source.
-            if need_mining:
-                bank=list(dict.fromkeys(d for r in rs for d in r['pos']+r['neg']))
-                vectorizer=TfidfVectorizer(analyzer='char',ngram_range=(2,3),max_features=100000)
-                matrix=vectorizer.fit_transform(bank)
-            for r in rs:
-                documents=[r['pos'][0]]+r['neg'][:7]
-                if len(documents)<8:
-                    sims=(matrix@vectorizer.transform([r['query']]).T).toarray().ravel()
-                    for index in sorted(range(len(bank)),key=lambda i:(-sims[i],i)):
-                        if len(documents)>=8:break
-                        if bank[index] not in documents:documents.append(bank[index])
-                assert len(documents)==8
-                result.append({k:r[k] for k in ['id','source','language','query']}|
-                              {'documents':documents,'instruction':
-                               'Given a web search query, retrieve relevant passages that answer the query'})
+        for r in selected:
+            if len(r['neg']) < 7:
+                raise ValueError(f"{r['id']}: fewer than seven supplied negatives; automatic candidate supplementation is disabled")
+            documents=[r['pos'][0]]+r['neg'][:7]
+            result.append({k:r[k] for k in ['id','source','language','query']}|
+                          {'documents':documents,'instruction':
+                           'Given a web search query, retrieve relevant passages that answer the query'})
         rng.shuffle(result)
         return result
     train,validation=expand(train),expand(validation)
@@ -257,7 +243,7 @@ def main():
     result={'train':train,'validation':val,'benchmark':panel,'reserved_benchmark':reserved,
             'provenance':{'bge':origin,'benchmarks':provenance,'seed':args.seed,
              'excluded_sources':EXCLUDED,'language_balance':'equal English and Chinese queries',
-             'candidate_selection':'first positive and up to seven supplied negatives; supplement from split/source-disjoint lexical bank',
+             'candidate_selection':'first positive and seven supplied negatives; insufficient pools cause an error',
              'filter_scope':'excluded source families, all suite query texts, selected panel candidate texts; not exhaustive corpus decontamination'},
             'distribution':dict(collections.Counter(g['source'] for g in train)),
             'checks':{'train_validation_queries_disjoint':True,'train_validation_documents_disjoint':True,

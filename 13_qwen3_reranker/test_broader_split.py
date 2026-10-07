@@ -13,16 +13,16 @@ class SplitTests(unittest.TestCase):
   clean,_=clean_pool([row,row],'nq',reg,set())
   self.assertEqual(len(clean),1);self.assertEqual(clean[0]['upstream_query_id'],'q1')
   self.assertEqual(clean[0]['pos'],['Mars','red planet']);self.assertNotIn('Mars',clean[0]['neg'])
- def test_supplements_never_include_known_positives_or_fake_labels(self):
+ def test_no_supplementation_and_no_known_positive_as_negative(self):
   rows,_=clean_pool([self.row()],'nq',None,set());r=rows[0]
-  bank=['Mars','red planet']+[f'Other {i}' for i in range(20)]
-  g=sample_group(r,bank,lambda r,d: True,4)
+  self.assertIsNone(sample_group(r,lambda r,d: True,4))
+  r['neg'] += [f'Other {i}' for i in range(20)]
+  g=sample_group(r,lambda r,d: True,4)
   self.assertEqual(len(g['documents']),8)
-  self.assertEqual(sum(d in r['pos'] for d in g['documents']),1)
-  for kind,label in zip(g['candidate_origin'],g['supplied_labels']):
-   if kind=='random_same_source_unjudged':self.assertIsNone(label)
-  self.assertEqual(g,sample_group(r,bank,lambda r,d: True,4))
-  self.assertIsNone(sample_group(r,bank,lambda r,d: False,4))
+  self.assertTrue(all(d in r['neg'] for d in g['documents'][1:]))
+  self.assertEqual(g['supplied_labels'],[1]+[0]*7)
+  self.assertEqual(g,sample_group(r,lambda r,d: True,4))
+  self.assertIsNone(sample_group(r,lambda r,d: False,4))
  def test_language_and_pilot_quotas(self):
   for lang in ['en','zh']:
    self.assertEqual(sum(n for l,n,v,i in SPECS.values() if l==lang),3200)
