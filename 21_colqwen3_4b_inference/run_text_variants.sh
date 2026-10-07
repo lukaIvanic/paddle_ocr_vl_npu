@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Source npu-setup once; run every variant sequentially on that physical card.
-set -euo pipefail
+set -e
 cd "$(dirname "$0")/.."
-source npu-setup
+source npu-setup || exit 1
+# Vendor environment scripts reference optional unset variables internally.
+set -euo pipefail
 TEXT_VARIANT_ROOT="${TEXT_VARIANT_ROOT:?Set a fresh evidence directory}"
 TEXT_FROZEN_ROOT=tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817
 TEXT_ANCHOR=tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt
