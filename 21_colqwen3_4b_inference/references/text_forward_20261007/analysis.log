@@ -1,0 +1,294 @@
+{
+  "scope": "36 text transformer layers, DeepStack adds and final RMSNorm; kernel sums are distinct from clean warmed wall latency.",
+  "raw_eager": {
+    "physical_npu": "2",
+    "execution": "raw_eager",
+    "frozen_inputs_sha256": "494513b62d9046cbe71d434d3b217542dc02ba465aea7d7b143037c5e302b5ae",
+    "text_tokens": 1274,
+    "text_input_shapes": [
+      [
+        1,
+        1274,
+        2560
+      ],
+      [
+        1,
+        1274,
+        128
+      ],
+      [
+        1,
+        1274,
+        128
+      ],
+      [
+        1,
+        1,
+        1274,
+        1274
+      ],
+      [
+        1,
+        1274,
+        2560
+      ],
+      [
+        1,
+        1274,
+        2560
+      ],
+      [
+        1,
+        1274,
+        2560
+      ]
+    ],
+    "warm_wall_ms": {
+      "count": 60,
+      "mean": 77.56029816640269,
+      "p50": 77.52456500020344,
+      "p90": 77.6568209999823,
+      "p99": 78.4871055019903,
+      "min": 77.30484000057913,
+      "max": 79.04439000412822
+    },
+    "before_wall_ms": {
+      "count": 30,
+      "mean": 77.49739399926814,
+      "p50": 77.46155000495492,
+      "p90": 77.59878199285595,
+      "p99": 78.0596489016898,
+      "min": 77.30484000057913,
+      "max": 78.09984000050463
+    },
+    "after_wall_ms": {
+      "count": 30,
+      "mean": 77.62320233353724,
+      "p50": 77.58535500033759,
+      "p90": 77.66105099726701,
+      "p99": 78.64798320471891,
+      "min": 77.43184998980723,
+      "max": 79.04439000412822
+    },
+    "warm_device_interval_ms": {
+      "count": 60,
+      "mean": 77.39677874247234,
+      "p50": 77.37784957885742,
+      "p90": 77.50377960205078,
+      "p99": 78.22400672912597,
+      "min": 77.08688354492188,
+      "max": 78.6249008178711
+    },
+    "vs_frozen_eager": {
+      "shape": [
+        1,
+        1274,
+        2560
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000001767,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "profiles": {
+      "pipe": {
+        "raw_csv": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/pipe/raw/liteserver-c001-4_10776_20261007110752481_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "isolated_text_checks_passed": true,
+        "kernel_count_per_forward": 2279.0,
+        "kernel_sum_ms_per_forward": 76.93993366666666
+      },
+      "memory": {
+        "raw_csv": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/memory/raw/liteserver-c001-4_10776_20261007110807092_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "isolated_text_checks_passed": true,
+        "kernel_count_per_forward": 2279.0,
+        "kernel_sum_ms_per_forward": 76.92054466666669
+      }
+    }
+  },
+  "torchair": {
+    "physical_npu": "2",
+    "execution": "torchair",
+    "frozen_inputs_sha256": "494513b62d9046cbe71d434d3b217542dc02ba465aea7d7b143037c5e302b5ae",
+    "text_tokens": 1274,
+    "text_input_shapes": [
+      [
+        1,
+        1274,
+        2560
+      ],
+      [
+        1,
+        1274,
+        128
+      ],
+      [
+        1,
+        1274,
+        128
+      ],
+      [
+        1,
+        1,
+        1274,
+        1274
+      ],
+      [
+        1,
+        1274,
+        2560
+      ],
+      [
+        1,
+        1274,
+        2560
+      ],
+      [
+        1,
+        1274,
+        2560
+      ]
+    ],
+    "warm_wall_ms": {
+      "count": 60,
+      "mean": 62.32811099907849,
+      "p50": 62.34650499391137,
+      "p90": 62.54597300721798,
+      "p99": 63.79853250371524,
+      "min": 61.93698999413755,
+      "max": 64.63530000473838
+    },
+    "before_wall_ms": {
+      "count": 30,
+      "mean": 62.11680733201016,
+      "p50": 62.026690000493545,
+      "p90": 62.34353399340762,
+      "p99": 62.963398294959916,
+      "min": 61.93698999413755,
+      "max": 63.18574999750126
+    },
+    "after_wall_ms": {
+      "count": 30,
+      "mean": 62.53941466614682,
+      "p50": 62.44244499976048,
+      "p90": 62.5798930079327,
+      "p99": 64.22400750423549,
+      "min": 62.29483999777585,
+      "max": 64.63530000473838
+    },
+    "warm_device_interval_ms": {
+      "count": 60,
+      "mean": 62.051897557576496,
+      "p50": 62.0611686706543,
+      "p90": 62.202235794067384,
+      "p99": 62.51613624572754,
+      "min": 61.82590103149414,
+      "max": 62.76375961303711
+    },
+    "vs_frozen_eager": {
+      "shape": [
+        1,
+        1274,
+        2560
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000001767,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "profiles": {
+      "pipe": {
+        "raw_csv": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/torchair/output/profiles/pipe/raw/liteserver-c001-4_11764_20261007110855075_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "isolated_text_checks_passed": true,
+        "kernel_count_per_forward": 1449.0,
+        "kernel_sum_ms_per_forward": 61.934091333333335,
+        "semantic_categories": {
+          "matrix_projections": {
+            "ms_per_forward": 35.430028,
+            "kernels_per_forward": 144.0
+          },
+          "attention": {
+            "ms_per_forward": 11.086642666666666,
+            "kernels_per_forward": 36.0
+          },
+          "rmsnorm_excluding_shared_residual_cast": {
+            "ms_per_forward": 6.528216999999999,
+            "kernels_per_forward": 653.0
+          },
+          "layout_and_projection_split": {
+            "ms_per_forward": 3.5456806666666676,
+            "kernels_per_forward": 216.0
+          },
+          "rotary": {
+            "ms_per_forward": 2.694254,
+            "kernels_per_forward": 288.0
+          },
+          "silu_gate_multiply": {
+            "ms_per_forward": 1.651088,
+            "kernels_per_forward": 36.0
+          },
+          "residual_deepstack_add_shared_norm_cast": {
+            "ms_per_forward": 0.9920473333333333,
+            "kernels_per_forward": 75.0
+          },
+          "other": {
+            "ms_per_forward": 0.006133666666666667,
+            "kernels_per_forward": 1.0
+          }
+        }
+      },
+      "memory": {
+        "raw_csv": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/torchair/output/profiles/memory/raw/liteserver-c001-4_11764_20261007110902959_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "isolated_text_checks_passed": true,
+        "kernel_count_per_forward": 1449.0,
+        "kernel_sum_ms_per_forward": 61.923990999999994,
+        "semantic_categories": {
+          "matrix_projections": {
+            "ms_per_forward": 35.39402766666666,
+            "kernels_per_forward": 144.0
+          },
+          "attention": {
+            "ms_per_forward": 11.123883000000001,
+            "kernels_per_forward": 36.0
+          },
+          "rmsnorm_excluding_shared_residual_cast": {
+            "ms_per_forward": 6.5299580000000015,
+            "kernels_per_forward": 653.0
+          },
+          "layout_and_projection_split": {
+            "ms_per_forward": 3.5310046666666675,
+            "kernels_per_forward": 216.0
+          },
+          "rotary": {
+            "ms_per_forward": 2.6975343333333335,
+            "kernels_per_forward": 288.0
+          },
+          "silu_gate_multiply": {
+            "ms_per_forward": 1.6503716666666668,
+            "kernels_per_forward": 36.0
+          },
+          "residual_deepstack_add_shared_norm_cast": {
+            "ms_per_forward": 0.9918716666666669,
+            "kernels_per_forward": 75.0
+          },
+          "other": {
+            "ms_per_forward": 0.005340000000000001,
+            "kernels_per_forward": 1.0
+          }
+        }
+      }
+    }
+  },
+  "identical_frozen_inputs": true,
+  "speedup": 1.2443871139869682,
+  "latency_reduction_percent": 19.63915498963673
+}

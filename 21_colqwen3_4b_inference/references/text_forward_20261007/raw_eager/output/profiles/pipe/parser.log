@@ -1,0 +1,5 @@
+{
+  "out_json": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/pipe/parsed.json",
+  "out_md": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/pipe/parsed.md",
+  "runs": 1
+}

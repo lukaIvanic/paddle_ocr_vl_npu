@@ -594,3 +594,47 @@ Profiles retain CPU/NPU activity, shapes, call stacks and named forward sections
 The existing MinerU CANN parser writes kernel/operator/shape/PMU summaries beside
 each trace. Profiling can strongly perturb host dispatch; use clean baseline
 samples for latency comparisons and captured kernels for bottleneck analysis.
+
+## Isolated text transformer forward
+
+`profile_warm_text.py` limits both clean timing and CPU/NPU profiler capture to
+the 36 text layers, DeepStack additions and final RMSNorm. It consumes seven
+fixed tensors: hidden states, rotary cos/sin, the causal mask and three DeepStack
+feature tensors. Preparation, vision, mergers, image insertion, token embedding,
+retrieval projection, compile/load and transfers are outside the measured window.
+The real HR page retains its 1,274-token sequence (1,260 image-feature positions
+plus 14 prompt tokens); this is the text transformer over multimodal inputs.
+
+Run eager first to export `text_inputs.pt` and its eager hidden-state reference;
+the separate compiled process must load that same snapshot. Model/checkpoint,
+anchor, options and source provenance are checked, and compiled text output must
+be bit-exact to the frozen eager reference. The owned manual full-model/HF check
+remains a setup gate; existing optimized-vs-manual full-model differences are
+recorded separately and are not claimed as equivalence to HF.
+
+```sh
+source npu-setup
+PYTHON=/workspace/venvs/colqwen3_hf_py312/bin/python
+ANCHOR=tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt
+TEXT_ROOT=tmp/21_colqwen3_4b_inference/text_forward_new
+"$PYTHON" 21_colqwen3_4b_inference/profile_warm_text.py \
+  --model /workspace/models/Ops-Colqwen3-4B --anchor "$ANCHOR" \
+  --execution raw_eager --output-dir "$TEXT_ROOT/raw_eager/output"
+"$PYTHON" 21_colqwen3_4b_inference/profile_warm_text.py \
+  --model /workspace/models/Ops-Colqwen3-4B --anchor "$ANCHOR" \
+  --execution torchair --output-dir "$TEXT_ROOT/torchair/output" \
+  --frozen-inputs "$TEXT_ROOT/raw_eager/output/text_inputs.pt" \
+  --cache-root "$TEXT_ROOT/cache"
+"$PYTHON" 21_colqwen3_4b_inference/analyze_text_profile.py --run-dir "$TEXT_ROOT"
+```
+
+The analyzer verifies 36 attention calls and 144 matrix projections per forward,
+correct attention sequence shapes, and absence of vision/merger/image-insertion
+kernels. It exports every kernel shape/name group, compiled semantic categories,
+and `comparison.json`, checking conservation against the original CANN summaries.
+Profiler timings remain diagnostic; latency uses the 60 clean warmed calls.
+
+On 2026-10-07, isolated B1/1,274-position text forward on one 910B2 measured
+**77.560 ms eager / 62.328 ms compiled**, with bit-exact hidden states and all four
+captures passing text-only isolation checks. See the
+[text-only report and evidence](references/text_forward_20261007/README.md).

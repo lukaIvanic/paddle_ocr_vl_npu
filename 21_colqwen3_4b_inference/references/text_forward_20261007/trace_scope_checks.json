@@ -1,0 +1,46 @@
+{
+  "raw_eager": {
+    "pipe": {
+      "local_trace": "/home/luka/projects/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/profiles/raw_eager/pipe/trace_view.json",
+      "text_only_annotations": true,
+      "annotation_counts": {
+        "colqwen.text.transformer": 3,
+        "colqwen.raw_eager.text_forward.step0": 1,
+        "colqwen.raw_eager.text_forward.step1": 1,
+        "colqwen.raw_eager.text_forward.step2": 1
+      }
+    },
+    "memory": {
+      "local_trace": "/home/luka/projects/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/profiles/raw_eager/memory/trace_view.json",
+      "text_only_annotations": true,
+      "annotation_counts": {
+        "colqwen.text.transformer": 3,
+        "colqwen.raw_eager.text_forward.step0": 1,
+        "colqwen.raw_eager.text_forward.step1": 1,
+        "colqwen.raw_eager.text_forward.step2": 1
+      }
+    }
+  },
+  "torchair": {
+    "pipe": {
+      "local_trace": "/home/luka/projects/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/profiles/torchair/pipe/trace_view.json",
+      "text_only_annotations": true,
+      "annotation_counts": {
+        "colqwen.text.transformer": 3,
+        "colqwen.torchair.text_forward.step0": 1,
+        "colqwen.torchair.text_forward.step1": 1,
+        "colqwen.torchair.text_forward.step2": 1
+      }
+    },
+    "memory": {
+      "local_trace": "/home/luka/projects/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/profiles/torchair/memory/trace_view.json",
+      "text_only_annotations": true,
+      "annotation_counts": {
+        "colqwen.text.transformer": 3,
+        "colqwen.torchair.text_forward.step0": 1,
+        "colqwen.torchair.text_forward.step1": 1,
+        "colqwen.torchair.text_forward.step2": 1
+      }
+    }
+  }
+}

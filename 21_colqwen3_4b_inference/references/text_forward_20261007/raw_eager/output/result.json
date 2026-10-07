@@ -1,0 +1,701 @@
+{
+  "status": "completed",
+  "command": [
+    "21_colqwen3_4b_inference/profile_warm_text.py",
+    "--model",
+    "/workspace/models/Ops-Colqwen3-4B",
+    "--anchor",
+    "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt",
+    "--execution",
+    "raw_eager",
+    "--output-dir",
+    "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output",
+    "--cache-root",
+    "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/cache",
+    "--warmups",
+    "3",
+    "--repeats",
+    "30",
+    "--profile-steps",
+    "3",
+    "--metrics",
+    "pipe",
+    "memory"
+  ],
+  "host": "liteserver-c001-4",
+  "commit": "54f6781722eec4acb4b6bb79741b37161d587a7a",
+  "physical_npu": "2",
+  "execution": "raw_eager",
+  "scope": "Isolated warmed ColQwen text transformer forward on one real B1 page.\n\nOnly the 36 text layers, DeepStack additions and final RMSNorm are timed/profiled.\nHidden states, cos/sin, causal mask and three DeepStack tensors are prepared once\nand resident on NPU. Vision, mergers, token embedding/image insertion, rotary\ninitialization, retrieval projection, transfers, compile and validation are outside\nthe measured window. Eager exports a frozen input/reference snapshot; compiled\nloads that exact snapshot in a separate process. No generation or KV cache.\n",
+  "warmups": 3,
+  "repeats": 30,
+  "profile_steps": 3,
+  "device": "Ascend910B2",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0",
+  "internal_format": true,
+  "input_identity": {
+    "model": "/workspace/models/Ops-Colqwen3-4B",
+    "config_sha256": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b",
+    "weights": {
+      "model-00001-of-00002.safetensors": [
+        4990494880,
+        1783252895994272661
+      ],
+      "model-00002-of-00002.safetensors": [
+        3898332680,
+        1783252504999640161
+      ]
+    },
+    "anchor_sha256": "8d138a0027a412a0aca9dad339b5022cc1e89c08238380b95f4e7ba8ceb521f0",
+    "options": {
+      "fused_projections": true,
+      "weight_format": "native",
+      "gqa": "native",
+      "vision_norm": "manual_fp32"
+    },
+    "source": {
+      "local_modeling_colqwen3.py": "d4a4cfec360aa1801fc68c5acd2bed0f2ed443353dbd2ac24f7a9f91d928d79f",
+      "optimized_prefill.py": "27e9fffc1e3a4d88debd3bec8b6e9116885d216288ce886ca8f2d0c2f6385218",
+      "prepared_prefill.py": "b284e2a2e285a0722c201da7225c1f3bbbbb5a54e5902e1c71479b4a2b513beb",
+      "patch_embedding.py": "19c466a2eb8b0601c62531601981de7f68cd8def36db407f96cb4eeee0435f6d"
+    }
+  },
+  "setup_validation": {
+    "reference_vs_hf": {
+      "shape": [
+        1,
+        1274,
+        2560
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000001665,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "optimized_vs_reference": {
+      "shape": [
+        1,
+        1274,
+        2560
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 0.091552734375,
+      "mean_abs": 0.0003692941681947559,
+      "rmse": 0.001322649884968996,
+      "cosine": 0.9977607602912022,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": false
+    }
+  },
+  "frozen_inputs": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/text_inputs.pt",
+  "frozen_inputs_sha256": "494513b62d9046cbe71d434d3b217542dc02ba465aea7d7b143037c5e302b5ae",
+  "text_tokens": 1274,
+  "batch_size": 1,
+  "text_layers": 36,
+  "text_input_shapes": [
+    [
+      1,
+      1274,
+      2560
+    ],
+    [
+      1,
+      1274,
+      128
+    ],
+    [
+      1,
+      1274,
+      128
+    ],
+    [
+      1,
+      1,
+      1274,
+      1274
+    ],
+    [
+      1,
+      1274,
+      2560
+    ],
+    [
+      1,
+      1274,
+      2560
+    ],
+    [
+      1,
+      1274,
+      2560
+    ]
+  ],
+  "text_input_dtypes": [
+    "torch.float16",
+    "torch.float16",
+    "torch.float16",
+    "torch.bool",
+    "torch.float16",
+    "torch.float16",
+    "torch.float16"
+  ],
+  "before_profile": {
+    "wall_ms": {
+      "count": 30,
+      "mean": 77.49739399926814,
+      "p50": 77.46155000495492,
+      "p90": 77.59878199285595,
+      "p99": 78.0596489016898,
+      "min": 77.30484000057913,
+      "max": 78.09984000050463
+    },
+    "device_interval_ms": {
+      "count": 30,
+      "mean": 77.3193468729655,
+      "p50": 77.3015022277832,
+      "p90": 77.40295867919922,
+      "p99": 77.80457221984864,
+      "min": 77.08688354492188,
+      "max": 77.94541931152344
+    },
+    "wall_samples_ms": [
+      77.96125000459142,
+      77.30484000057913,
+      77.46035000309348,
+      77.47738999023568,
+      77.36548999673687,
+      77.53352000145242,
+      77.41456000076141,
+      77.3704599996563,
+      77.43689000199083,
+      77.46880999184214,
+      77.51214000745676,
+      77.4630699888803,
+      77.34154000354465,
+      77.44194999395404,
+      77.45922000322025,
+      77.49660999979824,
+      77.41620000160765,
+      77.51022999582347,
+      77.46275000681635,
+      77.5940399907995,
+      77.53978999971878,
+      77.64146001136396,
+      77.38873999915086,
+      77.43050999124534,
+      77.53037998918444,
+      77.37960999656934,
+      77.43564000702463,
+      78.09984000050463,
+      77.52700000128243,
+      77.45753999915905
+    ],
+    "device_samples_ms": [
+      77.08688354492188,
+      77.15303802490234,
+      77.27168273925781,
+      77.34217834472656,
+      77.21961975097656,
+      77.39775848388672,
+      77.26390075683594,
+      77.22213745117188,
+      77.30084228515625,
+      77.32331848144531,
+      77.33851623535156,
+      77.31490325927734,
+      77.19539642333984,
+      77.2910385131836,
+      77.30696105957031,
+      77.3512191772461,
+      77.27786254882812,
+      77.36609649658203,
+      77.30216217041016,
+      77.44976043701172,
+      77.36213684082031,
+      77.4597396850586,
+      77.226318359375,
+      77.26571655273438,
+      77.3913803100586,
+      77.23164367675781,
+      77.26888275146484,
+      77.94541931152344,
+      77.3666763305664,
+      77.28721618652344
+    ]
+  },
+  "vs_frozen_eager": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": true,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rmse": 0.0,
+    "cosine": 1.0000000000001767,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": true
+  },
+  "profiles": {
+    "pipe": {
+      "profiled_wall_ms": {
+        "count": 3,
+        "mean": 418.8065999963631,
+        "p50": 417.97686999780126,
+        "p90": 420.25713399634697,
+        "p99": 420.77019339601975,
+        "min": 417.6157299953047,
+        "max": 420.8271999959834
+      },
+      "diagnostic_only": true,
+      "parser_command": [
+        "/workspace/venvs/colqwen3_hf_py312/bin/python",
+        "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/parse_npu_profile.py",
+        "--profile-dir",
+        "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/pipe/raw",
+        "--topn",
+        "40",
+        "--out-json",
+        "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/pipe/parsed.json",
+        "--out-md",
+        "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/pipe/parsed.md",
+        "--skip-trace"
+      ],
+      "parsed_json": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/pipe/parsed.json",
+      "parsed_markdown": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/pipe/parsed.md",
+      "kernel_accounting": {
+        "kernel_rows": 6837,
+        "profile_steps": 3,
+        "kernel_duration_sum_ms_per_forward": 76.93993366666665,
+        "interval_union_ms": 230.7835,
+        "interval_envelope_ms": 1255.82075,
+        "uncovered_envelope_ms": 1025.03725,
+        "timeline_scope": "All captured task intervals; gaps include boundaries between forwards. No claim of pure compute utilization or CPU causality.",
+        "top_types": [
+          {
+            "type": "MatMulV3",
+            "count": 324,
+            "duration_us": 59623.915,
+            "duration_ms_per_forward": 19.874638333333333,
+            "count_per_forward": 108.0,
+            "kernel_sum_percent": 25.831369207358435
+          },
+          {
+            "type": "MatMulV2",
+            "count": 108,
+            "duration_us": 49731.54199999999,
+            "duration_ms_per_forward": 16.577180666666663,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 21.545613411216827
+          },
+          {
+            "type": "PromptFlashAttention",
+            "count": 108,
+            "duration_us": 33201.38799999999,
+            "duration_ms_per_forward": 11.06712933333333,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 14.384116031709082
+          },
+          {
+            "type": "Mul",
+            "count": 1410,
+            "duration_us": 22687.13199999996,
+            "duration_ms_per_forward": 7.56237733333332,
+            "count_per_forward": 470.0,
+            "kernel_sum_percent": 9.828936643091536
+          },
+          {
+            "type": "Transpose",
+            "count": 324,
+            "duration_us": 11063.940000000002,
+            "duration_ms_per_forward": 3.687980000000001,
+            "count_per_forward": 108.0,
+            "kernel_sum_percent": 4.793323602250227
+          },
+          {
+            "type": "Cast",
+            "count": 870,
+            "duration_us": 9717.052999999985,
+            "duration_ms_per_forward": 3.2390176666666615,
+            "count_per_forward": 290.0,
+            "kernel_sum_percent": 4.209800440820928
+          },
+          {
+            "type": "Pows",
+            "count": 435,
+            "duration_us": 9008.322999999999,
+            "duration_ms_per_forward": 3.002774333333333,
+            "count_per_forward": 145.0,
+            "kernel_sum_percent": 3.902751393499382
+          },
+          {
+            "type": "ReduceMean",
+            "count": 435,
+            "duration_us": 8384.751000000007,
+            "duration_ms_per_forward": 2.7949170000000025,
+            "count_per_forward": 145.0,
+            "kernel_sum_percent": 3.632596061375172
+          },
+          {
+            "type": "Add",
+            "count": 876,
+            "duration_us": 7212.045000000011,
+            "duration_ms_per_forward": 2.4040150000000033,
+            "count_per_forward": 292.0,
+            "kernel_sum_percent": 3.12453479673523
+          },
+          {
+            "type": "AsStrided",
+            "count": 540,
+            "duration_us": 5771.138999999995,
+            "duration_ms_per_forward": 1.9237129999999982,
+            "count_per_forward": 180.0,
+            "kernel_sum_percent": 2.500278994695085
+          },
+          {
+            "type": "Slice",
+            "count": 432,
+            "duration_us": 5716.159,
+            "duration_ms_per_forward": 1.9053863333333332,
+            "count_per_forward": 144.0,
+            "kernel_sum_percent": 2.4764595477664417
+          },
+          {
+            "type": "Swish",
+            "count": 108,
+            "duration_us": 3707.676999999998,
+            "duration_ms_per_forward": 1.2358923333333325,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 1.6063080307395285
+          },
+          {
+            "type": "ConcatD",
+            "count": 216,
+            "duration_us": 2047.3179999999995,
+            "duration_ms_per_forward": 0.6824393333333332,
+            "count_per_forward": 72.0,
+            "kernel_sum_percent": 0.886976763315033
+          },
+          {
+            "type": "Neg",
+            "count": 216,
+            "duration_us": 1704.317999999999,
+            "duration_ms_per_forward": 0.5681059999999997,
+            "count_per_forward": 72.0,
+            "kernel_sum_percent": 0.7383759940075503
+          },
+          {
+            "type": "Rsqrt",
+            "count": 435,
+            "duration_us": 1243.1010000000006,
+            "duration_ms_per_forward": 0.4143670000000002,
+            "count_per_forward": 145.0,
+            "kernel_sum_percent": 0.538559081419536
+          }
+        ]
+      },
+      "replay_parity": {
+        "shape": [
+          1,
+          1274,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000001767,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      }
+    },
+    "memory": {
+      "profiled_wall_ms": {
+        "count": 3,
+        "mean": 426.33051333056454,
+        "p50": 423.70965000009164,
+        "p90": 430.55961799109355,
+        "p99": 432.100860789069,
+        "min": 423.0097800027579,
+        "max": 432.272109988844
+      },
+      "diagnostic_only": true,
+      "parser_command": [
+        "/workspace/venvs/colqwen3_hf_py312/bin/python",
+        "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/parse_npu_profile.py",
+        "--profile-dir",
+        "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/memory/raw",
+        "--topn",
+        "40",
+        "--out-json",
+        "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/memory/parsed.json",
+        "--out-md",
+        "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/memory/parsed.md",
+        "--skip-trace"
+      ],
+      "parsed_json": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/memory/parsed.json",
+      "parsed_markdown": "tmp/21_colqwen3_4b_inference/text_forward_20261007T110218_54f67817/raw_eager/output/profiles/memory/parsed.md",
+      "kernel_accounting": {
+        "kernel_rows": 6837,
+        "profile_steps": 3,
+        "kernel_duration_sum_ms_per_forward": 76.92054466666667,
+        "interval_union_ms": 230.72525,
+        "interval_envelope_ms": 1278.022,
+        "uncovered_envelope_ms": 1047.29675,
+        "timeline_scope": "All captured task intervals; gaps include boundaries between forwards. No claim of pure compute utilization or CPU causality.",
+        "top_types": [
+          {
+            "type": "MatMulV3",
+            "count": 324,
+            "duration_us": 59296.48499999998,
+            "duration_ms_per_forward": 19.76549499999999,
+            "count_per_forward": 108.0,
+            "kernel_sum_percent": 25.695989394840208
+          },
+          {
+            "type": "MatMulV2",
+            "count": 108,
+            "duration_us": 50095.159000000014,
+            "duration_ms_per_forward": 16.69838633333334,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 21.70861686652817
+          },
+          {
+            "type": "PromptFlashAttention",
+            "count": 108,
+            "duration_us": 33169.362000000016,
+            "duration_ms_per_forward": 11.056454000000006,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 14.373863377999834
+          },
+          {
+            "type": "Mul",
+            "count": 1410,
+            "duration_us": 22697.01500000002,
+            "duration_ms_per_forward": 7.565671666666673,
+            "count_per_forward": 470.0,
+            "kernel_sum_percent": 9.83569695125318
+          },
+          {
+            "type": "Transpose",
+            "count": 324,
+            "duration_us": 11060.690000000002,
+            "duration_ms_per_forward": 3.6868966666666676,
+            "count_per_forward": 108.0,
+            "kernel_sum_percent": 4.793123453095328
+          },
+          {
+            "type": "Cast",
+            "count": 870,
+            "duration_us": 9638.414000000006,
+            "duration_ms_per_forward": 3.2128046666666688,
+            "count_per_forward": 290.0,
+            "kernel_sum_percent": 4.17678356359706
+          },
+          {
+            "type": "Pows",
+            "count": 435,
+            "duration_us": 8791.321999999998,
+            "duration_ms_per_forward": 2.930440666666666,
+            "count_per_forward": 145.0,
+            "kernel_sum_percent": 3.8096982793942242
+          },
+          {
+            "type": "ReduceMean",
+            "count": 435,
+            "duration_us": 8426.498999999996,
+            "duration_ms_per_forward": 2.8088329999999986,
+            "count_per_forward": 145.0,
+            "kernel_sum_percent": 3.651603108339923
+          },
+          {
+            "type": "Add",
+            "count": 876,
+            "duration_us": 7316.985000000002,
+            "duration_ms_per_forward": 2.4389950000000007,
+            "count_per_forward": 292.0,
+            "kernel_sum_percent": 3.1707978805523633
+          },
+          {
+            "type": "Slice",
+            "count": 432,
+            "duration_us": 5829.506999999998,
+            "duration_ms_per_forward": 1.9431689999999993,
+            "count_per_forward": 144.0,
+            "kernel_sum_percent": 2.5262028609140446
+          },
+          {
+            "type": "AsStrided",
+            "count": 540,
+            "duration_us": 5747.4639999999945,
+            "duration_ms_per_forward": 1.9158213333333316,
+            "count_per_forward": 180.0,
+            "kernel_sum_percent": 2.4906497238618073
+          },
+          {
+            "type": "Swish",
+            "count": 108,
+            "duration_us": 3701.4300000000003,
+            "duration_ms_per_forward": 1.23381,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 1.6040058028016908
+          },
+          {
+            "type": "ConcatD",
+            "count": 216,
+            "duration_us": 2030.2139999999993,
+            "duration_ms_per_forward": 0.6767379999999997,
+            "count_per_forward": 72.0,
+            "kernel_sum_percent": 0.8797883620463527
+          },
+          {
+            "type": "Neg",
+            "count": 216,
+            "duration_us": 1708.730999999999,
+            "duration_ms_per_forward": 0.5695769999999997,
+            "count_per_forward": 72.0,
+            "kernel_sum_percent": 0.7404744759260974
+          },
+          {
+            "type": "Rsqrt",
+            "count": 435,
+            "duration_us": 1252.3570000000004,
+            "duration_ms_per_forward": 0.4174523333333335,
+            "count_per_forward": 145.0,
+            "kernel_sum_percent": 0.5427058988497196
+          }
+        ]
+      },
+      "replay_parity": {
+        "shape": [
+          1,
+          1274,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000001767,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      }
+    }
+  },
+  "after_profile": {
+    "wall_ms": {
+      "count": 30,
+      "mean": 77.62320233353724,
+      "p50": 77.58535500033759,
+      "p90": 77.66105099726701,
+      "p99": 78.64798320471891,
+      "min": 77.43184998980723,
+      "max": 79.04439000412822
+    },
+    "device_interval_ms": {
+      "count": 30,
+      "mean": 77.47421061197916,
+      "p50": 77.44586181640625,
+      "p90": 77.51861267089843,
+      "p99": 78.3088306427002,
+      "min": 77.30419921875,
+      "max": 78.6249008178711
+    },
+    "wall_samples_ms": [
+      79.04439000412822,
+      77.60504000179935,
+      77.6774700061651,
+      77.50939000106882,
+      77.50911000766791,
+      77.6018400065368,
+      77.50999000563752,
+      77.64188000874128,
+      77.59911999164615,
+      77.5057799910428,
+      77.6602499972796,
+      77.61156000196934,
+      77.43184998980723,
+      77.63029000489041,
+      77.56651000818238,
+      77.52212999912445,
+      77.56699000310618,
+      77.53326000238303,
+      77.60586999938823,
+      77.61729999037925,
+      77.45556998997927,
+      77.6564400002826,
+      77.53187000344042,
+      77.58025999646634,
+      77.61785999173298,
+      77.59045000420883,
+      77.57732000027318,
+      77.66825999715365,
+      77.51498000288848,
+      77.55303999874741
+    ],
+    "device_samples_ms": [
+      78.6249008178711,
+      77.46730041503906,
+      77.53500366210938,
+      77.37728118896484,
+      77.37841796875,
+      77.45378112792969,
+      77.3762435913086,
+      77.50289916992188,
+      77.4572982788086,
+      77.35304260253906,
+      77.51756286621094,
+      77.47383880615234,
+      77.30419921875,
+      77.49368286132812,
+      77.4173812866211,
+      77.39295959472656,
+      77.42220306396484,
+      77.3889389038086,
+      77.47254180908203,
+      77.47608184814453,
+      77.31044006347656,
+      77.51170349121094,
+      77.40267944335938,
+      77.43794250488281,
+      77.4776382446289,
+      77.4538803100586,
+      77.43023681640625,
+      77.52806091308594,
+      77.38411712646484,
+      77.40406036376953
+    ]
+  },
+  "final_replay_parity": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": true,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rmse": 0.0,
+    "cosine": 1.0000000000001767,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": true
+  },
+  "finite": true
+}
