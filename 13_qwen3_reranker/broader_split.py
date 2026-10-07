@@ -122,7 +122,7 @@ def acquire(args):
   if p.exists():
    cached=read(p)
    if cached['seed']!=args.seed or cached['revision']!=REVISION:raise ValueError('Raw cache identity mismatch')
-   if all(len(r['pos'])==r['original_positive_count'] for r in cached['rows']):
+   if all(len(r['pos'])==r['original_positive_count'] and len(r['neg'])==r['original_negative_count'] for r in cached['rows']):
     return {'config':config,'cached':True,'rows':len(cached['rows'])}
   rng=random.Random(f'{args.seed}/{config}')
   chosen_set=set()
@@ -144,12 +144,12 @@ def acquire(args):
       rr=random.Random(f'{args.seed}/{config}/{base+idx}')
       pos=row['pos'];neg=row['neg']
       result.append({'id':f'{config}/{base+idx}','source':source,'config':config,'query':row['query'],
-       'pos':pos,'neg':rr.sample(neg,min(len(neg),32)),
+       'pos':pos,'neg':neg,
        'original_positive_count':len(pos),'original_negative_count':len(neg)})
     base+=nr
    if base>chosen[-1]:break
   assert len(result)==n,(config,len(result),n)
-  save(p,{'sampling':'seeded random circular blocks of at most 512 rows within source/length strata','rows':result,'revision':REVISION,'seed':args.seed,'assets':assets,'pool_cap':{'positive':None,'negative':32}})
+  save(p,{'sampling':'seeded random circular blocks of at most 512 rows within source/length strata','rows':result,'revision':REVISION,'seed':args.seed,'assets':assets,'pool_cap':{'positive':None,'negative':None}})
   return {'config':config,'rows':n,'seconds':round(time.monotonic()-t,2),'bytes':p.stat().st_size}
  with concurrent.futures.ThreadPoolExecutor(args.workers) as pool:
   for future in concurrent.futures.as_completed([pool.submit(get,j) for j in jobs]):
@@ -197,6 +197,8 @@ def clean_pool(rows, source, registry, blocked):
  for r in rows:
   if len(r['pos']) != r['original_positive_count']:
    raise ValueError('Positive pool was capped; reacquire before candidate construction')
+  if len(r['neg']) != r['original_negative_count']:
+   raise ValueError('Negative pool was capped; reacquire before candidate construction')
   q=key(r['query']);strict=strict_key(q)
   if not strict or strict in blocked:counts['benchmark_or_upstream_holdout_query']+=1;continue
   if strict in seen:counts['duplicate_query']+=1;continue
