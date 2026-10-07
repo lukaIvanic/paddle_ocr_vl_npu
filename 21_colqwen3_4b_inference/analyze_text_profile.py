@@ -28,12 +28,12 @@ def compiled_category(g):
         or kind == 'Mul' and rank == 1
         or kind == 'Cast' and g['input_dtypes'] == 'FLOAT16' and g['output_dtypes'] == 'FLOAT'):
         return 'rmsnorm_excluding_shared_residual_cast'
-    if (kind in ('Neg', 'ConcatV2D') or names == ['MulMulAdd']
+    if ('Rotary' in kind or kind in ('Neg', 'ConcatV2D') or names == ['MulMulAdd']
         or kind == 'SplitVD' and rank == 4):
         return 'rotary'
     if kind in ('Transpose', 'SplitVD'):
         return 'layout_and_projection_split'
-    if names == ['SwishMul']:
+    if names == ['SwishMul'] or kind.lower() == 'swiglu':
         return 'silu_gate_multiply'
     if kind == 'Add':
         return 'residual_deepstack_add_shared_norm_cast'

@@ -29,6 +29,7 @@ from patch_embedding import LinearPatchEmbed, prepare_linear_patch_inputs
 from prepared_prefill import StageCompiler, prepare_text, finish_embeddings
 from profile_warm_forward import capture, emit, measure
 from run_hf_baseline import sha256
+from text_forward_variants import VARIANTS, VariantTextStage, variant_identity
 
 
 class TextForward:
@@ -73,7 +74,11 @@ def run(args, result):
     result['input_identity'] = provenance
     emit('text_model_load_start', execution=args.execution)
     model = LocalColQwen3.from_pretrained(args.model, device=args.device)
-    text = OptimizedTextStage(model, options).eval()
+    text = (OptimizedTextStage(model, options) if args.variant == 'baseline' else
+            VariantTextStage(model, options, args.variant)).eval()
+    result['variant'] = variant_identity(args.variant)
+    result['variant_source_sha256'] = sha256(Path(__file__).with_name('text_forward_variants.py'))
+    result['runner_source_sha256'] = sha256(__file__)
     if args.frozen_inputs:
         saved = torch.load(args.frozen_inputs, map_location='cpu', weights_only=True)
         if saved['identity'] != provenance:
@@ -115,12 +120,22 @@ def run(args, result):
                   text_input_dtypes=[str(t.dtype) for t in tensors])
     if len(tensors) != 7 or result['batch_size'] != 1:
         raise ValueError('Expected seven frozen B1 text tensors')
+    candidate_eager = text(*tensors)
+    torch.npu.synchronize()
+    result['candidate_eager_vs_frozen'] = compare(candidate_eager, expected)
+    candidate_expected = candidate_eager.cpu()
+    del candidate_eager
     call = text
     if args.execution == 'torchair':
         compiler = StageCompiler(args.model, args.cache_root, emit)
         configure_compiler(compiler, options)
         compiler.identity['internal_format'] = True
-        call = compiler.get('optimized_text', text, tensors)
+        stage = 'optimized_text'
+        if args.variant != 'baseline':
+            compiler.identity['text_variant'] = result['variant']
+            compiler.identity['variant_source_sha256'] = result['variant_source_sha256']
+            stage = 'candidate_text'
+        call = compiler.get(stage, text, tensors)
         call(*tensors)
         torch.npu.synchronize()
         result['cache_records'] = compiler.records
@@ -130,8 +145,16 @@ def run(args, result):
     torch.npu.synchronize()
     result['before_profile'], output = measure(fn, args.repeats)
     result['vs_frozen_eager'] = compare(output, expected)
-    if not result['vs_frozen_eager']['passed'] or not result['vs_frozen_eager']['exact']:
+    result['vs_candidate_eager'] = compare(output, candidate_expected)
+    result['adoption_eligible'] = (result['candidate_eager_vs_frozen']['passed'] and
+                                   result['vs_frozen_eager']['passed'] and
+                                   result['vs_candidate_eager']['passed'])
+    if args.variant == 'baseline' and not result['vs_frozen_eager']['exact']:
         raise RuntimeError('Isolated text forward differs from frozen eager reference')
+    if not result['adoption_eligible'] and not args.diagnostic_parity:
+        raise RuntimeError('Text variant failed existing atol/rtol=0.002 numerical gate')
+    emit('text_variant_parity', variant=args.variant, adoption_eligible=result['adoption_eligible'],
+         vs_frozen=result['vs_frozen_eager'], vs_candidate=result['vs_candidate_eager'])
     emit('text_warm_baseline', execution=args.execution, timing=result['before_profile'])
     result['profiles'] = {}
     for metric in args.metrics:
@@ -159,6 +182,9 @@ def main():
     parser.add_argument('--anchor', type=Path, required=True)
     parser.add_argument('--frozen-inputs', type=Path)
     parser.add_argument('--execution', choices=('raw_eager', 'torchair'), required=True)
+    parser.add_argument('--variant', choices=tuple(VARIANTS), default='baseline')
+    parser.add_argument('--diagnostic-parity', action='store_true',
+                        help='Profile failed candidates for diagnosis; never mark them adoption-eligible')
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--cache-root', type=Path, default=Path('.runtime_cache/21_colqwen3/prepared'))
     parser.add_argument('--device', default='npu:0')
@@ -171,6 +197,8 @@ def main():
         parser.error('NPU and positive warmups/repeats/profile steps required')
     if args.execution == 'torchair' and not args.frozen_inputs:
         parser.error('Compiled text must load the eager --frozen-inputs snapshot')
+    if args.variant != 'baseline' and not args.frozen_inputs:
+        parser.error('Text variants must use the existing baseline --frozen-inputs snapshot')
     args.output_dir.mkdir(parents=True, exist_ok=False)
     result = dict(status='started', command=sys.argv, host=platform.node(),
                   commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
