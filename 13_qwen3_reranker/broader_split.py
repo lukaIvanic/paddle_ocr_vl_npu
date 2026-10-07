@@ -24,8 +24,8 @@ SPECS = {
  'miracl_en': ('en',640,32,GENERIC),
  'trivia': ('en',480,24,GENERIC),
  'mldr_en': ('en',320,16,'Given a question, retrieve relevant documents that answer the question'),
- 'pubmed_qa_labeled': ('en',160,8,'Given a biomedical question, retrieve research abstracts that help answer the question'),
- 'colliee': ('en',160,8,'Given a legal question, retrieve relevant legal provisions that help answer the question'),
+ 'pubmed_qa_labeled': ('en',160,8,'Given a biomedical question, retrieve research passages that help answer the question'),
+ 'colliee': ('en',160,8,'Given a legal statement or question, retrieve legal provisions relevant to assessing it'),
  't2ranking': ('zh',1120,56,TASKS['T2Retrieval'][2]),
  'cMedQAv2': ('zh',960,48,TASKS['CmedqaRetrieval'][2]),
  'miracl_zh': ('zh',640,32,GENERIC),
@@ -114,7 +114,7 @@ def acquire(args):
  jobs=[]
  for source,(_,n,v,_) in SPECS.items():
   cs={c:nr for c,nr in counts.items() if c.split('_len-')[0]==source}
-  # Finite uniform sample stratified by published length bucket, never only shortest bucket.
+  # Bounded sample stratified by published length bucket, never only shortest bucket.
   q=quotas(min(sum(cs.values()),max(3*(n+v),512)),cs,cs,minimum=2)
   jobs.extend((source,c,k) for c,k in q.items() if k)
  def get(job):
@@ -176,7 +176,7 @@ class NearIndex:
   from sklearn.feature_extraction.text import TfidfVectorizer
   self.texts=sorted(set(key(t) for t in texts if key(t)))
   self.exact={strict_key(t) for t in self.texts}
-  self.v=TfidfVectorizer(analyzer='char',ngram_range=(3,5),max_features=400000,dtype='float32')
+  self.v=TfidfVectorizer(analyzer='char',ngram_range=(3,5),max_features=400000,dtype=__import__('numpy').float32)
   self.matrix=self.v.fit_transform(self.texts)
  def blocked(self,texts):
   result={};matrix=self.v.transform([key(t) for t in texts])
@@ -254,15 +254,16 @@ def build(args):
   for p in sorted((out/'rows').glob(source+'_len-*.json.gz')):rows.extend(read(p)['rows'])
   rows,counts=clean_pool(rows,source,registry.get(source),blocked)
   near=index.blocked([r['query'] for r in rows]);rows=[r for i,r in enumerate(rows) if i not in near]
-  counts['lexical_near_excluded']=len(near);audit['sources'][source]={'cleaning':counts,'available':len(rows)}
+  counts['lexical_near_excluded']=len(near);audit['sources'][source]={'cleaning':counts,'available':len(rows),'raw_negative_pool_counts':dict(collections.Counter(r['original_negative_count'] for r in rows)), 'positive_pool_counts':dict(collections.Counter(r['original_positive_count'] for r in rows))}
   random.Random(f'{args.seed}/{source}/split').shuffle(rows);cleaned[source]=rows
   print('CLEAN',source,len(rows),counts,flush=True)
  # Choose validation first; then screen every training candidate against ALL validation queries.
- validation=[];train=[];global_seen=set();val_ids=set()
+ validation=[];train=[];global_seen=set();val_ids=set();not_fitting=collections.Counter()
  for source,(_,n,v,_) in SPECS.items():
   for r in cleaned[source]:
    if strict_key(r['query']) in global_seen:continue
    g=sample_group(r,fits,args.seed)
+   if g is None:not_fitting[source]+=1
    if g:
     validation.append(g);val_ids.add(r['id']);global_seen.add(strict_key(r['query']))
    if sum(g['source']==source for g in validation)==v:break
@@ -275,6 +276,7 @@ def build(args):
   for r in rows:
    if strict_key(r['query']) in global_seen:continue
    g=sample_group(r,fits,args.seed)
+   if g is None:not_fitting[source]+=1
    if g:selected.append(g);global_seen.add(strict_key(r['query']))
    if len(selected)==n:break
   assert len(selected)==n,('training quota',source,len(selected),n)
@@ -304,6 +306,7 @@ def build(args):
     b['prompt_tokens'].append(nt(body(g['instruction'],g['query'],d,'document_first'))+overhead)
     if 'candidate_origin' in g:b[g['candidate_origin'][i]+'_document_tokens'].append(nt(d))
   audit['lengths'][section]={s:{k:quantiles(v) for k,v in b.items()} for s,b in buckets.items()}
+ audit['groups_rejected_for_insufficient_fitting_supplied_candidates']=dict(not_fitting)
  audit['candidate_origins']=dict(collections.Counter(o for g in train for o in g['candidate_origin']))
  audit['candidate_difficulty']='NOT YET TEACHER-SCORED; supplied negative does not establish hardness or correctness'
  audit['checks']={'query_exact_and_lexical_near_screened':True,'upstream_train_membership_for_reopened_families':True,
@@ -319,6 +322,7 @@ def build(args):
    'quotas':SPECS,'pending_sources':PENDING,'registries_sha256':digest((out/'registries.json.gz').read_bytes()),
    'raw_sample_sha256':{p.name:digest(p.read_bytes()) for p in sorted((out/'rows').glob('*.json.gz'))},
    'benchmark_panel_sha256':digest(args.panels.read_bytes()),'instructions':'pinned Qwen task prompts where matching; explicitly authored descriptive prompts for legal/biomedical/long-document sources',
+   'raw_sampling':'See each cached stratum: uniform rows for completed earlier samples, random circular blocks for remaining strata; negative pools uniformly subsampled to at most 32, all positives preserved',
    'candidate_selection':'seeded positive and seven distinct supplied negatives from the same released row; no supplementation; fail if quota cannot be met',
    'supervised_loss_status':'not approved by this artifact; teacher/label disagreement audit still required'}}
  save(out/'dataset.json.gz',result);audit['dataset_sha256']=digest((out/'dataset.json.gz').read_bytes())
