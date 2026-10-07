@@ -24,6 +24,11 @@ class Attention(nn.Module):
                                 self.gqa, layout=self.layout)
 
 
+class Padding(nn.Module):
+    def forward(self, hidden, cos, sin, mask, deep0, deep1, deep2):
+        return prepare_310p_text_inputs(hidden, cos, sin, mask, deep0, deep1, deep2)
+
+
 @torch.inference_mode()
 def main():
     p = argparse.ArgumentParser(description=__doc__)
@@ -42,8 +47,10 @@ def main():
     saved = torch.load(args.reference_snapshot, map_location='cpu', weights_only=True)
     validate_snapshot_identity(saved['identity'], identity(args, options), reference_only=True)
     tensors = tuple(t.to('npu:0').contiguous() for t in saved['text_inputs'])
-    hidden, cos, sin, mask, *_ = prepare_310p_text_inputs(*tensors)
-    layer = OptimizedTextStage(LocalColQwen3.from_pretrained(args.model, device='npu:0'), options).layers[0]
+    prepared = prepare_310p_text_inputs(*tensors)
+    hidden, cos, sin, mask, *_ = prepared
+    text = OptimizedTextStage(LocalColQwen3.from_pretrained(args.model, device='npu:0'), options)
+    layer = text.layers[0]
     cos, sin = cos.unsqueeze(2), sin.unsqueeze(2)
     x = layer.norm1(hidden)
     q, k, v = layer.qkv(x).split(layer.qkv.sizes, -1)
@@ -71,6 +78,18 @@ def main():
     actual = compiled(*call_args)
     torch.npu.synchronize()
     print('FIRST_BLOCK_PARITY', json.dumps(compare(actual, expected)), flush=True)
+    module = Padding()
+    expected = module(*tensors)
+    compiled = compiler.get('padding', module, tensors)
+    actual = compiled(*tensors)
+    torch.npu.synchronize()
+    for name, a, b in zip(('hidden','cos','sin','mask','deep0','deep1','deep2'), actual, expected):
+        print('PADDING_PARITY', name, 'exact', bool(torch.equal(a,b)), flush=True)
+    expected = text(*prepared)
+    compiled = compiler.get('prealigned_stack', text, prepared)
+    actual = compiled(*prepared)
+    torch.npu.synchronize()
+    print('PREALIGNED_STACK_PARITY', json.dumps(compare(actual, expected)), flush=True)
 
 
 if __name__ == '__main__':
