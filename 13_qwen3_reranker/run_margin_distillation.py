@@ -51,6 +51,7 @@ def main():
         target_path = args.output / 'teacher.json'
         target = read(target_path) if target_path.exists() else {
             'dataset_sha256': result['dataset_sha256'], 'model_sha256': result['model_sha256'],
+            'lengths': runtime.lengths,
             'scoring': 'FP32 weights, BF16 autocast, yes-minus-no logits, query first, total max8192',
             'scores': {}, 'seconds': {}}
         assert target['dataset_sha256'] == result['dataset_sha256']
@@ -73,6 +74,7 @@ def main():
     assert control['passed'], 'Implementation control must pass before training'
     teacher = read(args.teacher)
     assert teacher['dataset_sha256'] == result['dataset_sha256']
+    assert teacher['lengths'] == runtime.lengths, 'Teacher/student tokenization or truncation differs'
     result['teacher_sha256'] = digest(args.teacher)
     result['control_sha256'] = digest(args.control)
     result['recipe'] = {'loss': 'mean all unordered within-query Margin-MSE pairs, equal query weights',
