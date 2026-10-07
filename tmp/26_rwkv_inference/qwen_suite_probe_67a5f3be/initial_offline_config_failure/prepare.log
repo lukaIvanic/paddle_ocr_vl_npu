@@ -1,0 +1,45 @@
+Selected physical NPU 2 as logical npu:0 (health/idle check; not a reservation)
+Python: /usr/local/python3.12.13/bin/python3
+Using the latest cached version of the dataset since mteb/arguana couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___arguana/corpus/0.0.0/c22ab2a51041ffd869aaddef7af8d8215647e41a (last modified on Sat Oct  3 15:56:00 2026).
+Using the latest cached version of the dataset since mteb/arguana couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___arguana/queries/0.0.0/c22ab2a51041ffd869aaddef7af8d8215647e41a (last modified on Wed Oct  7 09:12:40 2026).
+Using the latest cached version of the dataset since mteb/arguana couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Traceback (most recent call last):
+  File "/workspace/repos/rwkv-suite-probe-4a9f78ed/26_rwkv_inference/probe_qwen_candidates.py", line 102, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/repos/rwkv-suite-probe-4a9f78ed/26_rwkv_inference/probe_qwen_candidates.py", line 101, in main
+    p.add_argument('--worker-index',type=int,choices=[0,1]);a=p.parse_args();prepare(a) if a.mode=='prepare' else measure(a)
+                                                                             ^^^^^^^^^^
+  File "/workspace/repos/rwkv-suite-probe-4a9f78ed/26_rwkv_inference/probe_qwen_candidates.py", line 37, in prepare
+    if suite=='english':task,counts=load_task(name,SimpleNamespace(state={}))
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/rwkv-suite-probe-4a9f78ed/22_qwen3_embedding_benchmark/run_english_suite.py", line 73, in load_task
+    task.load_data()
+  File "/workspace/venvs/qwen3_embedding_eval_py312/lib/python3.12/site-packages/mteb/abstasks/AbsTaskRetrieval.py", line 294, in load_data
+    ).load(split=split)
+      ^^^^^^^^^^^^^^^^^
+  File "/workspace/venvs/qwen3_embedding_eval_py312/lib/python3.12/site-packages/mteb/abstasks/AbsTaskRetrieval.py", line 101, in load
+    self._load_qrels(split)
+  File "/workspace/venvs/qwen3_embedding_eval_py312/lib/python3.12/site-packages/mteb/abstasks/AbsTaskRetrieval.py", line 182, in _load_qrels
+    qrels_ds = load_dataset(
+               ^^^^^^^^^^^^^
+  File "/workspace/repos/rwkv-suite-probe-4a9f78ed/22_qwen3_embedding_benchmark/run_english_suite.py", line 69, in pinned_loader
+    return original(repo, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/venvs/qwen3_embedding_eval_py312/lib/python3.12/site-packages/datasets/load.py", line 2606, in load_dataset
+    builder_instance = load_dataset_builder(
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/venvs/qwen3_embedding_eval_py312/lib/python3.12/site-packages/datasets/load.py", line 2314, in load_dataset_builder
+    builder_instance: DatasetBuilder = builder_cls(
+                                       ^^^^^^^^^^^^
+  File "/workspace/venvs/qwen3_embedding_eval_py312/lib/python3.12/site-packages/datasets/packaged_modules/cache/cache.py", line 140, in __init__
+    config_name, version, hash = _find_hash_in_cache(
+                                 ^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/venvs/qwen3_embedding_eval_py312/lib/python3.12/site-packages/datasets/packaged_modules/cache/cache.py", line 85, in _find_hash_in_cache
+    raise ValueError(
+ValueError: There are multiple 'mteb/arguana' configurations in the cache: queries, default, corpus
+Please specify which configuration to reload from the cache, e.g.
+	load_dataset('mteb/arguana', 'queries')
+[ERROR] 2026-10-07-10:21:23 (PID:152425, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception

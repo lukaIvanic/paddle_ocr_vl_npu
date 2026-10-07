@@ -1,0 +1,10 @@
+{
+  "queued_utc": "2026-10-07T10:28:13.544202+00:00",
+  "physical_npu": 1,
+  "wait_for_owned_pid": 153451,
+  "argv": [
+    "bash",
+    "-c",
+    "source npu-setup && export TORCH_DEVICE_BACKEND_AUTOLOAD=0 OMP_NUM_THREADS=1 HF_HOME=/workspace/.cache/huggingface HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1; source /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/bin/set_env.bash && source /workspace/rwkv_reference/wkv7_endpoint_d7348673/install/vendors/rwkv_endpoint/bin/set_env.bash && export PATH=/usr/local/python3.12.13/bin:$PATH && cd /workspace/repos/rwkv-suite-probe-67a5f3be && export ASCEND_RT_VISIBLE_DEVICES=1 && exec /workspace/venvs/rwkv_cpu_py312/bin/python -u /workspace/repos/rwkv-suite-probe-67a5f3be/26_rwkv_inference/probe_qwen_candidates.py measure --models /workspace/rwkv_reference/models --reference-build /workspace/rwkv_reference/wkv7_build_178d16e6 --build-root /workspace/rwkv_reference/wkv7_endpoint_d7348673 --prepared /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_67a5f3be/prepared --worker-index 1 --output /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_67a5f3be/worker_1_retry"
+  ]
+}

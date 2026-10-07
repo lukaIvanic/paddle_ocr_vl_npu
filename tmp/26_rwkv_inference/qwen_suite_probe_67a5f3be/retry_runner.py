@@ -1,0 +1,7 @@
+from pathlib import Path
+import time,subprocess
+r=Path('/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_67a5f3be')
+p=Path("/proc/153451/cmdline")
+while p.exists() and b"probe_qwen_candidates.py" in p.read_bytes():time.sleep(2)
+with (r/"worker_1_retry.log").open("w") as f:rc=subprocess.run(['bash', '-c', 'source npu-setup && export TORCH_DEVICE_BACKEND_AUTOLOAD=0 OMP_NUM_THREADS=1 HF_HOME=/workspace/.cache/huggingface HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1; source /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/bin/set_env.bash && source /workspace/rwkv_reference/wkv7_endpoint_d7348673/install/vendors/rwkv_endpoint/bin/set_env.bash && export PATH=/usr/local/python3.12.13/bin:$PATH && cd /workspace/repos/rwkv-suite-probe-67a5f3be && export ASCEND_RT_VISIBLE_DEVICES=1 && exec /workspace/venvs/rwkv_cpu_py312/bin/python -u /workspace/repos/rwkv-suite-probe-67a5f3be/26_rwkv_inference/probe_qwen_candidates.py measure --models /workspace/rwkv_reference/models --reference-build /workspace/rwkv_reference/wkv7_build_178d16e6 --build-root /workspace/rwkv_reference/wkv7_endpoint_d7348673 --prepared /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_67a5f3be/prepared --worker-index 1 --output /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_67a5f3be/worker_1_retry'],stdout=f,stderr=subprocess.STDOUT).returncode
+(r/"retry_exit_code.txt").write_text(str(rc)+"\n")

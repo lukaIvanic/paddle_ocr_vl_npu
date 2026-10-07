@@ -1,0 +1,13 @@
+Selected physical NPU 1 as logical npu:0 (health/idle check; not a reservation)
+Python: /usr/local/python3.12.13/bin/python3
+Traceback (most recent call last):
+  File "/workspace/repos/rwkv-suite-probe-67a5f3be/26_rwkv_inference/probe_qwen_candidates.py", line 111, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/repos/rwkv-suite-probe-67a5f3be/26_rwkv_inference/probe_qwen_candidates.py", line 110, in main
+    p.add_argument('--worker-index',type=int,choices=[0,1]);a=p.parse_args();prepare(a) if a.mode=='prepare' else measure(a)
+                                                                                                                  ^^^^^^^^^^
+  File "/workspace/repos/rwkv-suite-probe-67a5f3be/26_rwkv_inference/probe_qwen_candidates.py", line 83, in measure
+    physical=os.environ['ASCEND_RT_VISIBLE_DEVICES'];line=next(x for x in status.splitlines() if x.startswith('NPU '+physical+': '));assert ': free ' in line and 'Health=OK' in line
+                                                                                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

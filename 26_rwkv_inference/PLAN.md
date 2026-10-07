@@ -3,16 +3,12 @@
 Agreed sequence, 2026-10-06. Start with correctness and accuracy on Ascend 910B2,
 then decide whether larger evaluations need faster inference. This document is
 the experiment's single working document, including research findings, source
-provenance and reference scores. The server CPU environment and C runtime have
-been prepared, and the eight-case CPU FP32 smoke passed on 2026-10-06. The owned
-full embedding forward passes real-case NPU parity in eager and TorchAir, and
-complete NanoBEIR evaluation passed at reference batch 4: macro NDCG@10
-58.897462 versus reported CPU 58.907231. The 90M reranker passed numerical
-smoke and completed full NanoBEIR at B4 on two data-parallel NPUs: FP16
-60.657936 in 12m11s, FP32 60.659794 in 9m31s. FP32 does not close the gap to
-published 63.41. The alternate 11-task BM25-plus-positives evaluation gives
-63.233688 in 7m25s, narrowing the gap to 0.176312 points; the published run
-contract remains unconfirmed. Reference scores below remain upstream reports.
+provenance and reference scores. The CPU/NPU embedding reference is complete: 13-task NanoBEIR macro NDCG@10
+**58.897462**, versus reported CPU **58.907231**. The three rerankers pass the
+accepted 11-task BM25-plus-positives evaluation at **63.233688 / 68.791191 /
+71.617818**, versus published **63.41 / 68.60 / 71.58**. Numerical, batching and
+evaluator checks pass for the tested FP32 paths; the exact published reranker
+protocol remains unconfirmed. Full-suite candidate audit and timing are below.
 
 ## 0. Establish a server CPU reference
 
@@ -448,6 +444,19 @@ Record the estimate and decision for the largest pair. Preserve completed pair
 scores so an interrupted run can resume without changing candidates or
 double-counting results. Verify every expected query/candidate is scored before
 reporting full-suite macro NDCG@10 and its difference from the saved Qwen result.
+
+
+**Full-suite candidate audit and timing**, source `67a5f3be`, 2026-10-07:
+all **18 tasks / 48,560 queries / 4,856,000 pairs** pass original-Qwen candidate
+hash, coverage and pinned-dataset checks. Saved Qwen4B macro NDCG@10:
+**69.62012 English / 75.97906 Chinese**. A **3,600-pair** FP32/B4 eager sample
+(two queries/task) projects **~6.8 h English + 60.1 h Chinese on two NPUs**;
+CPU preparation/setup adds ~0.3 h. Both samples ran sequentially on NPU 1
+because NPU 2 failed the free-device guard; parallel scaling is an assumption.
+Even ideal eight-device inference projects **~16.7 h**. This is a small-sample
+estimate, not full-suite accuracy; **do not launch**, optimize/re-estimate first.
+RWKV retains its released last-2048 input cap versus Qwen's 8192; track truncation.
+[`Audits, timings, failure/retry provenance and estimate scope`](../tmp/26_rwkv_inference/qwen_suite_probe_67a5f3be/runtime_estimate.json).
 
 ## Boundaries and evidence
 

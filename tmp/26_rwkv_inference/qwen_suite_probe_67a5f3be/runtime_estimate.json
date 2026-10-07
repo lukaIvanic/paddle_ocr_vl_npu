@@ -1,0 +1,362 @@
+{
+  "scope": "Runtime estimate, not full-suite accuracy",
+  "measurement_physical_npus": [
+    1
+  ],
+  "precision": "FP32 states and dense projections",
+  "batch_size": 4,
+  "backend": "raw_eager",
+  "sample_pairs": 3600,
+  "total_pairs": 4856000,
+  "tasks": [
+    {
+      "task": "ArguAna",
+      "suite": "english",
+      "pairs": 140600,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        5.463569789993926,
+        5.005339030001778
+      ],
+      "one_npu_pairs_per_second": 19.10418778488149,
+      "estimated_device_service_seconds": 7359.64290045698,
+      "estimated_cpu_prepare_seconds": 53.89828591728292,
+      "prepared_length_min": 454,
+      "prepared_length_max": 757,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "suite": "english",
+      "pairs": 159500,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        3.263825980000547,
+        4.147784700006014
+      ],
+      "one_npu_pairs_per_second": 26.98468776018102,
+      "estimated_device_service_seconds": 5910.759517305232,
+      "estimated_cpu_prepare_seconds": 26.338992622841033,
+      "prepared_length_min": 164,
+      "prepared_length_max": 540,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "suite": "english",
+      "pairs": 107200,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        6.430372589995386,
+        8.573041209994699
+      ],
+      "one_npu_pairs_per_second": 13.330299534905329,
+      "estimated_device_service_seconds": 8041.829796794685,
+      "estimated_cpu_prepare_seconds": 24.890462483395822,
+      "prepared_length_min": 257,
+      "prepared_length_max": 2048,
+      "sample_truncated_pairs": 1
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "suite": "english",
+      "pairs": 100000,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        6.458667190003325,
+        8.842916569992667
+      ],
+      "one_npu_pairs_per_second": 13.070542444297438,
+      "estimated_device_service_seconds": 7650.791879997996,
+      "estimated_cpu_prepare_seconds": 40.746834994934034,
+      "prepared_length_min": 605,
+      "prepared_length_max": 1097,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "FEVERHardNegatives",
+      "suite": "english",
+      "pairs": 100000,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        7.287181010004133,
+        5.30988570000045
+      ],
+      "one_npu_pairs_per_second": 15.876711984160574,
+      "estimated_device_service_seconds": 6298.533355002292,
+      "estimated_cpu_prepare_seconds": 33.492429996840656,
+      "prepared_length_min": 281,
+      "prepared_length_max": 1076,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "FiQA2018",
+      "suite": "english",
+      "pairs": 64800,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        6.699326109999674,
+        3.5534179099922767
+      ],
+      "one_npu_pairs_per_second": 19.50697292451831,
+      "estimated_device_service_seconds": 3321.889062477392,
+      "estimated_cpu_prepare_seconds": 15.287049003643915,
+      "prepared_length_min": 237,
+      "prepared_length_max": 809,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "HotpotQAHardNegatives",
+      "suite": "english",
+      "pairs": 100000,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        3.4190513600042323,
+        3.540867169998819
+      ],
+      "one_npu_pairs_per_second": 28.735968551619287,
+      "estimated_device_service_seconds": 3479.9592650015256,
+      "estimated_cpu_prepare_seconds": 16.006514997570775,
+      "prepared_length_min": 181,
+      "prepared_length_max": 363,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "SCIDOCS",
+      "suite": "english",
+      "pairs": 100000,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        6.886993630003417,
+        4.774938829999883
+      ],
+      "one_npu_pairs_per_second": 17.14981635212998,
+      "estimated_device_service_seconds": 5830.96623000165,
+      "estimated_cpu_prepare_seconds": 28.629309992538765,
+      "prepared_length_min": 310,
+      "prepared_length_max": 1625,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "TRECCOVID",
+      "suite": "english",
+      "pairs": 5000,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        6.5044537499925354,
+        4.305454949993873
+      ],
+      "one_npu_pairs_per_second": 18.50154386597654,
+      "estimated_device_service_seconds": 270.2477174996602,
+      "estimated_cpu_prepare_seconds": 1.3230572498287074,
+      "prepared_length_min": 288,
+      "prepared_length_max": 1194,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "Touche2020Retrieval.v3",
+      "suite": "english",
+      "pairs": 4900,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        14.266226790001383,
+        15.686374080003588
+      ],
+      "one_npu_pairs_per_second": 6.6772164750568725,
+      "estimated_device_service_seconds": 733.8387213151218,
+      "estimated_cpu_prepare_seconds": 2.7188762300647795,
+      "prepared_length_min": 1498,
+      "prepared_length_max": 2048,
+      "sample_truncated_pairs": 1
+    },
+    {
+      "task": "VideoRetrieval",
+      "suite": "chinese",
+      "pairs": 100000,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        3.3509503300010692,
+        7.866500599993742
+      ],
+      "one_npu_pairs_per_second": 17.829362592994425,
+      "estimated_device_service_seconds": 5608.725464997406,
+      "estimated_cpu_prepare_seconds": 8.356940001249313,
+      "prepared_length_min": 48,
+      "prepared_length_max": 2048,
+      "sample_truncated_pairs": 1
+    },
+    {
+      "task": "MedicalRetrieval",
+      "suite": "chinese",
+      "pairs": 100000,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        4.362835449996055,
+        4.240148690005299
+      ],
+      "one_npu_pairs_per_second": 23.247747147418146,
+      "estimated_device_service_seconds": 4301.492070000677,
+      "estimated_cpu_prepare_seconds": 10.36904999637045,
+      "prepared_length_min": 181,
+      "prepared_length_max": 574,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "suite": "chinese",
+      "pairs": 698000,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        3.3539355300017633,
+        3.527611119992798
+      ],
+      "one_npu_pairs_per_second": 29.063233917066892,
+      "estimated_device_service_seconds": 24016.59780848102,
+      "estimated_cpu_prepare_seconds": 69.13229322890402,
+      "prepared_length_min": 124,
+      "prepared_length_max": 318,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "CmedqaRetrieval",
+      "suite": "chinese",
+      "pairs": 399900,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        4.100118170012138,
+        4.472779930001707
+      ],
+      "one_npu_pairs_per_second": 23.32933363569048,
+      "estimated_device_service_seconds": 17141.509750977682,
+      "estimated_cpu_prepare_seconds": 46.662311493557354,
+      "prepared_length_min": 191,
+      "prepared_length_max": 648,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "DuRetrieval",
+      "suite": "chinese",
+      "pairs": 200000,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        13.340307720005512,
+        7.321346579992678
+      ],
+      "one_npu_pairs_per_second": 9.67976702620649,
+      "estimated_device_service_seconds": 20661.65429999819,
+      "estimated_cpu_prepare_seconds": 37.090790006914176,
+      "prepared_length_min": 441,
+      "prepared_length_max": 2048,
+      "sample_truncated_pairs": 1
+    },
+    {
+      "task": "CovidRetrieval",
+      "suite": "chinese",
+      "pairs": 94900,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        16.672982200005208,
+        16.95124804000079
+      ],
+      "one_npu_pairs_per_second": 5.9480915569642,
+      "estimated_device_service_seconds": 15954.697248882845,
+      "estimated_cpu_prepare_seconds": 43.90559412904986,
+      "prepared_length_min": 865,
+      "prepared_length_max": 2048,
+      "sample_truncated_pairs": 29
+    },
+    {
+      "task": "EcomRetrieval",
+      "suite": "chinese",
+      "pairs": 100000,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        3.300389330004691,
+        3.6101532000029692
+      ],
+      "one_npu_pairs_per_second": 28.94128776887483,
+      "estimated_device_service_seconds": 3455.27126500383,
+      "estimated_cpu_prepare_seconds": 5.3956999981892295,
+      "prepared_length_min": 58,
+      "prepared_length_max": 87,
+      "sample_truncated_pairs": 0
+    },
+    {
+      "task": "T2Retrieval",
+      "suite": "chinese",
+      "pairs": 2281200,
+      "sample_pairs": 200,
+      "sample_call_seconds": [
+        16.829612250003265,
+        13.122072710000793
+      ],
+      "one_npu_pairs_per_second": 6.677420661544407,
+      "estimated_device_service_seconds": 341628.9186538063,
+      "estimated_cpu_prepare_seconds": 1235.2866808245017,
+      "prepared_length_min": 638,
+      "prepared_length_max": 2048,
+      "sample_truncated_pairs": 30
+    }
+  ],
+  "suites": {
+    "english": {
+      "pairs": 882000,
+      "one_npu_inference_hours": 13.582905123847926,
+      "two_npu_inference_hours": 6.791452561923963
+    },
+    "chinese": {
+      "pairs": 3974000,
+      "one_npu_inference_hours": 120.2135740450411,
+      "two_npu_inference_hours": 60.10678702252055
+    }
+  },
+  "estimated_cpu_prepare_service_seconds": 1699.5311731676775,
+  "measured_full_audit_seconds": 155.5327203899942,
+  "measured_model_setup_seconds": [
+    52.00815223999962,
+    20.129220030008582
+  ],
+  "unmeasured_metric_and_output_allowance_seconds": 120,
+  "two_npu_projected_wall_hours": 67.22526915644835,
+  "two_npu_planning_margin_hours": 87.39284990338287,
+  "ideal_eight_npu_inference_hours": 16.724559896111128,
+  "one_hour_required_aggregate_pairs_per_second": 1348.888888888889,
+  "decision": "Do not launch the over-budget full suites; optimize and remeasure.",
+  "limitations": [
+    "Two uniformly sampled queries per task; extrapolation is approximate, 30% margin is a planning allowance, not a statistical confidence interval.",
+    "NPU2 failed the free-device guard. Both complementary samples ran sequentially on healthy NPU1; two/eight-NPU projections assume balanced replicas and ideal scaling, not a measured suite-level parallel rate.",
+    "Prepared per-query logical B32 padding is preserved. RWKV last2048 truncation differs from Qwen8192; count truncation in subsequent accuracy evaluation.",
+    "Sample fixture IO is in setup; full task load/candidate audit was measured; CPU formatting/tokenization estimated separately; CPU tensor construction, H2D, forward and D2H score readback are included in measured call times.",
+    "Full score writing/aggregation is not benchmarked; allowance and planning margin do not change the over-budget decision."
+  ],
+  "candidate_audit_all_passed": true,
+  "anchor_replay_identical": true,
+  "cached_dataset_revisions_verified_from_load_log": [
+    "080c9ed6267b65029207906e815d44a9240bafca",
+    "1271c7809071a13532e05f25fb53511ffce77117",
+    "1c83b8d1544e529875e3f6930f3a1fcf749a8e97",
+    "2039188fb5800a9803ba5048df7b76e6fb151fc6",
+    "279d737f36c731c8ff6e2b055f31fe02216fa23d",
+    "27a168819829fe9bcd655c2df245fb19452e8e06",
+    "37b8efec53c54c3d9c6af212f6710b62ccdf895c",
+    "39c90699b034ec22ac45b3abf5b0bbb5ffd421f9",
+    "3a309e201f3c2c4b13bd4a367a8f37eee2ec1d21",
+    "431886eaecc48f067a3975b70d0949ea2862463c",
+    "4885aa143210c98657558c04aaf3dc47cfb54340",
+    "497b7bd1bbb25cb3757ff34d95a8be50a3de2279",
+    "539bbde593d947e2a124ba72651aafc09eb33fc2",
+    "58c2597a5943a2ba48f4668c3b90d796283c5639",
+    "617612fa63afcb60e3b134bed8b7216a99707c37",
+    "687de13dc7294d6fd9be10c6945f9e8fec8166b9",
+    "6c6430d3a6d36f8d2a829195bc5dc94d7e063e53",
+    "8731a845f1bf500a4f111cf1070785c793d10e64",
+    "a1a333e290fe30b10f3f56498e3a0d911a693ced",
+    "a9f41b7cdf24785531d12417ce0d1157ed4b39ca",
+    "bae08bb7bddbedb96c7e7db52018a55167b67f89",
+    "bb9466bac8153a0349341eb1b22e06409e78ef4e",
+    "c22ab2a51041ffd869aaddef7af8d8215647e41a",
+    "cd540c506dae1cf9e9a59c3e06f42030d54e7301",
+    "f8c2fcf00f625baaa80f62ec5bd9e1fff3b8ae88",
+    "faa71382b6a29cf1778d1f436b963e75cb5b927c"
+  ]
+}

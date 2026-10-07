@@ -1,0 +1,1224 @@
+{
+  "original_root": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark",
+  "english_manifest": {
+    "schema": 1,
+    "benchmark": "MTEB(eng, v2)",
+    "mteb": "1.38.9",
+    "qwen_commit": "44548aa5f0a0aed1c76d64e19afe47727a325b8f",
+    "tasks": {
+      "ArguAna": [
+        "mteb/arguana",
+        "c22ab2a51041ffd869aaddef7af8d8215647e41a",
+        "Given a claim, find documents that refute the claim",
+        true
+      ],
+      "CQADupstackGamingRetrieval": [
+        "mteb/cqadupstack-gaming",
+        "4885aa143210c98657558c04aaf3dc47cfb54340",
+        "Given a question, retrieve detailed question descriptions from Stackexchange that are duplicates to the given question",
+        true
+      ],
+      "CQADupstackUnixRetrieval": [
+        "mteb/cqadupstack-unix",
+        "6c6430d3a6d36f8d2a829195bc5dc94d7e063e53",
+        "Given a question, retrieve detailed question descriptions from Stackexchange that are duplicates to the given question",
+        true
+      ],
+      "ClimateFEVERHardNegatives": [
+        "mteb/ClimateFEVER_test_top_250_only_w_correct-v2",
+        "3a309e201f3c2c4b13bd4a367a8f37eee2ec1d21",
+        "Given a claim about climate change, retrieve documents that support or refute the claim",
+        false
+      ],
+      "FEVERHardNegatives": [
+        "mteb/FEVER_test_top_250_only_w_correct-v2",
+        "080c9ed6267b65029207906e815d44a9240bafca",
+        "Given a claim, retrieve documents that support or refute the claim",
+        false
+      ],
+      "FiQA2018": [
+        "mteb/fiqa",
+        "27a168819829fe9bcd655c2df245fb19452e8e06",
+        "Given a financial question, retrieve user replies that best answer the question",
+        false
+      ],
+      "HotpotQAHardNegatives": [
+        "mteb/HotpotQA_test_top_250_only_w_correct-v2",
+        "617612fa63afcb60e3b134bed8b7216a99707c37",
+        "Given a multi-hop question, retrieve documents that can help answer the question",
+        false
+      ],
+      "SCIDOCS": [
+        "mteb/scidocs",
+        "f8c2fcf00f625baaa80f62ec5bd9e1fff3b8ae88",
+        "Given a scientific paper title, retrieve paper abstracts that are cited by the given paper",
+        false
+      ],
+      "TRECCOVID": [
+        "mteb/trec-covid",
+        "bb9466bac8153a0349341eb1b22e06409e78ef4e",
+        "Given a query on COVID-19, retrieve documents that answer the query",
+        false
+      ],
+      "Touche2020Retrieval.v3": [
+        "mteb/webis-touche2020-v3",
+        "431886eaecc48f067a3975b70d0949ea2862463c",
+        "Given a question, retrieve detailed and persuasive arguments that answer the question",
+        false
+      ]
+    },
+    "embedding_revision": "b22da495047858cce924d27d76261e96be6febc0",
+    "devices": [
+      0,
+      1,
+      2,
+      3,
+      6
+    ],
+    "embedding_max_length": 8192,
+    "reranker_max_length": 8192,
+    "dtype": "float16",
+    "compiled": false,
+    "top_k": 100,
+    "embedding_server": [
+      "/usr/local/python3.12.13/bin/python3",
+      "-m",
+      "vllm.entrypoints.openai.api_server",
+      "--model",
+      "/workspace/models/Qwen3-Embedding-0.6B",
+      "--served-model-name",
+      "qwen3-embedding-0.6b",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "18530",
+      "--runner",
+      "pooling",
+      "--convert",
+      "embed",
+      "--dtype",
+      "float16",
+      "--max-model-len",
+      "8192",
+      "--pooler-config",
+      "{\"pooling_type\":\"LAST\",\"use_activation\":true}",
+      "--enforce-eager",
+      "--gpu-memory-utilization",
+      "0.35",
+      "--max-num-seqs",
+      "128",
+      "--block-size",
+      "128",
+      "--max-num-batched-tokens",
+      "32768",
+      "--no-enable-prefix-caching",
+      "--no-enable-chunked-prefill",
+      "--async-scheduling"
+    ],
+    "reranker_server": [
+      "/usr/local/python3.12.13/bin/python3",
+      "-m",
+      "vllm.entrypoints.openai.api_server",
+      "--model",
+      "/workspace/models/Qwen3-Reranker-4B",
+      "--served-model-name",
+      "reranker-diagnostic",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "18530",
+      "--runner",
+      "pooling",
+      "--hf-overrides",
+      "{\"architectures\": [\"Qwen3ForSequenceClassification\"], \"classifier_from_token\": [\"no\", \"yes\"], \"is_original_qwen3_reranker\": true}",
+      "--dtype",
+      "float16",
+      "--max-model-len",
+      "8192",
+      "--enforce-eager",
+      "--gpu-memory-utilization",
+      "0.45",
+      "--max-num-seqs",
+      "32",
+      "--block-size",
+      "128",
+      "--max-num-batched-tokens",
+      "16384",
+      "--no-enable-prefix-caching",
+      "--no-enable-chunked-prefill",
+      "--no-async-scheduling"
+    ],
+    "source_files": {
+      "suite_protocol.py": "d72a72010c67d8d171eb833e5fc1a86f5323077bd1823d94fbb05e7cc2da12ec",
+      "run_english_suite.py": "ea8a7f88360454ba05bc0124444c7c9934570c442ef852df2e44a7b521e18757",
+      "reranker_protocol.py": "72cf0ca10c439ba684dc36dfaa022a161fd4431d55a9933abf49eb90c62a6589"
+    }
+  },
+  "english_completion": {
+    "status": "complete",
+    "wall_s_this_invocation": 4540.499479939928
+  },
+  "chinese_summary": {
+    "scope": "full_CMTEB-R",
+    "tasks": [
+      "VideoRetrieval",
+      "MedicalRetrieval",
+      "MMarcoRetrieval",
+      "CmedqaRetrieval",
+      "DuRetrieval",
+      "CovidRetrieval",
+      "EcomRetrieval",
+      "T2Retrieval"
+    ],
+    "queries": 39740,
+    "pairs": 3974000,
+    "tokens": 1933388333,
+    "macro_ndcg_at_10_percent": {
+      "reranker": 75.97906278867693,
+      "embedding": 70.81797732434603
+    },
+    "published_reranker_macro_percent": 75.94,
+    "delta_vs_published_pp": 0.03906278867692947,
+    "aggregation": "unweighted mean of task nDCG@10, not query-weighted; no adjustment for first-stage discrepancy"
+  },
+  "tasks": [
+    {
+      "task": "ArguAna",
+      "suite": "english",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation/embedding/ArguAna/mteb/ArguAna_default_predictions.json",
+      "candidate_sha256": "d4c0d590e734eabccd107b3b5176b1dab0595c0be0db0dd2a299ff0eb6c665d3",
+      "baseline": {
+        "task": "ArguAna",
+        "documents": 8674,
+        "queries": 1406,
+        "rerank_pairs": 140600,
+        "dataset_reads": [
+          {
+            "path": "mteb/arguana",
+            "revision": "c22ab2a51041ffd869aaddef7af8d8215647e41a",
+            "args": [
+              "corpus"
+            ]
+          },
+          {
+            "path": "mteb/arguana",
+            "revision": "c22ab2a51041ffd869aaddef7af8d8215647e41a",
+            "args": [
+              "queries"
+            ]
+          },
+          {
+            "path": "mteb/arguana",
+            "revision": "c22ab2a51041ffd869aaddef7af8d8215647e41a",
+            "args": []
+          }
+        ],
+        "judgments_missing_from_corpus": 5,
+        "missing_judgment_examples": [
+          [
+            "test-free-speech-debate-yfsdfkhbwu-con03a",
+            "test-free-speech-debate-yfsdfkhbwu-con03b",
+            1
+          ],
+          [
+            "test-education-ufsdfkhbwu-con03a",
+            "test-education-ufsdfkhbwu-con03b",
+            1
+          ],
+          [
+            "test-politics-dhwem-pro06a",
+            "test-politics-dhwem-pro06b",
+            1
+          ],
+          [
+            "test-science-sghwbdgmo-con03a",
+            "test-science-sghwbdgmo-con03b",
+            1
+          ],
+          [
+            "test-society-asfhwapg-con04a",
+            "test-society-asfhwapg-con04b",
+            1
+          ]
+        ],
+        "split": "test",
+        "subset": "default",
+        "query_instruction": "Given a claim, find documents that refute the claim",
+        "document_instruction": "Given a claim, find documents that refute the claim",
+        "candidates_sha256": "d4c0d590e734eabccd107b3b5176b1dab0595c0be0db0dd2a299ff0eb6c665d3",
+        "ndcg_at_10": 0.8706007160011888,
+        "recall_at_100": 0.9957325746799431,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.9850640113798008,
+            "recall_100": 0.9957325746799431,
+            "ndcg_cut_10": 0.8706007160011888
+          },
+          "embedding": {
+            "recall_10": 0.9459459459459459,
+            "recall_100": 0.9957325746799431,
+            "ndcg_cut_10": 0.7105224938230347
+          }
+        },
+        "scoring_wall_s": 531.9276371500455,
+        "restored_pairs": 0,
+        "tokens": 72717776,
+        "truncated_pairs": 0,
+        "length_percentiles": {
+          "50": 486.0,
+          "95": 837.0,
+          "99": 1126.0,
+          "100": 2282.0
+        },
+        "batch_latency_s": {
+          "50": 4.29530011001043,
+          "95": 5.963642223924392,
+          "99": 7.290408470584077,
+          "100": 9.464593200013041
+        }
+      }
+    },
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "suite": "english",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation/embedding/CQADupstackGamingRetrieval/mteb/CQADupstackGamingRetrieval_default_predictions.json",
+      "candidate_sha256": "e4f828fc77ae4e0a271b56cd1ed294e2dcffcd32fbfd31ca19ce3660ef66d0c2",
+      "baseline": {
+        "task": "CQADupstackGamingRetrieval",
+        "documents": 45301,
+        "queries": 1595,
+        "rerank_pairs": 159500,
+        "dataset_reads": [
+          {
+            "path": "mteb/cqadupstack-gaming",
+            "revision": "4885aa143210c98657558c04aaf3dc47cfb54340",
+            "args": [
+              "corpus"
+            ]
+          },
+          {
+            "path": "mteb/cqadupstack-gaming",
+            "revision": "4885aa143210c98657558c04aaf3dc47cfb54340",
+            "args": [
+              "queries"
+            ]
+          },
+          {
+            "path": "mteb/cqadupstack-gaming",
+            "revision": "4885aa143210c98657558c04aaf3dc47cfb54340",
+            "args": []
+          }
+        ],
+        "judgments_missing_from_corpus": 0,
+        "missing_judgment_examples": [],
+        "split": "test",
+        "subset": "default",
+        "query_instruction": "Given a question, retrieve detailed question descriptions from Stackexchange that are duplicates to the given question",
+        "document_instruction": "Given a question, retrieve detailed question descriptions from Stackexchange that are duplicates to the given question",
+        "candidates_sha256": "e4f828fc77ae4e0a271b56cd1ed294e2dcffcd32fbfd31ca19ce3660ef66d0c2",
+        "ndcg_at_10": 0.6896683660107359,
+        "recall_at_100": 0.9368789778664387,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.8671270528129957,
+            "recall_100": 0.9368789778664387,
+            "ndcg_cut_10": 0.6896683660107359
+          },
+          "embedding": {
+            "recall_10": 0.7878502361632209,
+            "recall_100": 0.9368789778664387,
+            "ndcg_cut_10": 0.6406555597317686
+          }
+        },
+        "scoring_wall_s": 250.44287630007602,
+        "restored_pairs": 0,
+        "tokens": 33291040,
+        "truncated_pairs": 2,
+        "length_percentiles": {
+          "50": 176.0,
+          "95": 345.0,
+          "99": 576.0,
+          "100": 8192.0
+        },
+        "batch_latency_s": {
+          "50": 1.7776494100689888,
+          "95": 2.751409114059065,
+          "99": 3.9035349597968114,
+          "100": 6.13908377988264
+        }
+      }
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "suite": "english",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation/embedding/CQADupstackUnixRetrieval/mteb/CQADupstackUnixRetrieval_default_predictions.json",
+      "candidate_sha256": "82d5840ff70161648d4b804ecff7ad9d7f233714a1248d3f5e8078d8b597acb5",
+      "baseline": {
+        "task": "CQADupstackUnixRetrieval",
+        "documents": 47382,
+        "queries": 1072,
+        "rerank_pairs": 107200,
+        "dataset_reads": [
+          {
+            "path": "mteb/cqadupstack-unix",
+            "revision": "6c6430d3a6d36f8d2a829195bc5dc94d7e063e53",
+            "args": [
+              "corpus"
+            ]
+          },
+          {
+            "path": "mteb/cqadupstack-unix",
+            "revision": "6c6430d3a6d36f8d2a829195bc5dc94d7e063e53",
+            "args": [
+              "queries"
+            ]
+          },
+          {
+            "path": "mteb/cqadupstack-unix",
+            "revision": "6c6430d3a6d36f8d2a829195bc5dc94d7e063e53",
+            "args": []
+          }
+        ],
+        "judgments_missing_from_corpus": 0,
+        "missing_judgment_examples": [],
+        "split": "test",
+        "subset": "default",
+        "query_instruction": "Given a question, retrieve detailed question descriptions from Stackexchange that are duplicates to the given question",
+        "document_instruction": "Given a question, retrieve detailed question descriptions from Stackexchange that are duplicates to the given question",
+        "candidates_sha256": "82d5840ff70161648d4b804ecff7ad9d7f233714a1248d3f5e8078d8b597acb5",
+        "ndcg_at_10": 0.5641984307777826,
+        "recall_at_100": 0.8868197981537533,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.7459671081406156,
+            "recall_100": 0.8868197981537533,
+            "ndcg_cut_10": 0.5641984307777826
+          },
+          "embedding": {
+            "recall_10": 0.6479081526889362,
+            "recall_100": 0.8868197981537533,
+            "ndcg_cut_10": 0.5134327590428821
+          }
+        },
+        "scoring_wall_s": 275.32575000007637,
+        "restored_pairs": 0,
+        "tokens": 36343905,
+        "truncated_pairs": 10,
+        "length_percentiles": {
+          "50": 225.0,
+          "95": 845.0,
+          "99": 2344.0,
+          "100": 8192.0
+        },
+        "batch_latency_s": {
+          "50": 2.901219239924103,
+          "95": 4.588268745562527,
+          "99": 5.948767662036698,
+          "100": 6.888396339956671
+        }
+      }
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "suite": "english",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation/embedding/ClimateFEVERHardNegatives/mteb/ClimateFEVERHardNegatives_default_predictions.json",
+      "candidate_sha256": "355a905510eac8db877b396a7a02a4d7f3b369c109f08f98133945c1f81e13f8",
+      "baseline": {
+        "task": "ClimateFEVERHardNegatives",
+        "documents": 47416,
+        "queries": 1000,
+        "rerank_pairs": 100000,
+        "dataset_reads": [
+          {
+            "path": "mteb/ClimateFEVER_test_top_250_only_w_correct-v2",
+            "revision": "3a309e201f3c2c4b13bd4a367a8f37eee2ec1d21",
+            "args": [
+              "corpus"
+            ]
+          },
+          {
+            "path": "mteb/ClimateFEVER_test_top_250_only_w_correct-v2",
+            "revision": "3a309e201f3c2c4b13bd4a367a8f37eee2ec1d21",
+            "args": [
+              "queries"
+            ]
+          },
+          {
+            "path": "mteb/ClimateFEVER_test_top_250_only_w_correct-v2",
+            "revision": "3a309e201f3c2c4b13bd4a367a8f37eee2ec1d21",
+            "args": []
+          }
+        ],
+        "judgments_missing_from_corpus": 0,
+        "missing_judgment_examples": [],
+        "split": "test",
+        "subset": "default",
+        "query_instruction": "Given a claim about climate change, retrieve documents that support or refute the claim",
+        "document_instruction": "",
+        "candidates_sha256": "355a905510eac8db877b396a7a02a4d7f3b369c109f08f98133945c1f81e13f8",
+        "ndcg_at_10": 0.5238548101190371,
+        "recall_at_100": 0.7379,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.5991333333333333,
+            "recall_100": 0.7379,
+            "ndcg_cut_10": 0.5238548101190371
+          },
+          "embedding": {
+            "recall_10": 0.49,
+            "recall_100": 0.7379,
+            "ndcg_cut_10": 0.4357478110607607
+          }
+        },
+        "scoring_wall_s": 315.89376252004877,
+        "restored_pairs": 0,
+        "tokens": 42849010,
+        "truncated_pairs": 0,
+        "length_percentiles": {
+          "50": 386.0,
+          "95": 844.0,
+          "99": 1142.0,
+          "100": 7821.0
+        },
+        "batch_latency_s": {
+          "50": 3.717593749985099,
+          "95": 4.374795190477744,
+          "99": 4.682074356197845,
+          "100": 5.638397169997916
+        }
+      }
+    },
+    {
+      "task": "FEVERHardNegatives",
+      "suite": "english",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation/embedding/FEVERHardNegatives/mteb/FEVERHardNegatives_default_predictions.json",
+      "candidate_sha256": "36edcaad3fc60b9ab51c8a81ff203d7ab5d8aa8488277decfe2a308633509ccb",
+      "baseline": {
+        "task": "FEVERHardNegatives",
+        "documents": 163698,
+        "queries": 1000,
+        "rerank_pairs": 100000,
+        "dataset_reads": [
+          {
+            "path": "mteb/FEVER_test_top_250_only_w_correct-v2",
+            "revision": "080c9ed6267b65029207906e815d44a9240bafca",
+            "args": [
+              "corpus"
+            ]
+          },
+          {
+            "path": "mteb/FEVER_test_top_250_only_w_correct-v2",
+            "revision": "080c9ed6267b65029207906e815d44a9240bafca",
+            "args": [
+              "queries"
+            ]
+          },
+          {
+            "path": "mteb/FEVER_test_top_250_only_w_correct-v2",
+            "revision": "080c9ed6267b65029207906e815d44a9240bafca",
+            "args": []
+          }
+        ],
+        "judgments_missing_from_corpus": 0,
+        "missing_judgment_examples": [],
+        "split": "test",
+        "subset": "default",
+        "query_instruction": "Given a claim, retrieve documents that support or refute the claim",
+        "document_instruction": "",
+        "candidates_sha256": "36edcaad3fc60b9ab51c8a81ff203d7ab5d8aa8488277decfe2a308633509ccb",
+        "ndcg_at_10": 0.9559898218056473,
+        "recall_at_100": 0.9749547619047619,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.9722214285714286,
+            "recall_100": 0.9749547619047619,
+            "ndcg_cut_10": 0.9559898218056473
+          },
+          "embedding": {
+            "recall_10": 0.9504619047619047,
+            "recall_100": 0.9749547619047619,
+            "ndcg_cut_10": 0.8866660294635095
+          }
+        },
+        "scoring_wall_s": 223.27701685996726,
+        "restored_pairs": 0,
+        "tokens": 30226887,
+        "truncated_pairs": 0,
+        "length_percentiles": {
+          "50": 241.0,
+          "95": 677.0,
+          "99": 950.0,
+          "100": 5679.0
+        },
+        "batch_latency_s": {
+          "50": 2.654524069861509,
+          "95": 3.2044504688819866,
+          "99": 3.651458569152746,
+          "100": 3.922657069982961
+        }
+      }
+    },
+    {
+      "task": "FiQA2018",
+      "suite": "english",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation/embedding/FiQA2018/mteb/FiQA2018_default_predictions.json",
+      "candidate_sha256": "f424227a6c98618c20d8b701028a19e3a907e2bb309c6e0cfc1f84238c880314",
+      "baseline": {
+        "task": "FiQA2018",
+        "documents": 57638,
+        "queries": 648,
+        "rerank_pairs": 64800,
+        "dataset_reads": [
+          {
+            "path": "mteb/fiqa",
+            "revision": "27a168819829fe9bcd655c2df245fb19452e8e06",
+            "args": [
+              "corpus"
+            ]
+          },
+          {
+            "path": "mteb/fiqa",
+            "revision": "27a168819829fe9bcd655c2df245fb19452e8e06",
+            "args": [
+              "queries"
+            ]
+          },
+          {
+            "path": "mteb/fiqa",
+            "revision": "27a168819829fe9bcd655c2df245fb19452e8e06",
+            "args": []
+          }
+        ],
+        "judgments_missing_from_corpus": 0,
+        "missing_judgment_examples": [],
+        "split": "test",
+        "subset": "default",
+        "query_instruction": "Given a financial question, retrieve user replies that best answer the question",
+        "document_instruction": "",
+        "candidates_sha256": "f424227a6c98618c20d8b701028a19e3a907e2bb309c6e0cfc1f84238c880314",
+        "ndcg_at_10": 0.5717706144094563,
+        "recall_at_100": 0.8060080608691721,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.6710225174345545,
+            "recall_100": 0.8060080608691721,
+            "ndcg_cut_10": 0.5717706144094563
+          },
+          "embedding": {
+            "recall_10": 0.5451230354008132,
+            "recall_100": 0.8060080608691721,
+            "ndcg_cut_10": 0.46863968972446185
+          }
+        },
+        "scoring_wall_s": 137.108701369958,
+        "restored_pairs": 0,
+        "tokens": 18571097,
+        "truncated_pairs": 0,
+        "length_percentiles": {
+          "50": 231.0,
+          "95": 619.0,
+          "99": 950.0,
+          "100": 3570.0
+        },
+        "batch_latency_s": {
+          "50": 2.518055590102449,
+          "95": 2.912271943083033,
+          "99": 3.0469144537346438,
+          "100": 3.1295335800386965
+        }
+      }
+    },
+    {
+      "task": "HotpotQAHardNegatives",
+      "suite": "english",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation/embedding/HotpotQAHardNegatives/mteb/HotpotQAHardNegatives_default_predictions.json",
+      "candidate_sha256": "ed4ca099c962012ccff32739f9f4b37a8066faa853e14d4e448d6a59b145a97b",
+      "baseline": {
+        "task": "HotpotQAHardNegatives",
+        "documents": 225621,
+        "queries": 1000,
+        "rerank_pairs": 100000,
+        "dataset_reads": [
+          {
+            "path": "mteb/HotpotQA_test_top_250_only_w_correct-v2",
+            "revision": "617612fa63afcb60e3b134bed8b7216a99707c37",
+            "args": [
+              "corpus"
+            ]
+          },
+          {
+            "path": "mteb/HotpotQA_test_top_250_only_w_correct-v2",
+            "revision": "617612fa63afcb60e3b134bed8b7216a99707c37",
+            "args": [
+              "queries"
+            ]
+          },
+          {
+            "path": "mteb/HotpotQA_test_top_250_only_w_correct-v2",
+            "revision": "617612fa63afcb60e3b134bed8b7216a99707c37",
+            "args": []
+          }
+        ],
+        "judgments_missing_from_corpus": 0,
+        "missing_judgment_examples": [],
+        "split": "test",
+        "subset": "default",
+        "query_instruction": "Given a multi-hop question, retrieve documents that can help answer the question",
+        "document_instruction": "",
+        "candidates_sha256": "ed4ca099c962012ccff32739f9f4b37a8066faa853e14d4e448d6a59b145a97b",
+        "ndcg_at_10": 0.8467295304182463,
+        "recall_at_100": 0.8655,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.85,
+            "recall_100": 0.8655,
+            "ndcg_cut_10": 0.8467295304182463
+          },
+          "embedding": {
+            "recall_10": 0.708,
+            "recall_100": 0.8655,
+            "ndcg_cut_10": 0.6783338081559833
+          }
+        },
+        "scoring_wall_s": 146.64894287008792,
+        "restored_pairs": 0,
+        "tokens": 19782201,
+        "truncated_pairs": 0,
+        "length_percentiles": {
+          "50": 189.0,
+          "95": 306.0,
+          "99": 378.0,
+          "100": 771.0
+        },
+        "batch_latency_s": {
+          "50": 1.7585898350225762,
+          "95": 1.97092620099429,
+          "99": 2.051472041499801,
+          "100": 2.1039032500702888
+        }
+      }
+    },
+    {
+      "task": "SCIDOCS",
+      "suite": "english",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation/embedding/SCIDOCS/mteb/SCIDOCS_default_predictions.json",
+      "candidate_sha256": "36fc76d0d0c864cfd42993de04509099cccae886f5a3584dab4665f190d22acb",
+      "baseline": {
+        "task": "SCIDOCS",
+        "documents": 25657,
+        "queries": 1000,
+        "rerank_pairs": 100000,
+        "dataset_reads": [
+          {
+            "path": "mteb/scidocs",
+            "revision": "f8c2fcf00f625baaa80f62ec5bd9e1fff3b8ae88",
+            "args": [
+              "corpus"
+            ]
+          },
+          {
+            "path": "mteb/scidocs",
+            "revision": "f8c2fcf00f625baaa80f62ec5bd9e1fff3b8ae88",
+            "args": [
+              "queries"
+            ]
+          },
+          {
+            "path": "mteb/scidocs",
+            "revision": "f8c2fcf00f625baaa80f62ec5bd9e1fff3b8ae88",
+            "args": []
+          }
+        ],
+        "judgments_missing_from_corpus": 0,
+        "missing_judgment_examples": [],
+        "split": "test",
+        "subset": "default",
+        "query_instruction": "Given a scientific paper title, retrieve paper abstracts that are cited by the given paper",
+        "document_instruction": "",
+        "candidates_sha256": "36fc76d0d0c864cfd42993de04509099cccae886f5a3584dab4665f190d22acb",
+        "ndcg_at_10": 0.28103599035575066,
+        "recall_at_100": 0.5289833333333334,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.30735,
+            "recall_100": 0.5289833333333334,
+            "ndcg_cut_10": 0.28103599035575066
+          },
+          "embedding": {
+            "recall_10": 0.25725,
+            "recall_100": 0.5289833333333334,
+            "ndcg_cut_10": 0.24383345661784828
+          }
+        },
+        "scoring_wall_s": 206.92538786004297,
+        "restored_pairs": 0,
+        "tokens": 28331865,
+        "truncated_pairs": 0,
+        "length_percentiles": {
+          "50": 274.0,
+          "95": 433.0,
+          "99": 609.0,
+          "100": 7072.0
+        },
+        "batch_latency_s": {
+          "50": 2.451931244926527,
+          "95": 2.6862142105703244,
+          "99": 2.8346369730005962,
+          "100": 3.201995600014925
+        }
+      }
+    },
+    {
+      "task": "TRECCOVID",
+      "suite": "english",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation/embedding/TRECCOVID/mteb/TRECCOVID_default_predictions.json",
+      "candidate_sha256": "d0e263b3f0884f30e4bf6858d4d609fbae7d0aa86483a0378647bdb632cec48a",
+      "baseline": {
+        "task": "TRECCOVID",
+        "documents": 171332,
+        "queries": 50,
+        "rerank_pairs": 5000,
+        "dataset_reads": [
+          {
+            "path": "mteb/trec-covid",
+            "revision": "bb9466bac8153a0349341eb1b22e06409e78ef4e",
+            "args": [
+              "corpus"
+            ]
+          },
+          {
+            "path": "mteb/trec-covid",
+            "revision": "bb9466bac8153a0349341eb1b22e06409e78ef4e",
+            "args": [
+              "queries"
+            ]
+          },
+          {
+            "path": "mteb/trec-covid",
+            "revision": "bb9466bac8153a0349341eb1b22e06409e78ef4e",
+            "args": []
+          }
+        ],
+        "judgments_missing_from_corpus": 0,
+        "missing_judgment_examples": [],
+        "split": "test",
+        "subset": "default",
+        "query_instruction": "Given a query on COVID-19, retrieve documents that answer the query",
+        "document_instruction": "",
+        "candidates_sha256": "d0e263b3f0884f30e4bf6858d4d609fbae7d0aa86483a0378647bdb632cec48a",
+        "ndcg_at_10": 0.9281646275095028,
+        "recall_at_100": 0.18632364045232724,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.024798215592600176,
+            "recall_100": 0.18632364045232724,
+            "ndcg_cut_10": 0.9281646275095028
+          },
+          "embedding": {
+            "recall_10": 0.024359206856863488,
+            "recall_100": 0.18632364045232724,
+            "ndcg_cut_10": 0.9012372827911926
+          }
+        },
+        "scoring_wall_s": 14.01141767995432,
+        "restored_pairs": 0,
+        "tokens": 1727117,
+        "truncated_pairs": 0,
+        "length_percentiles": {
+          "50": 340.5,
+          "95": 642.0500000000002,
+          "99": 846.0100000000002,
+          "100": 3831.0
+        },
+        "batch_latency_s": {
+          "50": 2.9363425949122757,
+          "95": 3.969102747389115,
+          "99": 4.074535932913423,
+          "100": 4.077259259996936
+        }
+      }
+    },
+    {
+      "task": "Touche2020Retrieval.v3",
+      "suite": "english",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation/embedding/Touche2020Retrieval.v3/mteb/Touche2020Retrieval.v3_default_predictions.json",
+      "candidate_sha256": "61851d3797c6aa9f31e87156824ee056ef15e22527834300686fc054bd847437",
+      "baseline": {
+        "task": "Touche2020Retrieval.v3",
+        "documents": 303732,
+        "queries": 49,
+        "rerank_pairs": 4900,
+        "dataset_reads": [
+          {
+            "path": "mteb/webis-touche2020-v3",
+            "revision": "431886eaecc48f067a3975b70d0949ea2862463c",
+            "args": [
+              "corpus"
+            ]
+          },
+          {
+            "path": "mteb/webis-touche2020-v3",
+            "revision": "431886eaecc48f067a3975b70d0949ea2862463c",
+            "args": [
+              "queries"
+            ]
+          },
+          {
+            "path": "mteb/webis-touche2020-v3",
+            "revision": "431886eaecc48f067a3975b70d0949ea2862463c",
+            "args": []
+          }
+        ],
+        "judgments_missing_from_corpus": 0,
+        "missing_judgment_examples": [],
+        "split": "test",
+        "subset": "default",
+        "query_instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+        "document_instruction": "",
+        "candidates_sha256": "61851d3797c6aa9f31e87156824ee056ef15e22527834300686fc054bd847437",
+        "ndcg_at_10": 0.7299989567888284,
+        "recall_at_100": 0.7027630055365615,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.25892858512861194,
+            "recall_100": 0.7027630055365615,
+            "ndcg_cut_10": 0.7299989567888284
+          },
+          "embedding": {
+            "recall_10": 0.25302206774843866,
+            "recall_100": 0.7027630055365615,
+            "ndcg_cut_10": 0.6949267078402177
+          }
+        },
+        "scoring_wall_s": 23.212014169897884,
+        "restored_pairs": 0,
+        "tokens": 2756534,
+        "truncated_pairs": 0,
+        "length_percentiles": {
+          "50": 348.0,
+          "95": 1682.0,
+          "99": 2094.01,
+          "100": 4177.0
+        },
+        "batch_latency_s": {
+          "50": 4.884501810185611,
+          "95": 6.043406877922826,
+          "99": 6.352096383548341,
+          "100": 6.4814009899273515
+        }
+      }
+    },
+    {
+      "task": "VideoRetrieval",
+      "suite": "chinese",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/VideoRetrieval_default_predictions.json",
+      "candidate_sha256": "cb4a5a45146595613722d3759b562fce7a4a5d34cd312f1e041592e48fc07ca7",
+      "baseline": {
+        "task": "VideoRetrieval",
+        "queries": 1000,
+        "pairs": 100000,
+        "tokens": 11416074,
+        "truncated_pairs": 0,
+        "max_input_length": 2953,
+        "scoring_wall_s": 72.76401344989426,
+        "task_wall_s": 77.84171154000796,
+        "input_tok_s": 156891.75814719425,
+        "pairs_s": 1374.3057214520004,
+        "query_s": 13.743057214520004,
+        "npu_count": 6,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.919,
+            "recall_100": 0.975,
+            "ndcg_cut_10": 0.7746133562883216
+          },
+          "embedding": {
+            "recall_10": 0.881,
+            "recall_100": 0.975,
+            "ndcg_cut_10": 0.7373355857836522
+          }
+        },
+        "ndcg_change_pp": 3.7277770504669405,
+        "request_latency_s": {
+          "p50": 1.062982459901832,
+          "p99": 1.3951980546466065,
+          "max": 1.642153289867565
+        }
+      }
+    },
+    {
+      "task": "MedicalRetrieval",
+      "suite": "chinese",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/MedicalRetrieval_default_predictions.json",
+      "candidate_sha256": "964a9068fdf058f02cbdbc2c765f405e0c434f3362ac30469ab79a0a7ad56d79",
+      "baseline": {
+        "task": "MedicalRetrieval",
+        "queries": 1000,
+        "pairs": 100000,
+        "tokens": 15273891,
+        "truncated_pairs": 0,
+        "max_input_length": 575,
+        "scoring_wall_s": 95.74593631993048,
+        "task_wall_s": 100.9506423000712,
+        "input_tok_s": 159525.21419773911,
+        "pairs_s": 1044.430749163649,
+        "query_s": 10.444307491636488,
+        "npu_count": 6,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.722,
+            "recall_100": 0.796,
+            "ndcg_cut_10": 0.6293759379931565
+          },
+          "embedding": {
+            "recall_10": 0.639,
+            "recall_100": 0.796,
+            "ndcg_cut_10": 0.5567210702393773
+          }
+        },
+        "ndcg_change_pp": 7.265486775377916,
+        "request_latency_s": {
+          "p50": 1.4054424399510026,
+          "p99": 1.6190417437651194,
+          "max": 1.7478558199945837
+        }
+      }
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "suite": "chinese",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/MMarcoRetrieval_default_predictions.json",
+      "candidate_sha256": "da0926098eb90d796fe2d45e744ea8efee1e631e9bd8dbca335f093e7ab9311d",
+      "baseline": {
+        "task": "MMarcoRetrieval",
+        "queries": 6980,
+        "pairs": 698000,
+        "tokens": 108332562,
+        "truncated_pairs": 0,
+        "max_input_length": 1630,
+        "scoring_wall_s": 679.2010734300129,
+        "task_wall_s": 689.0252695700619,
+        "input_tok_s": 159499.98643687795,
+        "pairs_s": 1027.6779989098827,
+        "query_s": 10.276779989098827,
+        "npu_count": 6,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.9489971346704871,
+            "recall_100": 0.9756566380133715,
+            "ndcg_cut_10": 0.8548745947654136
+          },
+          "embedding": {
+            "recall_10": 0.9108404966571156,
+            "recall_100": 0.9756566380133715,
+            "ndcg_cut_10": 0.7988814999156476
+          }
+        },
+        "ndcg_change_pp": 5.5993094849766,
+        "request_latency_s": {
+          "p50": 1.4415027850773185,
+          "p99": 1.63300149661256,
+          "max": 2.309936590027064
+        }
+      }
+    },
+    {
+      "task": "CmedqaRetrieval",
+      "suite": "chinese",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/CmedqaRetrieval_default_predictions.json",
+      "candidate_sha256": "a8efdccc8f9414dd7ef21bb6e6dde0fbcf034453abaf9fb7446af2b9ff0af273",
+      "baseline": {
+        "task": "CmedqaRetrieval",
+        "queries": 3999,
+        "pairs": 399900,
+        "tokens": 75964011,
+        "truncated_pairs": 0,
+        "max_input_length": 5548,
+        "scoring_wall_s": 468.9128267101478,
+        "task_wall_s": 476.616115659941,
+        "input_tok_s": 162000.28379039446,
+        "pairs_s": 852.8237600273469,
+        "query_s": 8.528237600273469,
+        "npu_count": 6,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.5521862571922495,
+            "recall_100": 0.8122449938385733,
+            "ndcg_cut_10": 0.45191935440503733
+          },
+          "embedding": {
+            "recall_10": 0.5126088574310537,
+            "recall_100": 0.8122449938385733,
+            "ndcg_cut_10": 0.4093743346124948
+          }
+        },
+        "ndcg_change_pp": 4.254501979254255,
+        "request_latency_s": {
+          "p50": 1.7231789699289948,
+          "p99": 2.1751630260236547,
+          "max": 2.672538759885356
+        }
+      }
+    },
+    {
+      "task": "DuRetrieval",
+      "suite": "chinese",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/DuRetrieval_default_predictions.json",
+      "candidate_sha256": "fd23b9c95d132ba0940ba84b44f1737a09ae33370b610db0833643050eea7ccd",
+      "baseline": {
+        "task": "DuRetrieval",
+        "queries": 2000,
+        "pairs": 200000,
+        "tokens": 60851657,
+        "truncated_pairs": 7,
+        "max_input_length": 8192,
+        "scoring_wall_s": 376.1617337500211,
+        "task_wall_s": 382.8067172698211,
+        "input_tok_s": 161769.92910299342,
+        "pairs_s": 531.6861925485231,
+        "query_s": 5.316861925485231,
+        "npu_count": 6,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.9112985401822629,
+            "recall_100": 0.9664733222228344,
+            "ndcg_cut_10": 0.9065665443676597
+          },
+          "embedding": {
+            "recall_10": 0.8600675414608351,
+            "recall_100": 0.9664733222228344,
+            "ndcg_cut_10": 0.8388529129991551
+          }
+        },
+        "ndcg_change_pp": 6.771363136850461,
+        "request_latency_s": {
+          "p50": 2.72485752007924,
+          "p99": 3.7134378014272076,
+          "max": 4.272274159826338
+        }
+      }
+    },
+    {
+      "task": "CovidRetrieval",
+      "suite": "chinese",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/CovidRetrieval_default_predictions.json",
+      "candidate_sha256": "23cbe514fa88c1a0772134de2e87d246813de6f3e9eebb182b62cac31928a324",
+      "baseline": {
+        "task": "CovidRetrieval",
+        "queries": 949,
+        "pairs": 94900,
+        "tokens": 77874497,
+        "truncated_pairs": 0,
+        "max_input_length": 7343,
+        "scoring_wall_s": 503.9096423899755,
+        "task_wall_s": 509.3181017800234,
+        "input_tok_s": 154540.59706151238,
+        "pairs_s": 188.32741431559455,
+        "query_s": 1.8832741431559454,
+        "npu_count": 6,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.9852476290832455,
+            "recall_100": 0.9926238145416227,
+            "ndcg_cut_10": 0.9169525831068317
+          },
+          "embedding": {
+            "recall_10": 0.9478398314014752,
+            "recall_100": 0.9926238145416227,
+            "ndcg_cut_10": 0.8470080437465962
+          }
+        },
+        "ndcg_change_pp": 6.9944539360235485,
+        "request_latency_s": {
+          "p50": 7.6888933250447735,
+          "p99": 11.146624993849546,
+          "max": 12.232832089997828
+        }
+      }
+    },
+    {
+      "task": "EcomRetrieval",
+      "suite": "chinese",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/EcomRetrieval_default_predictions.json",
+      "candidate_sha256": "ece78f3c9437e47a4450c9eb9d06c37cddf1be7f27a1de8fac9a5071257d1399",
+      "baseline": {
+        "task": "EcomRetrieval",
+        "queries": 1000,
+        "pairs": 100000,
+        "tokens": 10864903,
+        "truncated_pairs": 0,
+        "max_input_length": 174,
+        "scoring_wall_s": 408.0759810002055,
+        "task_wall_s": 413.24162017018534,
+        "input_tok_s": 26624.705951499087,
+        "pairs_s": 245.05240361095804,
+        "query_s": 2.4505240361095804,
+        "npu_count": 1,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.87,
+            "recall_100": 0.945,
+            "ndcg_cut_10": 0.6964006612216495
+          },
+          "embedding": {
+            "recall_10": 0.813,
+            "recall_100": 0.945,
+            "ndcg_cut_10": 0.6391446758926318
+          }
+        },
+        "ndcg_change_pp": 5.725598532901765,
+        "request_latency_s": {
+          "p50": 1.018585534999147,
+          "p99": 1.0975912663922645,
+          "max": 1.128339339978993
+        }
+      }
+    },
+    {
+      "task": "T2Retrieval",
+      "suite": "chinese",
+      "original_path": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/T2Retrieval_default_predictions.json",
+      "candidate_sha256": "ddf05b4c474c3b1d2c0d56d5008d4924f1295d9729f6f8b6ac81895256a924d7",
+      "baseline": {
+        "task": "T2Retrieval",
+        "queries": 22812,
+        "pairs": 2281200,
+        "tokens": 1572810738,
+        "truncated_pairs": 234,
+        "max_input_length": 8192,
+        "scoring_wall_s": 10714.057337980019,
+        "task_wall_s": 3619.9663856700063,
+        "input_tok_s": 146798.79791426717,
+        "pairs_s": 212.91653834196183,
+        "query_s": 2.1291653834196183,
+        "npu_count": null,
+        "metrics": {
+          "reranker": {
+            "recall_10": 0.8520189971708761,
+            "recall_100": 0.9417430343109259,
+            "ndcg_cut_10": 0.8476219909460835
+          },
+          "embedding": {
+            "recall_10": 0.823771267195916,
+            "recall_100": 0.9417430343109259,
+            "ndcg_cut_10": 0.8381200627581279
+          }
+        },
+        "resumed_phase": {
+          "npu_count": 5,
+          "restored_pairs": 1606656,
+          "scoring_wall_s": 3586.8168208799325,
+          "pairs": 674544,
+          "input_tok_s": 129426.69787249221
+        },
+        "ndcg_change_pp": 0.9501928187955588,
+        "request_latency_s": {
+          "p50": 6.316967659862712,
+          "p99": 10.974376986846334,
+          "max": 14.73968661017716
+        }
+      }
+    }
+  ],
+  "english_macro": 69.62011864196177
+}

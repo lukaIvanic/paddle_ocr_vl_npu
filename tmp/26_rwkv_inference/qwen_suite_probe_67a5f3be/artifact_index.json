@@ -1,0 +1,97 @@
+{
+  "files": {
+    "worker_1_retry.log": {
+      "bytes": 5506,
+      "sha256": "465023bb41c1f3b8f9add3c6eba873500c3bb45e144b2cc7769256ccbd2b63eb"
+    },
+    "retry_command.json": {
+      "bytes": 1197,
+      "sha256": "0d451fcae440470507d24f295a9c8fd2f7390642cda872125fbcf6d4e35bdc78"
+    },
+    "qwen_baseline.json": {
+      "bytes": 42021,
+      "sha256": "282309959c94b47ac7fc1fbfbd373f72f0b14cbd1b6c703c0131aba830ab8e42"
+    },
+    "prepare.log": {
+      "bytes": 41246,
+      "sha256": "ee2646cd08bac30b4efc5f3f9e142fbd56446eb6c9516fdcaaf539c1a6eb26ea"
+    },
+    "worker_1.log": {
+      "bytes": 1207,
+      "sha256": "b675a52ce985b2c3ad8febb06d11703969d7ade3fcbc68e6ccc79a9bf46ea926"
+    },
+    "run.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "pid.txt": {
+      "bytes": 6,
+      "sha256": "419cacb4c2973a6a551b0dc30a612817b59cc4da84849f050deb44a136a1ad3f"
+    },
+    "runner.py": {
+      "bytes": 3707,
+      "sha256": "5e0c9c03cd406c4273e5eb3e4e9098ba7095eb557494ed9507b6c0967be41481"
+    },
+    "retry_runner.py": {
+      "bytes": 1476,
+      "sha256": "a066234d75befd6d217436a9edf7eb630c7dcf47ad9aedc43dd43b276fdc7483"
+    },
+    "worker_0.log": {
+      "bytes": 9236,
+      "sha256": "faacf4bf24c2ae4352893d016b53e8584a8f5460629141ff7647589e82f70247"
+    },
+    "sample_index.json": {
+      "bytes": 222,
+      "sha256": "14fdcf42c31daea88b68ffd01b22815067ab87a78c549bc7855840bf2418a1ab"
+    },
+    "retry_exit_code.txt": {
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "runtime_estimate.json": {
+      "bytes": 12294,
+      "sha256": "18d0917765c56de4ac28a9b4f8f3561be09b2e503ed149a511b19b31bc537d75"
+    },
+    "exit_code.txt": {
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "command.txt": {
+      "bytes": 3689,
+      "sha256": "04ca5e1f5e254221f0aad989f9bac40b23577c852e3d0931daeb01c74336f2ad"
+    },
+    "retry_run.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "initial_offline_config_failure/prepare.log": {
+      "bytes": 3885,
+      "sha256": "2d89e46fc381176dba1f40985a26be80f455730058cb7caba3cc2266305e9fee"
+    },
+    "initial_offline_config_failure/exit_code.txt": {
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "initial_offline_config_failure/command.txt": {
+      "bytes": 3689,
+      "sha256": "e724e53eba7028442e53efd926a6ab71d3a381a68da301fb1a631749c4bd0ab4"
+    },
+    "worker_1_retry/result.json": {
+      "bytes": 7188,
+      "sha256": "0cffc38f19088359b1be2898c49cd2c844173356f0246eb647b1926e98ab4113"
+    },
+    "worker_0/result.json": {
+      "bytes": 7191,
+      "sha256": "92dbb03663efe263ac993038863be0464dcbc265f8cb928c7cc7b41c33280203"
+    },
+    "prepared/audit.json": {
+      "bytes": 18084,
+      "sha256": "7606a078d2f47df421d7b2f55f731fd9fc031bc528d751afc3832dd6e8aeae13"
+    }
+  },
+  "large_server_sample": {
+    "server_path": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_67a5f3be/prepared/sample.json.gz",
+    "sha256": "13848980b89e340a2a9508dbcce43b66ab2477c1a762caed8df3566f056c712e",
+    "bytes": 1593560
+  }
+}

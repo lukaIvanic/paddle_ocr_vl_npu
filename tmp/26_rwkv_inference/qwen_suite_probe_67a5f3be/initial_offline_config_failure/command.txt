@@ -1,0 +1,29 @@
+{
+  "source_commit": "4a9f78ed4e84726bdbb781116fe57f81b1b6a4a9",
+  "source_checkout": "/workspace/repos/rwkv-suite-probe-4a9f78ed",
+  "utc_started": "2026-10-07T10:21:04.416518+00:00",
+  "physical_npus": [
+    1,
+    2
+  ],
+  "host": "liteserver-c001-4",
+  "container": "research_vllm_ascend_023_external_workspace",
+  "commands": [
+    [
+      "bash",
+      "-c",
+      "source npu-setup && export TORCH_DEVICE_BACKEND_AUTOLOAD=0 OMP_NUM_THREADS=1 HF_HOME=/workspace/.cache/huggingface HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1; source /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/bin/set_env.bash && source /workspace/rwkv_reference/wkv7_endpoint_d7348673/install/vendors/rwkv_endpoint/bin/set_env.bash && export PATH=/usr/local/python3.12.13/bin:$PATH && cd /workspace/repos/rwkv-suite-probe-4a9f78ed && exec /workspace/venvs/qwen3_embedding_eval_py312/bin/python -u /workspace/repos/rwkv-suite-probe-4a9f78ed/26_rwkv_inference/probe_qwen_candidates.py prepare --baseline /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_4a9f78ed/qwen_baseline.json --candidates /workspace/results/qwen_margin_distill_inputs --runtime /workspace/rwkv_reference/runtime --upstream /workspace/rwkv_reference/upstream/reranker --output /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_4a9f78ed/prepared"
+    ],
+    [
+      "bash",
+      "-c",
+      "source npu-setup && export TORCH_DEVICE_BACKEND_AUTOLOAD=0 OMP_NUM_THREADS=1 HF_HOME=/workspace/.cache/huggingface HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1; source /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/bin/set_env.bash && source /workspace/rwkv_reference/wkv7_endpoint_d7348673/install/vendors/rwkv_endpoint/bin/set_env.bash && export PATH=/usr/local/python3.12.13/bin:$PATH && cd /workspace/repos/rwkv-suite-probe-4a9f78ed && export ASCEND_RT_VISIBLE_DEVICES=1 && exec /workspace/venvs/rwkv_cpu_py312/bin/python -u /workspace/repos/rwkv-suite-probe-4a9f78ed/26_rwkv_inference/probe_qwen_candidates.py measure --models /workspace/rwkv_reference/models --reference-build /workspace/rwkv_reference/wkv7_build_178d16e6 --build-root /workspace/rwkv_reference/wkv7_endpoint_d7348673 --prepared /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_4a9f78ed/prepared --worker-index 0 --output /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_4a9f78ed/worker_0"
+    ],
+    [
+      "bash",
+      "-c",
+      "source npu-setup && export TORCH_DEVICE_BACKEND_AUTOLOAD=0 OMP_NUM_THREADS=1 HF_HOME=/workspace/.cache/huggingface HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1; source /workspace/rwkv_reference/wkv7_build_178d16e6/install/vendors/rwkv_reference/bin/set_env.bash && source /workspace/rwkv_reference/wkv7_endpoint_d7348673/install/vendors/rwkv_endpoint/bin/set_env.bash && export PATH=/usr/local/python3.12.13/bin:$PATH && cd /workspace/repos/rwkv-suite-probe-4a9f78ed && export ASCEND_RT_VISIBLE_DEVICES=2 && exec /workspace/venvs/rwkv_cpu_py312/bin/python -u /workspace/repos/rwkv-suite-probe-4a9f78ed/26_rwkv_inference/probe_qwen_candidates.py measure --models /workspace/rwkv_reference/models --reference-build /workspace/rwkv_reference/wkv7_build_178d16e6 --build-root /workspace/rwkv_reference/wkv7_endpoint_d7348673 --prepared /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_4a9f78ed/prepared --worker-index 1 --output /workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/qwen_suite_probe_4a9f78ed/worker_1"
+    ]
+  ],
+  "scope": "Audit all 18 original Qwen top100 candidate sets, then 3600 real pairs across two FP32/B4 data-parallel NPUs; no full suite."
+}

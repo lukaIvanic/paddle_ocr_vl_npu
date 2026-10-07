@@ -1,0 +1,209 @@
+{
+  "source_commit": "67a5f3bece9490b4a0d7a53800117855a6856aa4",
+  "source_sha256": "eb1c73abca6d36fa3f9c76f28678edb39a07ad08f9c299dc69cac9c788432b40",
+  "physical_npu": "1",
+  "device": "Ascend910B2",
+  "checkpoint_sha256": "be7245cc832b43ed0df4873d49c1a831cb9972d27de3f8cc4950588fc8b9392d",
+  "reranker_sha256": "4ab584f4da09bb6528a027a740b3752711e138188b5885ebd02581edc58cce8a",
+  "audit_sha256": "7606a078d2f47df421d7b2f55f731fd9fc031bc528d751afc3832dd6e8aeae13",
+  "dtype": "fp32",
+  "batch_size": 4,
+  "backend": "raw_eager",
+  "tasks": [
+    {
+      "task": "ArguAna",
+      "suite": "english",
+      "query_id": "test-health-dhgsshbesbc-con02a",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 5.463569789993926,
+      "prepared_length_min": 565,
+      "prepared_length_max": 757,
+      "scores_sha256": "f263bf9b1e70cf16e274bac831d8abc7a4874bbaee21a163f3800a0746b3da18"
+    },
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "suite": "english",
+      "query_id": "151303",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 3.263825980000547,
+      "prepared_length_min": 166,
+      "prepared_length_max": 310,
+      "scores_sha256": "4a2756577df00b66e9bd516e353df1e55256a848c9dbbb3882c5cf94eeccadff"
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "suite": "english",
+      "query_id": "25690",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 6.430372589995386,
+      "prepared_length_min": 291,
+      "prepared_length_max": 826,
+      "scores_sha256": "aa7955255474b0bdcdf80616f436a3f631fb6bdca7a9cb7097f757de754465e7"
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "suite": "english",
+      "query_id": "1627",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 6.458667190003325,
+      "prepared_length_min": 605,
+      "prepared_length_max": 789,
+      "scores_sha256": "520bca5a98931c741a74a513e0392b2ec7f18ffc7ac4310ae1b771a1349721da"
+    },
+    {
+      "task": "FEVERHardNegatives",
+      "suite": "english",
+      "query_id": "146157",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 7.287181010004133,
+      "prepared_length_min": 741,
+      "prepared_length_max": 1076,
+      "scores_sha256": "11e7a2b116471982bd8b7bb965543eafe2142e6f2a7089897b3018d277402281"
+    },
+    {
+      "task": "FiQA2018",
+      "suite": "english",
+      "query_id": "4031",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 6.699326109999674,
+      "prepared_length_min": 421,
+      "prepared_length_max": 809,
+      "scores_sha256": "6748b9183f0ff0c634b66d35c99a43c576e38364c75b60adf636fae349d77ff5"
+    },
+    {
+      "task": "HotpotQAHardNegatives",
+      "suite": "english",
+      "query_id": "5a80522b5542996402f6a4c1",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 3.4190513600042323,
+      "prepared_length_min": 181,
+      "prepared_length_max": 363,
+      "scores_sha256": "d9788f000daa1723f1587eafbd926b6f47341aafe6f156d713b5f446161a932a"
+    },
+    {
+      "task": "SCIDOCS",
+      "suite": "english",
+      "query_id": "33812e0c6b8fdc5e414c5eae760e574e5a81190a",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 6.886993630003417,
+      "prepared_length_min": 310,
+      "prepared_length_max": 1625,
+      "scores_sha256": "70f033e6d2c5dd303ee5c008c3e43315e50b10b27b31ba6d7c1936c8a5bec628"
+    },
+    {
+      "task": "TRECCOVID",
+      "suite": "english",
+      "query_id": "22",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 6.5044537499925354,
+      "prepared_length_min": 419,
+      "prepared_length_max": 1194,
+      "scores_sha256": "de09335623789bf8eec605029b09e9b62a9df5cfde3a7b379d83587573f0d722"
+    },
+    {
+      "task": "Touche2020Retrieval.v3",
+      "suite": "english",
+      "query_id": "22",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 14.266226790001383,
+      "prepared_length_min": 1498,
+      "prepared_length_max": 1857,
+      "scores_sha256": "7331eaeb86289501b4ecc7ae32be1f289cbde40e8c3e38059d61d7bb893dff85"
+    },
+    {
+      "task": "VideoRetrieval",
+      "suite": "chinese",
+      "query_id": "22593",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 3.3509503300010692,
+      "prepared_length_min": 48,
+      "prepared_length_max": 95,
+      "scores_sha256": "a3339ee21f5722006ea13a1e30c2febf7f203708812aef285324765e30c90227"
+    },
+    {
+      "task": "MedicalRetrieval",
+      "suite": "chinese",
+      "query_id": "308",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 4.362835449996055,
+      "prepared_length_min": 181,
+      "prepared_length_max": 574,
+      "scores_sha256": "09eead962597f9f434c933e0c2181c6d49c9817bab14f79ed68413a7f9ecbb0c"
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "suite": "chinese",
+      "query_id": "1091765",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 3.3539355300017633,
+      "prepared_length_min": 173,
+      "prepared_length_max": 231,
+      "scores_sha256": "f98c7774ce45944bf365ac536ffb4b6b51bd83f4f3c9061960e6d002a8d367e6"
+    },
+    {
+      "task": "CmedqaRetrieval",
+      "suite": "chinese",
+      "query_id": "3c49077c5b4b5bd990a41e252dfb9d5e",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 4.100118170012138,
+      "prepared_length_min": 191,
+      "prepared_length_max": 648,
+      "scores_sha256": "ea7a27576ef579a9e747576b826479d49ec383adea6bbdba4895bf2f2b4ecc7a"
+    },
+    {
+      "task": "DuRetrieval",
+      "suite": "chinese",
+      "query_id": "3c1c1372362375b26be387dbc04783e2",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 13.340307720005512,
+      "prepared_length_min": 635,
+      "prepared_length_max": 2048,
+      "scores_sha256": "f2795a57fc96603a2577d96e29dc85943279ed439cc6fad82e925d64d0a5e0ba"
+    },
+    {
+      "task": "CovidRetrieval",
+      "suite": "chinese",
+      "query_id": "3f3ee8b39bac3a2668b523d02d07c426",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 16.672982200005208,
+      "prepared_length_min": 865,
+      "prepared_length_max": 2048,
+      "scores_sha256": "a0c99bcefc128b09375f459479e282979457f324ee31bc8871e2706057a8507d"
+    },
+    {
+      "task": "EcomRetrieval",
+      "suite": "chinese",
+      "query_id": "200233",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 3.300389330004691,
+      "prepared_length_min": 60,
+      "prepared_length_max": 87,
+      "scores_sha256": "9d08e64a00b8215fcbba27bbe25fb4e92fbc8f5003cfb55b62cead44aa4c9a20"
+    },
+    {
+      "task": "T2Retrieval",
+      "suite": "chinese",
+      "query_id": "17377",
+      "pairs": 100,
+      "forward_transfer_output_seconds": 16.829612250003265,
+      "prepared_length_min": 1355,
+      "prepared_length_max": 2048,
+      "scores_sha256": "d4451292d72281db84205450770c7260807491430c767c2f1414008c48031135"
+    }
+  ],
+  "all_checks_passed": true,
+  "batch_parity": {
+    "max_abs": 4.291534423828125e-06,
+    "normalized_rmse": 2.1601451862807153e-06,
+    "finite": true
+  },
+  "anchor_logits": [
+    2.011432409286499,
+    -0.42042845487594604,
+    -1.0877348184585571,
+    -0.7068164944648743
+  ],
+  "setup_seconds": 52.00815223999962,
+  "total_seconds": 184.02310592999856,
+  "peak_reserved_hbm_bytes": 15867052032
+}
