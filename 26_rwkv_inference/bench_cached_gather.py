@@ -82,7 +82,7 @@ def placement(array):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     for n in ['output','prepared','models','reference-build','build-root','vector-build','cache-task']:p.add_argument('--'+n,type=Path,required=True)
-    p.add_argument('--batch-size',type=int,default=8);p.add_argument('--size',default='large')
+    p.add_argument('--batch-size',type=int,default=8);p.add_argument('--candidates-per-query',type=int,choices=[32,64],default=32);p.add_argument('--size',default='large')
     p.add_argument('--methods',nargs='+',default=['rows','plain_rows','take','torch_index','memmove','threads2','threads4','local_rows'])
     p.add_argument('--local-cpus',default='24,25,26,27');p.add_argument('--repeats',type=int,default=3)
     a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False)
@@ -93,7 +93,7 @@ def main():
     e=Engine(a);local_cpus=set(map(int,a.local_cpus.split(',')))
     shared=np.empty((a.batch_size,cache.shape[1]),dtype=np.float32);shared.fill(0)
     loaders={m:Gather(cache,a.batch_size,m,local_cpus,None if m.startswith('local_') else shared) for m in a.methods}
-    emit('CONFIG',dict(batch=a.batch_size,pairs=len(pairs),methods=a.methods,torch_threads=torch.get_num_threads(),cpu_affinity=sorted(os.sched_getaffinity(0)),numpy=np.__version__,source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),no_overlap=True))
+    emit('CONFIG',dict(batch=a.batch_size,pairs=len(pairs),methods=a.methods,torch_threads=torch.get_num_threads(),cpu_affinity=sorted(os.sched_getaffinity(0)),numpy=np.__version__,query_lengths=sorted({len(x[1]) for x in pairs}),pair_ids=[(x[3],x[4]) for x in pairs],source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),no_overlap=True))
     gather_stats=collections.defaultdict(list)
     def pipeline(batch,backend,method):
         indices=[x[0] for x in batch];loader=loaders[method]
@@ -139,7 +139,7 @@ def main():
                         stats[method].extend(gather_stats[method])
                 for method in a.methods:
                     seconds=statistics.median(samples[method]);g=stats[method]
-                    emit('TIMING',dict(batch=a.batch_size,backend=backend,method=method,seconds=samples[method],ms_per_batch=seconds/len(batches)*1000,pairs_per_second=len(pairs)/seconds,gather_ms_median=statistics.median(x[0] for x in g)*1000,gather_ms_max=max(x[0] for x in g)*1000,gather_cpu_ms_median=statistics.median(x[3] for x in g)*1000,minor_faults=sum(x[1] for x in g),major_faults=sum(x[2] for x in g)))
+                    emit('TIMING',dict(batch=a.batch_size,backend=backend,method=method,seconds=samples[method],ms_per_batch=seconds/len(batches)*1000,pairs_per_second=len(pairs)/seconds,gather_ms_median=statistics.median(x[0] for x in g)*1000,gather_ms_max=max(x[0] for x in g)*1000,gather_cpu_ms_median=statistics.median(x[3] for x in g)*1000,minor_faults=sum(x[1] for x in g),major_faults=sum(x[2] for x in g),peak_hbm_bytes=torch.npu.max_memory_allocated()))
                 if backend=='torchair':best=min(a.methods,key=lambda m:statistics.median(samples[m]))
             # Preserve matched eager/compiled full-pipeline profiles for baseline
             # and measured winner; no isolated transfer/copy microbenchmark.
