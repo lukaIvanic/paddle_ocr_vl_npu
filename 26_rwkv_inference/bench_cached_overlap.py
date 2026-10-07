@@ -17,8 +17,10 @@ from run_reranker_buckets import profile
 
 
 class Pipeline:
-    def __init__(self, engine, cache, batch, cpus, depth=3):
-        self.engine=engine;self.cache=cache;self.batch=batch
+    def __init__(self, engine, cache, batch, cpus, depth=3, query_capacity=64):
+        self.engine=engine;self.cache=cache;self.batch=batch;self.query_capacity=query_capacity
+        if not hasattr(engine,"query_calls"):engine.query_calls={}
+        if not hasattr(engine,"query_heads"):engine.query_heads={}
         self.pool=ThreadPoolExecutor(8,initializer=lambda:os.sched_setaffinity(0,cpus))
         self.producer=ThreadPoolExecutor(1)
         self.transfer=torch.npu.Stream();self.compute=torch.npu.current_stream()
@@ -29,10 +31,10 @@ class Pipeline:
                 host=torch.empty((batch,cache.shape[1]),dtype=torch.float32,pin_memory=True)
                 host.zero_()
                 slot=dict(host=host,array=host.numpy(),device=torch.empty_like(host,device='npu'),
-                    ids=torch.empty((batch,64),dtype=torch.long,pin_memory=True),
+                    ids=torch.empty((batch,query_capacity),dtype=torch.long,pin_memory=True),
                     lens=torch.empty(batch,dtype=torch.int32,pin_memory=True),
                     scores=torch.empty(batch,dtype=torch.float32,pin_memory=True),
-                    device_ids=torch.empty((batch,64),dtype=torch.long,device='npu'),
+                    device_ids=torch.empty((batch,query_capacity),dtype=torch.long,device='npu'),
                     device_lens=torch.empty(batch,dtype=torch.int32,device='npu'),
                     ready=torch.npu.Event(),done=torch.npu.Event())
                 assert all(slot[k].is_pinned() for k in ['host','ids','lens','scores'])
@@ -49,7 +51,7 @@ class Pipeline:
         for future in futures:future.result()
         ids=slot['ids'].numpy();lens=slot['lens'].numpy();ids.fill(0)
         for row,pair in enumerate(batch):
-            tokens=pair[1];assert 0<len(tokens)<=64
+            tokens=pair[1];assert 0<len(tokens)<=self.query_capacity
             ids[row,:len(tokens)]=tokens;lens[row]=len(tokens)
             if verify:assert np.array_equal(slot['array'][row],self.cache[pair[0]])
         return time.perf_counter()-start
@@ -64,9 +66,24 @@ class Pipeline:
         with torch.profiler.record_function('rwkv.state_rearrange'):
             state=unpack_device(slot['device'])
         with torch.profiler.record_function('rwkv.backbone_and_head'):
-            call=self.engine.calls[64] if backend=='torchair' else self.engine.eager
-            state=call(slot['device_ids'],slot['device_lens'],*state)
-            logits=(self.engine.head if backend=='torchair' else self.engine.ranker)(state[1])
+            for offset in range(0,self.query_capacity,2048):
+                ids=slot['device_ids'][:,offset:offset+2048].contiguous()
+                lengths=(slot['device_lens']-offset).clamp(1,ids.shape[1])
+                key=(self.batch,ids.shape[1])
+                if backend=='torchair' and key not in self.engine.query_calls:
+                    self.engine.query_calls[key]=compiled(self.engine.module.forward,
+                        self.engine.cache_root/f'query_b{key[0]}_t{key[1]}')
+                call=self.engine.query_calls[key] if backend=='torchair' else self.engine.eager
+                new=call(ids,lengths,*state)
+                if offset:
+                    active=slot['device_lens']>offset
+                    new=(torch.where(active[None,None,:,None],new[0],state[0]),
+                         torch.where(active[None,:,None,None,None],new[1],state[1]))
+                state=new
+            if backend=='torchair' and self.batch not in self.engine.query_heads:
+                self.engine.query_heads[self.batch]=compiled(self.engine.ranker.forward,
+                    self.engine.cache_root/f'head_b{self.batch}')
+            logits=(self.engine.query_heads[self.batch] if backend=='torchair' else self.engine.ranker)(state[1])
         with torch.profiler.record_function('rwkv.async_score_d2h'):
             slot['scores'].copy_(logits.reshape(-1),non_blocking=True)
             slot['done'].record(self.compute)
@@ -139,7 +156,7 @@ def main():
         query_lengths=sorted({len(p[1]) for p in pairs}),ring_depth=3,workers=8,
         source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         scope='All selected real pairs, prepared tokens and warm file-backed states; gather through CPU score materialization, including fill/drain. Setup/compile excluded.'))
-    e=Engine(a);e.calls[64]=compiled(e.module.forward,a.output/'continuation_t64')
+    e=Engine(a)
     pipeline=Pipeline(e,cache,a.batch_size,set(map(int,a.local_cpus.split(','))))
     refs=torch.tensor([p[2] for p in pairs]);canonical={}
     try:
