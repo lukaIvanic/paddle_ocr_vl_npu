@@ -26,6 +26,52 @@ cores used, (c) waiting between kernels, (d) hidden format conversion/repacking,
 The existing 910B result remains a negative result for NZ weights, D128 padding
 and the stock op contract on that chip. It does not establish the 310P ranking.
 
+## 910B NZ reference: what changed and what did not
+
+The [24-lane NZ-pair results](references/vision_nz_pairs_910b_20261007/RESULTS.md)
+and [paired measurements](references/vision_nz_pairs_910b_20261007/paired_analysis.json)
+are 910B reference points, not a prediction for 310P. Ordinary-linear NZ gave
+**no demonstrated wall-time benefit on 910B**. Compiled runs were slower or
+effectively tied; the small eager wall-time decrease was host-bound and did
+not reduce total kernel time. Keep that observation visible rather than claiming
+every individual wall sample got worse.
+
+| Chip | Ordinary-linear path | 720-token crop wall ms, ND → NZ | 3,036-token crop wall ms, ND → NZ |
+|---|---|---:|---:|
+| 910B | Compiled PromptFA D80 | 17.53 → 18.73 | 49.98 → 50.49 |
+| 910B | Compiled PromptFA D128 | 19.22 → 19.87 | 53.07 → 53.15 |
+| 910B | Eager PromptFA D80 | 56.66 → 55.34 | 58.83 → 59.75 |
+| 910B | Eager unpad D128 | 53.88 → 54.81 | 70.24 → 70.70 |
+
+On the 910B large crop, compiled D80 matmul kernel time rose **13.65 → 15.29 ms
+per full forward**, and kernel selection changed from a MatMulV3/MatMulV2 mix
+to MatMulV2 only. PromptFA remained about 16.7–16.8 ms. On the 910B small eager
+PromptFA crop, total kernel time was 25.26 → 25.59 ms while wall time decreased.
+These are observations from the saved 910B profiles. **NZ may behave differently
+on 310P; inspect its own kernel names, formats, waits and timings.**
+
+Reuse the existing NZ implementation in
+[`bench_production_vision_attention.py`, `replay`](bench_production_vision_attention.py):
+it enables internal formats before NPU configuration, converts all 128 FP16
+linear weights with `torch_npu.npu_format_cast(weight, 29)` before compilation,
+checks format 29 and an exact logical round trip, and records actual kernel
+input formats. Its working evidence is
+[`raw_evidence.tar.gz`](references/vision_nz_pairs_910b_20261007/raw_evidence.tar.gz)
+(SHA-256 `fefe9e64649869eb487f8ac6d571c823fa7dded6f5ccd2321a4fe140c51c6b3a`):
+`matrix/*/result.json` records weight descriptors and `weight_kernel_audit`;
+`matrix/*/profile/**/kernel_details.csv` records individual kernel inputs.
+For example, both `pfa_nz_weights_crop_0_bucket_768` and
+`pfa_nz_weights_crop_1_bucket_3072` report `ND;FRACTAL_NZ;ND` for every linear
+kernel. This is a tested implementation and saved execution evidence, not an
+inferred packing recipe. Do not replace it with a guessed manual NZ layout.
+The same precompile conversion pattern exists in
+[`prepare_vision_linear_weight_format`](../09_persistent_page_engine/paddleocr_vl/model/vision_prefill.py).
+
+The original 910B run did **not** use the repeated pair order required below.
+Do not relabel its saved results as repeated-pair measurements. This revision
+changes the requested run order, not the harness, its defaults, historical
+receipts or conclusions. No 310P execution was performed to prepare this brief.
+
 ## 1. Source, environment and historical configuration
 
 Branch: `codex/mineru-vision-attention-investigation`. Repository is private.
@@ -37,9 +83,14 @@ WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
 cd "$WORK_SERVER_REPO"
 git fetch origin codex/mineru-vision-attention-investigation
 git checkout --detach FETCH_HEAD
-git merge-base --is-ancestor 9d153d90 HEAD
+git merge-base --is-ancestor c3dc6cf8b024177a0e66e087d3aadbb153292bb9 HEAD
 git rev-parse HEAD
 ```
+
+The ancestor pin is the verified source/evidence HEAD at this update:
+`c3dc6cf8b024177a0e66e087d3aadbb153292bb9`. It includes the harness additions
+from `a55d24df` and the saved NZ-pair evidence. Later handoff-only commits are
+allowed descendants; record the actual checked-out HEAD in every receipt.
 
 Use this server's existing successful MinerU environment and checkpoint. Do not
 assume the 910B interpreter, `npu-setup`, CANN/ATB, TorchAir, package versions,
@@ -95,6 +146,14 @@ cp 11_mineru_2_5_pro_inference/vision_diagnostic_910b_config.json "$RUN_ROOT/con
 "$PYTHON" -m unittest discover -s 11_mineru_2_5_pro_inference -p test_vision_diagnostics.py
 "$PYTHON" -m unittest discover -s 11_mineru_2_5_pro_inference -p test_production_vision_attention.py
 ```
+
+Before inference, create `$RUN_ROOT/results.md` and record the task, recovered
+production/config differences and this user-requested run-order change:
+ND, NZ, ND, NZ per matching pair. Record that the harness/defaults are unchanged
+and that the old 910B reference used a single measurement window per format.
+Keep later proposed changes and skips in this file as well as the chat report.
+The repeated ordering is explicitly authorized by this brief; it needs no
+additional approval.
 
 These tests check bookkeeping, not NPU inference. If the historical matrix's
 raw CSVs are available, use the generic analyzer in section 5 on it now. Report
@@ -165,16 +224,46 @@ FP16, JIT off and the requested internal-format flag explicitly. It uses
 bounded seeded synthetic operands, which are appropriate only for calibration.
 It is not OCR, a model result, or a replacement for the real-input full stack.
 
+For **every ND/NZ comparison**, hold crop/shape, execution mode, config,
+internal formats, device and environment fixed. Run **ND, NZ, ND, NZ** for that
+one pair before moving to another crop/shape/mode. Each occurrence gets its
+own output directory and immutable receipts. These are two independent warm
+measurement windows per format, each with 30 forwards and a separate profile;
+do not merge them into one window or compare against an earlier baseline run.
+Keep cold calls outside timing. Report both pair repeats and their individual
+deltas before any aggregate. Failed/incomplete repeats remain visible.
+
+The wrappers below only order existing CLI calls. They do not change model
+source, defaults, weight preparation or timing. Calibration now has 96 case
+launches (48 unique cases measured twice), implementing the same pair rule.
+Set the variables from sections 1–2 in the same activated shell:
+
 ```bash
-nohup "$PYTHON" -u 11_mineru_2_5_pro_inference/probe_vision_matmul.py suite \
-  --output-dir "$RUN_ROOT/matmul_on" --internal-format on \
-  --ms 768,3072,5632 --projections qkv,proj,fc1,fc2 \
-  --executions eager,compiled --weight-formats nd,nz --steps 30 --timeout-s 1800 \
+export PYTHON RUN_ROOT ROUTES
+cat > "$RUN_ROOT/run_matmul_pairs.sh" <<'SH'
+#!/bin/bash
+set -eu
+: "${PYTHON:?}" "${RUN_ROOT:?}"
+for m in 768 3072 5632; do
+  for projection in qkv proj fc1 fc2; do
+    for execution in eager compiled; do
+      for repeat in 1 2; do
+        "$PYTHON" -u 11_mineru_2_5_pro_inference/probe_vision_matmul.py suite \
+          --output-dir "$RUN_ROOT/matmul_on/M${m}_${projection}_${execution}/repeat_${repeat}" \
+          --internal-format on --ms "$m" --projections "$projection" \
+          --executions "$execution" --weight-formats nd,nz \
+          --steps 30 --timeout-s 1800
+      done
+    done
+  done
+done
+SH
+nohup bash "$RUN_ROOT/run_matmul_pairs.sh" \
   > "$RUN_ROOT/matmul_on.driver.log" 2>&1 </dev/null &
 printf '%s\n' "$!" > "$RUN_ROOT/matmul_on.pid"
 ```
 
-This is 48 cases: M ∈ {768,3072,5632}; (K,N) = (1280,3840), (1280,1280),
+The 48 unique calibration cases are: M ∈ {768,3072,5632}; (K,N) = (1280,3840), (1280,1280),
 (1280,5120), (5120,1280); eager/compiled; ND/NZ. Each case is a fresh process,
 with its own cache and before/after telemetry. It calls F.linear with bias,
 like the vision linears. Report actual kernel names, Block Num, formats,
@@ -186,20 +275,61 @@ short eager calibration may be launch-bound. Never turn these numbers into
 model tok/s. A small FP32 sample check is calibration validation only, not an
 FP32 reference investigation of the unexplained full-vision unpad drift.
 
-If production used internal formats off, run the same calibration with
-`--internal-format off --weight-formats nd` and a fresh `matmul_off` output/log.
+If production used internal formats off, run a separate ND-only suite over
+all the same shapes/modes with `--internal-format off --weight-formats nd`
+and a fresh `matmul_off` output/log, under `nohup` with the same deadline.
+This is an internal-format-setting check, not an ND/NZ pair.
 NZ/off is an incompatible request and is reported as skipped, never silently
 cast back to ND. The on run above supplies the explicit opposite-setting ND/NZ
 comparison. Preserve process/environment differences if the old production
 runtime cannot be reproduced; do not upgrade it to match 910B.
 
-Then test projection and format choices **inside the complete vision stack**:
+Then test projection and format choices **inside the complete vision stack**.
+Prepare this reusable pair launcher; pass exactly one ND/NZ variant pair to it.
+It completes ND, NZ, ND, NZ for one route before the next route. Repeating names
+in a single matrix invocation would collide with output directories, so each
+repeat uses a separate matrix directory. Do not run two launchers concurrently.
+
+```bash
+cat > "$RUN_ROOT/run_vision_pairs.sh" <<'SH'
+#!/bin/bash
+set -eu
+: "${PYTHON:?}" "${RUN_ROOT:?}" "${ROUTES:?}"
+pair_id=$1
+nd_variant=$2
+nz_variant=$3
+for route in ${ROUTES//,/ }; do
+  for repeat in 1 2; do
+    "$PYTHON" -u 11_mineru_2_5_pro_inference/run_production_attention_matrix.py \
+      --capture-dir "$RUN_ROOT/control_capture" --cache-root "$RUN_ROOT/control_cache" \
+      --config-json "$RUN_ROOT/control_config.json" \
+      --output-dir "$RUN_ROOT/pairs/$pair_id/$route/repeat_${repeat}" \
+      --routes "$route" --variants "$nd_variant,$nz_variant" \
+      --steps 30 --profile --timeout-s 1800
+  done
+done
+SH
+nohup bash "$RUN_ROOT/run_vision_pairs.sh" pfa_d80 baseline pfa_nz_weights \
+  > "$RUN_ROOT/pair_pfa_d80.driver.log" 2>&1 </dev/null &
+printf '%s\n' "$!" > "$RUN_ROOT/pair_pfa_d80.pid"
+```
+
+Poll the matching driver log in short calls as in section 2. For every route,
+require both `repeat_1/summary.json` and `repeat_2/summary.json` to contain two
+completed exit-zero children, with final per-child receipts and valid timing
+and format checks. A single `MATRIX complete` line is only one repeat, not the
+whole pair launcher. Apply the same check to every calibration repeat's two
+children. On a failed child the wrapper stops; use section 5's stop/report
+rules rather than automatically retrying or advancing to another pair.
+
+After the D80 pairs complete, inspect the receipts, health and profiles, then
+run the remaining main diagnostic lanes (these are not ND/NZ comparisons):
 
 ```bash
 nohup "$PYTHON" -u 11_mineru_2_5_pro_inference/run_production_attention_matrix.py \
   --capture-dir "$RUN_ROOT/control_capture" --cache-root "$RUN_ROOT/control_cache" \
   --output-dir "$RUN_ROOT/projection_diagnostics" --routes "$ROUTES" \
-  --variants pfa_nz_weights,internal_format_opposite,grouped_qkv,grouped_qkv_mlp_fc1 \
+  --variants internal_format_opposite,grouped_qkv,grouped_qkv_mlp_fc1 \
   --steps 30 --profile --timeout-s 1800 \
   > "$RUN_ROOT/projection_diagnostics.driver.log" 2>&1 </dev/null &
 printf '%s\n' "$!" > "$RUN_ROOT/projection_diagnostics.pid"
@@ -212,20 +342,83 @@ may reveal a similar issue here. Report timing, actual grouped-kernel names,
 conversions and feature drift like any other candidate. An unsupported grouped
 operator is a compatibility result, not permission to change source.
 
+**Verified 910B grouped-weight finding:**
+[`StaticMinerUVisionBlocks._grouped_linear`](vision_prefill_compile.py) executes
+`linear.weight.transpose(0, 1).contiguous().unsqueeze(0)` inside the forward.
+It transposes and materializes the weight, so on 910B the `GroupedMatmul` call
+receives **ND weights even when the stored parameter is NZ (format 29)**.
+In the saved 910B grouped-QKV lane, 32 grouped projections use ND and the
+remaining 96 ordinary projections use NZ. In the 910B grouped-QKV+FC1 lane,
+64 use ND and 64 use NZ. See the grouped lane CSVs in the NZ-pair archive above.
+
+The 310P agent must report **each `GroupedMatmul` call's Input Formats**, with
+its kernel name, step ID and input shapes from `kernel_details.csv`, plus
+per-type format counts. Keep `vision_weights`, `grouped_weight_inputs` and
+`weight_kernel_audit` from `result.json`, but do not treat the format of a
+stored parameter or an eager preflight tensor as proof of a compiled kernel's
+input format. **Never label a grouped lane all-NZ unless the actual profile
+shows NZ weight inputs for every projection, including GroupedMatmul.**
+If the format is missing or cannot be assigned to the weight argument, mark it
+unknown. Preserve the existing helper; a different packing/preparation path
+would be a new experiment requiring a disclosed, agreed change.
+
 ## 4. Secondary confirmation lanes
 
-After the diagnostics above, confirm the already-known attention choices on
+Only after completing and reviewing the diagnostic tables from sections 2–3
+(using section 5's analyzer), confirm the already-known attention choices on
 crop-sized inputs:
 
 ```bash
 nohup "$PYTHON" -u 11_mineru_2_5_pro_inference/run_production_attention_matrix.py \
   --capture-dir "$RUN_ROOT/control_capture" --cache-root "$RUN_ROOT/control_cache" \
   --output-dir "$RUN_ROOT/attention_confirmation" --routes "$ROUTES" \
-  --variants eager_pfa,unpad_d128,unpad_d128_nz_weights,pfa_d128,pfa_approx,pfa_d128_approx \
+  --variants eager_pfa,pfa_d128,pfa_approx,pfa_d128_approx \
   --steps 30 --profile --timeout-s 1800 \
   > "$RUN_ROOT/attention_confirmation.driver.log" 2>&1 </dev/null &
 printf '%s\n' "$!" > "$RUN_ROOT/attention_confirmation.pid"
 ```
+
+After that matrix completes and passes the stop checks, run the existing
+unpad comparison in the required repeated-pair order:
+
+```bash
+nohup bash "$RUN_ROOT/run_vision_pairs.sh" unpad_d128 unpad_d128 unpad_d128_nz_weights \
+  > "$RUN_ROOT/pair_unpad_d128.driver.log" 2>&1 </dev/null &
+printf '%s\n' "$!" > "$RUN_ROOT/pair_unpad_d128.pid"
+```
+
+### Lower-priority NZ pairs added in a55d24df and covered by the current harness
+
+These run **only after the diagnostic stages above**, and after the existing
+confirmation lanes. They may be skipped if time is short: record each omitted
+pair, both variants, affected routes and the reason. Do not spend this budget
+before reporting matmul/attention kernel, core, wait, format and device findings.
+
+| Priority | Pair ID | ND control variant | NZ-parameter variant | Execution / interpretation |
+|---|---|---|---|---|
+| Lower | pfa_d128 | `pfa_d128` | `pfa_d128_nz_weights` | Compiled; verify actual NZ weight inputs |
+| Lower | eager_pfa | `eager_pfa` | `eager_pfa_nz_weights` | Eager; assess host-bound timing |
+| Lower | grouped_qkv | `grouped_qkv` | `grouped_qkv_nz_weights` | Compiled; **mixed-format on 910B**, verify on 310P |
+| Lower | grouped_qkv_mlp_fc1 | `grouped_qkv_mlp_fc1` | `grouped_qkv_mlp_fc1_nz_weights` | Compiled; **mixed-format on 910B**, verify on 310P |
+
+For each selected row, use the exact pair ID/ND/NZ names as the launcher's three
+arguments. Launch **one row at a time**, then poll and inspect its receipts
+before the next; the launcher already repeats each crop ND, NZ, ND, NZ.
+For example, the first optional row is:
+
+```bash
+nohup bash "$RUN_ROOT/run_vision_pairs.sh" pfa_d128 pfa_d128 pfa_d128_nz_weights \
+  > "$RUN_ROOT/pair_pfa_d128.driver.log" 2>&1 </dev/null &
+printf '%s\n' "$!" > "$RUN_ROOT/pair_pfa_d128.pid"
+```
+
+Use the corresponding pair ID in the driver/PID filenames for the other rows.
+Do not reuse an earlier unpaired ND result as their control. The harness also
+supports `unpad_d80`; this known contract-probe variant is not scheduled here,
+since this block targets the new NZ pairs and the selected D128 unpad contract.
+An NZ request with internal formats off remains unsupported; both sides of an
+ND/NZ pair must use internal formats **on**, labelled as a departure from
+production when production used off. Do not silently enable it for NZ alone.
 
 “Stock vLLM-Ascend” means the stock `_npu_flash_attention_unpad` op inside our
 eager stack, **not the vLLM-Ascend vision path**. D80 is padded to D128 with
@@ -299,11 +492,25 @@ processes, relaunch automatically or substitute eager for compiled. A healthy
 operator/compiler compatibility rejection is recorded as a failed/skipped lane;
 report the minimal proposed fix without changing tracked source.
 
-The revised tooling was exercised on 910B: 48 on-format calibration cases,
+The first revised tooling validation was exercised on 910B: 48 on-format calibration cases,
 two off-format ND checks and eight full-vision lanes completed. The explicit
 off/NZ incompatibilities and the initial corrected compiler-wrapper failure
 are preserved in [the validation results](references/vision_diagnostics_910b_20261007/RESULTS.md).
 These validate the tools; they do not answer the 310P hardware question.
+The later [910B NZ-pair run](references/vision_nz_pairs_910b_20261007/RESULTS.md)
+completed 24 full-vision lanes with actual weight-input format audits. That
+archive reproduces the reference points above; it was not run ND, NZ, ND, NZ.
+The repeated order here is a new requirement for the receiving 310P session.
+
+Preserve intent and disclose material departures: before dependent work runs,
+put any proposed harness change, default change or substitution in a run-root
+results file and explain it to Luka in chat, distinguishing the requested task,
+verified references and your proposal. Obtain agreement unless that specific
+tradeoff was already authorized. A dependency failure or executable fallback
+does not authorize a change of method. This pull-only agent still must not edit
+tracked source; report the minimal proposed patch and evidence to the authoring
+lane. Successful execution, valid timing and evidence for an all-NZ conclusion
+are separate checks. A parameter labelled NZ is insufficient for the last one.
 
 ## 6. Exact report format to Luka
 
@@ -330,8 +537,15 @@ Configuration-match table (present first if anything differs):
 
 One lane table, including failures and unsupported cases:
 
-| Chip | Lane ID / purpose | Execution mode | Internal format / projection | Real/padded tokens | Wall mean ms | Event mean ms | Useful vision tok/s | Relative L2 drift | Status |
-|---|---|---|---|---|---:|---:|---:|---:|---|
+| Chip | Lane ID / purpose / pair ID / repeat / order | Execution mode | Internal format / projection | Weight requested / actual kernel input formats | Real/padded tokens | Wall mean ms | Event mean ms | Useful vision tok/s | Relative L2 drift | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+
+For every full-vision ND/NZ pair, add one row per repeat below (no collapsing
+repeat 1 and 2). Report the arithmetic meaning of any later aggregate. A mixed
+or unknown format stays labelled even if the command completed successfully.
+
+| Chip | Pair ID / route | Repeat | Recorded order | ND wall ms | NZ-parameter wall ms | Wall change % | ND / NZ useful tok/s | Actual weight formats, including GroupedMatmul | Status / missing member |
+|---|---|---:|---|---:|---:|---:|---|---|---|
 
 One kernel-bucket table per lane; expand attention and matmul into rows for
 **each actual type** and retain per-call columns in JSON/CSV:
@@ -347,7 +561,7 @@ One kernel-bucket table per lane; expand attention and matmul into rows for
 
 Calibration table (explicitly title it “Synthetic matmul calibration only”):
 
-| Chip | Case ID | Mode | Internal formats | Weight requested/actual | M | K | N | Kernel type(s) | Block Num / Mix | Kernel us/forward | Wait us/forward | Achieved TFLOPS | Status |
+| Chip | Case ID / pair repeat / order | Mode | Internal formats | Weight requested/actual | M | K | N | Kernel type(s) | Block Num / Mix | Kernel us/forward | Wait us/forward | Achieved TFLOPS | Status |
 |---|---|---|---|---|---:|---:|---:|---|---|---:|---:|---:|---|
 
 Device/host context table, before and after every lane:
