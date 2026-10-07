@@ -184,6 +184,7 @@ def main():
     p.add_argument('--validation-queries',type=int,default=64)
     p.add_argument('--seed',type=int,default=1047)
     p.add_argument('--acquire-only',action='store_true')
+    p.add_argument('--reuse-panels',action='store_true',help='Reuse complete panels; reload only query texts for exclusions')
     args=p.parse_args();args.output.mkdir(exist_ok=True,parents=True)
     if args.acquire_only:
         rows,origin=raw_pool(args)
@@ -204,7 +205,26 @@ def main():
     module.load_dataset=explicit_default
     class Observer:state={}
     panel=[];reserved=[];bq=set();bd=set();provenance={}
-    for name in list(ENGLISH)+list(TASKS):
+    names=list(ENGLISH)+list(TASKS)
+    if args.reuse_panels:
+        cached=read(args.output/'benchmark_panels.json.gz')
+        panel,reserved,provenance=cached['panel'],cached['reserved'],cached['provenance']
+        assert set(provenance)==set(names)
+        from datasets import load_dataset
+        for name in names:
+            if name in ENGLISH:
+                path,revision,_,_=ENGLISH[name]
+                qs=next(iter(load_dataset(path,'queries',revision=revision).values()))
+            else:
+                meta=provenance[name]['dataset']
+                ds=load_dataset(meta['path'],'default',revision=meta['revision'])
+                qs=ds['queries']
+            assert 'text' in qs.column_names
+            bq.update(text_hash(q) for q in qs['text'])
+        bd={text_hash(d) for g in panel+reserved for d in g['documents']}
+        print('PANELS_REUSED',len(panel),len(reserved),'blocked_queries',len(bq),flush=True)
+        names=[]
+    for name in names:
         print('TASK_LOADING',name,flush=True)
         if name in ENGLISH:
             task,meta=load_task(name,Observer());split='test';lang='en';instruction=ENGLISH[name][2]
