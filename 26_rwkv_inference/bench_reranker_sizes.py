@@ -171,7 +171,9 @@ def coordinate(args):
         matrix=[('tiny','fp32',512,True)]+[(size,dtype,T,False)
             for size in ['base','large'] for dtype in ['fp32','fp16'] for T in [512,2048]]
         for size,dtype,T,gate in matrix:
-            device=free_device(args);name=f'{size}_{dtype}_b4_t{T}';out=args.output/name
+            name=f'{size}_{dtype}_b4_t{T}'
+            report.update(status='waiting_for_idle_npu',active=name);persist()
+            device=free_device(args);out=args.output/name
             argv=[sys.executable,'-u',str(Path(__file__).resolve()),*sys.argv[1:],
                   '--worker','--size',size,'--dtype',dtype,'--bucket',str(T)]
             ix=argv.index('--output');argv[ix+1]=str(out)
@@ -206,7 +208,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     for n in ['models','cases-root','upstream','reference-build','build-root','download-status','output']:
         p.add_argument('--'+n,type=Path,required=True)
-    p.add_argument('--devices',nargs='+',type=int,default=[7,6,4])
+    p.add_argument('--devices',nargs='+',type=int,default=[7,6,4,3,2,1,0])
     p.add_argument('--repeats',type=int,default=10)
     p.add_argument('--idle-wait-seconds',type=int,default=21600)
     p.add_argument('--worker',action='store_true');p.add_argument('--gate-only',action='store_true')
@@ -214,7 +216,7 @@ def main():
     p.add_argument('--dtype',choices=['fp32','fp16'],default='fp32')
     p.add_argument('--bucket',type=int,choices=[512,2048],default=512)
     args=p.parse_args()
-    if not 0<args.idle_wait_seconds<=86400 or not 3<=args.repeats<=100 or not set(args.devices).issubset({4,6,7}):p.error('Use 3..100 repeats and the authorized idle-device set 4/6/7')
+    if not 0<args.idle_wait_seconds<=86400 or not 3<=args.repeats<=100 or not set(args.devices).issubset({0,1,2,3,4,6,7}):p.error('Use 3..100 repeats and healthy idle devices 0/1/2/3/4/6/7')
     worker(args) if args.worker else coordinate(args)
 
 
