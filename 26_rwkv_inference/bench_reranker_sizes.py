@@ -129,7 +129,8 @@ def worker(args):
             'local_modeling_rwkv_reranker.py', 'probe_reranker_endpoint.py', 'run_reranker_smoke.py', 'wkv7_endpoint.py']},
         physical_npu=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), shared_device=args.allow_shared_device, all_checks_passed=False,
         backend=args.backend, scope='Prepared device inputs; uncached backbone plus state-readout head. Synchronized steady calls exclude CPU checks, compile, input transfers and tokenization.',
-        timings={})
+        recurrence=args.recurrence, matrix_chunk_size=args.matrix_chunk_size,
+        matrix_compute_dtype=args.matrix_compute_dtype, timings={})
     try:
         import torch_npu
         torch.set_num_threads(4)
@@ -191,6 +192,32 @@ def worker(args):
             del singles, state
             assert torch.equal(expected, ranker(backbone(ids,lengths)[1]))
             report['raw_checks_passed']=True
+            if args.recurrence == 'matrix':
+                from matrix_recurrence import MatrixRecurrence
+                report['matrix_source_sha256']={n:sha256(root/n) for n in
+                    ['matrix_recurrence.py','wkv7_matrix/rwkv7_chunk_scan.py','wkv7_matrix/provenance.json']}
+                matrix_dtype={'fp32':torch.float32,'bf16':torch.bfloat16}[args.matrix_compute_dtype]
+                for block in model.blocks:
+                    block.matrix_recurrence=MatrixRecurrence(args.matrix_chunk_size,matrix_dtype)
+                candidate=backbone(ids,lengths);candidate_logits=ranker(candidate[1])
+                report['matrix_vs_vector_states']=[require(a,b,.02,.005) for a,b in zip(candidate,eager)]
+                report['matrix_vs_vector_logits']=require(candidate_logits,expected,.02,.005)
+                report['matrix_logits']=candidate_logits.cpu().tolist()
+                report['vector_logits']=expected.cpu().tolist()
+                # Full-model continuation on the first real document/query pair;
+                # correctness only, outside every benchmark/profiler window.
+                real=torch.tensor([cases[0]['input_ids']],device='npu',dtype=torch.long)
+                split=(real.shape[1]//2//args.matrix_chunk_size)*args.matrix_chunk_size
+                if split:
+                    _,prefix,_=model.encode_states(real[:,:split])
+                    _,continued,_=model.encode_states(real[:,split:],state=prefix)
+                    _,whole,_=model.encode_states(real)
+                    report['matrix_full_model_continuation']=[require(a,b,.02,.005) for a,b in zip(continued,whole)]
+                    require(ranker(continued[1]),ranker(whole[1]),.02,.005)
+                    del prefix,continued,whole
+                eager,expected=candidate,candidate_logits
+                del real
+                assert torch.equal(expected,ranker(backbone(ids,lengths)[1]))
             report['timings']['eager_total'] = measure(lambda: ranker(backbone(ids,lengths)[1]), args.repeats, args.batch_size)
             print('EAGER_TIMING', json.dumps(report['timings']['eager_total']), flush=True)
             save(args.output/'result.json', report)
@@ -221,7 +248,9 @@ def worker(args):
             assert torch.equal(head(encode(ids,lengths)[1]),logits)
             fixed=actual[1].clone().contiguous()
             report['timings']['torchair_total']=measure(lambda:head(encode(ids,lengths)[1]),args.repeats,args.batch_size)
-            report['timings']['torchair_head_only']=measure(lambda:head(fixed),args.repeats,args.batch_size)
+            # Candidate comparison measures complete scoring, never isolated kernels.
+            if args.recurrence == 'vector':
+                report['timings']['torchair_head_only']=measure(lambda:head(fixed),args.repeats,args.batch_size)
             assert torch.equal(head(encode(ids,lengths)[1]),logits)
             if args.profile:
                 report['profiling_backend']='torchair'
@@ -306,6 +335,9 @@ def main():
         p.add_argument('--'+n,type=Path,required=True)
     p.add_argument('--devices',nargs='+',type=int,default=[7,6,4,3,2,1,0])
     p.add_argument('--repeats',type=int,default=10)
+    p.add_argument('--recurrence',choices=['vector','matrix'],default='vector')
+    p.add_argument('--matrix-chunk-size',type=int,choices=[16,32,64,128],default=64)
+    p.add_argument('--matrix-compute-dtype',choices=['fp32','bf16'],default='fp32')
     p.add_argument('--profile',action='store_true',help='Explicit B1/B4 worker: eager and optional compiled CPU/NPU traces with shapes')
     p.add_argument('--profile-data',type=Path)
     p.add_argument('--profile-warmup',type=int,default=5)
@@ -334,6 +366,8 @@ def main():
     if not 3<=args.profile_warmup<=20 or not 2<=args.profile_active<=5:
         p.error('Use profile warmup 3..20 and active 2..5')
     if args.warm_cache_from and not args.worker:p.error('Warm cache is for an explicit worker')
+    if args.recurrence == 'matrix' and (not args.worker or args.gate_only or args.warm_cache_from):
+        p.error('Matrix path requires an explicit full-model worker and fresh private caches')
     worker(args) if args.worker else coordinate(args)
 
 

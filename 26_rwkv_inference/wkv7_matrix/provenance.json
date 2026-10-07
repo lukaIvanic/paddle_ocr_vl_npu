@@ -1,0 +1,17 @@
+{
+  "repository": "rwkv-rs/rwkv7-ascend-npu",
+  "commit": "b6391271f0ddb606dad5e97a65fa4742e82fcd50",
+  "license": "Apache-2.0",
+  "files": {
+    "rwkv7_chunk_scan.py": {
+      "upstream_path": "perf/rwkv7_chunk_scan.py",
+      "sha256": "fc7a8c4486a1a5bfe8cc3aecc6e1b88655c28d0b64bc6c4177c1b4bb2f476167",
+      "modifications": []
+    },
+    "LICENSE": {
+      "upstream_path": "LICENSE",
+      "sha256": "75efa07c4d2afb14d8226cf00b7763dd2ec1c5585a9dfe919881a3a3fef2ddac",
+      "modifications": []
+    }
+  }
+}

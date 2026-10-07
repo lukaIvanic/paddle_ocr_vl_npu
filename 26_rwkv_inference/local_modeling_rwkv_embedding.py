@@ -48,6 +48,7 @@ class Block(Weights):
         if set(values) != expected:
             raise ValueError(f'Block keys mismatch: missing={expected-set(values)}, unexpected={set(values)-expected}')
         super().__init__(values, device, dense_dtype)
+        self.matrix_recurrence = None  # Explicit benchmark opt-in; default unchanged.
 
     def run(self, x, first, previous=None, matrix=None, valid_lengths=None):
         B, T, C = x.shape
@@ -79,16 +80,21 @@ class Block(Weights):
             return y.reshape(B, T, H, 64).permute(0, 2, 1, 3).contiguous()
         state = (torch.zeros((B, H, 64, 64), device=x.device, dtype=torch.float32)
                  if matrix is None else matrix.contiguous())
-        inputs = [layout(t) for t in (k, v, w, r, -kk, kk * a)]
-        if valid_lengths is not None:
+        inputs = None
+        if self.matrix_recurrence is not None:
+            y, state = self.matrix_recurrence(k, v, w, r, kk, a, state, valid_lengths)
+        elif valid_lengths is not None:
+            inputs = [layout(t) for t in (k, v, w, r, -kk, kk * a)]
             if T > 2048:
                 raise ValueError('Endpoint state capture supports T<=2048')
             y, state = torch.ops.rwkv_endpoint.wkv7.default(*inputs, state, valid_lengths)
         elif T <= 2048:
+            inputs = [layout(t) for t in (k, v, w, r, -kk, kk * a)]
             y, state = torch.ops.rwkv_reference.wkv7.default(*inputs, state)
         else:
             # Preserve the complete prepared sequence; only split the recurrence
             # at the bridge's validated call limit, carrying its FP32 state.
+            inputs = [layout(t) for t in (k, v, w, r, -kk, kk * a)]
             chunks = []
             for offset in range(0, T, 2048):
                 part, state = torch.ops.rwkv_reference.wkv7.default(
