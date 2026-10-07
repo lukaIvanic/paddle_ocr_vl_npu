@@ -119,9 +119,17 @@ def acquire(args):
   jobs.extend((source,c,k) for c,k in q.items() if k)
  def get(job):
   source,config,n=job;p=out/'rows'/(config+'.json.gz')
-  if p.exists():return {'config':config,'cached':True,'rows':len(read(p)['rows'])}
+  if p.exists():
+   cached=read(p)
+   if cached['seed']!=args.seed or cached['revision']!=REVISION:raise ValueError('Raw cache identity mismatch')
+   if all(len(r['pos'])==r['original_positive_count'] for r in cached['rows']):
+    return {'config':config,'cached':True,'rows':len(cached['rows'])}
   rng=random.Random(f'{args.seed}/{config}')
-  chosen=sorted(rng.sample(range(counts[config]),n));result=[];base=0;assets=[]
+  chosen_set=set()
+  while len(chosen_set)<n:
+   start=rng.randrange(counts[config])
+   for j in range(min(512,n-len(chosen_set))):chosen_set.add((start+j)%counts[config])
+  chosen=sorted(chosen_set);result=[];base=0;assets=[]
   files=sorted(s['rfilename'] for s in metadata['siblings'] if s['rfilename'].startswith(config+'/') and s['rfilename'].endswith('.parquet'))
   t=time.monotonic()
   for fn in files:
@@ -131,19 +139,21 @@ def acquire(args):
     nr=pf.metadata.row_group(i).num_rows;indices=[x-base for x in chosen if base<=x<base+nr]
     if indices:
      table=pf.read_row_group(i).take(indices)
+     print('ROW_GROUP',config,base,len(indices),flush=True)
      for idx,row in zip(indices,table.to_pylist()):
       rr=random.Random(f'{args.seed}/{config}/{base+idx}')
       pos=row['pos'];neg=row['neg']
       result.append({'id':f'{config}/{base+idx}','source':source,'config':config,'query':row['query'],
-       'pos':rr.sample(pos,min(len(pos),16)),'neg':rr.sample(neg,min(len(neg),32)),
+       'pos':pos,'neg':rr.sample(neg,min(len(neg),32)),
        'original_positive_count':len(pos),'original_negative_count':len(neg)})
     base+=nr
    if base>chosen[-1]:break
   assert len(result)==n,(config,len(result),n)
-  save(p,{'rows':result,'revision':REVISION,'seed':args.seed,'assets':assets,'pool_cap':{'positive':16,'negative':32}})
+  save(p,{'sampling':'seeded random circular blocks of at most 512 rows within source/length strata','rows':result,'revision':REVISION,'seed':args.seed,'assets':assets,'pool_cap':{'positive':None,'negative':32}})
   return {'config':config,'rows':n,'seconds':round(time.monotonic()-t,2),'bytes':p.stat().st_size}
  with concurrent.futures.ThreadPoolExecutor(args.workers) as pool:
-  for r in pool.map(get,jobs):print('ACQUIRED',json.dumps(r),flush=True)
+  for future in concurrent.futures.as_completed([pool.submit(get,j) for j in jobs]):
+   print('ACQUIRED',json.dumps(future.result()),flush=True)
  registries(out)
 
 def full_benchmark_queries(panels):
@@ -185,6 +195,8 @@ class NearIndex:
 def clean_pool(rows, source, registry, blocked):
  counts=collections.Counter();out=[];seen=set()
  for r in rows:
+  if len(r['pos']) != r['original_positive_count']:
+   raise ValueError('Positive pool was capped; reacquire before candidate construction')
   q=key(r['query']);strict=strict_key(q)
   if not strict or strict in blocked:counts['benchmark_or_upstream_holdout_query']+=1;continue
   if strict in seen:counts['duplicate_query']+=1;continue
@@ -200,21 +212,14 @@ def clean_pool(rows, source, registry, blocked):
    'split_evidence':'upstream_train_query_match' if registry else 'BGE_author_training_release'})
  return out,dict(counts)
 
-def sample_group(r, bank, fits, seed):
+def sample_group(r, fits, seed):
  rng=random.Random(f'{seed}/{r["id"]}');p=list(r['pos']);n=list(r['neg']);rng.shuffle(p);rng.shuffle(n)
  pos=next((d for d in p if fits(r,d)),None)
  if pos is None:return None
- docs=[pos];origins=['supplied_positive'];labels=[1];allpos={key(d) for d in p}
+ docs=[pos];origins=['supplied_positive'];labels=[1]
  for d in n:
   if len(docs)==8:break
   if fits(r,d):docs.append(d);origins.append('supplied_negative');labels.append(0)
- # Random supplements are UNJUDGED, not trustworthy supervised negatives.
- # Never use any known positive from this row as a negative.
- for j in rng.sample(range(len(bank)),len(bank)):
-  if len(docs)==8:break
-  d=bank[j]
-  if key(d) not in allpos and key(d) not in {key(x) for x in docs} and fits(r,d):
-   docs.append(d);origins.append('random_same_source_unjudged');labels.append(None)
  if len(docs)!=8:return None
  return {k:r[k] for k in ['id','source','query','upstream_query_id','split_evidence']}|{
   'language':SPECS[r['source']][0],'instruction':SPECS[r['source']][3],'documents':docs,
@@ -255,10 +260,9 @@ def build(args):
  # Choose validation first; then screen every training candidate against ALL validation queries.
  validation=[];train=[];global_seen=set();val_ids=set()
  for source,(_,n,v,_) in SPECS.items():
-  bank=list(dict.fromkeys(d for r in cleaned[source] for d in r['pos']+r['neg']))
   for r in cleaned[source]:
    if strict_key(r['query']) in global_seen:continue
-   g=sample_group(r,bank,fits,args.seed)
+   g=sample_group(r,fits,args.seed)
    if g:
     validation.append(g);val_ids.add(r['id']);global_seen.add(strict_key(r['query']))
    if sum(g['source']==source for g in validation)==v:break
@@ -267,11 +271,10 @@ def build(args):
  for source,(_,n,v,_) in SPECS.items():
   rows=[r for r in cleaned[source] if r['id'] not in val_ids]
   blocked_by_val=vindex.blocked([r['query'] for r in rows]);rows=[r for i,r in enumerate(rows) if i not in blocked_by_val]
-  bank=list(dict.fromkeys(d for r in rows for d in r['pos']+r['neg']))
   selected=[]
   for r in rows:
    if strict_key(r['query']) in global_seen:continue
-   g=sample_group(r,bank,fits,args.seed)
+   g=sample_group(r,fits,args.seed)
    if g:selected.append(g);global_seen.add(strict_key(r['query']))
    if len(selected)==n:break
   assert len(selected)==n,('training quota',source,len(selected),n)
@@ -304,7 +307,7 @@ def build(args):
  audit['candidate_origins']=dict(collections.Counter(o for g in train for o in g['candidate_origin']))
  audit['candidate_difficulty']='NOT YET TEACHER-SCORED; supplied negative does not establish hardness or correctness'
  audit['checks']={'query_exact_and_lexical_near_screened':True,'upstream_train_membership_for_reopened_families':True,
-  'all_training_and_validation_prompts_fit_both_orders_8192':True,'no_forced_positive_target_for_unjudged_candidates':True}
+  'all_training_and_validation_prompts_fit_both_orders_8192':True,'every_candidate_from_its_own_released_row':True}
  audit['limitations']=['Lexical screen is not a semantic or translation decontamination guarantee',
   'BGE sources outside reopened families retain author-release provenance; original ID mapping not reconstructed',
   'No new candidate mining or teacher difficulty/false-negative audit yet',
@@ -316,7 +319,7 @@ def build(args):
    'quotas':SPECS,'pending_sources':PENDING,'registries_sha256':digest((out/'registries.json.gz').read_bytes()),
    'raw_sample_sha256':{p.name:digest(p.read_bytes()) for p in sorted((out/'rows').glob('*.json.gz'))},
    'benchmark_panel_sha256':digest(args.panels.read_bytes()),'instructions':'pinned Qwen task prompts where matching; explicitly authored descriptive prompts for legal/biomedical/long-document sources',
-   'candidate_selection':'seeded positive and supplied-negative pools; random source-bank supplements explicitly unjudged; no TF-IDF filler',
+   'candidate_selection':'seeded positive and seven distinct supplied negatives from the same released row; no supplementation; fail if quota cannot be met',
    'supervised_loss_status':'not approved by this artifact; teacher/label disagreement audit still required'}}
  save(out/'dataset.json.gz',result);audit['dataset_sha256']=digest((out/'dataset.json.gz').read_bytes())
  audit['counts']={k:len(result[k]) for k in ['train','validation','benchmark','reserved_benchmark']}
