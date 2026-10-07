@@ -1,4 +1,4 @@
-"""Shared deterministic query-first NPU scoring for teacher and student."""
+"""Deterministic NPU scoring with an explicit teacher/student input format."""
 import collections
 import gzip
 import hashlib
@@ -46,13 +46,13 @@ class Runtime:
         self.answers = torch.tensor([no, yes], device=self.device)
         self.lengths = {}
 
-    def records(self, groups, section):
+    def records(self, groups, section, order='query_first'):
         rows = []
         truncated = 0
         token_hash = hashlib.sha256()
         for g in groups:
             for j, document in enumerate(g['documents']):
-                raw = self.encode(body(g['instruction'], g['query'], document, 'query_first'))
+                raw = self.encode(body(g['instruction'], g['query'], document, order))
                 truncated += len(raw) > self.limit
                 rows.append({'ids': self.prefix + raw[:self.limit] + self.suffix,
                              'index': len(rows), 'group_id': g['id'], 'candidate': j})

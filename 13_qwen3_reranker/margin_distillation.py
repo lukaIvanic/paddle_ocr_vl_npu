@@ -2,6 +2,23 @@
 import math
 
 
+def validate_teacher_inputs(teacher, canonical, student, order):
+    """Validate reusable query-first targets while allowing an intentional swap."""
+    assert teacher == canonical, 'Saved teacher query-first tokens or truncation differ'
+    assert set(student) == set(canonical), 'Student sections differ'
+    if order == 'query_first':
+        assert student == canonical, 'Query-first student tokens differ'
+    elif order == 'contents_swapped':
+        for section in canonical:
+            assert student[section]['pairs'] == canonical[section]['pairs'], 'Student pair counts differ'
+            assert canonical[section]['truncated'] == student[section]['truncated'] == 0, (
+                'This contents-swap pilot requires untruncated teacher and student inputs')
+            assert student[section]['token_ids_sha256'] != canonical[section]['token_ids_sha256'], (
+                'Contents swap did not change token IDs')
+    else:
+        raise ValueError(order)
+
+
 def lr_at(step, steps, peak, schedule, warmup=5):
     if not 1 <= step <= steps:
         raise ValueError("Optimizer step outside schedule")
