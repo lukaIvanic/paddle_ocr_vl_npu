@@ -488,6 +488,36 @@ If document states are reused, check that reused-state scores match fresh-state
 scores within a justified numerical tolerance. This is a correctness check;
 storage/serving optimization comes later if needed.
 
+**Document-cache accuracy verified**, source `57e5315d`, 2026-10-07:
+user-approved released offline policy: full unpadded instruction+document prefix
+without EOS, then query+EOS; no last-2048 truncation. Same **11 tasks / 550 queries /
+57,688 pairs** and labels as before. All pair tokenizations match concatenated
+prefix+suffix; three documents exceed 2048. B1/B4, save/load, non-mutation,
+2474-token continuation and warmed eager/TorchAir gates pass. Largest pair remains
+FP16 dense / FP32 states, per-head LayerNorm, unchanged TorchAir settings.
+Mean NDCG@10 **71.79357 cached / 71.78209 identical-input uncached**, versus
+previous padded/truncated **71.68844**. This supports aggregate quality preservation;
+individual tasks change with the input policy. NQ's **+0.36907** cached delta is
+one top-rank tie broken by a **0.00390625** logit change.
+
+Paired full-system evaluation on 910B2 NPUs **1/3**: summed measured scoring
+**19m46s cached / 29m57s uncached**, **1.515×**. At the actual shard split,
+max-worker phase totals project **10m55s / 16m30s** on two NPUs, or **23m21s**
+for build+cached scoring, excluding setup/compile/preparation; these are not
+standalone cached-only wall measurements. The complete paired experiment took
+**45m14s** for its slower worker and includes cache build, both scoring paths,
+setup/compilation and checks. **32,186** document states occupy **388.97 GiB**.
+Cache access was RAM-served (final worker physical disk read counter stayed zero).
+
+Warm four-pair smoke pipeline: **340→60.7 ms** compiled and **382→208 ms** eager;
+not representative of the suite's length mix. PyTorch cached trace attributes
+**~32/66 ms** to host cache loading/copying and H2D; this remains an optimization
+target. Full scoring timers include state gather/H2D/model/D2H, while metric/JSON
+writes are outside them. Preparation and build are reported separately. TorchAir
+still warns about skipped persistent-cache variants on recompilation; warm calls
+passed, but persistent reuse of every graph variant is not established.
+[Results, per-query scores, traces, timing scope and provenance](../tmp/26_rwkv_inference/cached_large_57e5315d/comparison.json).
+
 ## 3. Estimate full C-MTEB and English MTEB time for the largest reranker
 
 Only the **1.3B reranker with its 1.4B state backbone** proceeds to this phase.

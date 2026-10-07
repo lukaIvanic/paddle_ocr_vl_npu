@@ -1,0 +1,20 @@
+{
+  "task": "NanoFEVERRetrieval",
+  "queries": 50,
+  "pairs": 5001,
+  "documents": 3268,
+  "cache_bytes": 42405986432,
+  "cache_build_seconds": 176.1785599799914,
+  "build_warmup_seconds": 1.0637008799967589,
+  "scoring_seconds": {
+    "cached": 97.85636978011462,
+    "uncached": 211.92540539045876
+  },
+  "ndcg": {
+    "cached": 95.65165474362692,
+    "uncached": 95.65165474362692
+  },
+  "previous_ndcg": 94.70271900606043,
+  "max_cached_uncached_logit_delta": 0.0234375,
+  "total_seconds": 492.3979911100032
+}

@@ -1,0 +1,264 @@
+{
+  "chip": "Ascend910B2",
+  "devices": [
+    1,
+    3
+  ],
+  "scope": "11-task BM25+positives NanoBEIR; original candidates/labels, approved released cached input policy without left padding/truncation. Paired cached and uncached scoring; no standalone cached-only full run.",
+  "mean_ndcg": {
+    "cached": 71.79356916928488,
+    "uncached": 71.78208522936114
+  },
+  "previous_mean_ndcg": 71.68843837574643,
+  "cached_minus_uncached": 0.01148393992373542,
+  "cached_minus_previous": 0.10513079353845001,
+  "cache_bytes": 417649657216,
+  "unique_documents": 32186,
+  "pairs": 57688,
+  "queries": 550,
+  "tasks": [
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "queries": 50,
+      "pairs": 5089,
+      "documents": 1761,
+      "cache_bytes": 22850961536,
+      "cache_build_seconds": 71.00189836999925,
+      "build_warmup_seconds": 122.94749433000106,
+      "scoring_seconds": {
+        "cached": 99.77104234974831,
+        "uncached": 139.11992751994694
+      },
+      "ndcg": {
+        "cached": 47.591732686569756,
+        "uncached": 47.608462126903895
+      },
+      "previous_ndcg": 46.819925274602944,
+      "max_cached_uncached_logit_delta": 0.0234375,
+      "total_seconds": 545.9081958199968
+    },
+    {
+      "task": "NanoNFCorpusRetrieval",
+      "queries": 50,
+      "pairs": 7159,
+      "documents": 2474,
+      "cache_bytes": 32102940800,
+      "cache_build_seconds": 119.4974107099988,
+      "build_warmup_seconds": 1.082772069989005,
+      "scoring_seconds": {
+        "cached": 137.7642866699607,
+        "uncached": 253.64341275965853
+      },
+      "ndcg": {
+        "cached": 49.80351393519083,
+        "uncached": 49.80351393519083
+      },
+      "previous_ndcg": 51.03977912584972,
+      "max_cached_uncached_logit_delta": 0.029296875,
+      "total_seconds": 517.2714459900017
+    },
+    {
+      "task": "NanoFEVERRetrieval",
+      "queries": 50,
+      "pairs": 5001,
+      "documents": 3268,
+      "cache_bytes": 42405986432,
+      "cache_build_seconds": 176.1785599799914,
+      "build_warmup_seconds": 1.0637008799967589,
+      "scoring_seconds": {
+        "cached": 97.85636978011462,
+        "uncached": 211.92540539045876
+      },
+      "ndcg": {
+        "cached": 95.65165474362692,
+        "uncached": 95.65165474362692
+      },
+      "previous_ndcg": 94.70271900606043,
+      "max_cached_uncached_logit_delta": 0.0234375,
+      "total_seconds": 492.3979911100032
+    },
+    {
+      "task": "NanoNQRetrieval",
+      "queries": 50,
+      "pairs": 5006,
+      "documents": 3325,
+      "cache_bytes": 43145625728,
+      "cache_build_seconds": 119.41815572998894,
+      "build_warmup_seconds": 1.0256482900003903,
+      "scoring_seconds": {
+        "cached": 97.90958057009266,
+        "uncached": 109.6030068997934
+      },
+      "ndcg": {
+        "cached": 78.7799195120188,
+        "uncached": 78.41084926559024
+      },
+      "previous_ndcg": 77.76200278933008,
+      "max_cached_uncached_logit_delta": 0.0234375,
+      "total_seconds": 333.23452442999405
+    },
+    {
+      "task": "NanoMSMARCORetrieval",
+      "queries": 50,
+      "pairs": 5000,
+      "documents": 3616,
+      "cache_bytes": 46921678976,
+      "cache_build_seconds": 119.03474685001129,
+      "build_warmup_seconds": 0.19251488998997957,
+      "scoring_seconds": {
+        "cached": 97.76525220982148,
+        "uncached": 92.264522600075
+      },
+      "ndcg": {
+        "cached": 65.92864094214357,
+        "uncached": 65.94650939869118
+      },
+      "previous_ndcg": 64.4607321857688,
+      "max_cached_uncached_logit_delta": 0.015625,
+      "total_seconds": 314.724489729997
+    },
+    {
+      "task": "NanoClimateFeverRetrieval",
+      "queries": 50,
+      "pairs": 5065,
+      "documents": 2023,
+      "cache_bytes": 26250707072,
+      "cache_build_seconds": 130.58775292000792,
+      "build_warmup_seconds": 123.67924040000071,
+      "scoring_seconds": {
+        "cached": 124.02516898003523,
+        "uncached": 285.72824748032144
+      },
+      "ndcg": {
+        "cached": 40.74651124034754,
+        "uncached": 40.74651124034754
+      },
+      "previous_ndcg": 43.463088457298525,
+      "max_cached_uncached_logit_delta": 0.015625,
+      "total_seconds": 780.8076491699903
+    },
+    {
+      "task": "NanoSciFactRetrieval",
+      "queries": 50,
+      "pairs": 5004,
+      "documents": 2322,
+      "cache_bytes": 30130569344,
+      "cache_build_seconds": 118.72207850000996,
+      "build_warmup_seconds": 1.0378096200001892,
+      "scoring_seconds": {
+        "cached": 101.78052694995131,
+        "uncached": 203.4459077796928
+      },
+      "ndcg": {
+        "cached": 84.62343361317336,
+        "uncached": 84.62343361317336
+      },
+      "previous_ndcg": 84.34468558586128,
+      "max_cached_uncached_logit_delta": 0.015625,
+      "total_seconds": 430.2536523299932
+    },
+    {
+      "task": "NanoFiQA2018Retrieval",
+      "queries": 50,
+      "pairs": 5034,
+      "documents": 2819,
+      "cache_bytes": 36579704960,
+      "cache_build_seconds": 151.13846045000537,
+      "build_warmup_seconds": 1.3657102500001201,
+      "scoring_seconds": {
+        "cached": 104.65951493996545,
+        "uncached": 218.87169343027927
+      },
+      "ndcg": {
+        "cached": 67.50481682007633,
+        "uncached": 67.51211921576645
+      },
+      "previous_ndcg": 64.17660987333372,
+      "max_cached_uncached_logit_delta": 0.015625,
+      "total_seconds": 482.3868723100022
+    },
+    {
+      "task": "NanoHotpotQARetrieval",
+      "queries": 50,
+      "pairs": 5004,
+      "documents": 3258,
+      "cache_bytes": 42276225152,
+      "cache_build_seconds": 104.01575926000078,
+      "build_warmup_seconds": 0.18839929999376182,
+      "scoring_seconds": {
+        "cached": 102.69681608995597,
+        "uncached": 97.18303065025248
+      },
+      "ndcg": {
+        "cached": 93.08145285073597,
+        "uncached": 93.08878926073149
+      },
+      "previous_ndcg": 93.34990342820834,
+      "max_cached_uncached_logit_delta": 0.02734375,
+      "total_seconds": 309.5963353499974
+    },
+    {
+      "task": "NanoDBPediaRetrieval",
+      "queries": 50,
+      "pairs": 5326,
+      "documents": 3997,
+      "cache_bytes": 51865583744,
+      "cache_build_seconds": 130.16051635000622,
+      "build_warmup_seconds": 0.20056687999749556,
+      "scoring_seconds": {
+        "cached": 108.4034876900987,
+        "uncached": 100.04268699006934
+      },
+      "ndcg": {
+        "cached": 72.09142250082799,
+        "uncached": 72.2849327055282
+      },
+      "previous_ndcg": 72.59020323307304,
+      "max_cached_uncached_logit_delta": 0.0234375,
+      "total_seconds": 344.63451852000435
+    },
+    {
+      "task": "NanoQuoraRetrieval",
+      "queries": 50,
+      "pairs": 5000,
+      "documents": 3323,
+      "cache_bytes": 43119673472,
+      "cache_build_seconds": 111.56481846999668,
+      "build_warmup_seconds": 0.17660395000712015,
+      "scoring_seconds": {
+        "cached": 113.27760143026535,
+        "uncached": 84.75955643017369
+      },
+      "ndcg": {
+        "cached": 93.92616201742254,
+        "uncached": 93.92616201742254
+      },
+      "previous_ndcg": 95.86317317382387,
+      "max_cached_uncached_logit_delta": 0.01953125,
+      "total_seconds": 319.5397066699952
+    }
+  ],
+  "cache_build_worker_seconds": [
+    605.1307716399897,
+    746.1893859500269
+  ],
+  "scoring_worker_seconds": {
+    "cached": [
+      531.0665315797378,
+      654.843116080272
+    ],
+    "uncached": [
+      806.5562751699326,
+      990.031122760789
+    ]
+  },
+  "actual_paired_worker_total_seconds": [
+    2244.6781070900033,
+    2714.2614256300003
+  ],
+  "summed_scoring_speedup": 1.5149445840799736,
+  "warm_two_npu_cached_scoring_seconds_projection": 654.843116080272,
+  "warm_two_npu_uncached_scoring_seconds_projection": 990.031122760789,
+  "build_plus_cached_two_npu_seconds_projection": 1401.032502030299,
+  "timing_limits": "Timing totals are measured within interleaved paired evaluation. Summed/max-worker projections exclude input preparation, cold graph compile/model setup and unmeasured production scheduling. OS page cache was not evicted; no cold-disk claim. Smoke profile includes state mmap, CPU copy, H2D, model/head, D2H, JSON write; full scoring loop includes state gather/H2D/model/D2H but query JSON writes and metric aggregation are outside per-mode scoring timers."
+}

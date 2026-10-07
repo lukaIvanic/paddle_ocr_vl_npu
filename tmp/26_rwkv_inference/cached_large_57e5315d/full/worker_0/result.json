@@ -1,0 +1,123 @@
+{
+  "mode": "evaluate",
+  "source_commit": "57e5315d299f715fee450b2aa9783fc450377572",
+  "source_sha256": {
+    "run_cached_nanobeir.py": "177a72f224f845dd2dfb97ab838882ad631bf3c3cf4127095d4b03e14bc9febb",
+    "local_modeling_rwkv_embedding.py": "2ae777fe3e571edfa7288052072ea8336aab550cf9df49989ed72e0a74c0ad3e",
+    "local_modeling_rwkv_reranker.py": "62d3ce3f2f5d8a54924794422778fc61827962e41c0d4cd2d62591b9dfeb5896",
+    "probe_reranker_endpoint.py": "a7a65478cdb8bb5fd6e0f3c17a5d719fa24fdf158fbaefce012c09e4068ebbfb",
+    "wkv7_vector_variants.py": "6424d3f0085add90632a365a1245bce2615a1bcf78b816b95b03db5c21e1032b"
+  },
+  "all_checks_passed": true,
+  "checkpoint_sha256": "be7245cc832b43ed0df4873d49c1a831cb9972d27de3f8cc4950588fc8b9392d",
+  "reranker_sha256": "4ab584f4da09bb6528a027a740b3752711e138188b5885ebd02581edc58cce8a",
+  "physical_npu": "1",
+  "device": "Ascend910B2",
+  "dtype": "FP16 dense; FP32 shifts/matrices",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "tasks": [
+    {
+      "task": "NanoSCIDOCSRetrieval",
+      "queries": 50,
+      "pairs": 5089,
+      "documents": 1761,
+      "cache_bytes": 22850961536,
+      "cache_build_seconds": 71.00189836999925,
+      "build_warmup_seconds": 122.94749433000106,
+      "scoring_seconds": {
+        "cached": 99.77104234974831,
+        "uncached": 139.11992751994694
+      },
+      "ndcg": {
+        "cached": 47.591732686569756,
+        "uncached": 47.608462126903895
+      },
+      "previous_ndcg": 46.819925274602944,
+      "max_cached_uncached_logit_delta": 0.0234375,
+      "total_seconds": 545.9081958199968
+    },
+    {
+      "task": "NanoNFCorpusRetrieval",
+      "queries": 50,
+      "pairs": 7159,
+      "documents": 2474,
+      "cache_bytes": 32102940800,
+      "cache_build_seconds": 119.4974107099988,
+      "build_warmup_seconds": 1.082772069989005,
+      "scoring_seconds": {
+        "cached": 137.7642866699607,
+        "uncached": 253.64341275965853
+      },
+      "ndcg": {
+        "cached": 49.80351393519083,
+        "uncached": 49.80351393519083
+      },
+      "previous_ndcg": 51.03977912584972,
+      "max_cached_uncached_logit_delta": 0.029296875,
+      "total_seconds": 517.2714459900017
+    },
+    {
+      "task": "NanoFEVERRetrieval",
+      "queries": 50,
+      "pairs": 5001,
+      "documents": 3268,
+      "cache_bytes": 42405986432,
+      "cache_build_seconds": 176.1785599799914,
+      "build_warmup_seconds": 1.0637008799967589,
+      "scoring_seconds": {
+        "cached": 97.85636978011462,
+        "uncached": 211.92540539045876
+      },
+      "ndcg": {
+        "cached": 95.65165474362692,
+        "uncached": 95.65165474362692
+      },
+      "previous_ndcg": 94.70271900606043,
+      "max_cached_uncached_logit_delta": 0.0234375,
+      "total_seconds": 492.3979911100032
+    },
+    {
+      "task": "NanoNQRetrieval",
+      "queries": 50,
+      "pairs": 5006,
+      "documents": 3325,
+      "cache_bytes": 43145625728,
+      "cache_build_seconds": 119.41815572998894,
+      "build_warmup_seconds": 1.0256482900003903,
+      "scoring_seconds": {
+        "cached": 97.90958057009266,
+        "uncached": 109.6030068997934
+      },
+      "ndcg": {
+        "cached": 78.7799195120188,
+        "uncached": 78.41084926559024
+      },
+      "previous_ndcg": 77.76200278933008,
+      "max_cached_uncached_logit_delta": 0.0234375,
+      "total_seconds": 333.23452442999405
+    },
+    {
+      "task": "NanoMSMARCORetrieval",
+      "queries": 50,
+      "pairs": 5000,
+      "documents": 3616,
+      "cache_bytes": 46921678976,
+      "cache_build_seconds": 119.03474685001129,
+      "build_warmup_seconds": 0.19251488998997957,
+      "scoring_seconds": {
+        "cached": 97.76525220982148,
+        "uncached": 92.264522600075
+      },
+      "ndcg": {
+        "cached": 65.92864094214357,
+        "uncached": 65.94650939869118
+      },
+      "previous_ndcg": 64.4607321857688,
+      "max_cached_uncached_logit_delta": 0.015625,
+      "total_seconds": 314.724489729997
+    }
+  ],
+  "evaluation_seconds": 2221.336995910009,
+  "total_seconds": 2244.6781070900033
+}

@@ -1,0 +1,20 @@
+{
+  "task": "NanoClimateFeverRetrieval",
+  "queries": 50,
+  "pairs": 5065,
+  "documents": 2023,
+  "cache_bytes": 26250707072,
+  "cache_build_seconds": 130.58775292000792,
+  "build_warmup_seconds": 123.67924040000071,
+  "scoring_seconds": {
+    "cached": 124.02516898003523,
+    "uncached": 285.72824748032144
+  },
+  "ndcg": {
+    "cached": 40.74651124034754,
+    "uncached": 40.74651124034754
+  },
+  "previous_ndcg": 43.463088457298525,
+  "max_cached_uncached_logit_delta": 0.015625,
+  "total_seconds": 780.8076491699903
+}

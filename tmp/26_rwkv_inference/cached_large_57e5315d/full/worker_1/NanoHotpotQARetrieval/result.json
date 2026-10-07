@@ -1,0 +1,20 @@
+{
+  "task": "NanoHotpotQARetrieval",
+  "queries": 50,
+  "pairs": 5004,
+  "documents": 3258,
+  "cache_bytes": 42276225152,
+  "cache_build_seconds": 104.01575926000078,
+  "build_warmup_seconds": 0.18839929999376182,
+  "scoring_seconds": {
+    "cached": 102.69681608995597,
+    "uncached": 97.18303065025248
+  },
+  "ndcg": {
+    "cached": 93.08145285073597,
+    "uncached": 93.08878926073149
+  },
+  "previous_ndcg": 93.34990342820834,
+  "max_cached_uncached_logit_delta": 0.02734375,
+  "total_seconds": 309.5963353499974
+}

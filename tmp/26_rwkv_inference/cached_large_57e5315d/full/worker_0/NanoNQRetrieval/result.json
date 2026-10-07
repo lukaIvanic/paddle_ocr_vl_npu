@@ -1,0 +1,20 @@
+{
+  "task": "NanoNQRetrieval",
+  "queries": 50,
+  "pairs": 5006,
+  "documents": 3325,
+  "cache_bytes": 43145625728,
+  "cache_build_seconds": 119.41815572998894,
+  "build_warmup_seconds": 1.0256482900003903,
+  "scoring_seconds": {
+    "cached": 97.90958057009266,
+    "uncached": 109.6030068997934
+  },
+  "ndcg": {
+    "cached": 78.7799195120188,
+    "uncached": 78.41084926559024
+  },
+  "previous_ndcg": 77.76200278933008,
+  "max_cached_uncached_logit_delta": 0.0234375,
+  "total_seconds": 333.23452442999405
+}

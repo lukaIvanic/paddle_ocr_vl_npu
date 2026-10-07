@@ -1,0 +1,20 @@
+{
+  "task": "NanoQuoraRetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "documents": 3323,
+  "cache_bytes": 43119673472,
+  "cache_build_seconds": 111.56481846999668,
+  "build_warmup_seconds": 0.17660395000712015,
+  "scoring_seconds": {
+    "cached": 113.27760143026535,
+    "uncached": 84.75955643017369
+  },
+  "ndcg": {
+    "cached": 93.92616201742254,
+    "uncached": 93.92616201742254
+  },
+  "previous_ndcg": 95.86317317382387,
+  "max_cached_uncached_logit_delta": 0.01953125,
+  "total_seconds": 319.5397066699952
+}

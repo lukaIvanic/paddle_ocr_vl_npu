@@ -1,0 +1,11 @@
+{
+  "task": "NanoQuoraRetrieval",
+  "phase": "paired_score",
+  "done": 50,
+  "total": 50,
+  "scoring_seconds": {
+    "cached": 113.27760143026535,
+    "uncached": 84.75955643017369
+  },
+  "elapsed_seconds": 319.5385146100016
+}

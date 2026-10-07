@@ -1,0 +1,20 @@
+{
+  "task": "NanoNFCorpusRetrieval",
+  "queries": 50,
+  "pairs": 7159,
+  "documents": 2474,
+  "cache_bytes": 32102940800,
+  "cache_build_seconds": 119.4974107099988,
+  "build_warmup_seconds": 1.082772069989005,
+  "scoring_seconds": {
+    "cached": 137.7642866699607,
+    "uncached": 253.64341275965853
+  },
+  "ndcg": {
+    "cached": 49.80351393519083,
+    "uncached": 49.80351393519083
+  },
+  "previous_ndcg": 51.03977912584972,
+  "max_cached_uncached_logit_delta": 0.029296875,
+  "total_seconds": 517.2714459900017
+}

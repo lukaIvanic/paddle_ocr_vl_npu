@@ -1,0 +1,18 @@
+{
+  "pairs": 57688,
+  "max_abs_logit_delta": 0.029296875,
+  "mean_abs_logit_delta": 0.0028840939876871555,
+  "pairs_outside_smoke_score_tolerance": 0,
+  "smoke_score_tolerance": "atol0.02 + rtol0.005*abs(uncached)",
+  "nq_difference": {
+    "query_id": "test2032",
+    "query_ndcg_delta": 0.18453512321427123,
+    "task_ndcg_delta": 0.36907024642854247,
+    "reason": "Only this query changes NQ NDCG. Two top uncached logits tie at -1.6796875; cached nonrelevant score is -1.68359375, breaking the tie while relevant score is unchanged."
+  },
+  "upstream_cached_policy": {
+    "url": "https://github.com/howard-hou/EmbeddingRWKV/blob/3c306736c58550f4be6d384be068512ba9bfbd72/package/README.md#offline-mode-cached-doc-state",
+    "sha256": "eedd110855723876dbaf881817aaa6a6e8f27657b39fa989c2d5031df0c18542",
+    "user_approval": "User explicitly approved testing the released cached policy with identical-input uncached control; no left padding or last2048 truncation."
+  }
+}

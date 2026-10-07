@@ -1,0 +1,20 @@
+{
+  "task": "NanoFiQA2018Retrieval",
+  "queries": 50,
+  "pairs": 5034,
+  "documents": 2819,
+  "cache_bytes": 36579704960,
+  "cache_build_seconds": 151.13846045000537,
+  "build_warmup_seconds": 1.3657102500001201,
+  "scoring_seconds": {
+    "cached": 104.65951493996545,
+    "uncached": 218.87169343027927
+  },
+  "ndcg": {
+    "cached": 67.50481682007633,
+    "uncached": 67.51211921576645
+  },
+  "previous_ndcg": 64.17660987333372,
+  "max_cached_uncached_logit_delta": 0.015625,
+  "total_seconds": 482.3868723100022
+}

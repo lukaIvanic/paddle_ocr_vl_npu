@@ -1,0 +1,1 @@
+{"reason":"Replace shared multi-shape graph cache with one cache per static bucket; preserve prepared inputs and first numerical check."}

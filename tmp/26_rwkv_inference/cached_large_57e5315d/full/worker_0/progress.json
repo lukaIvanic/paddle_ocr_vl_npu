@@ -1,0 +1,11 @@
+{
+  "task": "NanoMSMARCORetrieval",
+  "phase": "paired_score",
+  "done": 50,
+  "total": 50,
+  "scoring_seconds": {
+    "cached": 97.76525220982148,
+    "uncached": 92.264522600075
+  },
+  "elapsed_seconds": 314.7233984199993
+}

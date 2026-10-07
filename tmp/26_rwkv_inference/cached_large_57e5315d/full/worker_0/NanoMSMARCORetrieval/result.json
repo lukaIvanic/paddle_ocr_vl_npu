@@ -1,0 +1,20 @@
+{
+  "task": "NanoMSMARCORetrieval",
+  "queries": 50,
+  "pairs": 5000,
+  "documents": 3616,
+  "cache_bytes": 46921678976,
+  "cache_build_seconds": 119.03474685001129,
+  "build_warmup_seconds": 0.19251488998997957,
+  "scoring_seconds": {
+    "cached": 97.76525220982148,
+    "uncached": 92.264522600075
+  },
+  "ndcg": {
+    "cached": 65.92864094214357,
+    "uncached": 65.94650939869118
+  },
+  "previous_ndcg": 64.4607321857688,
+  "max_cached_uncached_logit_delta": 0.015625,
+  "total_seconds": 314.724489729997
+}

@@ -1,0 +1,143 @@
+{
+  "mode": "evaluate",
+  "source_commit": "57e5315d299f715fee450b2aa9783fc450377572",
+  "source_sha256": {
+    "run_cached_nanobeir.py": "177a72f224f845dd2dfb97ab838882ad631bf3c3cf4127095d4b03e14bc9febb",
+    "local_modeling_rwkv_embedding.py": "2ae777fe3e571edfa7288052072ea8336aab550cf9df49989ed72e0a74c0ad3e",
+    "local_modeling_rwkv_reranker.py": "62d3ce3f2f5d8a54924794422778fc61827962e41c0d4cd2d62591b9dfeb5896",
+    "probe_reranker_endpoint.py": "a7a65478cdb8bb5fd6e0f3c17a5d719fa24fdf158fbaefce012c09e4068ebbfb",
+    "wkv7_vector_variants.py": "6424d3f0085add90632a365a1245bce2615a1bcf78b816b95b03db5c21e1032b"
+  },
+  "all_checks_passed": true,
+  "checkpoint_sha256": "be7245cc832b43ed0df4873d49c1a831cb9972d27de3f8cc4950588fc8b9392d",
+  "reranker_sha256": "4ab584f4da09bb6528a027a740b3752711e138188b5885ebd02581edc58cce8a",
+  "physical_npu": "3",
+  "device": "Ascend910B2",
+  "dtype": "FP16 dense; FP32 shifts/matrices",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "tasks": [
+    {
+      "task": "NanoClimateFeverRetrieval",
+      "queries": 50,
+      "pairs": 5065,
+      "documents": 2023,
+      "cache_bytes": 26250707072,
+      "cache_build_seconds": 130.58775292000792,
+      "build_warmup_seconds": 123.67924040000071,
+      "scoring_seconds": {
+        "cached": 124.02516898003523,
+        "uncached": 285.72824748032144
+      },
+      "ndcg": {
+        "cached": 40.74651124034754,
+        "uncached": 40.74651124034754
+      },
+      "previous_ndcg": 43.463088457298525,
+      "max_cached_uncached_logit_delta": 0.015625,
+      "total_seconds": 780.8076491699903
+    },
+    {
+      "task": "NanoSciFactRetrieval",
+      "queries": 50,
+      "pairs": 5004,
+      "documents": 2322,
+      "cache_bytes": 30130569344,
+      "cache_build_seconds": 118.72207850000996,
+      "build_warmup_seconds": 1.0378096200001892,
+      "scoring_seconds": {
+        "cached": 101.78052694995131,
+        "uncached": 203.4459077796928
+      },
+      "ndcg": {
+        "cached": 84.62343361317336,
+        "uncached": 84.62343361317336
+      },
+      "previous_ndcg": 84.34468558586128,
+      "max_cached_uncached_logit_delta": 0.015625,
+      "total_seconds": 430.2536523299932
+    },
+    {
+      "task": "NanoFiQA2018Retrieval",
+      "queries": 50,
+      "pairs": 5034,
+      "documents": 2819,
+      "cache_bytes": 36579704960,
+      "cache_build_seconds": 151.13846045000537,
+      "build_warmup_seconds": 1.3657102500001201,
+      "scoring_seconds": {
+        "cached": 104.65951493996545,
+        "uncached": 218.87169343027927
+      },
+      "ndcg": {
+        "cached": 67.50481682007633,
+        "uncached": 67.51211921576645
+      },
+      "previous_ndcg": 64.17660987333372,
+      "max_cached_uncached_logit_delta": 0.015625,
+      "total_seconds": 482.3868723100022
+    },
+    {
+      "task": "NanoHotpotQARetrieval",
+      "queries": 50,
+      "pairs": 5004,
+      "documents": 3258,
+      "cache_bytes": 42276225152,
+      "cache_build_seconds": 104.01575926000078,
+      "build_warmup_seconds": 0.18839929999376182,
+      "scoring_seconds": {
+        "cached": 102.69681608995597,
+        "uncached": 97.18303065025248
+      },
+      "ndcg": {
+        "cached": 93.08145285073597,
+        "uncached": 93.08878926073149
+      },
+      "previous_ndcg": 93.34990342820834,
+      "max_cached_uncached_logit_delta": 0.02734375,
+      "total_seconds": 309.5963353499974
+    },
+    {
+      "task": "NanoDBPediaRetrieval",
+      "queries": 50,
+      "pairs": 5326,
+      "documents": 3997,
+      "cache_bytes": 51865583744,
+      "cache_build_seconds": 130.16051635000622,
+      "build_warmup_seconds": 0.20056687999749556,
+      "scoring_seconds": {
+        "cached": 108.4034876900987,
+        "uncached": 100.04268699006934
+      },
+      "ndcg": {
+        "cached": 72.09142250082799,
+        "uncached": 72.2849327055282
+      },
+      "previous_ndcg": 72.59020323307304,
+      "max_cached_uncached_logit_delta": 0.0234375,
+      "total_seconds": 344.63451852000435
+    },
+    {
+      "task": "NanoQuoraRetrieval",
+      "queries": 50,
+      "pairs": 5000,
+      "documents": 3323,
+      "cache_bytes": 43119673472,
+      "cache_build_seconds": 111.56481846999668,
+      "build_warmup_seconds": 0.17660395000712015,
+      "scoring_seconds": {
+        "cached": 113.27760143026535,
+        "uncached": 84.75955643017369
+      },
+      "ndcg": {
+        "cached": 93.92616201742254,
+        "uncached": 93.92616201742254
+      },
+      "previous_ndcg": 95.86317317382387,
+      "max_cached_uncached_logit_delta": 0.01953125,
+      "total_seconds": 319.5397066699952
+    }
+  ],
+  "evaluation_seconds": 2689.881328400006,
+  "total_seconds": 2714.2614256300003
+}

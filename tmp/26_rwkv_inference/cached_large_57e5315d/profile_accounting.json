@@ -1,0 +1,265 @@
+{
+  "profile_raw_eager_uncached": {
+    "kernel_type_ms_per_call": {
+      "RwkvAiv32Wkv7": 107.06889799999998,
+      "MatMulV3": 67.07585499999999,
+      "Add": 39.30150800000003,
+      "Mul": 37.90837499999994,
+      "Cast": 28.23118800000002,
+      "Transpose": 26.958396000000015,
+      "Sub": 13.572023000000002,
+      "LayerNormV3": 11.357989500000002,
+      "Pows": 10.5957155,
+      "Relu": 10.453616999999996,
+      "MatMulV2": 8.368406500000004,
+      "Sigmoid": 2.9446830000000004,
+      "Neg": 2.7402035000000002,
+      "GatherElementsV2": 2.629673499999999,
+      "ConcatD": 1.9554455000000002,
+      "SliceV2": 1.897528,
+      "BroadcastTo": 1.6548930000000002,
+      "RealDiv": 1.5558915000000006,
+      "LpNormV2": 1.3754985000000004,
+      "ReduceSum": 1.2238555000000002,
+      "Pack": 0.597063,
+      "Tanh": 0.4470005,
+      "ClipByValueV2": 0.4098165000000001,
+      "GatherV2": 0.22926400000000002,
+      "Fill": 0.17683200000000016,
+      "ZerosLike": 0.11944300000000001
+    },
+    "cpu_scope_ms": {
+      "rwkv.backbone_and_head": [
+        1268.27571,
+        1279.58396
+      ],
+      "rwkv.d2h_and_write": [
+        1.14274,
+        1.06848
+      ],
+      "rwkv.raw_eager_uncached": [
+        1269.6473,
+        1280.8718000000001
+      ]
+    },
+    "raw_files_sha256": {
+      "operator_details": "8c3c39c72f4d2e9aa3260f2ef4157e012a02d1fc4629fd7f2585d63f8e407d7b",
+      "kernel_details": "86b662db3547cf2efe020d1fe0755b2501d3c7d077fd37bf9367500a0bed9110",
+      "op_statistic": "6c89cd372ce7669ff4c043d415e5a70b04b97c976ddcc339366bbded68e0069b",
+      "api_statistic": "34c96528a31c2fdb0f0d68634a43530e51217a04c593eb4d10707b1a30867ecf",
+      "step_trace_time": "c07815fb84d1aecafd3a7b69115fb0b7037d56b79503e6cbed2c0b10c9921385",
+      "trace_view": "c10668296bec40c768b0dc238169797542c8427bcea733a786eda30f0ad98dfc",
+      "profiler_info": "0c87f1ce73934b6c3834e1d8cc5b4a1071674f6fecc22b47f06542695ae58ef1",
+      "profiler_metadata": "b93c96387d644d6ef4f51faa287aa41791193175e8fadc27a7e07dfaca17afb0"
+    },
+    "source_files": {
+      "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_uncached/liteserver-c001-4_271128_20261007151621678_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+      "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_uncached/liteserver-c001-4_271128_20261007151621678_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_uncached/liteserver-c001-4_271128_20261007151621678_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+      "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_uncached/liteserver-c001-4_271128_20261007151621678_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+      "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_uncached/liteserver-c001-4_271128_20261007151621678_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+      "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_uncached/liteserver-c001-4_271128_20261007151621678_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+      "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_uncached/liteserver-c001-4_271128_20261007151621678_ascend_pt/profiler_info.json",
+      "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_uncached/liteserver-c001-4_271128_20261007151621678_ascend_pt/profiler_metadata.json"
+    }
+  },
+  "profile_raw_eager_cached": {
+    "kernel_type_ms_per_call": {
+      "MatMulV2": 10.13840449999999,
+      "Mul": 5.5276315,
+      "Cast": 5.367917999999998,
+      "Transpose": 4.295979499999998,
+      "Add": 3.8830624999999968,
+      "LayerNormV3": 2.2690765000000015,
+      "RwkvAiv32Wkv7": 2.1621940000000013,
+      "Sub": 1.3195834999999998,
+      "Sigmoid": 1.1681314999999997,
+      "ConcatD": 0.8770710000000002,
+      "Pows": 0.8713585000000004,
+      "GatherElementsV2": 0.7364045000000001,
+      "BroadcastTo": 0.7289950000000006,
+      "Pack": 0.5908445000000001,
+      "ReduceSum": 0.47819050000000024,
+      "LpNormV2": 0.4383955,
+      "Relu": 0.4138375000000001,
+      "Slice": 0.35891900000000015,
+      "Neg": 0.2772144999999999,
+      "RealDiv": 0.27421400000000007,
+      "Tanh": 0.18589150000000002,
+      "Fill": 0.17485250000000002,
+      "ClipByValueV2": 0.145953,
+      "ZerosLike": 0.09164199999999997,
+      "AsStrided": 0.065741,
+      "GatherV2": 0.010610000000000001
+    },
+    "cpu_scope_ms": {
+      "rwkv.cache_load_and_h2d": [
+        34.169940000000004,
+        32.33598
+      ],
+      "rwkv.backbone_and_head": [
+        1290.82752,
+        1289.36654
+      ],
+      "rwkv.d2h_and_write": [
+        1.08048,
+        1.02922
+      ],
+      "rwkv.raw_eager_cached": [
+        1326.3569499999999,
+        1323.06469
+      ]
+    },
+    "raw_files_sha256": {
+      "operator_details": "32146116048af8171e95b4d2a0ad194ebdefb15939dfe577d04401ed33485afc",
+      "kernel_details": "6c13d4b6c07bdc23e695744b6db43e3f7b0f5b227943c7851289fc18adc48122",
+      "op_statistic": "af4a0ebc58af4da9f8b8994498c1ba4d90fe49faa4b015d3efbccad028abd459",
+      "api_statistic": "6ce2e1839276992c33f9afb4a5f4d3a3bb1f505722e290031bbec7d5cfd3f5f4",
+      "step_trace_time": "3627ab6f8d1e931c27fb9f0057a9296590d7bdc2000f1f2905436097e0e7ab19",
+      "trace_view": "2014ef39ba1d437cab875491f73d9ce44f3d78005659277b85f918e11d397d32",
+      "profiler_info": "9bd3e96960321c512d529341926632989c4955e4f25aa5c6557891a0454beef9",
+      "profiler_metadata": "b93c96387d644d6ef4f51faa287aa41791193175e8fadc27a7e07dfaca17afb0"
+    },
+    "source_files": {
+      "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_cached/liteserver-c001-4_271128_20261007151654008_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+      "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_cached/liteserver-c001-4_271128_20261007151654008_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_cached/liteserver-c001-4_271128_20261007151654008_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+      "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_cached/liteserver-c001-4_271128_20261007151654008_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+      "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_cached/liteserver-c001-4_271128_20261007151654008_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+      "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_cached/liteserver-c001-4_271128_20261007151654008_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+      "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_cached/liteserver-c001-4_271128_20261007151654008_ascend_pt/profiler_info.json",
+      "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_raw_eager_cached/liteserver-c001-4_271128_20261007151654008_ascend_pt/profiler_metadata.json"
+    }
+  },
+  "profile_torchair_uncached": {
+    "kernel_type_ms_per_call": {
+      "RwkvAiv32Wkv7": 106.8670235,
+      "MatMulV3": 66.89375149999996,
+      "Cast": 50.94071850000011,
+      "AutomaticBufferFusionOp": 20.158804500000027,
+      "Add": 18.58635350000001,
+      "Transpose": 12.917150999999999,
+      "LayerNormV3": 10.386259499999992,
+      "Square": 10.172331500000007,
+      "StridedSliceD": 9.383477999999998,
+      "Mul": 7.705254,
+      "MatMul": 7.606947499999995,
+      "GatherElements": 3.964130999999999,
+      "ConcatV2D": 1.8777935000000008,
+      "ReduceSumD": 1.6944170000000007,
+      "TransData": 1.6533514999999985,
+      "LpNormV2": 1.2466860000000002,
+      "RealDiv": 1.2285744999999997,
+      "GatherV2": 1.1876250000000002,
+      "BroadcastTo": 1.1504854999999996,
+      "Neg": 0.7520240000000001,
+      "Tanh": 0.4482304999999999,
+      "Sigmoid": 0.28949700000000006,
+      "Pack": 0.280785,
+      "ClipByValueV2": 0.23042199999999996,
+      "Sub": 0.06667100000000002,
+      "ZerosLike": 0.029129999999999996
+    },
+    "cpu_scope_ms": {
+      "rwkv.backbone_and_head": [
+        9.08228,
+        7.67073
+      ],
+      "rwkv.d2h_and_write": [
+        334.69261,
+        334.98008000000004
+      ],
+      "rwkv.torchair_uncached": [
+        343.97985,
+        342.83540999999997
+      ]
+    },
+    "raw_files_sha256": {
+      "operator_details": "6284d15c59870e8dcf0d234b1e1de271511a83fbef7501c6221d553404b4b6ed",
+      "kernel_details": "ea404f3d286396e39f63c57846c1dc42b4b061319b5b7d845a0396b62f0fab5e",
+      "op_statistic": "95a2f615fc245ffcf0bd4f82289fb0da8f831b66bdb6c4bb7156dc1d2f576ee7",
+      "api_statistic": "d41b1e5e5c5006f4ec175e864626216952811a006954e66114d2cb1b591791d3",
+      "step_trace_time": "9bb1820de88d6f87ef324eda792c799b76d602fb5089d437f0231509fce3f0b6",
+      "trace_view": "eec3e0a51b96f0fddc6f650b0983e2d2be564fdc36f356ba7ad7623ea5bd8e4c",
+      "profiler_info": "00c82e8f52e22b832e3016cc4249ec8533a0d7970f3387995701e7e07a49e03c",
+      "profiler_metadata": "b93c96387d644d6ef4f51faa287aa41791193175e8fadc27a7e07dfaca17afb0"
+    },
+    "source_files": {
+      "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_uncached/liteserver-c001-4_271128_20261007151727776_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+      "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_uncached/liteserver-c001-4_271128_20261007151727776_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_uncached/liteserver-c001-4_271128_20261007151727776_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+      "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_uncached/liteserver-c001-4_271128_20261007151727776_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+      "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_uncached/liteserver-c001-4_271128_20261007151727776_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+      "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_uncached/liteserver-c001-4_271128_20261007151727776_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+      "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_uncached/liteserver-c001-4_271128_20261007151727776_ascend_pt/profiler_info.json",
+      "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_uncached/liteserver-c001-4_271128_20261007151727776_ascend_pt/profiler_metadata.json"
+    }
+  },
+  "profile_torchair_cached": {
+    "kernel_type_ms_per_call": {
+      "MatMul": 8.931256000000001,
+      "Cast": 5.099285999999979,
+      "AutomaticBufferFusionOp": 1.9301975000000005,
+      "RwkvAiv32Wkv7": 1.8862165,
+      "GatherElements": 1.7844964999999995,
+      "TransData": 1.411867999999999,
+      "LayerNormV3": 1.2424249999999997,
+      "Add": 1.126270999999999,
+      "Transpose": 1.0702815000000003,
+      "GatherV2": 0.9356204999999995,
+      "Mul": 0.915959,
+      "ConcatV2D": 0.5334824999999999,
+      "BroadcastTo": 0.4875385,
+      "StridedSliceD": 0.43004850000000006,
+      "Square": 0.3696154999999998,
+      "LpNormV2": 0.32036800000000004,
+      "ReduceSumD": 0.2731855,
+      "Pack": 0.255976,
+      "RealDiv": 0.24734400000000006,
+      "Neg": 0.23917549999999993,
+      "Sigmoid": 0.21737449999999994,
+      "Tanh": 0.16980299999999995,
+      "ClipByValueV2": 0.089681,
+      "Sub": 0.06768150000000002,
+      "AsStrided": 0.061921000000000004
+    },
+    "cpu_scope_ms": {
+      "rwkv.cache_load_and_h2d": [
+        31.902,
+        31.64209
+      ],
+      "rwkv.backbone_and_head": [
+        6.51024,
+        6.18731
+      ],
+      "rwkv.d2h_and_write": [
+        27.18458,
+        27.324270000000002
+      ],
+      "rwkv.torchair_cached": [
+        65.8419,
+        65.38846
+      ]
+    },
+    "raw_files_sha256": {
+      "operator_details": "85b1baaacdc59404a2e680b2eb7eca13dc502aecec7015e9601ae10ad3788e25",
+      "kernel_details": "7b31c7e96b632ea1eb99b94553cb8805021886539e3cb8ee02598a81642d74c2",
+      "op_statistic": "2a21f86cffb11a89d6b47d00f485d6c86f897fb1f2e5b6473454a20b8b83880c",
+      "api_statistic": "127f1fa597b98bfa530e7bfd435692bcb268791f41e3a24d7c530ebca30a888a",
+      "step_trace_time": "5e5c41b18ca69c5f3bc4ac42e6490d8225dd7180824dee90b5c6d3a3ed74d3b2",
+      "trace_view": "68a1ee415c9de33517a917221016b78b6c09950ad782d9272c538f38d6f10f82",
+      "profiler_info": "3a30466d9941527cf98bdd99ee5a9af25675989712fe78a665314908bb5471e0",
+      "profiler_metadata": "b93c96387d644d6ef4f51faa287aa41791193175e8fadc27a7e07dfaca17afb0"
+    },
+    "source_files": {
+      "operator_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_cached/liteserver-c001-4_271128_20261007151739995_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+      "kernel_details": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_cached/liteserver-c001-4_271128_20261007151739995_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "op_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_cached/liteserver-c001-4_271128_20261007151739995_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+      "api_statistic": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_cached/liteserver-c001-4_271128_20261007151739995_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+      "step_trace_time": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_cached/liteserver-c001-4_271128_20261007151739995_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+      "trace_view": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_cached/liteserver-c001-4_271128_20261007151739995_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json",
+      "profiler_info": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_cached/liteserver-c001-4_271128_20261007151739995_ascend_pt/profiler_info.json",
+      "profiler_metadata": "/workspace/repos/rwkv-cpu-reference/tmp/26_rwkv_inference/cached_large_57e5315d/smoke/profile_torchair_cached/liteserver-c001-4_271128_20261007151739995_ascend_pt/profiler_metadata.json"
+    }
+  }
+}

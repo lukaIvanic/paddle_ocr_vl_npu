@@ -1,0 +1,20 @@
+{
+  "task": "NanoSciFactRetrieval",
+  "queries": 50,
+  "pairs": 5004,
+  "documents": 2322,
+  "cache_bytes": 30130569344,
+  "cache_build_seconds": 118.72207850000996,
+  "build_warmup_seconds": 1.0378096200001892,
+  "scoring_seconds": {
+    "cached": 101.78052694995131,
+    "uncached": 203.4459077796928
+  },
+  "ndcg": {
+    "cached": 84.62343361317336,
+    "uncached": 84.62343361317336
+  },
+  "previous_ndcg": 84.34468558586128,
+  "max_cached_uncached_logit_delta": 0.015625,
+  "total_seconds": 430.2536523299932
+}

@@ -1,0 +1,20 @@
+{
+  "task": "NanoDBPediaRetrieval",
+  "queries": 50,
+  "pairs": 5326,
+  "documents": 3997,
+  "cache_bytes": 51865583744,
+  "cache_build_seconds": 130.16051635000622,
+  "build_warmup_seconds": 0.20056687999749556,
+  "scoring_seconds": {
+    "cached": 108.4034876900987,
+    "uncached": 100.04268699006934
+  },
+  "ndcg": {
+    "cached": 72.09142250082799,
+    "uncached": 72.2849327055282
+  },
+  "previous_ndcg": 72.59020323307304,
+  "max_cached_uncached_logit_delta": 0.0234375,
+  "total_seconds": 344.63451852000435
+}

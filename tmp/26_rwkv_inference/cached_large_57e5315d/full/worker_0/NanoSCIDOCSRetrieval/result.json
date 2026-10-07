@@ -1,0 +1,20 @@
+{
+  "task": "NanoSCIDOCSRetrieval",
+  "queries": 50,
+  "pairs": 5089,
+  "documents": 1761,
+  "cache_bytes": 22850961536,
+  "cache_build_seconds": 71.00189836999925,
+  "build_warmup_seconds": 122.94749433000106,
+  "scoring_seconds": {
+    "cached": 99.77104234974831,
+    "uncached": 139.11992751994694
+  },
+  "ndcg": {
+    "cached": 47.591732686569756,
+    "uncached": 47.608462126903895
+  },
+  "previous_ndcg": 46.819925274602944,
+  "max_cached_uncached_logit_delta": 0.0234375,
+  "total_seconds": 545.9081958199968
+}
