@@ -12,6 +12,9 @@ an explicitly separate synthetic matmul calibration, exploratory grouped
 projections, production-config matching and immutable per-lane telemetry.
 The [portable reanalysis](references/vision_crop_contracts_910b_20261007/GENERIC_REANALYSIS.md)
 checks all 12 committed 910B lanes without chip-specific kernel assertions.
+[New 910B tool validation](references/vision_diagnostics_910b_20261007/RESULTS.md)
+retains the 48-case calibration, internal-format checks, eight real-crop vision
+lanes and per-launch telemetry, separately from the original results.
 
 The [KV-cache layout probe](kv_cache_probe/README.md) audits the vLLM-Ascend
 310P cache contract and preserves isolated eager attention compatibility checks.

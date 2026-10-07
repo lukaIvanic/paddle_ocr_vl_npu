@@ -89,6 +89,7 @@ proposed change; never substitute another implementation silently.
 
 ```bash
 RUN_ROOT="$WORK_SERVER_REPO/tmp/11_mineru_2_5_pro_inference/vision_diagnostics_310P_$(date -u +%Y%m%dT%H%M%SZ)_$(git rev-parse --short HEAD)"
+mkdir -p "$(dirname "$RUN_ROOT")"
 mkdir "$RUN_ROOT"
 cp 11_mineru_2_5_pro_inference/vision_diagnostic_910b_config.json "$RUN_ROOT/control_config.json"
 "$PYTHON" -m unittest discover -s 11_mineru_2_5_pro_inference -p test_vision_diagnostics.py
@@ -282,7 +283,12 @@ full `npu-smi info`, and selected-card health/power/usages/sensors/common/work-m
 queries before and after **each lane**. Report AI-core clock and performance
 mode only if actually exposed and identified. A successful query saying “not
 supported” is unavailable data; say “not exposed”. Keep raw responses and
-other-job snapshots. Do not infer a clock or governor from power alone.
+other-job snapshots. If running inside a container, label its process table as
+container-visible; NPU PIDs may belong to other namespaces. Obtain host process
+context through an existing authorized host connection if available, otherwise
+report missing other-container CPU job identities. Do not infer a clock or governor from power alone. Pre/post-lane power and
+health snapshots cannot rule out throttling during a timed forward; leave that
+hypothesis open if no under-load clock/performance evidence is exposed.
 
 Stop and report immediately if baseline replay is not bit-exact with its own
 capture, any lane compiles inside the warm timer, an NPU/device error occurs,
@@ -292,6 +298,12 @@ and the last phase; do not wait indefinitely, clear caches, kill unrelated
 processes, relaunch automatically or substitute eager for compiled. A healthy
 operator/compiler compatibility rejection is recorded as a failed/skipped lane;
 report the minimal proposed fix without changing tracked source.
+
+The revised tooling was exercised on 910B: 48 on-format calibration cases,
+two off-format ND checks and eight full-vision lanes completed. The explicit
+off/NZ incompatibilities and the initial corrected compiler-wrapper failure
+are preserved in [the validation results](references/vision_diagnostics_910b_20261007/RESULTS.md).
+These validate the tools; they do not answer the 310P hardware question.
 
 ## 6. Exact report format to Luka
 

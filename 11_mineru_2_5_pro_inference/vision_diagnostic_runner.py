@@ -41,7 +41,7 @@ def snapshot():
                 affinity_cpu_count=len(os.sched_getaffinity(0)), commands=records,
                 clock_data=clock_lines or 'not exposed by successful queried interfaces',
                 performance_mode_data=mode or 'not available', device_error=bad,
-                job_scope='process names/PIDs and NPU process table; command arguments omitted to avoid credentials')
+                job_scope='process names/PIDs visible in the launcher PID namespace, plus device-wide NPU process table; command arguments omitted to avoid credentials')
 
 
 def write_new(path, data):
