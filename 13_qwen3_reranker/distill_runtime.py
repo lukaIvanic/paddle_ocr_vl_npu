@@ -6,6 +6,7 @@ import json
 import math
 from pathlib import Path
 import time
+import array
 
 from run_query_first_training_curve import plans, save
 from training_smoke_data import body
@@ -48,14 +49,17 @@ class Runtime:
     def records(self, groups, section):
         rows = []
         truncated = 0
+        token_hash = hashlib.sha256()
         for g in groups:
             for j, document in enumerate(g['documents']):
                 raw = self.encode(body(g['instruction'], g['query'], document, 'query_first'))
                 truncated += len(raw) > self.limit
                 rows.append({'ids': self.prefix + raw[:self.limit] + self.suffix,
                              'index': len(rows), 'group_id': g['id'], 'candidate': j})
+                token_hash.update(array.array('I', [len(rows[-1]['ids'])] + rows[-1]['ids']).tobytes())
         self.lengths[section] = {'pairs': len(rows), 'truncated': truncated,
-                                'tokens': sum(len(r['ids']) for r in rows)}
+                                'tokens': sum(len(r['ids']) for r in rows),
+                                'token_ids_sha256': token_hash.hexdigest()}
         return rows
 
     def load(self, model_dir, attention='fusion_attention'):
