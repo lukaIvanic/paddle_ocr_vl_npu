@@ -1,6 +1,6 @@
 """Token-accounting checks; these are not inference or speed validation."""
 import unittest
-from bench_full_model_kv import token_metrics
+from bench_full_model_kv import token_metrics, sequence_comparison
 
 
 class AccountingTests(unittest.TestCase):
@@ -17,6 +17,13 @@ class AccountingTests(unittest.TestCase):
         self.assertEqual(result["output_tokens_excluding_eos"], 4)
         self.assertEqual(result["length_cap_hit_count"], 1)
         self.assertEqual(result["eos_count"], 1)
+
+    def test_sequence_drift_distinguishes_substitution_and_insertion(self):
+        result = sequence_comparison([[1,2,3],[4,5,6]], [[1,8,3],[4,9,5,6]])
+        self.assertFalse(result["all_token_match"])
+        self.assertEqual([i["token_edit_distance"] for i in result["items"]], [1,1])
+        self.assertEqual([i["common_prefix_tokens"] for i in result["items"]], [1,1])
+        self.assertEqual(result["items"][1]["normalized_token_edit_distance"], 0.25)
 
 
 if __name__ == "__main__":
