@@ -130,9 +130,12 @@ The checkpoint is `OpenSearch-AI/Ops-Colqwen3-4B`. Required file SHA256 values,
 including both weight shards, are committed in `310p_assets.json`. The dataset
 is `vidore/vidore_v3_hr_mteb_format`, revision
 `bc7d43d64815ed30f664168c8052106484aba7fd`; the three exact English Parquet files
-and their hashes are in `download_hr_reference.py`. No substitutes or downloads
-are performed by this handoff. If assets are absent, report what is missing and
-the paths checked so Luka can arrange provisioning.
+and their hashes are in `download_hr_reference.py`. Downloading these three
+files (440,304,762 bytes, about 440 MB / 420 MiB total) is explicitly authorized
+by Luka. If absent, use the download phase below; do not stop merely because
+the dataset is missing. Preserve any existing original per-collection ViDoRe
+copy. It has different schemas/hashes and is not the input expected by this
+runner. Missing model weights remain a provisioning blocker to report.
 
 Use a dedicated ColQwen environment with the server's compatible torch,
 torch-npu, TorchAir and torchvision binaries. The validated processor uses
@@ -146,13 +149,14 @@ TorchAir API are blockers to report, not permission to modify shared packages.
 ```bash
 export PYTHON_BIN=/absolute/path/to/colqwen/python
 export COLQWEN_MODEL=/absolute/path/to/Ops-Colqwen3-4B
-export HR_DATASET=/absolute/path/to/ViDoRe_v3_hr_mteb_reference
+# Use an existing verified MTEB copy if found; otherwise this new destination:
+export HR_DATASET="$WORK_SERVER_REPO/tmp/datasets/vidore_hr_mteb_bc7d43d"
 export RUN_ROOT="$WORK_SERVER_REPO/tmp/21_colqwen3_4b_inference/310p_$(git rev-parse --short HEAD)_$(date -u +%Y%m%dT%H%M%SZ)"
 export COLQWEN_CACHE="$WORK_SERVER_REPO/.runtime_cache/21_colqwen3/310p_portable_b1_npu${ASCEND_RT_VISIBLE_DEVICES}"
 export TORCH_DEVICE_BACKEND_AUTOLOAD=0 PYTHONDONTWRITEBYTECODE=1
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 export HF_HOME="$RUN_ROOT/hf_home" HF_MODULES_CACHE="$RUN_ROOT/hf_modules"
-test -x "$PYTHON_BIN" && test -d "$COLQWEN_MODEL" && test -d "$HR_DATASET"
+test -x "$PYTHON_BIN" && test -d "$COLQWEN_MODEL" || exit 1
 mkdir -p "$RUN_ROOT"
 
 run_phase() {
@@ -182,6 +186,50 @@ the full run reuses them. HF cache directories above are local writable scratch;
 they do not replace the explicit existing model and dataset paths.
 
 ## Execute in order
+
+0. **Provision/verify the English dataset:** run this phase even if the target
+   directory exists; matching completed files are verified and reused. This
+   script uses only Python's standard library, needs no NPU, and does not install
+   anything. It downloads directly from the pinned revision on Hugging Face,
+   then automatically tries `https://hf-mirror.com` if primary attempts fail.
+   Both endpoints must satisfy the SAME pinned sizes and SHA256 hashes.
+   Networking is intentional for this phase; subsequent inference stays offline.
+
+```bash
+mkdir -p "$RUN_ROOT/download"
+{ git rev-parse HEAD; printf '%q ' "$PYTHON_BIN" -u 21_colqwen3_4b_inference/download_hr_reference.py --root "$HR_DATASET"; printf '\n'; } > "$RUN_ROOT/download/command.txt"
+set -o pipefail
+if "$PYTHON_BIN" -u 21_colqwen3_4b_inference/download_hr_reference.py \
+    --root "$HR_DATASET" 2>&1 | tee "$RUN_ROOT/download/run.log"; then
+    download_code=0
+else
+    download_code=$?
+fi
+printf '%s\n' "$download_code" > "$RUN_ROOT/download/exit_code.txt"
+test "$download_code" -eq 0 || exit 1
+```
+
+The log is live, not a terminal-only progress bar: flushed JSON every five
+seconds includes file, endpoint, attempt, bytes/total, percent, average MB/s,
+elapsed seconds and `no_data_s` (time without new bytes). A `connecting` heartbeat
+with rising `no_data_s` means no payload has arrived; it is not download progress.
+Each socket operation has a 30-second timeout; the parent terminates a worker
+after 60 seconds without new bytes (including DNS/connect hangs), or 30 minutes
+total per attempt. There are two attempts per file per endpoint. Failures print
+`attempt_failed` with the error, and exhaustion exits nonzero. These limits are
+downloader defaults chosen for this handoff, not benchmark requirements.
+
+Use a long-lived tool session and inspect `tail -n 5 "$RUN_ROOT/download/run.log"`
+every 30–60 seconds if tool output is not streaming. Do not start another writer
+to the same dataset directory. After an interrupted run, rerun the same download
+command with a new log path: `.part` files resume with HTTP Range; a server that
+ignores Range restarts that file safely. Completed files become visible under
+their final names only after SHA256 validation. Bad existing final files are
+preserved and rejected; select a separate destination rather than overwriting
+the original dataset. Success ends with `event=finish, status=verified` and
+writes `manifest.json`. If both endpoints fail, report the endpoint errors,
+received bytes and log path. No source edits or further approval are required
+to download, retry, or proceed after verification.
 
 1. **Preflight:** imports, one-device/chip guard, runtime APIs, exact asset
    hashes and available device memory. No model is loaded here.
