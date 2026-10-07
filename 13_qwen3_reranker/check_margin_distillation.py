@@ -94,7 +94,9 @@ def main():
     # reversed gradients. Retain values for interpretation, not just pass/fail.
     result['passed'] = (all(v['cosine'] > .98 and v['relative_l2'] < .25
         for mode in ['eager', 'fusion_attention'] for v in result['runs'][mode]['gradients'].values())
-        and max(result['replay_relative_l2'].values()) < 1e-4
+        # Separate BF16 backward matmuls round before FP32 accumulation;
+        # algebraic equivalence need not be bitwise gradient equivalence.
+        and max(result['replay_relative_l2'].values()) < .03
         and result['optimizer_max_parameter_difference'] < 1e-7)
     save(args.output, result)
     assert result['passed'], json.dumps(result)
