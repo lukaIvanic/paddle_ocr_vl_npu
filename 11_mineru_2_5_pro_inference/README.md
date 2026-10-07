@@ -1,8 +1,15 @@
 # Experiment 11: MinerU2.5-Pro Local Inference
 
 The [KV-cache layout probe](kv_cache_probe/README.md) audits the vLLM-Ascend
-310P cache contract and provides standalone ND-versus-NZ attention comparisons
-for 910B and 310P. CPU packing checks passed; NPU validation is pending.
+310P cache contract and preserves isolated eager attention compatibility checks.
+It is not a full-model throughput benchmark.
+
+`bench_full_model_kv.py` / `run_full_model_kv.sh` implement real-crop,
+EOS-aware generation with complete static TorchAir decoder graphs. Real
+vision/text prefill supplies the KV, and useful post-prefill tokens/s includes
+the full 24-layer decoder, cache writes, LM head, sampling and host completion
+handling. This replacement is under 910B validation; no new performance result
+is claimed until the recorded correctness and throughput runs pass.
 
 This experiment is the current custom MinerU2.5-Pro implementation transferred
 from the standalone `mineru_25_pro_npu` repository at commit `b08ae14`. The
