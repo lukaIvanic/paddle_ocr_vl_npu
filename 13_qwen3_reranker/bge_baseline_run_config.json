@@ -1,0 +1,240 @@
+{
+  "status": "user_reviewed_with_learning_rate_and_reporting_corrections",
+  "dataset_sha256": "4fae73c3df2f29d7ed2abefb4537b28863bbae6f3207d77052c72bb70cc9eb81",
+  "schedule_sha256": "6c9ca1afcf700ce9a0da35b39764c5cec842d90261c0b87a914e819b0355f2e7",
+  "dataset_revision": "a69db8b86e9c1767d193ee0de95e5c4001a71eae",
+  "flagembedding_commit": "fd1a2bdf69488ffebe0327999d4400d8c8058a0b",
+  "source_files": 279,
+  "per_file_cap": 100000000,
+  "eligible_training_rows": 1567554,
+  "runtime_reduction": "uniform row sample over the complete filtered concatenation, no source/language quotas",
+  "unique_training_queries": 1600,
+  "training_query_exposures": 1600,
+  "validation_queries": 64,
+  "updates": 50,
+  "query_groups_per_update": 32,
+  "candidates_per_group": 8,
+  "pairs_per_update": 256,
+  "student": "released Qwen3-Reranker-0.6B",
+  "teacher": "frozen query-first Qwen3-Reranker-4B",
+  "input_order": "query_first",
+  "instruction": "Given a web search query, retrieve relevant passages that answer the query",
+  "maximum_input_tokens": 8192,
+  "truncation": "right side of body, preserving fixed prefix/suffix",
+  "loss": {
+    "supervised_group_cross_entropy_weight": 1,
+    "teacher_distribution_cross_entropy_weight": 1,
+    "candidate_softmax_temperature": 1,
+    "reduction": "mean over query groups",
+    "scalar": "raw yes-minus-no margin"
+  },
+  "optimizer": {
+    "name": "fresh NpuFusedAdamW",
+    "learning_rate_peak": 1e-05,
+    "betas": [
+      0.9,
+      0.999
+    ],
+    "epsilon": 1e-08,
+    "weight_decay": 0,
+    "gradient_clip_norm": 1,
+    "all_parameters_trainable": true
+  },
+  "schedule": {
+    "type": "warmup_linear",
+    "warmup_updates": 5,
+    "last_update_lr": 2.2222222222222224e-07
+  },
+  "execution": {
+    "chip": "Ascend 910B2",
+    "parameter_dtype": "FP32",
+    "autocast": "BF16",
+    "attention": "fusion_attention",
+    "microbatch_max_pairs": 4,
+    "microbatch_padded_token_budget": 8192,
+    "padding": "left; batch maximum rounded to128",
+    "gradient_accumulation": "32 groups using exact score-gradient replay"
+  },
+  "evaluation": {
+    "steps": [
+      0,
+      1,
+      3,
+      10,
+      25,
+      50
+    ],
+    "intermediate_benchmark_queries": 108,
+    "baseline_endpoint_benchmark_queries": 180,
+    "target_tasks": 18,
+    "fixed_candidates_per_query": 100,
+    "heldout_teacher_queries": 64,
+    "trajectory_108_steps": [
+      0,
+      1,
+      3,
+      10,
+      25,
+      50
+    ],
+    "combined_180_steps": [
+      0,
+      50
+    ],
+    "reporting_rule": "Keep the fixed 108-query trajectory separate from the fixed 180-query baseline/endpoint comparison. Never splice their means."
+  },
+  "saved_checkpoints": [
+    1,
+    3,
+    10,
+    25,
+    50
+  ],
+  "maximum_run_wall_seconds": 2400,
+  "preparation_checks_passed": true,
+  "timing_check": {
+    "status": "profile_completed_no_optimizer_updates",
+    "optimizer_updates_applied": 0,
+    "backward_window_seconds": [
+      21.071401330002118,
+      19.588444180000806,
+      18.073484239997924
+    ],
+    "frequent_evaluation_seconds": 73.18684210999345,
+    "baseline_endpoint_evaluation_seconds": 116.74231900999439,
+    "peak_allocated_gib_without_optimizer_moments": 24.725028038024902,
+    "note": "Profiling applied no optimizer updates. Its nominal 1e-6 setting does not change the forward/backward timing; the reviewed training peak is 1e-5."
+  },
+  "implementation_source_commit": "8e88af57ce558431baa6c86ba7084dd68361c55f",
+  "server_source_commit": "b03f93c2d89ed03dbbe20e296168fbb2e2047210",
+  "seed": {
+    "loader": 1047,
+    "row_order": 1048,
+    "candidates": 1049
+  },
+  "candidate_policy": {
+    "positive": "uniform supplied positive index",
+    "negatives": "7 sampled indices from supplied pool, with upstream repeated-index expansion if pool size<7",
+    "text_shuffle_ratio": 0,
+    "on_revisit": "fresh candidate draw per occurrence recorded in the schedule"
+  },
+  "material_adaptations": [
+    {
+      "choice": "Qwen tokenizer, prompt, 8192-token policy and raw yes-minus-no margin",
+      "basis": "explicit user instruction; preserve existing implementation"
+    },
+    {
+      "choice": "frozen query-first Qwen 4B replaces released teacher scores",
+      "basis": "explicit user instruction"
+    },
+    {
+      "choice": "concatenation, per-file cap, supplied-pool sampler and 1:1 group CE plus teacher CE",
+      "basis": "pinned FlagEmbedding reference"
+    },
+    {
+      "choice": "evaluation-query exclusions without family exclusions",
+      "basis": "explicit user instruction"
+    },
+    {
+      "choice": "50 updates, 32 groups/update, 64 held-out queries, seeds and fixed global sample",
+      "basis": "bounded runtime configuration for user review; no source or language quotas"
+    },
+    {
+      "choice": "peak1e-5, five warmup updates and linear decay",
+      "basis": "explicit user correction; latest agreed learning-rate recipe"
+    },
+    {
+      "choice": "microbatching with score-gradient replay on Ascend",
+      "basis": "existing Qwen execution path; reference loss and gradient equivalence verified"
+    }
+  ],
+  "estimated_training_run_minutes": [
+    25,
+    35
+  ],
+  "teacher_sha256": "7ca175fe8ba06096848d0c9226d3ac9a02553a55e61af5b13c5e5a24434a55ed",
+  "baseline_sampled_suite_ndcg10": {
+    "en": 0.7117943251853259,
+    "zh": 0.7322515115647075
+  },
+  "teacher_sampled_suite_ndcg10": {
+    "en": 0.7460703780236846,
+    "zh": 0.7629896773509194
+  },
+  "length_audit": {
+    "train": {
+      "pairs": 12800,
+      "truncated_pairs": 56,
+      "removed_body_tokens": 141568,
+      "query_prefix_exceeds_body_budget": 0,
+      "mean_tokens": 291.412890625,
+      "p50_p90_p99_max": [
+        162.0,
+        292.0,
+        4600.060000000023,
+        8192.0
+      ],
+      "truncated_by_source": {
+        "mldr_ru": 6,
+        "mldr_fr": 1,
+        "mldr_zh": 10,
+        "mldr_ko": 3,
+        "mldr_ar": 12,
+        "mldr_it": 5,
+        "mldr_en": 6,
+        "mldr_de": 4,
+        "mldr_es": 2,
+        "mldr_hi": 5,
+        "mldr_ja": 2
+      }
+    },
+    "validation": {
+      "pairs": 512,
+      "truncated_pairs": 2,
+      "removed_body_tokens": 4696,
+      "query_prefix_exceeds_body_budget": 0,
+      "mean_tokens": 388.890625,
+      "p50_p90_p99_max": [
+        188.0,
+        424.80000000000007,
+        5588.869999999989,
+        8192.0
+      ],
+      "truncated_by_source": {
+        "mldr_en": 1,
+        "mldr_zh": 1
+      }
+    },
+    "benchmark": {
+      "pairs": 10800,
+      "truncated_pairs": 0,
+      "removed_body_tokens": 0,
+      "query_prefix_exceeds_body_budget": 0,
+      "mean_tokens": 319.25296296296295,
+      "p50_p90_p99_max": [
+        222.0,
+        572.0,
+        1802.0100000000002,
+        8012.0
+      ],
+      "truncated_by_source": {}
+    },
+    "reserved_benchmark": {
+      "pairs": 7200,
+      "truncated_pairs": 0,
+      "removed_body_tokens": 0,
+      "query_prefix_exceeds_body_budget": 0,
+      "mean_tokens": 306.0854166666667,
+      "p50_p90_p99_max": [
+        227.5,
+        536.0,
+        1726.0100000000002,
+        6759.0
+      ],
+      "truncated_by_source": {}
+    }
+  },
+  "launch_command": "bash 13_qwen3_reranker/run_bge_baseline_reviewed.sh",
+  "server_repo": "/workspace/repos/qwen-margin-distillation",
+  "evidence_directory": "/home/luka/.codex/worktrees/qwen-contents-swapped-distill/paddle_ocr_vl_npu/tmp/13_qwen3_reranker/bge_baseline_e903c529_20261007"
+}
