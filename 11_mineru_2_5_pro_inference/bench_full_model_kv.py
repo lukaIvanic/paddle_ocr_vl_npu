@@ -102,12 +102,15 @@ def run(args, report):
     processor = AutoProcessor.from_pretrained(args.model, use_fast=False, local_files_only=True)
     processor.image_processor.min_pixels = 25088
     processor.image_processor.max_pixels = args.max_pixels
-    if isinstance(getattr(processor.image_processor,"size",None), dict):
-        processor.image_processor.size["shortest_edge"] = 25088
-        processor.image_processor.size["longest_edge"] = args.max_pixels
+    processor_size = getattr(processor.image_processor,"size",None)
+    if processor_size is not None:
+        # Transformers 5 uses SizeDict, which supports item assignment and
+        # dict(size) but is not a dict subclass or JSON serializable itself.
+        processor_size["shortest_edge"] = 25088
+        processor_size["longest_edge"] = args.max_pixels
     report["processor"] = {"class":type(processor.image_processor).__name__,
         "min_pixels":processor.image_processor.min_pixels,"max_pixels":processor.image_processor.max_pixels,
-        "size":getattr(processor.image_processor,"size",None)}
+        "size":dict(processor_size) if processor_size is not None else None}
     report["model_identity"] = collect_model_identity(args.model, hash_model_files=True)
     report["model_layers"] = model.config.text_config.num_hidden_layers
     if report["model_layers"] != 24:
