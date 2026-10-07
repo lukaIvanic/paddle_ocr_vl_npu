@@ -119,17 +119,23 @@ class Block(Weights):
 
 
 class Embedding(Weights):
-    def __init__(self, checkpoint, device, dense_dtype):
-        if sha256(checkpoint) != CHECKPOINT_SHA256:
+    def __init__(self, checkpoint, device, dense_dtype, expected_sha256=CHECKPOINT_SHA256):
+        if sha256(checkpoint) != expected_sha256:
             raise ValueError('Checkpoint SHA256 mismatch')
         source = torch.load(checkpoint, map_location='cpu', mmap=True, weights_only=True)
+        indices = {int(k.split('.')[2]) for k in source if k.startswith('rwkv.blocks.')}
+        self.depth = max(indices) + 1
+        self.heads, head_size = source['rwkv.blocks.0.att.r_k'].shape
+        self.width = self.heads * head_size
+        if indices != set(range(self.depth)) or head_size != 64 or source['rwkv.emb.weight'].shape[1] != self.width:
+            raise ValueError('Backbone layer indices or head dimensions mismatch')
         root = {k.removeprefix('rwkv.'): v for k, v in source.items()
                 if k.startswith(('rwkv.emb.', 'rwkv.ln_out.', 'rwkv.blocks.0.ln0.'))}
         root.update({k: v for k, v in source.items() if k.startswith('head.retr_head.')})
         super().__init__(root, device, dense_dtype)
         self.blocks = nn.ModuleList([Block({k.removeprefix(f'rwkv.blocks.{i}.'): v
             for k, v in source.items() if k.startswith(f'rwkv.blocks.{i}.')}, device, dense_dtype)
-            for i in range(12)])
+            for i in range(self.depth)])
         self.eval()
 
     def run(self, ids, mask, trace):

@@ -1,0 +1,47 @@
+{
+  "repository": "howard-hou/EmbeddingRWKV",
+  "revision": "d6bfff190b6ce4fb6bbd9c574e7e26df3df64075",
+  "metadata_url": "https://huggingface.co/api/models/howard-hou/EmbeddingRWKV/revision/d6bfff190b6ce4fb6bbd9c574e7e26df3df64075?blobs=true",
+  "files": [
+    {
+      "rfilename": "rwkv0b4-emb-curriculum.pth",
+      "blobId": "4a6f458f2cd8a166c94a29a069f4621c32ade5ab",
+      "size": 968722359,
+      "lfs": {
+        "sha256": "6a707ff4b6e5d2215fbc9db341e990cbb911848ec7a713c12f2a5cd0673604d5",
+        "size": 968722359,
+        "pointerSize": 134
+      }
+    },
+    {
+      "rfilename": "rwkv0b3-reranker.pth",
+      "blobId": "00cb0b3209f48407f646ce5cb4743410ab263cf5",
+      "size": 824017975,
+      "lfs": {
+        "sha256": "e0350005fa706ec1348fed7056bd77e25567d674ac31d9fab9646a2efc749d77",
+        "size": 824017975,
+        "pointerSize": 134
+      }
+    },
+    {
+      "rfilename": "rwkv1b4-emb-curriculum.pth",
+      "blobId": "73c483c6ab09a05d694f16923458cca6698a1a8f",
+      "size": 3027116023,
+      "lfs": {
+        "sha256": "be7245cc832b43ed0df4873d49c1a831cb9972d27de3f8cc4950588fc8b9392d",
+        "size": 3027116023,
+        "pointerSize": 135
+      }
+    },
+    {
+      "rfilename": "rwkv1b3-reranker.pth",
+      "blobId": "44366c74d9c1d50ef029eedfd5fe59eace859f57",
+      "size": 2716730551,
+      "lfs": {
+        "sha256": "4ab584f4da09bb6528a027a740b3752711e138188b5885ebd02581edc58cce8a",
+        "size": 2716730551,
+        "pointerSize": 135
+      }
+    }
+  ]
+}
