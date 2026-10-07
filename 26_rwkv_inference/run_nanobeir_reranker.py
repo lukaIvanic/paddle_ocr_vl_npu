@@ -148,7 +148,7 @@ def prepare_bm25(args, report, wrapper_tokenizer):
 
 def aggregate_bm25(args, report, scores):
     _,metric=bm25_reference(args)
-    jobs=sum([json.loads((args.output/f'jobs_{i}.json').read_text()) for i in range(2)],[])
+    jobs=sum([json.loads((args.output/f'jobs_{i}.json').read_text()) for i in range(len(args.devices))],[])
     for task in report['tasks']:
         name=task['task'];selected=[j for j in jobs if j['task']==name]
         assert set(scores[name])=={j['query_id'] for j in selected}
@@ -242,6 +242,50 @@ def prepare(args, report):
         baseline_mean_ndcg_at_10=baseline['mean_ndcg_at_10'])
 
 
+def prepare_bucketed(args, report):
+    """Validate both profiled buckets and reuse the accepted exact token stream."""
+    assert args.size=='large' and args.dtype=='fp16' and args.protocol=='bm25-positives'
+    assert args.prepared_reference and len(args.bucket_probes)==2
+    root=Path(__file__).parent
+    probes={}
+    for folder in args.bucket_probes:
+        r=json.loads((folder/'result.json').read_text())
+        assert r['all_checks_passed'] and r['dtype']=='fp16' and r['batch_size']==4
+        assert r['vector_variant']=='aiv-fp32' and r['group_norm_impl']=='layer_norm'
+        assert not r['retain_dense_outputs'] and r['backend']=='torchair'
+        assert (r['checkpoint_sha256'],r['reranker_sha256'])==pair_hashes(args)
+        for name in ['local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py',
+                     'wkv7_endpoint.py','wkv7_vector_variants.py','probe_reranker_endpoint.py']:
+            assert r['source_sha256'][name]==sha256(root/name),(name,folder)
+        probes[r['bucket']]=dict(path=str(folder),result_sha256=sha256(folder/'result.json'),
+                                pipeline_seconds=r['timings']['torchair_pipeline_total']['host_median_seconds'])
+    assert set(probes)=={512,2048}
+    manifest=Path(str(args.vector_build)+'_source/manifest.json')
+    assert json.loads(manifest.read_text())==r['vector_manifest']
+    report['vector_manifest_sha256']=sha256(manifest)
+    report['bucket_probes']=probes
+    prior=json.loads((args.prepared_reference/'result.json').read_text())
+    assert prior['all_checks_passed'] and prior['protocol']=='bm25-positives'
+    assert prior['dataset_manifest_sha256']==sha256(args.data_root/'manifest.json')
+    assert (prior['checkpoint_sha256'],prior['reranker_sha256'])==pair_hashes(args)
+    jobs=sum([json.loads((args.prepared_reference/f'jobs_{i}.json').read_text())
+              for i in range(len(prior['devices']))],[])
+    assert len(jobs)==550 and sum(len(j['document_ids']) for j in jobs)==57688
+    report['tasks']=prior['tasks']
+    for task in prior['tasks']:
+        for name,digest in task['prepared_files_sha256'].items():
+            assert sha256(args.prepared_reference/'prepared'/task['task']/name)==digest
+    (args.output/'prepared').symlink_to((args.prepared_reference/'prepared').resolve(),target_is_directory=True)
+    for job in jobs:
+        job['estimated_seconds']=sum(probes[512 if L<=512 else 2048]['pipeline_seconds'] for L in job['lengths'][::4])
+    assign_jobs(args,report,jobs,prior['tasks'])
+    for name in ['dataset_manifest_sha256','baseline_mean_ndcg_at_10','source_evaluator_sha256']:
+        report[name]=prior[name]
+    report.update(prepared_reference_sha256=sha256(args.prepared_reference/'result.json'),
+                  prepared_inputs_identical_to_reference=True,previous_mean_ndcg_at_10=prior['mean_ndcg_at_10'],
+                  estimate_scope='Initial bucket estimates use profiled real inputs; worker preflight refines by actual prepared length')
+
+
 def worker(args):
     import torch_npu
     torch.set_num_threads(4)
@@ -264,12 +308,28 @@ def worker(args):
         _,_,depth,width,_=PAIR_SPEC[args.size]
         assert (model.depth,model.width,ranker.depth,ranker.width)==(depth,width,depth,width)
         report.update(size=args.size,checkpoint_sha256=emb_sha,reranker_sha256=rank_sha,source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())
+        if args.inference_backend=='bucketed':
+            from wkv7_vector_variants import load_variant
+            op=load_variant(args.vector_build,'aiv-fp32')
+            for block in [*model.blocks,*ranker.blocks]:
+                block.group_norm_impl='layer_norm';block.vector_variant=op;block.vector_dtype=torch.float32
+            report['vector_variant']='aiv-fp32';report['group_norm_impl']='layer_norm'
         backbone=Backbone(model).eval()
         jobs=json.loads((args.output/f'jobs_{i}.json').read_text())
         # Each compiled process owns fresh copies; eager execution needs no cache.
         if args.inference_backend=='hybrid':
             for n in ['backbone_cache','head_cache']:shutil.copytree(args.warm_cache_from/n,out/n)
             encode=compiled(backbone.forward,out/'backbone_cache');head=compiled(ranker.forward,out/'head_cache')
+        if args.inference_backend=='bucketed':
+            encoders={}
+            probes=json.loads((args.output/'result.json').read_text())['bucket_probes']
+            for T in [512,2048]:
+                source=Path(probes[str(T)]['path']);cache=out/f'bucket_{T}'
+                shutil.copytree(source/'backbone_cache',cache/'backbone_cache')
+                encoders[T]=compiled(backbone.forward,cache/'backbone_cache')
+            source=Path(probes['512']['path'])
+            shutil.copytree(source/'head_cache',out/'head_cache')
+            head=compiled(ranker.forward,out/'head_cache')
         report['inference_backend']=args.inference_backend
         loaded={}
         def rows(job,offset):
@@ -287,6 +347,12 @@ def worker(args):
             if args.inference_backend=='raw_eager':
                 ni=torch.from_numpy(cpu_ids.astype(np.int64)).to('npu')
                 return ranker(model.encode_states(ni)[1][1]),'raw_eager_exact_length'
+            if args.inference_backend=='bucketed':
+                T=512 if L<=512 else 2048
+                assert 0<L<=T
+                ni=torch.from_numpy(np.pad(cpu_ids,((0,0),(0,T-L))).astype(np.int64)).to('npu')
+                lens=torch.full((4,),L,dtype=torch.int32,device='npu')
+                return head(encoders[T](ni,lens)[1]),f'torchair_t{T}'
             if L<=512:
                 padded=np.pad(cpu_ids,((0,0),(0,512-L)))
                 ni=torch.from_numpy(padded.astype(np.int64)).to('npu');lens=torch.full((4,),L,dtype=torch.int32,device='npu')
@@ -314,6 +380,30 @@ def worker(args):
                 report['cases'].append(record);print('PREFLIGHT',json.dumps(record),flush=True)
                 for _ in range(3):score(cpu_ids)
                 torch.npu.synchronize()
+            if args.inference_backend=='bucketed':
+                # Full real-batch calls, never isolated operators. No profiler in
+                # the accuracy loop; full warm profiles live in the bucket gates.
+                samples_by_bin={}
+                for job in jobs:
+                    for k in range(0,len(job['document_ids']),4):
+                        L=job['lengths'][k];bin_id=(L-1)//256
+                        samples_by_bin.setdefault(bin_id,(job,k))
+                measurements=[]
+                for job,k in samples_by_bin.values():
+                    cpu_ids=rows(job,k);score(cpu_ids)[0].cpu();times=[]
+                    for _ in range(3):
+                        before=time.perf_counter();score(cpu_ids)[0].cpu();times.append(time.perf_counter()-before)
+                    measurements.append(dict(length=cpu_ids.shape[1],bucket=512 if cpu_ids.shape[1]<=512 else 2048,
+                        seconds=float(np.median(times)),task=job['task'],query_id=job['query_id'],offset=k))
+                def measured_cost(L):
+                    chosen=sorted((m for m in measurements if m['bucket']==(512 if L<=512 else 2048)),key=lambda m:m['length'])
+                    return float(np.interp(L,[m['length'] for m in chosen],[m['seconds'] for m in chosen]))
+                for job in jobs:job['estimated_seconds']=sum(measured_cost(L) for L in job['lengths'][::4])
+                report['length_timing_samples']=measurements
+                report['predicted_scoring_seconds']=sum(j['estimated_seconds'] for j in jobs)
+                save(out/'estimate.json',dict(predicted_scoring_seconds=report['predicted_scoring_seconds'],samples=measurements,
+                    scope='Per-shard interpolation of warmed complete scoring plus transfers on actual saved token batches'))
+                print('LENGTH_ESTIMATE',json.dumps(report['length_timing_samples']),report['predicted_scoring_seconds'],flush=True)
             report['setup_and_preflight_seconds']=time.perf_counter()-start
             scoring=time.perf_counter();done=0;forward=0.;weight_done=0.
             with (out/'scores.jsonl').open('w') as scores,(out/'batch_timings.jsonl').open('w') as timings:
@@ -349,47 +439,52 @@ def coordinate(args):
     import pytrec_eval
     start=time.perf_counter();root=Path(__file__).parent;args.output.mkdir(parents=True,exist_ok=False)
     report=dict(source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
-        source_sha256={n:sha256(root/n) for n in ['run_nanobeir_reranker.py','probe_reranker_endpoint.py','local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py','run_nanoscidocs.py']},
+        source_sha256={n:sha256(root/n) for n in ['run_nanobeir_reranker.py','probe_reranker_endpoint.py','local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py','wkv7_vector_variants.py','run_nanoscidocs.py']},
         checkpoint_sha256=sha256(args.checkpoint),reranker_sha256=sha256(args.reranker),devices=args.devices,
-        size=args.size,expected_paper_mean_ndcg_at_10=PAIR_SPEC[args.size][4],
+        size=args.size,group_norm_impl='layer_norm' if args.inference_backend=='bucketed' else 'group_norm',
+        vector_variant='aiv-fp32' if args.inference_backend=='bucketed' else 'stock',expected_paper_mean_ndcg_at_10=PAIR_SPEC[args.size][4],
         batch_cost_model=dict(short_batch_seconds=args.short_batch_seconds,long_intercept_seconds=args.long_intercept_seconds,long_per_token_seconds=args.long_per_token_seconds),
         dense_dtype=args.dtype,state_dtype='fp32',logical_batch_size=32,outer_batch_size=None if args.protocol=='bm25-positives' else 128,device_batch_size=4,
         preparation=('Per-query positives first followed by BM25 nonpositive texts; B32 padding reset per query; last2048/EOS; sklearn tie-averaged NDCG.' if args.protocol=='bm25-positives' else 'Task-wide query order and saved candidate rank order; pinned wrapper B32 left padding/last2048/EOS; additional right padding only for compiled T512.'),
-        inference_backend=args.inference_backend,backend_policy=('Exact-length raw eager for all inputs' if args.inference_backend=='raw_eager' else 'TorchAir T512 for prepared length<=512; exact-length raw eager for longer inputs'),
+        inference_backend=args.inference_backend,backend_policy=('TorchAir T512/T2048, corrected FP32 recurrence and FP16 dense projections' if args.inference_backend=='bucketed' else 'Exact-length raw eager for all inputs' if args.inference_backend=='raw_eager' else 'TorchAir T512 for prepared length<=512; exact-length raw eager for longer inputs'),
         protocol=args.protocol,candidate_source=str(args.data_root if args.protocol=='bm25-positives' else args.candidates_root),document_caching=False,task_results=[],all_checks_passed=False)
     children=[]
     try:
-        assert len(args.devices)==2 and len(set(args.devices))==2
+        assert len(args.devices) in [1,2] and len(set(args.devices))==len(args.devices)
         assert (report['checkpoint_sha256'],report['reranker_sha256'])==pair_hashes(args)
-        gates=json.loads(args.batch_evidence.read_text())
-        for run in gates['runs']:
-            p=root.parent/run['result_path'];assert sha256(p)==run['result_sha256']
-            previous=json.loads(p.read_text());assert previous['all_checks_passed']
-            if args.size!='tiny':
-                assert previous['checkpoint_sha256']==report['checkpoint_sha256'] and previous['reranker_sha256']==report['reranker_sha256']
-                assert previous['size']==args.size and previous['dtype']==args.dtype and previous['batch_size']==4
+        if args.inference_backend=='bucketed':
+            prepare_bucketed(args,report)
+        else:
+            gates=json.loads(args.batch_evidence.read_text())
+            for run in gates['runs']:
+                p=root.parent/run['result_path'];assert sha256(p)==run['result_sha256']
+                previous=json.loads(p.read_text());assert previous['all_checks_passed']
+                if args.size!='tiny':
+                    assert previous['checkpoint_sha256']==report['checkpoint_sha256'] and previous['reranker_sha256']==report['reranker_sha256']
+                    assert previous['size']==args.size and previous['dtype']==args.dtype and previous['batch_size']==4
+                for n in ['local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py']:
+                    assert report['source_sha256'][n]==previous['source_sha256'][n]
+            report['batch_gate_sha256']=sha256(args.batch_evidence)
+            cache=json.loads((args.warm_cache_from/'result.json').read_text())
+            assert cache['all_checks_passed'] and cache['dtype']==args.dtype and cache['bucket']==512 and cache['batch_size']==4
+            assert cache['backend']=='torchair'
             for n in ['local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py']:
-                assert report['source_sha256'][n]==previous['source_sha256'][n]
-        report['batch_gate_sha256']=sha256(args.batch_evidence)
-        cache=json.loads((args.warm_cache_from/'result.json').read_text())
-        assert cache['all_checks_passed'] and cache['dtype']==args.dtype and cache['bucket']==512 and cache['batch_size']==4
-        assert cache['backend']=='torchair'
-        for n in ['local_modeling_rwkv_embedding.py','local_modeling_rwkv_reranker.py','wkv7_endpoint.py']:
-            assert report['source_sha256'][n]==cache['source_sha256'][n]
-        cache_pair=((cache['checkpoint_sha256']['checkpoint'],cache['checkpoint_sha256']['reranker']) if isinstance(cache['checkpoint_sha256'],dict) else (cache['checkpoint_sha256'],cache['reranker_sha256']))
-        assert cache_pair==pair_hashes(args)
-        report['warm_cache_reference_sha256']=sha256(args.warm_cache_from/'result.json')
-        report['historical_batch_probe_sha256']=sorted({json.loads((root.parent/r['result_path']).read_text())['source_sha256']['probe_reranker_endpoint.py'] for r in gates['runs']})
-        prepare(args,report)
-        if args.prepared_reference:
-            prior=json.loads((args.prepared_reference/'result.json').read_text())
-            assert prior['all_checks_passed'] and prior['protocol']==args.protocol and prior['dataset_manifest_sha256']==report['dataset_manifest_sha256']
-            def identities(folder):
-                jobs=sum([json.loads((folder/f'jobs_{i}.json').read_text()) for i in range(2)],[])
-                return {(j['task'],j['query_id']):(j['input_sha256'],j['document_ids'],j['lengths']) for j in jobs}
-            assert identities(args.prepared_reference)==identities(args.output), 'Prepared pairs differ from accepted protocol run'
-            report['prepared_reference_sha256']=sha256(args.prepared_reference/'result.json')
-            report['prepared_inputs_identical_to_reference']=True
+                assert report['source_sha256'][n]==cache['source_sha256'][n]
+            cache_pair=((cache['checkpoint_sha256']['checkpoint'],cache['checkpoint_sha256']['reranker']) if isinstance(cache['checkpoint_sha256'],dict) else (cache['checkpoint_sha256'],cache['reranker_sha256']))
+            assert cache_pair==pair_hashes(args)
+            report['warm_cache_reference_sha256']=sha256(args.warm_cache_from/'result.json')
+            report['historical_batch_probe_sha256']=sorted({json.loads((root.parent/r['result_path']).read_text())['source_sha256']['probe_reranker_endpoint.py'] for r in gates['runs']})
+            prepare(args,report)
+            if args.prepared_reference:
+                prior=json.loads((args.prepared_reference/'result.json').read_text())
+                assert prior['all_checks_passed'] and prior['protocol']==args.protocol and prior['dataset_manifest_sha256']==report['dataset_manifest_sha256']
+                def identities(folder):
+                    count=len(args.devices) if folder==args.output else len(prior['devices'])
+                    jobs=sum([json.loads((folder/f'jobs_{i}.json').read_text()) for i in range(count)],[])
+                    return {(j['task'],j['query_id']):(j['input_sha256'],j['document_ids'],j['lengths']) for j in jobs}
+                assert identities(args.prepared_reference)==identities(args.output), 'Prepared pairs differ from accepted protocol run'
+                report['prepared_reference_sha256']=sha256(args.prepared_reference/'result.json')
+                report['prepared_inputs_identical_to_reference']=True
         report['preparation_seconds']=time.perf_counter()-start;save(args.output/'result.json',report)
         launch=time.perf_counter();logs=[]
         for i,device in enumerate(args.devices):
@@ -410,11 +505,11 @@ def coordinate(args):
                 progress(args.output/'progress.json',record);print('PROGRESS',json.dumps(record),flush=True);previous=done
             time.sleep(5)
         for c,log in zip(children,logs):assert c.wait()==0;log.close()
-        report['workers']=[json.loads((args.output/f'worker_{i}/result.json').read_text()) for i in range(2)]
+        report['workers']=[json.loads((args.output/f'worker_{i}/result.json').read_text()) for i in range(len(args.devices))]
         assert all(w['all_checks_passed'] for w in report['workers'])
         report['workers_wall_seconds']=time.perf_counter()-launch
         scores={t['task']:{} for t in report['tasks']}
-        for i in range(2):
+        for i in range(len(args.devices)):
             for line in (args.output/f'worker_{i}/scores.jsonl').read_text().splitlines():
                 row=json.loads(line);assert row['query_id'] not in scores[row['task']]
                 scores[row['task']][row['query_id']]=row['scores']
@@ -456,17 +551,20 @@ def main():
     for n in ['checkpoint','reranker','runtime','upstream','build-root','reference-build','data-root','candidates-root','batch-evidence','warm-cache-from','output']:
         p.add_argument('--'+n,type=Path,required=True)
     p.add_argument('--size',choices=list(PAIR_SPEC),default='tiny')
-    p.add_argument('--inference-backend',choices=['hybrid','raw_eager'],default='hybrid')
+    p.add_argument('--inference-backend',choices=['hybrid','raw_eager','bucketed'],default='hybrid')
+    p.add_argument('--bucket-probes',type=Path,nargs=2)
+    p.add_argument('--vector-build',type=Path)
     p.add_argument('--prepared-reference',type=Path)
     p.add_argument('--short-batch-seconds',type=float,default=.03415)
     p.add_argument('--long-intercept-seconds',type=float,default=.080)
     p.add_argument('--long-per-token-seconds',type=float,default=.000006)
     p.add_argument('--protocol',choices=['embedding','bm25-positives'],default='embedding')
     p.add_argument('--dtype',choices=['fp16','fp32'],default='fp16')
-    p.add_argument('--devices',type=int,nargs=2,required=True)
+    p.add_argument('--devices',type=int,nargs='+',required=True)
     p.add_argument('--worker-index',type=int,choices=[0,1])
     args=p.parse_args()
     if min(args.short_batch_seconds,args.long_intercept_seconds,args.long_per_token_seconds)<=0:p.error('Cost estimates must be positive')
+    if args.inference_backend=='bucketed' and (not args.bucket_probes or not args.vector_build or not args.prepared_reference):p.error('Bucketed run requires both validated probes, vector build and accepted prepared reference')
     worker(args) if args.worker_index is not None else coordinate(args)
 
 
