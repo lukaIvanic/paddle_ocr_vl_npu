@@ -61,3 +61,19 @@ def validation_objective(scores, teacher):
                                 for s, t in zip(values, target)))
     sup, kd = sum(supervised)/len(supervised), sum(distillation)/len(distillation)
     return {'supervised_ce':sup, 'teacher_ce':kd, 'total':sup+kd, 'query_groups':len(scores)}
+
+
+def expanded_reference_baseline(data, reference_data, reference, canonical_lengths, teacher):
+    """Reuse released-weight scores only for provably identical evaluation inputs."""
+    assert data['derivation']['kind'] == 'expanded_bge_length_filter'
+    for section in ('benchmark', 'reserved_benchmark'):
+        assert data[section] == reference_data[section]
+        assert canonical_lengths[section] == reference['lengths'][section]
+    old_validation = {g['id']:g for g in reference_data['validation']}
+    assert all(g == old_validation[g['id']] for g in data['validation'])
+    baseline = copy.deepcopy(reference['evaluations']['0'])
+    baseline['validation_scores'] = {g['id']:baseline['validation_scores'][g['id']] for g in data['validation']}
+    baseline['agreement'] = agreement(data['validation'], baseline['validation_scores'], teacher['scores']['validation'])
+    baseline['validation_objective'] = validation_objective(baseline['validation_scores'], teacher['scores']['validation'])
+    baseline['reference_projection'] = {'benchmark_scores_unchanged':True, 'validation_filtered_to_groups':len(data['validation']), 'comparison':'Released-weight baseline only; expanded training exposure differs from earlier runs'}
+    return baseline
