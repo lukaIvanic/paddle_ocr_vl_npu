@@ -136,10 +136,10 @@ def worker(args):
     report = dict(size=args.size, dtype=args.dtype, batch_size=1 if args.gate_only else args.batch_size, gate_only=args.gate_only, bucket=args.bucket,
         source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
         source_sha256={n: sha256(root/n) for n in ['bench_reranker_sizes.py', 'local_modeling_rwkv_embedding.py',
-            'local_modeling_rwkv_reranker.py', 'probe_reranker_endpoint.py', 'run_reranker_smoke.py', 'wkv7_endpoint.py']},
+            'local_modeling_rwkv_reranker.py', 'probe_reranker_endpoint.py', 'run_reranker_smoke.py', 'wkv7_endpoint.py', 'wkv7_vector_variants.py']},
         physical_npu=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), shared_device=args.allow_shared_device, all_checks_passed=False,
         backend=args.backend, scope='Prepared device inputs; uncached backbone plus state-readout head. Synchronized steady calls exclude CPU checks, compile, input transfers and tokenization.',
-        recurrence=args.recurrence, matrix_chunk_size=args.matrix_chunk_size,
+        vector_variant=args.vector_variant, recurrence=args.recurrence, matrix_chunk_size=args.matrix_chunk_size,
         matrix_compute_dtype=args.matrix_compute_dtype, retain_dense_outputs=args.retain_dense_outputs, group_norm_impl=args.group_norm_impl, state_gate='FP16 state normalized RMSE <=0.002; FP32 allclose atol0.02/rtol0.005; all scores allclose atol0.02/rtol0.005; not a full-suite accuracy claim', timings={})
     try:
         import torch_npu
@@ -267,6 +267,45 @@ def worker(args):
                 eager,expected=candidate,candidate_logits
                 del real
                 assert torch.equal(expected,ranker(backbone(ids,lengths)[1]))
+            if args.vector_variant != 'stock':
+                from wkv7_vector_variants import load_variant
+                op=load_variant(args.vector_build,args.vector_variant)
+                report['vector_manifest']=json.loads(Path(str(args.vector_build)+'_source/manifest.json').read_text())
+                for block in [*model.blocks,*ranker.blocks]:
+                    block.vector_variant=op
+                    block.vector_dtype=torch.float16 if args.vector_variant=='aiv-fp16' else torch.float32
+                candidate=backbone(ids,lengths);candidate_logits=ranker(candidate[1])
+                report['vector_vs_stock_states']=[metrics(a,b) for a,b in zip(candidate,eager)]
+                report['vector_vs_stock_logits']=dict(comparison=metrics(candidate_logits,expected),
+                    actual=candidate_logits.cpu().tolist(),expected=expected.cpu().tolist())
+                report['vector_accuracy_passed']=True
+                try:
+                    for a,b in zip(candidate,eager):require_state(a,b,args.dtype)
+                    require(candidate_logits,expected,.02,.005)
+                except AssertionError as exc:
+                    report['vector_accuracy_passed']=False
+                    report['vector_accuracy_error']=str(exc)
+                assert all(c['finite'] for c in report['vector_vs_stock_states'])
+                assert report['vector_vs_stock_logits']['comparison']['finite']
+                # Full-model right padding, row isolation and continuation.
+                report['vector_padding']=[]
+                for i,c in enumerate(cases):
+                    real=torch.tensor([c['input_ids']],device='npu',dtype=torch.long)
+                    _,whole,_=model.encode_states(real)
+                    row=[candidate[0][:,:,i:i+1],candidate[1][:,i:i+1]]
+                    report['vector_padding'].append([require_state(a,b,args.dtype) for a,b in zip(row,whole)])
+                    require(ranker(whole[1]),candidate_logits[i:i+1],.02,.005)
+                real=torch.tensor([cases[0]['input_ids']],device='npu',dtype=torch.long)
+                split=real.shape[1]//2
+                _,prefix,_=model.encode_states(real[:,:split])
+                _,continued,_=model.encode_states(real[:,split:],state=prefix)
+                _,whole,_=model.encode_states(real)
+                report['vector_continuation']=[require_state(a,b,args.dtype) for a,b in zip(continued,whole)]
+                require(ranker(continued[1]),ranker(whole[1]),.02,.005)
+                eager,expected=candidate,candidate_logits
+                assert torch.equal(expected,ranker(backbone(ids,lengths)[1]))
+                report['timing_accuracy_label']='passed' if report['vector_accuracy_passed'] else 'accuracy_failed_diagnostic_only'
+                save(args.output/'result.json',report)
             report['timings']['eager_total'] = measure(lambda: ranker(backbone(ids,lengths)[1]), args.repeats, args.batch_size)
             print('EAGER_TIMING', json.dumps(report['timings']['eager_total']), flush=True)
             save(args.output/'result.json', report)
@@ -274,7 +313,7 @@ def worker(args):
                 report['profiling_backend']='raw_eager'
                 profile_pipeline(args,report,cases,static_tokens,backbone,ranker,ids,lengths)
             if args.backend=='raw_eager':
-                report['all_checks_passed']=True
+                report['all_checks_passed']=report.get('vector_accuracy_passed',True)
                 return
             if args.warm_cache_from:
                 prior=json.loads((args.warm_cache_from/'result.json').read_text())
@@ -310,7 +349,7 @@ def worker(args):
             if args.profile:
                 report['profiling_backend']='torchair'
                 profile_pipeline(args,report,cases,static_tokens,encode,head,ids,lengths)
-            report['all_checks_passed']=True
+            report['all_checks_passed']=report.get('vector_accuracy_passed',True)
             print('TIMINGS',json.dumps(report['timings']),flush=True)
     except Exception as e:
         report['error']=f'{type(e).__name__}: {e}'
@@ -390,6 +429,8 @@ def main():
         p.add_argument('--'+n,type=Path,required=True)
     p.add_argument('--devices',nargs='+',type=int,default=[7,6,4,3,2,1,0])
     p.add_argument('--repeats',type=int,default=10)
+    p.add_argument('--vector-variant',choices=['stock','aiv-fp32','aiv-fp16'],default='stock')
+    p.add_argument('--vector-build',type=Path)
     p.add_argument('--recurrence',choices=['vector','matrix'],default='vector')
     p.add_argument('--matrix-chunk-size',type=int,choices=[16,32,64,128],default=64)
     p.add_argument('--matrix-compute-dtype',choices=['fp32','fp16','bf16'],default='fp32')
@@ -424,6 +465,8 @@ def main():
     if not 3<=args.profile_warmup<=20 or not 2<=args.profile_active<=5:
         p.error('Use profile warmup 3..20 and active 2..5')
     if args.warm_cache_from and not args.worker:p.error('Warm cache is for an explicit worker')
+    if args.vector_variant != 'stock' and (not args.vector_build or args.recurrence != 'vector' or args.warm_cache_from or args.gate_only):
+        p.error('Vector variants require a build, vector recurrence and fresh full-model run')
     if args.recurrence == 'matrix' and (not args.worker or args.gate_only or args.warm_cache_from):
         p.error('Matrix path requires an explicit full-model worker and fresh private caches')
     worker(args) if args.worker else coordinate(args)
