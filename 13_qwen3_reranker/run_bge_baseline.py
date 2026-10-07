@@ -25,6 +25,7 @@ def main():
     p.add_argument('--schedule', choices=['constant', 'warmup_linear'], default='constant')
     p.add_argument('--steps', type=int, default=50)
     p.add_argument('--profile-updates', type=int, default=3)
+    p.add_argument('--profile-eval', action='store_true', help='Time unchanged-weight evaluation during optimizer-free profiling')
     p.add_argument('--queries-per-update', type=int, default=32)
     p.add_argument('--learning-rate', type=float, default=1e-6)
     p.add_argument('--wall-time-limit', type=float, default=2400)
@@ -174,12 +175,12 @@ def main():
         assert seconds + val_s < 180, 'Frequent evaluation exceeds three-minute budget; resize fixture before training'
 
     try:
-        if args.mode != 'profile': evaluate(0)
+        if args.mode != 'profile' or args.profile_eval: evaluate(0)
         torch.npu.reset_peak_memory_stats()
         for step in range(1, args.steps + 1):
             if time.monotonic() - started > args.wall_time_limit:
                 result['status'] = 'time_limit'
-                checkpoint(step - 1)
+                if args.mode != 'profile': checkpoint(step - 1)
                 break
             begin = time.monotonic()
             # This checkpoint has no dropout: eval mode retains full autograd.
