@@ -32,6 +32,35 @@ def fake_promptfa(q,k,v,**kw):
 
 
 class OptimizedContracts(unittest.TestCase):
+    def test_batched_pages_are_independent_and_match_single_forward(self):
+        from bench_page_batches import BatchVision, BatchForward
+        from patch_embedding import LinearPatchEmbed
+        from profile_warm_forward import Forward
+        torch.manual_seed(214)
+        vc=replace(VisionConfig(),depth=3,hidden_size=128,intermediate_size=256,num_heads=2,
+            out_hidden_size=128,num_position_embeddings=16,deepstack_visual_indexes=(0,1,2),patch_size=2)
+        tc=replace(TextConfig(),hidden_size=128,intermediate_size=256,num_hidden_layers=3,
+            num_attention_heads=2,num_key_value_heads=1,head_dim=64,vocab_size=32)
+        model=LocalColQwen3(ColQwenConfig(vc,tc,dims=128,image_token_id=28,video_token_id=29,
+            vision_start_token_id=27,mrope_section=(8,8,8))).half().eval()
+        rows=[dict(input_ids=torch.tensor([[1,27,28,28,28,28,2]]),
+                   attention_mask=torch.ones(1,7,dtype=torch.long),
+                   pixel_values=torch.randn(1,16,24).half(),image_grid_thw=torch.tensor([[1,4,4]]))
+              for _ in range(4)]
+        patcher=LinearPatchEmbed(model.visual.patch_embed)
+        vision=OptimizedVisionStage(model,Options()); text=OptimizedTextStage(model,Options())
+        with torch.inference_mode(),patch('optimized_prefill._promptfa',side_effect=fake_promptfa):
+            expected=torch.cat([Forward(model,row,patcher,vision,text)() for row in rows])
+            for size in (1,2,4):
+                actual=BatchForward(model,rows[:size],patcher,BatchVision(vision),text)()
+                torch.testing.assert_close(actual,expected[:size],atol=.003,rtol=.003)
+            fn=BatchForward(model,rows,patcher,BatchVision(vision),text)
+            before=fn()
+            rows[3]['pixel_values'].mul_(5)
+            after=fn()
+            self.assertTrue(torch.equal(before[:3],after[:3]))
+            self.assertFalse(torch.equal(before[3],after[3]))
+
     def test_cross_source_snapshot_keeps_checkpoint_and_input_guards(self):
         from profile_warm_text import validate_snapshot_identity
         saved=dict(model='model',config_sha256='config',weights={'a':[1,2]},
