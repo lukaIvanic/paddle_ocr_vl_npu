@@ -80,6 +80,7 @@ def main():
  p.add_argument('--audit-root',type=pathlib.Path,default='/workspace/results/qwen_margin_distill/missing_source_audit')
  p.add_argument('--tokenizer',type=pathlib.Path,default='/workspace/models/Qwen3-Reranker-0.6B')
  p.add_argument('--seed',type=int,default=1047);p.add_argument('--steps',type=int,default=50);p.add_argument('--queries-per-update',type=int,default=32);p.add_argument('--validation-queries',type=int,default=64)
+ p.add_argument('--defer-length-audit',action='store_true',help='Defer token-length audit to the subsequent mandatory two-order whole-group filter')
  p.add_argument('--max-example-num-per-dataset',type=int,default=100000000)
  p.add_argument('--stage',choices=['audit','extract','prepare'],default='prepare');args=p.parse_args();args.output.mkdir(parents=True,exist_ok=True)
  if args.stage=='audit':blocklist(args);return
@@ -154,6 +155,7 @@ def main():
  tok=AutoTokenizer.from_pretrained(args.tokenizer,local_files_only=True);enc=lambda s:tok.encode(s,add_special_tokens=False);pre=enc(PREFIX);suf=enc(SUFFIX);limit=8192-len(pre)-len(suf);lengths={}
  for section in ['train','validation','benchmark','reserved_benchmark']:
   lens=[];truncated=0;removed=0;per_source=collections.Counter();query_cut=0
+  if args.defer_length_audit:continue
   for g in data[section]:
    for doc in g['documents']:
     ids=enc(body(g['instruction'],g['query'],doc,'query_first'));truncated+=len(ids)>limit;removed+=max(0,len(ids)-limit);lens.append(min(len(ids),limit)+len(pre)+len(suf))
@@ -161,7 +163,7 @@ def main():
     query_cut+=len(enc(f"<Instruct>: {g['instruction']}\n<Query>: {g['query']}\n<Document>: "))>limit
   import numpy as np
   lengths[section]={'pairs':len(lens),'truncated_pairs':truncated,'removed_body_tokens':removed,'query_prefix_exceeds_body_budget':query_cut,'mean_tokens':float(np.mean(lens)),'p50_p90_p99_max':np.quantile(lens,[.5,.9,.99,1]).tolist(),'truncated_by_source':dict(per_source)}
- audit={'reference':PIN,'full_archive_included':True,'file_list':[str(f.relative_to(args.extracted)) for f in files],'files':manifest,'cap':args.max_example_num_per_dataset,'shuffle_ratio':0.0,'concat_rows_after_filters':len(dataset),'new_validation_excluded_rows':len(dataset)-len(eligible),'eligible_training_rows':len(eligible),'source_distribution':distribution,'full_source_distribution':dict(collections.Counter({source:sum(m['counts']['included'] for m in manifest if m['source']==source) for source in {m['source'] for m in manifest}})),'sampling':data['sampling'],'lengths':lengths,'dataset_sha256':digest(args.output/'dataset.json.gz'),'schedule_sha256':digest(args.output/'schedule.json.gz'),'seconds':time.monotonic()-start}
+ audit={'reference':PIN,'full_archive_included':True,'file_list':[str(f.relative_to(args.extracted)) for f in files],'files':manifest,'cap':args.max_example_num_per_dataset,'shuffle_ratio':0.0,'concat_rows_after_filters':len(dataset),'new_validation_excluded_rows':len(dataset)-len(eligible),'eligible_training_rows':len(eligible),'source_distribution':distribution,'full_source_distribution':dict(collections.Counter({source:sum(m['counts']['included'] for m in manifest if m['source']==source) for source in {m['source'] for m in manifest}})),'sampling':data['sampling'],'lengths':lengths,'length_audit_deferred':args.defer_length_audit,'dataset_sha256':digest(args.output/'dataset.json.gz'),'schedule_sha256':digest(args.output/'schedule.json.gz'),'seconds':time.monotonic()-start}
  save(args.output/'preparation.json',audit)
  print('PREPARED',json.dumps({k:v for k,v in audit.items() if k not in ['files','file_list','reference']}),flush=True)
 if __name__=='__main__':main()
