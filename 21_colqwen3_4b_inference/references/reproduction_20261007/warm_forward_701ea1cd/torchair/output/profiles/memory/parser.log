@@ -1,0 +1,5 @@
+{
+  "out_json": "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/torchair/output/profiles/memory/parsed.json",
+  "out_md": "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/torchair/output/profiles/memory/parsed.md",
+  "runs": 1
+}

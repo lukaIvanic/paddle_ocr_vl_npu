@@ -1,0 +1,4 @@
+701ea1cdf1aaf83c288ea69eca38294029781df6
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=3
+/workspace/venvs/colqwen3_hf_py312/bin/python -u 21_colqwen3_4b_inference/profile_warm_forward.py --model /workspace/models/Ops-Colqwen3-4B --anchor tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt --execution torchair --repeats 30 --warmups 3 --profile-steps 3 --metrics pipe memory --cache-root .runtime_cache/21_colqwen3/prepared --output-dir tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/torchair/output 

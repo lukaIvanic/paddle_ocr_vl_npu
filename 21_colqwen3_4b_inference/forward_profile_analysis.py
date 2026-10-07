@@ -37,8 +37,12 @@ def summarize_kernel_csv(path, steps):
     intervals = []
     with Path(path).open(newline='', encoding='utf-8-sig') as stream:
         rows = list(csv.DictReader(stream))
+    if not rows:
+        raise ValueError('Kernel profile is empty')
     for row in rows:
         duration = float(row.get('Duration(us)') or row.get('Task Duration(us)') or 0)
+        if not math.isfinite(duration) or duration < 0:
+            raise ValueError('Invalid kernel duration')
         kind = row.get('Type') or row.get('Op Type') or row.get('Task Type') or 'unknown'
         group = groups[kind]
         group['count'] += 1

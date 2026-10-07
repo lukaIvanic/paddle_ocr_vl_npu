@@ -1,0 +1,1114 @@
+{
+  "status": "completed",
+  "command": [
+    "21_colqwen3_4b_inference/profile_warm_forward.py",
+    "--model",
+    "/workspace/models/Ops-Colqwen3-4B",
+    "--anchor",
+    "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt",
+    "--execution",
+    "raw_eager",
+    "--repeats",
+    "30",
+    "--warmups",
+    "3",
+    "--profile-steps",
+    "3",
+    "--metrics",
+    "pipe",
+    "memory",
+    "--cache-root",
+    ".runtime_cache/21_colqwen3/prepared",
+    "--output-dir",
+    "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output"
+  ],
+  "host": "liteserver-c001-4",
+  "commit": "701ea1cdf1aaf83c288ea69eca38294029781df6",
+  "physical_npu": "3",
+  "execution": "raw_eager",
+  "anchor": "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt",
+  "anchor_sha256": "8d138a0027a412a0aca9dad339b5022cc1e89c08238380b95f4e7ba8ceb521f0",
+  "scope": "Warm B1 owned ColQwen page forward, with separate eager/TorchAir profiles.\n\nInputs are already processed and resident on NPU. The measured full forward\nincludes patch/position preparation, vision, mergers/text preparation, text and\nretrieval projection/normalization. Compiled means the two existing static\ntransformer graphs; preparation/mergers/projection remain eager in both lanes.\nFirst use, compile/cache load, preprocessing, input/output transfers, validation\nand serialization are outside clean timings. Profiled times are diagnostic only.\n",
+  "warmups": 3,
+  "repeats": 30,
+  "profile_steps": 3,
+  "device": "Ascend910B2",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0",
+  "internal_format": true,
+  "reference_vs_hf": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": true,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rmse": 0.0,
+    "cosine": 1.0000000000001665,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": true
+  },
+  "options": {
+    "fused_projections": true,
+    "weight_format": "native",
+    "gqa": "native",
+    "vision_norm": "manual_fp32"
+  },
+  "input_shapes": {
+    "pixel_values": [
+      1,
+      5040,
+      1536
+    ],
+    "image_grid_thw": [
+      1,
+      3
+    ],
+    "input_ids": [
+      1,
+      1274
+    ],
+    "attention_mask": [
+      1,
+      1274
+    ]
+  },
+  "vision_tokens": 5040,
+  "text_tokens": 1274,
+  "before_profile": {
+    "wall_ms": {
+      "count": 30,
+      "mean": 163.7417703338239,
+      "p50": 163.7234250010806,
+      "p90": 164.36212999979034,
+      "p99": 164.87536249886034,
+      "min": 162.3829900054261,
+      "max": 164.92111000115983
+    },
+    "device_interval_ms": {
+      "count": 30,
+      "mean": 163.552143351237,
+      "p50": 163.57241821289062,
+      "p90": 164.2030471801758,
+      "p99": 164.7136373901367,
+      "min": 162.1988983154297,
+      "max": 164.7588348388672
+    },
+    "wall_samples_ms": [
+      163.51885999029037,
+      162.3829900054261,
+      163.21949000121094,
+      164.30391000176314,
+      164.76335999323055,
+      163.89931000594515,
+      164.43736999644898,
+      164.30324999964796,
+      163.52743000607006,
+      164.92111000115983,
+      163.3183699887013,
+      164.3537700001616,
+      163.32875000080094,
+      163.85998000623658,
+      163.58038999896962,
+      163.74048999568913,
+      163.83262000454124,
+      163.80032000597566,
+      163.8841899984982,
+      163.57514999981504,
+      163.65687000507023,
+      163.75133000838105,
+      163.50462999253068,
+      163.8174100080505,
+      163.75765000702813,
+      163.7063600064721,
+      163.29935999237932,
+      163.5263899952406,
+      163.1377000012435,
+      163.54429999773856
+    ],
+    "device_samples_ms": [
+      162.50404357910156,
+      162.1988983154297,
+      163.03005981445312,
+      164.11587524414062,
+      164.6029815673828,
+      163.74761962890625,
+      164.25137329101562,
+      164.1490936279297,
+      163.3621063232422,
+      164.7588348388672,
+      163.13824462890625,
+      164.1976776123047,
+      163.1763458251953,
+      163.69573974609375,
+      163.42576599121094,
+      163.5835418701172,
+      163.68177795410156,
+      163.63575744628906,
+      163.7415008544922,
+      163.4269256591797,
+      163.50393676757812,
+      163.60409545898438,
+      163.3300018310547,
+      163.666259765625,
+      163.60397338867188,
+      163.56129455566406,
+      163.14425659179688,
+      163.3783416748047,
+      162.96820068359375,
+      163.37977600097656
+    ]
+  },
+  "vs_optimized_eager": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": true,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rmse": 0.0,
+    "cosine": 1.0000000000001603,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": true
+  },
+  "profiles": {
+    "pipe": {
+      "profiled_wall_ms": {
+        "count": 3,
+        "mean": 740.2937499961505,
+        "p50": 739.300799992634,
+        "p90": 742.2678959963378,
+        "p99": 742.9354925971711,
+        "min": 738.5707799985539,
+        "max": 743.0096699972637
+      },
+      "diagnostic_only": true,
+      "parser_command": [
+        "/workspace/venvs/colqwen3_hf_py312/bin/python",
+        "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/parse_npu_profile.py",
+        "--profile-dir",
+        "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output/profiles/pipe/raw",
+        "--topn",
+        "40",
+        "--out-json",
+        "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output/profiles/pipe/parsed.json",
+        "--out-md",
+        "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output/profiles/pipe/parsed.md",
+        "--skip-trace"
+      ],
+      "parsed_json": "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output/profiles/pipe/parsed.json",
+      "parsed_markdown": "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output/profiles/pipe/parsed.md",
+      "kernel_accounting": {
+        "kernel_rows": 11316,
+        "profile_steps": 3,
+        "kernel_duration_sum_ms_per_forward": 147.3773303333333,
+        "interval_union_ms": 442.06175,
+        "interval_envelope_ms": 2220.62275,
+        "uncovered_envelope_ms": 1778.561,
+        "timeline_scope": "All captured task intervals; gaps include boundaries between forwards. No claim of pure compute utilization or CPU causality.",
+        "top_types": [
+          {
+            "type": "PromptFlashAttention",
+            "count": 180,
+            "duration_us": 126702.61500000003,
+            "duration_ms_per_forward": 42.23420500000001,
+            "count_per_forward": 60.0,
+            "kernel_sum_percent": 28.65719232698546
+          },
+          {
+            "type": "MatMulV3",
+            "count": 564,
+            "duration_us": 91875.68399999998,
+            "duration_ms_per_forward": 30.625227999999993,
+            "count_per_forward": 188.0,
+            "kernel_sum_percent": 20.7801484330954
+          },
+          {
+            "type": "MatMulV2",
+            "count": 186,
+            "duration_us": 53001.91799999999,
+            "duration_ms_per_forward": 17.667305999999996,
+            "count_per_forward": 62.0,
+            "kernel_sum_percent": 11.987804338727434
+          },
+          {
+            "type": "Mul",
+            "count": 1998,
+            "duration_us": 36774.82099999999,
+            "duration_ms_per_forward": 12.258273666666662,
+            "count_per_forward": 666.0,
+            "kernel_sum_percent": 8.31761142567944
+          },
+          {
+            "type": "Cast",
+            "count": 1647,
+            "duration_us": 19498.64900000001,
+            "duration_ms_per_forward": 6.4995496666666694,
+            "count_per_forward": 549.0,
+            "kernel_sum_percent": 4.410142083566174
+          },
+          {
+            "type": "Transpose",
+            "count": 552,
+            "duration_us": 16917.281999999992,
+            "duration_ms_per_forward": 5.639093999999997,
+            "count_per_forward": 184.0,
+            "kernel_sum_percent": 3.82629674947
+          },
+          {
+            "type": "ReduceMean",
+            "count": 723,
+            "duration_us": 15607.694999999992,
+            "duration_ms_per_forward": 5.202564999999998,
+            "count_per_forward": 241.0,
+            "kernel_sum_percent": 3.53009854923617
+          },
+          {
+            "type": "Add",
+            "count": 1464,
+            "duration_us": 14331.81300000001,
+            "duration_ms_per_forward": 4.777271000000003,
+            "count_per_forward": 488.0,
+            "kernel_sum_percent": 3.2415236381300465
+          },
+          {
+            "type": "Slice",
+            "count": 1014,
+            "duration_us": 13590.885999999982,
+            "duration_ms_per_forward": 4.530295333333327,
+            "count_per_forward": 338.0,
+            "kernel_sum_percent": 3.0739431383964213
+          },
+          {
+            "type": "Pows",
+            "count": 579,
+            "duration_us": 12602.607,
+            "duration_ms_per_forward": 4.200869,
+            "count_per_forward": 193.0,
+            "kernel_sum_percent": 2.850417354214932
+          },
+          {
+            "type": "AsStrided",
+            "count": 612,
+            "duration_us": 7194.182999999997,
+            "duration_ms_per_forward": 2.3980609999999993,
+            "count_per_forward": 204.0,
+            "kernel_sum_percent": 1.6271573074204435
+          },
+          {
+            "type": "MaskedScatter",
+            "count": 3,
+            "duration_us": 6641.293000000001,
+            "duration_ms_per_forward": 2.2137643333333337,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 1.5021064150953964
+          },
+          {
+            "type": "GeluV2",
+            "count": 72,
+            "duration_us": 5711.358000000001,
+            "duration_ms_per_forward": 1.9037860000000002,
+            "count_per_forward": 24.0,
+            "kernel_sum_percent": 1.2917766902779948
+          },
+          {
+            "type": "ConcatD",
+            "count": 366,
+            "duration_us": 4396.273000000001,
+            "duration_ms_per_forward": 1.4654243333333337,
+            "count_per_forward": 122.0,
+            "kernel_sum_percent": 0.9943349699841108
+          },
+          {
+            "type": "Swish",
+            "count": 108,
+            "duration_us": 3769.557999999999,
+            "duration_ms_per_forward": 1.2565193333333329,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 0.8525865752157255
+          },
+          {
+            "type": "Sub",
+            "count": 144,
+            "duration_us": 3759.157999999999,
+            "duration_ms_per_forward": 1.2530526666666661,
+            "count_per_forward": 48.0,
+            "kernel_sum_percent": 0.850234336469898
+          },
+          {
+            "type": "Neg",
+            "count": 360,
+            "duration_us": 3670.3689999999965,
+            "duration_ms_per_forward": 1.2234563333333321,
+            "count_per_forward": 120.0,
+            "kernel_sum_percent": 0.8301523243541987
+          },
+          {
+            "type": "Rsqrt",
+            "count": 579,
+            "duration_us": 1851.5420000000001,
+            "duration_ms_per_forward": 0.6171806666666667,
+            "count_per_forward": 193.0,
+            "kernel_sum_percent": 0.418775849223722
+          },
+          {
+            "type": "ViewCopy",
+            "count": 6,
+            "duration_us": 1079.101,
+            "duration_ms_per_forward": 0.3597003333333334,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.24406761373664093
+          },
+          {
+            "type": "LayerNormV3",
+            "count": 12,
+            "duration_us": 746.215,
+            "duration_ms_per_forward": 0.24873833333333334,
+            "count_per_forward": 4.0,
+            "kernel_sum_percent": 0.16877652266515136
+          },
+          {
+            "type": "Index",
+            "count": 3,
+            "duration_us": 314.447,
+            "duration_ms_per_forward": 0.10481566666666667,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.07112061701049813
+          },
+          {
+            "type": "Gelu",
+            "count": 12,
+            "duration_us": 307.96600000000007,
+            "duration_ms_per_forward": 0.10265533333333336,
+            "count_per_forward": 4.0,
+            "kernel_sum_percent": 0.06965476515360321
+          },
+          {
+            "type": "GatherV2",
+            "count": 6,
+            "duration_us": 284.706,
+            "duration_ms_per_forward": 0.094902,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.06439389272783928
+          },
+          {
+            "type": "IndexPutV2",
+            "count": 9,
+            "duration_us": 183.10400000000004,
+            "duration_ms_per_forward": 0.06103466666666668,
+            "count_per_forward": 3.0,
+            "kernel_sum_percent": 0.04141387724192074
+          },
+          {
+            "type": "GreaterEqual",
+            "count": 3,
+            "duration_us": 174.463,
+            "duration_ms_per_forward": 0.058154333333333336,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.03945948349166166
+          },
+          {
+            "type": "ZerosLike",
+            "count": 12,
+            "duration_us": 136.666,
+            "duration_ms_per_forward": 0.04555533333333333,
+            "count_per_forward": 4.0,
+            "kernel_sum_percent": 0.030910678888196538
+          },
+          {
+            "type": "MemSet",
+            "count": 9,
+            "duration_us": 97.445,
+            "duration_ms_per_forward": 0.03248166666666666,
+            "count_per_forward": 3.0,
+            "kernel_sum_percent": 0.02203979851799505
+          },
+          {
+            "type": "RealDiv",
+            "count": 3,
+            "duration_us": 87.803,
+            "duration_ms_per_forward": 0.029267666666666668,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.01985900178845009
+          },
+          {
+            "type": "Cos",
+            "count": 6,
+            "duration_us": 80.142,
+            "duration_ms_per_forward": 0.026713999999999998,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.018126261304624754
+          },
+          {
+            "type": "Sin",
+            "count": 6,
+            "duration_us": 78.86,
+            "duration_ms_per_forward": 0.026286666666666667,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.017836302643841034
+          },
+          {
+            "type": "LpNormV2",
+            "count": 3,
+            "duration_us": 75.742,
+            "duration_ms_per_forward": 0.025247333333333333,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.01713108337369779
+          },
+          {
+            "type": "ReduceAny",
+            "count": 6,
+            "duration_us": 71.981,
+            "duration_ms_per_forward": 0.023993666666666667,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.016280432419557716
+          },
+          {
+            "type": "TensorMove",
+            "count": 6,
+            "duration_us": 69.98100000000001,
+            "duration_ms_per_forward": 0.023327,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.015828078814590914
+          },
+          {
+            "type": "SelectV2",
+            "count": 3,
+            "duration_us": 66.64,
+            "duration_ms_per_forward": 0.022213333333333335,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.015072422117493869
+          },
+          {
+            "type": "Range",
+            "count": 6,
+            "duration_us": 55.881,
+            "duration_ms_per_forward": 0.018626999999999998,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.012638985899574955
+          },
+          {
+            "type": "LogicalAnd",
+            "count": 3,
+            "duration_us": 53.39999999999999,
+            "duration_ms_per_forward": 0.017799999999999996,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.012077841252613632
+          },
+          {
+            "type": "NonZero",
+            "count": 9,
+            "duration_us": 46.36,
+            "duration_ms_per_forward": 0.015453333333333333,
+            "count_per_forward": 3.0,
+            "kernel_sum_percent": 0.010485556563130488
+          },
+          {
+            "type": "BroadcastTo",
+            "count": 6,
+            "duration_us": 46.06,
+            "duration_ms_per_forward": 0.015353333333333333,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.010417703522385469
+          },
+          {
+            "type": "Less",
+            "count": 3,
+            "duration_us": 35.701,
+            "duration_ms_per_forward": 0.011900333333333334,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.008074738025459913
+          },
+          {
+            "type": "Tile",
+            "count": 3,
+            "duration_us": 33.881,
+            "duration_ms_per_forward": 0.011293666666666667,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.007663096244940122
+          },
+          {
+            "type": "Equal",
+            "count": 12,
+            "duration_us": 31.121,
+            "duration_ms_per_forward": 0.010373666666666666,
+            "count_per_forward": 4.0,
+            "kernel_sum_percent": 0.007038848270085935
+          },
+          {
+            "type": "LogicalNot",
+            "count": 3,
+            "duration_us": 29.92,
+            "duration_ms_per_forward": 0.009973333333333334,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.00676720993030337
+          },
+          {
+            "type": "ReduceSum",
+            "count": 3,
+            "duration_us": 19.820999999999998,
+            "duration_ms_per_forward": 0.006606999999999999,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.004483050402023499
+          },
+          {
+            "type": "ReduceAll",
+            "count": 6,
+            "duration_us": 18.78,
+            "duration_ms_per_forward": 0.006260000000000001,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.004247600350638279
+          },
+          {
+            "type": "Fill",
+            "count": 6,
+            "duration_us": 8.1,
+            "duration_ms_per_forward": 0.0026999999999999997,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.0018320321001155514
+          }
+        ]
+      },
+      "replay_parity": {
+        "shape": [
+          1,
+          1274,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000001603,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      }
+    },
+    "memory": {
+      "profiled_wall_ms": {
+        "count": 3,
+        "mean": 782.5057266600197,
+        "p50": 783.3056999952532,
+        "p90": 787.9374599899165,
+        "p99": 788.9796059887158,
+        "min": 775.1160799962236,
+        "max": 789.0953999885824
+      },
+      "diagnostic_only": true,
+      "parser_command": [
+        "/workspace/venvs/colqwen3_hf_py312/bin/python",
+        "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/parse_npu_profile.py",
+        "--profile-dir",
+        "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output/profiles/memory/raw",
+        "--topn",
+        "40",
+        "--out-json",
+        "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output/profiles/memory/parsed.json",
+        "--out-md",
+        "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output/profiles/memory/parsed.md",
+        "--skip-trace"
+      ],
+      "parsed_json": "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output/profiles/memory/parsed.json",
+      "parsed_markdown": "tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/warm_forward_701ea1cd/raw_eager/output/profiles/memory/parsed.md",
+      "kernel_accounting": {
+        "kernel_rows": 11316,
+        "profile_steps": 3,
+        "kernel_duration_sum_ms_per_forward": 147.57225700000004,
+        "interval_union_ms": 442.64675,
+        "interval_envelope_ms": 2347.0455,
+        "uncovered_envelope_ms": 1904.39875,
+        "timeline_scope": "All captured task intervals; gaps include boundaries between forwards. No claim of pure compute utilization or CPU causality.",
+        "top_types": [
+          {
+            "type": "PromptFlashAttention",
+            "count": 180,
+            "duration_us": 126855.76000000002,
+            "duration_ms_per_forward": 42.285253333333344,
+            "count_per_forward": 60.0,
+            "kernel_sum_percent": 28.653931431931227
+          },
+          {
+            "type": "MatMulV3",
+            "count": 564,
+            "duration_us": 91992.84900000005,
+            "duration_ms_per_forward": 30.664283000000015,
+            "count_per_forward": 188.0,
+            "kernel_sum_percent": 20.7791651516179
+          },
+          {
+            "type": "MatMulV2",
+            "count": 186,
+            "duration_us": 53110.07300000001,
+            "duration_ms_per_forward": 17.70335766666667,
+            "count_per_forward": 62.0,
+            "kernel_sum_percent": 11.996399612338154
+          },
+          {
+            "type": "Mul",
+            "count": 1998,
+            "duration_us": 36816.92900000005,
+            "duration_ms_per_forward": 12.272309666666683,
+            "count_per_forward": 666.0,
+            "kernel_sum_percent": 8.316136051688007
+          },
+          {
+            "type": "Cast",
+            "count": 1647,
+            "duration_us": 19235.621000000006,
+            "duration_ms_per_forward": 6.411873666666669,
+            "count_per_forward": 549.0,
+            "kernel_sum_percent": 4.344904521360452
+          },
+          {
+            "type": "Transpose",
+            "count": 552,
+            "duration_us": 17137.91199999999,
+            "duration_ms_per_forward": 5.71263733333333,
+            "count_per_forward": 184.0,
+            "kernel_sum_percent": 3.8710781074069556
+          },
+          {
+            "type": "ReduceMean",
+            "count": 723,
+            "duration_us": 15599.797999999988,
+            "duration_ms_per_forward": 5.199932666666663,
+            "count_per_forward": 241.0,
+            "kernel_sum_percent": 3.523651919660388
+          },
+          {
+            "type": "Add",
+            "count": 1464,
+            "duration_us": 14402.081,
+            "duration_ms_per_forward": 4.800693666666667,
+            "count_per_forward": 488.0,
+            "kernel_sum_percent": 3.253113941780172
+          },
+          {
+            "type": "Slice",
+            "count": 1014,
+            "duration_us": 13551.333999999995,
+            "duration_ms_per_forward": 4.5171113333333315,
+            "count_per_forward": 338.0,
+            "kernel_sum_percent": 3.0609488701750562
+          },
+          {
+            "type": "Pows",
+            "count": 579,
+            "duration_us": 12652.770000000013,
+            "duration_ms_per_forward": 4.217590000000005,
+            "count_per_forward": 193.0,
+            "kernel_sum_percent": 2.8579829879541676
+          },
+          {
+            "type": "AsStrided",
+            "count": 612,
+            "duration_us": 7193.993999999997,
+            "duration_ms_per_forward": 2.397997999999999,
+            "count_per_forward": 204.0,
+            "kernel_sum_percent": 1.6249653212256543
+          },
+          {
+            "type": "MaskedScatter",
+            "count": 3,
+            "duration_us": 6643.352000000001,
+            "duration_ms_per_forward": 2.214450666666667,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 1.500587381181455
+          },
+          {
+            "type": "GeluV2",
+            "count": 72,
+            "duration_us": 5710.551000000001,
+            "duration_ms_per_forward": 1.9035170000000006,
+            "count_per_forward": 24.0,
+            "kernel_sum_percent": 1.2898881122350794
+          },
+          {
+            "type": "ConcatD",
+            "count": 366,
+            "duration_us": 4367.587999999998,
+            "duration_ms_per_forward": 1.455862666666666,
+            "count_per_forward": 122.0,
+            "kernel_sum_percent": 0.9865422514115683
+          },
+          {
+            "type": "Swish",
+            "count": 108,
+            "duration_us": 3769.7549999999987,
+            "duration_ms_per_forward": 1.2565849999999996,
+            "count_per_forward": 36.0,
+            "kernel_sum_percent": 0.8515049004095663
+          },
+          {
+            "type": "Sub",
+            "count": 144,
+            "duration_us": 3769.150999999999,
+            "duration_ms_per_forward": 1.2563836666666663,
+            "count_per_forward": 48.0,
+            "kernel_sum_percent": 0.8513684700686431
+          },
+          {
+            "type": "Neg",
+            "count": 360,
+            "duration_us": 3670.270999999997,
+            "duration_ms_per_forward": 1.2234236666666656,
+            "count_per_forward": 120.0,
+            "kernel_sum_percent": 0.8290336486936466
+          },
+          {
+            "type": "Rsqrt",
+            "count": 579,
+            "duration_us": 1856.2170000000006,
+            "duration_ms_per_forward": 0.6187390000000001,
+            "count_per_forward": 193.0,
+            "kernel_sum_percent": 0.41927867241333855
+          },
+          {
+            "type": "ViewCopy",
+            "count": 6,
+            "duration_us": 1249.2440000000001,
+            "duration_ms_per_forward": 0.4164146666666667,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.28217679605365564
+          },
+          {
+            "type": "LayerNormV3",
+            "count": 12,
+            "duration_us": 741.615,
+            "duration_ms_per_forward": 0.247205,
+            "count_per_forward": 4.0,
+            "kernel_sum_percent": 0.16751454848318809
+          },
+          {
+            "type": "Index",
+            "count": 3,
+            "duration_us": 308.966,
+            "duration_ms_per_forward": 0.10298866666666667,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.06978863694323428
+          },
+          {
+            "type": "Gelu",
+            "count": 12,
+            "duration_us": 308.466,
+            "duration_ms_per_forward": 0.102822,
+            "count_per_forward": 4.0,
+            "kernel_sum_percent": 0.06967569791929114
+          },
+          {
+            "type": "GatherV2",
+            "count": 6,
+            "duration_us": 277.46500000000003,
+            "duration_ms_per_forward": 0.09248833333333334,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.0626732525567684
+          },
+          {
+            "type": "IndexPutV2",
+            "count": 9,
+            "duration_us": 182.205,
+            "duration_ms_per_forward": 0.060735000000000004,
+            "count_per_forward": 3.0,
+            "kernel_sum_percent": 0.041156109715120764
+          },
+          {
+            "type": "GreaterEqual",
+            "count": 3,
+            "duration_us": 179.805,
+            "duration_ms_per_forward": 0.059935,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.04061400240019368
+          },
+          {
+            "type": "ZerosLike",
+            "count": 12,
+            "duration_us": 142.54299999999998,
+            "duration_ms_per_forward": 0.047514333333333325,
+            "count_per_forward": 4.0,
+            "kernel_sum_percent": 0.03219733457985488
+          },
+          {
+            "type": "MemSet",
+            "count": 9,
+            "duration_us": 88.64,
+            "duration_ms_per_forward": 0.029546666666666666,
+            "count_per_forward": 3.0,
+            "kernel_sum_percent": 0.020021830164640403
+          },
+          {
+            "type": "RealDiv",
+            "count": 3,
+            "duration_us": 87.961,
+            "duration_ms_per_forward": 0.029320333333333334,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.019868458970125614
+          },
+          {
+            "type": "Cos",
+            "count": 6,
+            "duration_us": 79.22,
+            "duration_ms_per_forward": 0.026406666666666665,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.017894058953551586
+          },
+          {
+            "type": "Sin",
+            "count": 6,
+            "duration_us": 78.205,
+            "duration_ms_per_forward": 0.026068333333333332,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.017664792734947008
+          },
+          {
+            "type": "ReduceAny",
+            "count": 6,
+            "duration_us": 71.442,
+            "duration_ms_per_forward": 0.023813999999999995,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.016137179497092053
+          },
+          {
+            "type": "TensorMove",
+            "count": 6,
+            "duration_us": 70.661,
+            "duration_ms_per_forward": 0.023553666666666667,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.015960768741692864
+          },
+          {
+            "type": "LpNormV2",
+            "count": 3,
+            "duration_us": 69.94,
+            "duration_ms_per_forward": 0.023313333333333332,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.015797910669166852
+          },
+          {
+            "type": "SelectV2",
+            "count": 3,
+            "duration_us": 66.941,
+            "duration_ms_per_forward": 0.022313666666666666,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.01512050240355588
+          },
+          {
+            "type": "Range",
+            "count": 6,
+            "duration_us": 56.54,
+            "duration_ms_per_forward": 0.018846666666666668,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.012771144827490618
+          },
+          {
+            "type": "LogicalAnd",
+            "count": 3,
+            "duration_us": 53.262,
+            "duration_ms_per_forward": 0.017754000000000002,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.012030716586519372
+          },
+          {
+            "type": "BroadcastTo",
+            "count": 6,
+            "duration_us": 49.661,
+            "duration_ms_per_forward": 0.016553666666666668,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.011217329736080856
+          },
+          {
+            "type": "NonZero",
+            "count": 9,
+            "duration_us": 46.881,
+            "duration_ms_per_forward": 0.015627000000000002,
+            "count_per_forward": 3.0,
+            "kernel_sum_percent": 0.01058938876295698
+          },
+          {
+            "type": "Tile",
+            "count": 3,
+            "duration_us": 34.22,
+            "duration_ms_per_forward": 0.011406666666666666,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.007729546798668711
+          },
+          {
+            "type": "Less",
+            "count": 3,
+            "duration_us": 32.019999999999996,
+            "duration_ms_per_forward": 0.010673333333333332,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.007232615093318881
+          },
+          {
+            "type": "LogicalNot",
+            "count": 3,
+            "duration_us": 29.740000000000002,
+            "duration_ms_per_forward": 0.009913333333333335,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.006717613144138149
+          },
+          {
+            "type": "Equal",
+            "count": 12,
+            "duration_us": 29.460999999999995,
+            "duration_ms_per_forward": 0.009820333333333332,
+            "count_per_forward": 4.0,
+            "kernel_sum_percent": 0.006654593168777875
+          },
+          {
+            "type": "ReduceSum",
+            "count": 3,
+            "duration_us": 19.681,
+            "duration_ms_per_forward": 0.006560333333333333,
+            "count_per_forward": 1.0,
+            "kernel_sum_percent": 0.0044455058604499975
+          },
+          {
+            "type": "ReduceAll",
+            "count": 6,
+            "duration_us": 18.4,
+            "duration_ms_per_forward": 0.006133333333333333,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.004156156081107664
+          },
+          {
+            "type": "Fill",
+            "count": 6,
+            "duration_us": 7.58,
+            "duration_ms_per_forward": 0.0025266666666666666,
+            "count_per_forward": 2.0,
+            "kernel_sum_percent": 0.001712155602978049
+          }
+        ]
+      },
+      "replay_parity": {
+        "shape": [
+          1,
+          1274,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000001603,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      }
+    }
+  },
+  "after_profile": {
+    "wall_ms": {
+      "count": 30,
+      "mean": 162.9636660014512,
+      "p50": 162.72910000407137,
+      "p90": 163.42327399906935,
+      "p99": 166.1259122993215,
+      "min": 162.2869899874786,
+      "max": 167.102959996555
+    },
+    "device_interval_ms": {
+      "count": 30,
+      "mean": 162.78667093912762,
+      "p50": 162.55924224853516,
+      "p90": 163.2651809692383,
+      "p99": 165.75637557983399,
+      "min": 162.12152099609375,
+      "max": 166.654541015625
+    },
+    "wall_samples_ms": [
+      167.102959996555,
+      163.1619099935051,
+      163.0782900028862,
+      163.73383000609465,
+      162.8429599950323,
+      162.67315999721177,
+      162.30445000110194,
+      162.71516999404412,
+      162.53532000700943,
+      162.47155000746716,
+      162.55822000675835,
+      162.91020999778993,
+      162.55603000172414,
+      162.2869899874786,
+      163.65982999559492,
+      163.07790999417193,
+      162.7320800034795,
+      162.49559000425506,
+      162.9382500104839,
+      162.54235000815243,
+      162.72612000466324,
+      162.51117001229431,
+      162.62488999927882,
+      163.05907000787556,
+      162.42952999891713,
+      163.3969899994554,
+      162.81770000932738,
+      163.23393999482505,
+      162.6560800068546,
+      163.07742999924812
+    ],
+    "device_samples_ms": [
+      166.654541015625,
+      162.9921875,
+      162.89044189453125,
+      163.5574188232422,
+      162.6721649169922,
+      162.52076721191406,
+      162.1527557373047,
+      162.54531860351562,
+      162.3733367919922,
+      162.29684448242188,
+      162.38914489746094,
+      162.73513793945312,
+      162.38992309570312,
+      162.12152099609375,
+      163.46099853515625,
+      162.9003448486328,
+      162.5487823486328,
+      162.32945251464844,
+      162.76878356933594,
+      162.3892822265625,
+      162.5697021484375,
+      162.3597412109375,
+      162.46658325195312,
+      162.88998413085938,
+      162.25070190429688,
+      163.24342346191406,
+      162.65072631835938,
+      163.064697265625,
+      162.49647521972656,
+      162.9189453125
+    ]
+  },
+  "final_replay_parity": {
+    "shape": [
+      1,
+      1274,
+      2560
+    ],
+    "finite": true,
+    "exact": true,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rmse": 0.0,
+    "cosine": 1.0000000000001603,
+    "atol": 0.002,
+    "rtol": 0.002,
+    "passed": true
+  },
+  "finite": true,
+  "max_unit_norm_error": 0.0004442930221557617
+}

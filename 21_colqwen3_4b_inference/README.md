@@ -558,3 +558,39 @@ The 6.8 GB embeddings, full score matrix and rankings remain on the 910B under
 they are not committed to Git. See [the run protocol](VIDORE_V3.md) for replay.
 The corrected 8-page/8-query NPU preflight passed before this run. Local tests
 now total 29, including score reduction and progress-clock regression coverage.
+
+## Warm B1 complete forward and separate eager/compiled profiling
+
+`profile_warm_forward.py` measures the owned model forward with already
+processed, NPU-resident inputs. Both lanes include patch/position preparation,
+vision, mergers/text preparation, text, and retrieval projection/normalization.
+`raw_eager` uses the optimized uncompiled modules; `torchair` uses the existing
+static transformer graphs and the same eager preparation/finish code.
+Compile/cache load and three warmups precede measurement. Thirty clean calls
+before and after profiling are recorded separately from profiled timings.
+
+On 2026-10-07, one 910B2 at B1/FP16 measured **163.353 ms eager versus
+137.209 ms compiled**, with bit-exact embeddings. Separate pipe and memory
+profiles identify the eager pointwise/layout work and the compiled attention/
+dense-matrix costs. See the [full report and evidence](references/reproduction_20261007/README.md).
+
+Replay each mode in a separate process after `source npu-setup`, using the saved
+real HR anchor on the container. Choose a new output root; preserve existing caches:
+
+```sh
+PYTHON=/workspace/venvs/colqwen3_hf_py312/bin/python
+ANCHOR=tmp/21_colqwen3_4b_inference/replicate_20261007T102343Z_f9bb6837/hr_hf/output/image_00.pt
+RUN_ROOT=tmp/21_colqwen3_4b_inference/warm_forward_new
+for EXECUTION in raw_eager torchair; do
+  "$PYTHON" -u 21_colqwen3_4b_inference/profile_warm_forward.py \
+    --model /workspace/models/Ops-Colqwen3-4B --anchor "$ANCHOR" \
+    --execution "$EXECUTION" --output-dir "$RUN_ROOT/$EXECUTION" \
+    --warmups 3 --repeats 30 --profile-steps 3 --metrics pipe memory \
+    --cache-root .runtime_cache/21_colqwen3/prepared || break
+done
+```
+
+Profiles retain CPU/NPU activity, shapes, call stacks and named forward sections.
+The existing MinerU CANN parser writes kernel/operator/shape/PMU summaries beside
+each trace. Profiling can strongly perturb host dispatch; use clean baseline
+samples for latency comparisons and captured kernels for bottleneck analysis.

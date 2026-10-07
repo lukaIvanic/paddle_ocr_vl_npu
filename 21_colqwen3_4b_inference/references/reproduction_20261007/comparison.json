@@ -1,0 +1,202 @@
+{
+  "eager_dev": {
+    "status": "completed_development",
+    "physical_npu": "2",
+    "pages": 111,
+    "queries": 32,
+    "page_encoding_s": 36.78267655000673,
+    "page_per_s": 3.017724929535605,
+    "first_page_s": 0.8677752499934286,
+    "after_first_page_per_s": 3.062795553330931,
+    "page_routes": [
+      {
+        "section": "text_transformer",
+        "route": "optimized_eager_uncached",
+        "tokens": 1274,
+        "count": 111
+      },
+      {
+        "section": "vision_transformer",
+        "route": "optimized_eager_uncached",
+        "tokens": 5040,
+        "count": 111
+      }
+    ],
+    "metrics": {
+      "recall_10": 0.9088541666666666,
+      "ndcg_cut_10": 0.7155517785072524,
+      "map_cut_10": 0.634188988095238
+    },
+    "first_page_sections": {
+      "preprocess": {
+        "host_s": 0.2554064799915068,
+        "tokens": 0
+      },
+      "input_transfer": {
+        "host_s": 0.0050917600019602105,
+        "tokens": 0,
+        "device_status": "complete",
+        "device_interval_ms": 3.244339942932129,
+        "device_tok_s": null
+      },
+      "vision_prepare": {
+        "host_s": 0.19616181000310462,
+        "tokens": 5040,
+        "device_status": "complete",
+        "device_interval_ms": 196.10386657714844,
+        "device_tok_s": 25700.6661213242
+      },
+      "vision_dispatch": {
+        "host_s": 0.00024144000781234354,
+        "tokens": 0
+      },
+      "vision_transformer": {
+        "host_s": 0.15742016999865882,
+        "tokens": 5040,
+        "route": "optimized_eager_uncached",
+        "device_status": "complete",
+        "device_interval_ms": 203.3296661376953,
+        "device_tok_s": 24787.332295066575
+      },
+      "text_prepare": {
+        "host_s": 0.12094497001089621,
+        "tokens": 1274,
+        "device_status": "complete",
+        "device_interval_ms": 75.1530990600586,
+        "device_tok_s": 16952.062069747557
+      },
+      "text_dispatch": {
+        "host_s": 0.00025690000620670617,
+        "tokens": 0
+      },
+      "text_transformer": {
+        "host_s": 0.08886791000259109,
+        "tokens": 1274,
+        "route": "optimized_eager_uncached",
+        "device_status": "complete",
+        "device_interval_ms": 97.82425689697266,
+        "device_tok_s": 13023.35474259479
+      },
+      "retrieval_projection": {
+        "host_s": 0.015819089996512048,
+        "tokens": 1274,
+        "device_status": "complete",
+        "device_interval_ms": 11.571860313415527,
+        "device_tok_s": 110094.65768637236
+      },
+      "output_materialize_wait": {
+        "host_s": 0.006166469989693724,
+        "tokens": 1274
+      },
+      "validate_retain": {
+        "host_s": 0.0185567699954845,
+        "tokens": 0
+      }
+    }
+  },
+  "compiled_dev": {
+    "status": "completed_development",
+    "physical_npu": "2",
+    "pages": 111,
+    "queries": 32,
+    "page_encoding_s": 43.2320728199993,
+    "page_per_s": 2.567538236303373,
+    "first_page_s": 6.2963114799931645,
+    "after_first_page_per_s": 2.9781435662693645,
+    "page_routes": [
+      {
+        "section": "text_transformer",
+        "route": "compiled_cache",
+        "tokens": 1274,
+        "count": 111
+      },
+      {
+        "section": "vision_transformer",
+        "route": "compiled_cache",
+        "tokens": 5040,
+        "count": 111
+      }
+    ],
+    "metrics": {
+      "recall_10": 0.9088541666666666,
+      "ndcg_cut_10": 0.7155517785072524,
+      "map_cut_10": 0.634188988095238
+    },
+    "first_page_sections": {
+      "preprocess": {
+        "host_s": 0.2713143500004662,
+        "tokens": 0
+      },
+      "input_transfer": {
+        "host_s": 0.0046127499954309314,
+        "tokens": 0,
+        "device_status": "complete",
+        "device_interval_ms": 3.65664005279541,
+        "device_tok_s": null
+      },
+      "vision_prepare": {
+        "host_s": 0.20920057001058012,
+        "tokens": 5040,
+        "device_status": "complete",
+        "device_interval_ms": 209.14707946777344,
+        "device_tok_s": 24097.874150695905
+      },
+      "vision_dispatch": {
+        "host_s": 0.0023827700060792267,
+        "tokens": 0
+      },
+      "vision_transformer": {
+        "host_s": 4.631066450005164,
+        "tokens": 5040,
+        "route": "compiled_cache",
+        "device_status": "complete",
+        "device_interval_ms": 4683.8095703125,
+        "device_tok_s": 1076.047162964342
+      },
+      "text_prepare": {
+        "host_s": 0.18621628000983037,
+        "tokens": 1274,
+        "device_status": "complete",
+        "device_interval_ms": 133.91392517089844,
+        "device_tok_s": 9513.57372561625
+      },
+      "text_dispatch": {
+        "host_s": 0.004508259997237474,
+        "tokens": 0
+      },
+      "text_transformer": {
+        "host_s": 0.9044059600128094,
+        "tokens": 1274,
+        "route": "compiled_cache",
+        "device_status": "complete",
+        "device_interval_ms": 965.3557739257812,
+        "device_tok_s": 1319.7207023676517
+      },
+      "retrieval_projection": {
+        "host_s": 0.01749628000834491,
+        "tokens": 1274,
+        "device_status": "complete",
+        "device_interval_ms": 0.16899999976158142,
+        "device_tok_s": 7538461.549096504
+      },
+      "output_materialize_wait": {
+        "host_s": 0.04682160000083968,
+        "tokens": 1274
+      },
+      "validate_retain": {
+        "host_s": 0.015119780000532046,
+        "tokens": 0
+      }
+    }
+  },
+  "validation": {
+    "workloads_equal": true,
+    "ids_equal": true,
+    "scores_exact": true,
+    "scores_max_abs": 0.0,
+    "rankings_equal": true,
+    "metrics_equal": true
+  },
+  "inclusive_speedup": 0.8508191754569524,
+  "after_first_page_speedup": 0.9723612021803076
+}

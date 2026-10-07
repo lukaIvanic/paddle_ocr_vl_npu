@@ -1,0 +1,109 @@
+{
+  "raw_eager": {
+    "status": "completed",
+    "physical_npu": "3",
+    "warm_wall_ms": {
+      "count": 60,
+      "mean": 163.35271816763756,
+      "p50": 163.30886499054031,
+      "p90": 164.30331599985948,
+      "p99": 165.81566849927185,
+      "min": 162.2869899874786,
+      "max": 167.102959996555
+    },
+    "warm_device_interval_ms": {
+      "count": 60,
+      "mean": 163.1694071451823,
+      "p50": 163.10147094726562,
+      "p90": 164.11919708251952,
+      "p99": 165.5360743713379,
+      "min": 162.12152099609375,
+      "max": 166.654541015625
+    },
+    "shape_attribution": {
+      "other": {
+        "count_per_forward": 3462.0,
+        "duration_ms_per_forward": 56.850591333333114
+      },
+      "vision_matmul": {
+        "count_per_forward": 97.0,
+        "duration_ms_per_forward": 10.810108666666661
+      },
+      "vision_attention": {
+        "count_per_forward": 24.0,
+        "duration_ms_per_forward": 31.272873333333354
+      },
+      "other_matmul": {
+        "count_per_forward": 8.0,
+        "duration_ms_per_forward": 1.1626363333333332
+      },
+      "text_matmul": {
+        "count_per_forward": 145.0,
+        "duration_ms_per_forward": 36.31978899999999
+      },
+      "text_attention": {
+        "count_per_forward": 36.0,
+        "duration_ms_per_forward": 10.961331666666663
+      }
+    }
+  },
+  "torchair": {
+    "status": "completed",
+    "physical_npu": "3",
+    "warm_wall_ms": {
+      "count": 60,
+      "mean": 137.20870866745827,
+      "p50": 136.60560499556595,
+      "p90": 137.8946690063458,
+      "p99": 144.8901476013998,
+      "min": 136.22990000294521,
+      "max": 145.2756299986504
+    },
+    "warm_device_interval_ms": {
+      "count": 60,
+      "mean": 137.00092468261718,
+      "p50": 136.46204376220703,
+      "p90": 137.62652130126952,
+      "p99": 144.59689483642578,
+      "min": 136.0844268798828,
+      "max": 144.8247528076172
+    },
+    "shape_attribution": {
+      "other": {
+        "count_per_forward": 2205.0,
+        "duration_ms_per_forward": 33.62716233333345
+      },
+      "vision_matmul": {
+        "count_per_forward": 97.0,
+        "duration_ms_per_forward": 10.324014000000005
+      },
+      "vision_attention": {
+        "count_per_forward": 24.0,
+        "duration_ms_per_forward": 31.10337433333333
+      },
+      "other_matmul": {
+        "count_per_forward": 8.0,
+        "duration_ms_per_forward": 1.159497
+      },
+      "text_matmul": {
+        "count_per_forward": 145.0,
+        "duration_ms_per_forward": 35.618157999999994
+      },
+      "text_attention": {
+        "count_per_forward": 36.0,
+        "duration_ms_per_forward": 10.874899
+      }
+    }
+  },
+  "cross_process_parity": {
+    "exact": true,
+    "max_abs": 0.0,
+    "shape": [
+      1,
+      1274,
+      2560
+    ]
+  },
+  "speedup": 1.1905419105979813,
+  "latency_reduction_percent": 16.00463695581087
+}

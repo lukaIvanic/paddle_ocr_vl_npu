@@ -1,0 +1,94 @@
+{
+  "eager_dev": {
+    "preprocess": {
+      "host_mean_ms": 144.60191663635092,
+      "device_mean_ms": null
+    },
+    "input_transfer": {
+      "host_mean_ms": 2.7371110918466,
+      "device_mean_ms": 2.5361710862679914
+    },
+    "vision_prepare": {
+      "host_mean_ms": 14.043176454883493,
+      "device_mean_ms": 14.000722720406273
+    },
+    "vision_dispatch": {
+      "host_mean_ms": 0.21028018209935082,
+      "device_mean_ms": null
+    },
+    "vision_transformer": {
+      "host_mean_ms": 44.710089635521975,
+      "device_mean_ms": 64.7550157026811
+    },
+    "text_prepare": {
+      "host_mean_ms": 26.261202182186853,
+      "device_mean_ms": 6.304621284658259
+    },
+    "text_dispatch": {
+      "host_mean_ms": 0.20679836359869858,
+      "device_mean_ms": null
+    },
+    "text_transformer": {
+      "host_mean_ms": 73.96683318193854,
+      "device_mean_ms": 77.06780686811967
+    },
+    "retrieval_projection": {
+      "host_mean_ms": 0.3392128177272918,
+      "device_mean_ms": 0.1692754554477605
+    },
+    "output_materialize_wait": {
+      "host_mean_ms": 4.040934001254341,
+      "device_mean_ms": null
+    },
+    "validate_retain": {
+      "host_mean_ms": 12.429050000686072,
+      "device_mean_ms": null
+    }
+  },
+  "compiled_dev": {
+    "preprocess": {
+      "host_mean_ms": 171.8860403633285,
+      "device_mean_ms": null
+    },
+    "input_transfer": {
+      "host_mean_ms": 4.347832091099752,
+      "device_mean_ms": 4.114097811959007
+    },
+    "vision_prepare": {
+      "host_mean_ms": 15.96558654590891,
+      "device_mean_ms": 15.913462326743385
+    },
+    "vision_dispatch": {
+      "host_mean_ms": 0.5340925450913016,
+      "device_mean_ms": null
+    },
+    "vision_transformer": {
+      "host_mean_ms": 1.2357501818438654,
+      "device_mean_ms": 55.20470012318004
+    },
+    "text_prepare": {
+      "host_mean_ms": 60.40534490854373,
+      "device_mean_ms": 6.503860928795555
+    },
+    "text_dispatch": {
+      "host_mean_ms": 0.46578518218170345,
+      "device_mean_ms": null
+    },
+    "text_transformer": {
+      "host_mean_ms": 1.0910524547481062,
+      "device_mean_ms": 62.35593331076882
+    },
+    "retrieval_projection": {
+      "host_mean_ms": 0.37031590909464285,
+      "device_mean_ms": 0.16949690905484285
+    },
+    "output_materialize_wait": {
+      "host_mean_ms": 62.769701999919064,
+      "device_mean_ms": null
+    },
+    "validate_retain": {
+      "host_mean_ms": 13.731574181424962,
+      "device_mean_ms": null
+    }
+  }
+}

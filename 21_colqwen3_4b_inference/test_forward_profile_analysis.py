@@ -28,6 +28,14 @@ class ProfileAccountingTests(unittest.TestCase):
         self.assertEqual(result['uncovered_envelope_ms'], 0)
         self.assertEqual(result['top_types'][0]['count_per_forward'], .5)
 
+    def test_empty_or_invalid_profiles_cannot_pass_accounting(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'kernel_details.csv'
+            for body in ('', 'MatMul,0,nan\n', 'MatMul,0,-1\n'):
+                path.write_text('Type,Start Time(us),Duration(us)\n'+body)
+                with self.assertRaises(ValueError):
+                    summarize_kernel_csv(path, 3)
+
 
 if __name__ == '__main__':
     unittest.main()

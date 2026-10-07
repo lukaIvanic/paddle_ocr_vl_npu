@@ -1,0 +1,6 @@
+{
+  "corpus_id": "corpus-test-5",
+  "corpus_index": 5,
+  "image_sha256": "01f66efc8a36516fc912a9ee99973d1f8fc555d72851f797d0d9dff43f6d7a7c",
+  "dataset_root": "/workspace/datasets/ViDoRe_v3_hr_mteb_reference"
+}

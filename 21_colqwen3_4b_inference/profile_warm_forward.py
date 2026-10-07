@@ -7,6 +7,7 @@ retrieval projection/normalization. Compiled means the two existing static
 transformer graphs; preparation/mergers/projection remain eager in both lanes.
 First use, compile/cache load, preprocessing, input/output transfers, validation
 and serialization are outside clean timings. Profiled times are diagnostic only.
+Existing shape checks and metadata synchronization inside preparation are included.
 """
 import argparse
 from contextlib import nullcontext
