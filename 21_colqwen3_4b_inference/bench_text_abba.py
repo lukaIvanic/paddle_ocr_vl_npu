@@ -23,7 +23,8 @@ from prepared_prefill import StageCompiler
 from profile_warm_forward import emit, measure
 from profile_warm_text import TextForward, identity, validate_snapshot_identity
 from run_hf_baseline import sha256
-from text_forward_variants import VARIANTS, build_text_stage, portable_variant, variant_identity
+from text_forward_variants import (VARIANTS, build_text_stage, portable_variant,
+                                   variant_identity, prepare_measured_text)
 
 
 @torch.inference_mode()
@@ -58,30 +59,37 @@ def run(args, result):
     modules = {name: build_text_stage(model, options, name).eval()
                for name in ('baseline', args.variant)}
     calls = {}
+    real_length = tensors[0].shape[1]
+    result['measurement_scope'] = 'prealigned_text_stack_only_v1'
+    result['timed_input_shapes'] = {}
     for name, module in modules.items():
-        eager = module(*tensors)
-        eager_parity = compare(eager, saved['expected_hidden'])
+        module, prepared = prepare_measured_text(module, tensors, name)
+        result['timed_input_shapes'][name] = [list(t.shape) for t in prepared]
+        eager = module(*prepared)
+        eager_parity = compare(eager[:, :real_length], saved['expected_hidden'])
         if not eager_parity['passed']:
             raise RuntimeError(f'{name} eager parity failed')
         compiler = StageCompiler(args.model, args.cache_root/name, emit)
         configure_compiler(compiler, options)
         compiler.identity['internal_format'] = True
+        compiler.identity['measurement_scope'] = result['measurement_scope']
+        compiler.identity['measured_wrapper_source_sha256'] = result['variant_source_sha256']
         stage = 'optimized_text'
         if name != 'baseline':
             compiler.identity['text_variant'] = variant_identity(name)
             compiler.identity['variant_source_sha256'] = result['variant_source_sha256']
             stage = 'candidate_text'
-        call = compiler.get(stage, module, tensors)
-        output = call(*tensors)
+        call = compiler.get(stage, module, prepared)
+        output = call(*prepared)
         torch.npu.synchronize()
-        compiled_parity = compare(output, saved['expected_hidden'])
+        compiled_parity = compare(output[:, :real_length], saved['expected_hidden'])
         vs_eager = compare(output, eager)
         result['parity'][name] = dict(eager=eager_parity, compiled=compiled_parity, vs_eager=vs_eager)
         if not compiled_parity['passed'] or not vs_eager['passed']:
             raise RuntimeError(f'{name} compiled parity failed')
         if name == 'baseline' and not args.reference_snapshot and not compiled_parity['exact']:
             raise RuntimeError('Control must remain bit-exact')
-        calls[name] = TextForward(call, tensors)
+        calls[name] = TextForward(call, prepared)
         result['cache_records'][name] = compiler.records
     for _ in range(args.warmups):
         for fn in calls.values():
@@ -99,7 +107,7 @@ def run(args, result):
             device_samples[name].extend(timing['device_samples_ms'])
             result['blocks'].append(dict(cycle=cycle, variant=name, **timing))
             emit('abba_block', cycle=cycle, variant=name, wall_ms=timing['wall_ms'])
-    result['final_parity'] = {name: compare(output, saved['expected_hidden'])
+    result['final_parity'] = {name: compare(output[:, :real_length], saved['expected_hidden'])
                               for name, output in outputs.items()}
     if not all(p['passed'] for p in result['final_parity'].values()):
         raise RuntimeError('Final replay parity failed')

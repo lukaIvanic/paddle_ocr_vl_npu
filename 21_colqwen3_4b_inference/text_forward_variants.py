@@ -10,7 +10,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from local_modeling_colqwen3 import rotate_half
-from optimized_prefill import TextBlock, OptimizedTextStage
+from optimized_prefill import TextBlock, OptimizedTextStage, prepare_310p_text_inputs
 
 
 @dataclass(frozen=True)
@@ -81,6 +81,22 @@ def build_text_stage(model, options, name):
     if portable_variant(name):
         return NativeNormTextStage(model, options, VARIANTS[name].norm)
     return VariantTextStage(model, options, name)
+
+
+class PreparedTextForward(nn.Module):
+    def __init__(self, stage):
+        super().__init__()
+        self.stage = stage
+
+    def forward(self, hidden, cos, sin, mask, deep0, deep1, deep2):
+        return self.stage.forward_prepared(hidden, cos, sin, mask, deep0, deep1, deep2)
+
+
+def prepare_measured_text(stage, tensors, name):
+    """Prepare alignment outside timing and compile only the transformer body."""
+    if portable_variant(name):
+        return PreparedTextForward(stage), prepare_310p_text_inputs(*tensors)
+    return stage, tensors
 
 
 class VariantTextBlock(TextBlock):

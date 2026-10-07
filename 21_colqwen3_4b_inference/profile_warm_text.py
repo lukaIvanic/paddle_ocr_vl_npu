@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Isolated warmed ColQwen text transformer forward on one real B1 page.
 
-The 36 text layers, DeepStack additions and final RMSNorm are timed/profiled,
-including the portable baseline's one-time sequence padding and output trim.
+Only the 36 text layers, DeepStack additions and final RMSNorm are timed/profiled.
+Sequence alignment is prepared before timing; output trimming is also excluded.
 Hidden states, cos/sin, causal mask and three DeepStack tensors are prepared once
 and resident on NPU. Vision, mergers, token embedding/image insertion, rotary
 initialization, retrieval projection, transfers, compile and validation are outside
@@ -30,7 +30,8 @@ from patch_embedding import LinearPatchEmbed, prepare_linear_patch_inputs
 from prepared_prefill import StageCompiler, prepare_text, finish_embeddings
 from profile_warm_forward import capture, emit, measure
 from run_hf_baseline import sha256
-from text_forward_variants import VARIANTS, build_text_stage, portable_variant, variant_identity
+from text_forward_variants import (VARIANTS, build_text_stage, portable_variant,
+                                   variant_identity, prepare_measured_text)
 
 
 class TextForward:
@@ -141,9 +142,15 @@ def run(args, result):
         norms=result['variant']['norm'], scope='text_prefill_no_kv_cache')
     if len(tensors) != 7 or result['batch_size'] != 1:
         raise ValueError('Expected seven frozen B1 text tensors')
+    real_length = result['text_tokens']
+    result['source_text_input_shapes'] = result['text_input_shapes']
+    text, tensors = prepare_measured_text(text, tensors, args.variant)
+    result['text_input_shapes'] = [list(t.shape) for t in tensors]
+    result['measurement_scope'] = 'prealigned_text_stack_only_v1'
+    result['alignment_and_output_trim_in_timed_region'] = False
     candidate_eager = text(*tensors)
     torch.npu.synchronize()
-    result['candidate_eager_vs_frozen'] = compare(candidate_eager, expected)
+    result['candidate_eager_vs_frozen'] = compare(candidate_eager[:, :real_length], expected)
     candidate_expected = candidate_eager.cpu()
     del candidate_eager
     call = text
@@ -151,6 +158,8 @@ def run(args, result):
         compiler = StageCompiler(args.model, args.cache_root, emit)
         configure_compiler(compiler, options)
         compiler.identity['internal_format'] = True
+        compiler.identity['measurement_scope'] = result['measurement_scope']
+        compiler.identity['measured_wrapper_source_sha256'] = result['variant_source_sha256']
         stage = 'optimized_text'
         if args.variant != 'baseline':
             compiler.identity['text_variant'] = result['variant']
@@ -165,7 +174,7 @@ def run(args, result):
         fn()
     torch.npu.synchronize()
     result['before_profile'], output = measure(fn, args.repeats)
-    result['vs_frozen_eager'] = compare(output, expected)
+    result['vs_frozen_eager'] = compare(output[:, :real_length], expected)
     result['vs_candidate_eager'] = compare(output, candidate_expected)
     result['adoption_eligible'] = (result['candidate_eager_vs_frozen']['passed'] and
                                    result['vs_frozen_eager']['passed'] and
@@ -192,7 +201,7 @@ def run(args, result):
     result['finite'] = bool(torch.isfinite(replay).all())
     if not result['finite'] or not result['final_replay_parity']['passed']:
         raise RuntimeError('Text validity/replay gate failed')
-    torch.save(replay.cpu(), args.output_dir/'hidden.pt')
+    torch.save(replay[:, :real_length].cpu(), args.output_dir/'hidden.pt')
     result['status'] = 'completed'
     emit('text_warm_final', execution=args.execution, timing=result['after_profile'])
 

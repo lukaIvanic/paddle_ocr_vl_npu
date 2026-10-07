@@ -246,15 +246,18 @@ class OptimizedTextStage(nn.Module):
 
     def forward(self,hidden,cos,sin,mask,deep0,deep1,deep2):
         real_length=hidden.shape[1]
-        hidden,cos,sin,mask,deep0,deep1,deep2=prepare_310p_text_inputs(
-            hidden,cos,sin,mask,deep0,deep1,deep2)
+        prepared=prepare_310p_text_inputs(hidden,cos,sin,mask,deep0,deep1,deep2)
+        return self.forward_prepared(*prepared)[:, :real_length].contiguous()
+
+    def forward_prepared(self,hidden,cos,sin,mask,deep0,deep1,deep2):
+        """Transformer computation on already aligned, device-resident inputs."""
         deep=(deep0,deep1,deep2)
         cos,sin=cos.unsqueeze(2),sin.unsqueeze(2)
         for index,layer in enumerate(self.layers):
             hidden=layer(hidden,cos,sin,mask)
             if index<3:
                 hidden=hidden+deep[index]
-        return self.norm(hidden)[:, :real_length].contiguous()
+        return self.norm(hidden)
 
 
 def text_args_for_promptfa(args):

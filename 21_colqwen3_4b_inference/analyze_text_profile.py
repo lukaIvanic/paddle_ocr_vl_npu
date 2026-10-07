@@ -46,6 +46,7 @@ def analyze(directory):
         raise ValueError('Cannot analyze an incomplete text run')
     summary = dict(physical_npu=result['physical_npu'], execution=result['execution'],
                    frozen_inputs_sha256=result['frozen_inputs_sha256'], text_tokens=result['text_tokens'],
+                   measurement_scope=result.get('measurement_scope', 'includes_alignment_and_trim'),
                    text_input_shapes=result['text_input_shapes'],
                    warm_wall_ms=distribution(result['before_profile']['wall_samples_ms'] +
                                              result['after_profile']['wall_samples_ms']),
@@ -88,6 +89,13 @@ def analyze(directory):
         forbidden = {'MaskedScatter', 'LayerNormV3', 'Gelu', 'GeluV2', 'Unpack', 'Conv3D'}
         if forbidden.intersection(counts):
             raise ValueError('Non-text preparation/vision kernel in isolated capture')
+        if result.get('measurement_scope') == 'prealigned_text_stack_only_v1':
+            if any(kind.startswith('Pad') for kind in counts):
+                raise ValueError('Sequence padding entered the prepared-forward profile')
+            trimmed_shape = f"{result['batch_size']},{result['text_tokens']},{result['text_input_shapes'][0][-1]}"
+            if result['attention_contract']['physical_tokens'] != result['text_tokens'] and any(
+                g['type'].startswith('StridedSlice') and g['output_shapes'] == trimmed_shape for g in values):
+                raise ValueError('Output trimming entered the prepared-forward profile')
         length = result.get('attention_contract', {}).get('physical_tokens', result['text_tokens'])
         # The portable path aligns the frozen text sequence before the stack.
         attention = [g for g in values if g['type'] == 'PromptFlashAttention']
@@ -107,7 +115,7 @@ def analyze(directory):
                 b['ms_per_forward'] += g['ms_per_forward']
                 b['kernels_per_forward'] += g['count_per_forward']
             profile['semantic_categories'] = dict(sorted(buckets.items(), key=lambda p:-p[1]['ms_per_forward']))
-            if counts['Square'] + counts['RmsNorm'] != 4*layers+1:
+            if counts['Square'] + sum(v for k,v in counts.items() if 'RmsNorm' in k) != 4*layers+1:
                 raise ValueError('Expected two hidden plus Q/K RMSNorms per layer and a final norm')
         (destination/'kernel_shape_groups.json').write_text(json.dumps(profile, indent=2)+'\n')
         summary['profiles'][metric] = {k:v for k,v in profile.items() if k != 'groups'}
@@ -122,6 +130,8 @@ def main():
     eager, compiled = modes['raw_eager'], modes['torchair']
     if eager['frozen_inputs_sha256'] != compiled['frozen_inputs_sha256']:
         raise ValueError('Paired profiles used different frozen inputs')
+    if eager['measurement_scope'] != compiled['measurement_scope']:
+        raise ValueError('Paired profiles used different measurement boundaries')
     a,b = eager['warm_wall_ms']['mean'], compiled['warm_wall_ms']['mean']
     output = dict(scope='36 text transformer layers, DeepStack adds and final RMSNorm; '
                         'kernel sums are distinct from clean warmed wall latency.',

@@ -11,6 +11,7 @@ from prepared_prefill import prepare_inputs,prepare_text,finish_embeddings,bmm_a
 from optimized_prefill import (Linear,Options,OptimizedVisionStage,OptimizedTextStage,
     prompt_attention,text_args_for_promptfa,format_code,prepare_310p_text_inputs)
 from bench_optimized_prefill import score_smoke
+from text_forward_variants import prepare_measured_text
 
 
 def fake_promptfa(q,k,v,**kw):
@@ -136,7 +137,14 @@ class OptimizedContracts(unittest.TestCase):
                     text=OptimizedTextStage(model,options)
                     vo=vision(*prepared.vision_args[:3]) if image else None
                     ta=text_args_for_promptfa(prepare_text(model,prepared,vo))
-                    actual=finish_embeddings(model,prepared,text(*ta))
+                    hidden=text(*ta)
+                    measured,aligned=prepare_measured_text(text,ta,'baseline')
+                    with patch('optimized_prefill.prepare_310p_text_inputs',
+                               side_effect=AssertionError('Padding entered measured forward')):
+                        physical_hidden=measured(*aligned)
+                    self.assertEqual(physical_hidden.shape[1]%128,0)
+                    self.assertTrue(torch.equal(physical_hidden[:,:hidden.shape[1]],hidden))
+                    actual=finish_embeddings(model,prepared,hidden)
                     torch.testing.assert_close(actual,expected,atol=.003,rtol=.003)
 
     def test_score_gate_records_rankings(self):
