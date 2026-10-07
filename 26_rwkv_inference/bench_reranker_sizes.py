@@ -140,7 +140,7 @@ def worker(args):
         physical_npu=os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), shared_device=args.allow_shared_device, all_checks_passed=False,
         backend=args.backend, scope='Prepared device inputs; uncached backbone plus state-readout head. Synchronized steady calls exclude CPU checks, compile, input transfers and tokenization.',
         recurrence=args.recurrence, matrix_chunk_size=args.matrix_chunk_size,
-        matrix_compute_dtype=args.matrix_compute_dtype, retain_dense_outputs=args.retain_dense_outputs, state_gate='FP16 state normalized RMSE <=0.002; FP32 allclose atol0.02/rtol0.005; all scores allclose atol0.02/rtol0.005; not a full-suite accuracy claim', timings={})
+        matrix_compute_dtype=args.matrix_compute_dtype, retain_dense_outputs=args.retain_dense_outputs, group_norm_impl=args.group_norm_impl, state_gate='FP16 state normalized RMSE <=0.002; FP32 allclose atol0.02/rtol0.005; all scores allclose atol0.02/rtol0.005; not a full-suite accuracy claim', timings={})
     try:
         import torch_npu
         torch.set_num_threads(4)
@@ -169,6 +169,8 @@ def worker(args):
             assert args.dtype == 'fp16', 'Retained-output experiment is FP16 only'
             for weights in [model, *model.blocks, ranker, *ranker.blocks]:
                 weights.keep_dense_outputs = True
+        for block in [*model.blocks,*ranker.blocks]:
+            block.group_norm_impl=args.group_norm_impl
         torch.npu.synchronize()
         report['checkpoint_hash_load_convert_h2d_seconds']=time.perf_counter()-before
         assert (model.depth, model.width, ranker.depth, ranker.width) == (depth, width, depth, width)
@@ -195,16 +197,18 @@ def worker(args):
                 input_ids=c['input_ids'], valid_length=len(c['input_ids']), bucket=args.bucket,static_tokens=static_tokens) for c in cases])
             report['valid_tokens'] = lengths.cpu().tolist()
             eager = backbone(ids, lengths); expected = ranker(eager[1])
-            if args.retain_dense_outputs:
+            if args.retain_dense_outputs or args.group_norm_impl != 'group_norm':
                 weights=[model,*model.blocks,ranker,*ranker.blocks]
                 for module in weights:module.keep_dense_outputs=False
+                for block in [*model.blocks,*ranker.blocks]:block.group_norm_impl='group_norm'
                 default_states=backbone(ids,lengths);default_logits=ranker(default_states[1])
-                for module in weights:module.keep_dense_outputs=True
-                report['retained_vs_default_state_diagnostics']=[metrics(a,b) for a,b in zip(eager,default_states)]
-                report['retained_vs_default_logit_diagnostics']=dict(comparison=metrics(expected,default_logits),retained=expected.cpu().tolist(),default=default_logits.cpu().tolist())
+                for module in weights:module.keep_dense_outputs=args.retain_dense_outputs
+                for block in [*model.blocks,*ranker.blocks]:block.group_norm_impl=args.group_norm_impl
+                report['implementation_vs_default_state_diagnostics']=[metrics(a,b) for a,b in zip(eager,default_states)]
+                report['implementation_vs_default_logit_diagnostics']=dict(comparison=metrics(expected,default_logits),retained=expected.cpu().tolist(),default=default_logits.cpu().tolist())
                 save(args.output/'result.json',report)
-                report['retained_vs_default_states']=[require_state(a,b,args.dtype) for a,b in zip(eager,default_states)]
-                report['retained_vs_default_logits']=require(expected,default_logits,.02,.005)
+                report['implementation_vs_default_states']=[require_state(a,b,args.dtype) for a,b in zip(eager,default_states)]
+                report['implementation_vs_default_logits']=require(expected,default_logits,.02,.005)
                 del default_states,default_logits
             singles = []
             report['padding_state_checks'] = []
@@ -323,11 +327,7 @@ def worker(args):
             report['compiled_states_vs_eager']=[require_state(a,b,args.dtype) for a,b in zip(actual,eager)]
             report['compiled_logits_vs_eager']=require(logits,expected,.02,.005)
             assert torch.equal(head(encode(ids,lengths)[1]),logits)
-            fixed=actual[1].clone().contiguous()
             report['timings']['torchair_total']=measure(lambda:head(encode(ids,lengths)[1]),args.repeats,args.batch_size)
-            # Candidate comparison measures complete scoring, never isolated kernels.
-            if args.recurrence == 'vector':
-                report['timings']['torchair_head_only']=measure(lambda:head(fixed),args.repeats,args.batch_size)
             assert torch.equal(head(encode(ids,lengths)[1]),logits)
             if args.profile:
                 report['profiling_backend']='torchair'
@@ -415,6 +415,7 @@ def main():
     p.add_argument('--recurrence',choices=['vector','matrix'],default='vector')
     p.add_argument('--matrix-chunk-size',type=int,choices=[16,32,64,128],default=64)
     p.add_argument('--matrix-compute-dtype',choices=['fp32','fp16','bf16'],default='fp32')
+    p.add_argument('--group-norm-impl',choices=['group_norm','layer_norm'],default='group_norm',help='Equivalent per-head LayerNorm plus original affine; benchmark opt-in')
     p.add_argument('--retain-dense-outputs',action='store_true',help='Experimental FP16 linear outputs; cast to FP32 only where required by vector recurrence')
     p.add_argument('--diagnose-matrix-compile',action='store_true',help='Full-scoring numerical diagnosis with first-layer outputs, no timing')
     p.add_argument('--profile-invalid-compile',action='store_true',help='Diagnostic full-forward capture; invalid output is never accepted for speed')
