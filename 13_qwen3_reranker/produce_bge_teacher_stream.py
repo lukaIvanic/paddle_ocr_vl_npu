@@ -23,6 +23,10 @@ def main():
   assert runtime.lengths[section]==cached['lengths'][section]==prep['lengths']['query_first'][section]
  teacher={k:copy.deepcopy(cached[k]) for k in ('model_sha256','scoring','scoring_config')}
  teacher.update(dataset_sha256=digest(a.dataset),lengths=prep['lengths']['query_first'],scores={s:cached['scores'][s] for s in ('validation','benchmark','reserved_benchmark')},stream={'directory':'chunks','groups_per_chunk':a.chunk_groups,'total_groups':len(data['train']),'policy':'Query-first frozen teacher, microbatch16/tokenbudget16384; length sorting within each chunk; publish complete chunks atomically'},evaluation_cache_parent_sha256=digest(a.reference_root/'document_first_filtered/teacher.json'))
+ old_train = {g['id']:g for g in old['train']}
+ reusable = {g['id']:cached['scores']['train'][g['id']] for g in data['train'] if g['id'] in old_train and group_signature(g)==group_signature(old_train[g['id']])}
+ teacher['stream']['verified_cached_training_groups'] = len(reusable)
+ teacher['stream']['cache_reuse_policy'] = 'Exact query, instruction, ordered documents, model weights, tokenizer, prompt source and scoring configuration match'
  manifest=a.output/'teacher.json'
  if manifest.exists():assert read(manifest)==teacher
  else:save(manifest,teacher)
@@ -42,9 +46,12 @@ def main():
     previous=read(target);assert previous['teacher_manifest_sha256']==manifest_sha and previous['group_signatures']==signatures
     scores=previous['scores'];seconds=0
    else:
-    scores,seconds=runtime.score(model,rows,f'train_chunk_{index}')
+    scores = {g['id']:reusable[g['id']] for g in groups if g['id'] in reusable}
+    fresh_rows = [row for row in rows if row['group_id'] not in scores]
+    fresh,seconds = runtime.score(model,fresh_rows,f'train_chunk_{index}') if fresh_rows else ({},0)
+    scores.update(fresh)
     assert set(scores)==set(signatures)
-    save(target,{'chunk':index,'teacher_manifest_sha256':manifest_sha,'dataset_sha256':teacher['dataset_sha256'],'group_signatures':signatures,'scores':scores,'seconds':seconds,'token_metadata':runtime.lengths['train_chunk']})
+    save(target,{'chunk':index,'teacher_manifest_sha256':manifest_sha,'dataset_sha256':teacher['dataset_sha256'],'group_signatures':signatures,'scores':scores,'seconds':seconds,'cached_groups_reused':sum(g['id'] in reusable for g in groups),'token_metadata':runtime.lengths['train_chunk']})
    progress['completed_groups']=offset+len(groups);progress['seconds']=time.monotonic()-started
    progress['chunks'].append({'chunk':index,'sha256':digest(target),'groups':len(groups),'seconds':seconds})
    save(a.output/'progress.json',progress)
