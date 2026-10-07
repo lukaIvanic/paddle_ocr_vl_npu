@@ -1,0 +1,10 @@
+{
+  "done": 2751,
+  "total": 28863,
+  "elapsed_seconds": 91.29261217999738,
+  "pairs_per_second": 30.133873205161244,
+  "forward_and_transfer_seconds": 91.08238674017775,
+  "estimated_remaining_seconds": 818.5393871364456,
+  "task": "NanoClimateFeverRetrieval",
+  "queries": 27
+}

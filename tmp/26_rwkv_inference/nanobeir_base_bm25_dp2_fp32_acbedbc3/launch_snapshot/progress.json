@@ -1,0 +1,30 @@
+{
+  "done": 4375,
+  "total": 57688,
+  "worker_elapsed_seconds": 140.0140331799921,
+  "run_elapsed_seconds": 164.53120070000296,
+  "aggregate_pairs_per_second": 31.246867907703297,
+  "estimated_remaining_seconds": 842.9040004657221,
+  "workers": [
+    {
+      "done": 2140,
+      "total": 28863,
+      "elapsed_seconds": 73.94933581000078,
+      "pairs_per_second": 28.938731856880185,
+      "forward_and_transfer_seconds": 73.78436549004982,
+      "estimated_remaining_seconds": 842.9040004657221,
+      "task": "NanoSCIDOCSRetrieval",
+      "queries": 21
+    },
+    {
+      "done": 2235,
+      "total": 28825,
+      "elapsed_seconds": 73.41873762999603,
+      "pairs_per_second": 30.44182006048094,
+      "forward_and_transfer_seconds": 73.19227181987662,
+      "estimated_remaining_seconds": 830.3895218059384,
+      "task": "NanoSCIDOCSRetrieval",
+      "queries": 22
+    }
+  ]
+}
