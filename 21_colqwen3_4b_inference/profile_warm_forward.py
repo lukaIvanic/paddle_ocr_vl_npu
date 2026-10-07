@@ -206,8 +206,9 @@ def run(args, result):
     norms = replay.float().norm(dim=-1)
     active = norms > 0
     result['finite'] = bool(torch.isfinite(replay).all())
-    result['max_unit_norm_error'] = float((norms[active]-1).abs().max())
-    if not result['final_replay_parity']['passed'] or not result['finite'] or result['max_unit_norm_error'] > .002:
+    result['max_unit_norm_error'] = float(torch.where(
+        active, (norms-1).abs(), torch.zeros_like(norms)).max())
+    if not bool(active.any()) or not result['final_replay_parity']['passed'] or not result['finite'] or result['max_unit_norm_error'] > .002:
         raise RuntimeError('Output validity/replay gate failed')
     torch.save(replay.cpu(), args.output_dir/'embeddings.pt')
     if args.e2e_image:

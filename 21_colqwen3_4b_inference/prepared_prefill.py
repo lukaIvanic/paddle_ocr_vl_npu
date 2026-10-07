@@ -17,7 +17,8 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from local_modeling_colqwen3 import image_positions, rotate_half
+from local_modeling_colqwen3 import (image_positions, rotate_half, interleave_mrope,
+                                   dense_image_features, causal_attention_bias)
 
 
 def linear(module, x):
@@ -149,26 +150,23 @@ def prepare_inputs(model, inputs):
 def prepare_text(model, prepared, vision_outputs):
     ids, valid = prepared.inputs['input_ids'], prepared.inputs['attention_mask']
     hidden = model.language_model.embed_tokens(ids)
-    deep_dense = [torch.zeros_like(hidden) for _ in range(3)]
+    deep_dense = []
     if prepared.vision_args is not None:
         image_mask = ids == model.config.image_token_id
         features = model.visual.merger(vision_outputs[0])
         hidden = hidden.masked_scatter(image_mask.unsqueeze(-1).expand_as(hidden), features.to(hidden.dtype))
         for index in range(3):
             features = model.visual.deepstack_merger_list[index](vision_outputs[index+1])
-            deep_dense[index][image_mask] = features.to(hidden.dtype)
-    length = hidden.shape[1]
-    seq = torch.arange(length, device=hidden.device)
-    allowed = (seq[:, None] >= seq[None, :])[None, None] & valid[:, None, None, :].bool()
-    mask = torch.where(allowed, 0.0, torch.finfo(hidden.dtype).min).to(hidden.dtype)
+            deep_dense.append(dense_image_features(hidden, image_mask, features))
+    else:
+        deep_dense = [torch.zeros_like(hidden) for _ in range(3)]
+    mask = causal_attention_bias(valid, hidden.dtype)
     c = model.config.text_config
     # Same CPU FP32 initialization as the validated reference. Never move pow to NPU.
     inv = (1.0 / (c.rope_theta ** (torch.arange(0, c.head_dim, 2, dtype=torch.float32) / c.head_dim))).to(hidden.device)
     inv = inv[None, None, :, None].expand(3, 1, -1, 1)
     freqs = (inv.float() @ prepared.positions[:, :, None, :].float()).transpose(2, 3)
-    temporal = freqs[0].clone()
-    for axis in (1, 2):
-        temporal[..., axis:model.config.mrope_section[axis]*3:3] = freqs[axis, ..., axis:model.config.mrope_section[axis]*3:3]
+    temporal = interleave_mrope(freqs, model.config.mrope_section)
     emb = torch.cat((temporal, temporal), dim=-1)
     cos, sin = emb.cos().to(hidden.dtype), emb.sin().to(hidden.dtype)
     return tuple(a.contiguous() for a in (hidden, cos, sin, mask, *deep_dense))

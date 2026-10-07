@@ -22,6 +22,37 @@ def rotate_half(x):
     return torch.cat((-b, a), dim=-1)
 
 
+def interleave_mrope(freqs, sections):
+    """Same strided axis selection as HF, without device indexed writes."""
+    columns = torch.arange(freqs.shape[-1], device=freqs.device)
+    temporal = freqs[0]
+    for axis in (1, 2):
+        select = ((columns % 3 == axis) & (columns < sections[axis]*3))
+        temporal = torch.where(select.view(1, 1, -1).expand_as(temporal),
+                               freqs[axis], temporal)
+    return temporal
+
+
+def dense_image_features(hidden, image_mask, features):
+    """Scatter image rows in row-major order; avoid NonZero/IndexPut on 310P."""
+    return torch.zeros_like(hidden).masked_scatter(
+        image_mask.unsqueeze(-1).expand_as(hidden), features.to(hidden.dtype))
+
+
+def add_image_features(hidden, image_mask, features):
+    dense = dense_image_features(hidden, image_mask, features)
+    # Preserve unselected values exactly, including signed zero; no masked read.
+    return torch.where(image_mask.unsqueeze(-1).expand_as(hidden), hidden+dense, hidden)
+
+
+def causal_attention_bias(valid, dtype):
+    length = valid.shape[1]
+    seq = torch.arange(length, device=valid.device)
+    allowed = (seq[:, None] >= seq[None, :])[None, None] & valid[:, None, None, :].bool()
+    return torch.where(allowed, torch.zeros_like(allowed, dtype=dtype),
+                       torch.full_like(allowed, torch.finfo(dtype).min, dtype=dtype))
+
+
 def attention(q, k, v, scale, mask=None):
     groups = q.shape[1] // k.shape[1]
     if groups != 1:
@@ -162,7 +193,8 @@ class VisionModel(nn.Module):
         # the powers on the NPU instead changes rounding before every RoPE.
         inv = (1.0 / (10000.0 ** (torch.arange(0, dim, 2, dtype=torch.float32) / dim))).to(device)
         freq = torch.outer(torch.arange(max(max(h, w) for _, h, w in grids), device=device, dtype=inv.dtype), inv)
-        rotary = freq[torch.cat(coords).to(device)].flatten(1)
+        # Table lookup through Embedding rather than AICPU IndexByTensor.
+        rotary = F.embedding(torch.cat(coords).to(device), freq).flatten(1)
         emb = torch.cat((rotary, rotary), dim=-1)
         return absolute, emb.cos(), emb.sin()
 
@@ -234,22 +266,17 @@ class TextModel(nn.Module):
         self.norm = RMSNorm(c.hidden_size, c.rms_norm_eps)
 
     def forward(self, x, padding_mask, positions, image_mask, deep, sections):
-        s = x.shape[1]
-        seq = torch.arange(s, device=x.device)
-        allowed = (seq[:, None] >= seq[None, :])[None, None] & padding_mask[:, None, None, :].bool()
-        mask = torch.where(allowed, 0.0, torch.finfo(x.dtype).min).to(x.dtype)
+        mask = causal_attention_bias(padding_mask, x.dtype)
         inv = (1.0 / (self.c.rope_theta ** (torch.arange(0, self.c.head_dim, 2, dtype=torch.float32) / self.c.head_dim))).to(x.device)
         inv = inv[None, None, :, None].expand(3, x.shape[0], -1, 1)
         freqs = (inv.float() @ positions[:, :, None, :].float()).transpose(2, 3)
-        temporal = freqs[0].clone()
-        for axis in (1, 2):
-            temporal[..., axis:sections[axis]*3:3] = freqs[axis, ..., axis:sections[axis]*3:3]
+        temporal = interleave_mrope(freqs, sections)
         emb = torch.cat((temporal, temporal), dim=-1)
         cos, sin = emb.cos().to(x.dtype), emb.sin().to(x.dtype)
         for index, layer in enumerate(self.layers):
             x = layer(x, mask, cos, sin)
             if index < len(deep):
-                x[image_mask, :] = x[image_mask, :].clone() + deep[index].to(x.dtype)
+                x = add_image_features(x, image_mask, deep[index])
         return self.norm(x)
 
 

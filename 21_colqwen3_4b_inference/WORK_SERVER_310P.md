@@ -21,6 +21,23 @@ dimensions, 1110 HR pages, 318 English queries, original FP32 MaxSim scoring.
 No quantization, resolution reduction, token truncation, new attention mode,
 NZ conversion, CPU model fallback, or eager fallback in the compiled run.
 
+The previous run at `83bd2640` passed the query but failed the first page at
+`prepare_text`'s boolean indexed write (`aclnnNonzeroV2` / AICPU `IndexPut`,
+507018). The current source replaces that write with `masked_scatter`, the
+vision rotary table read with embedding lookup, rotary strided writes with
+full-shape selection, and the original owned text model's masked read/write
+with dense masked updates. On-device benchmark validity checks also avoid
+boolean selection. These are indexing compatibility changes; shapes, token
+order, dtype, attention, and dataset are unchanged. They need target validation.
+CPU-only position metadata and post-materialization result checks retain CPU
+indexing. Historical native-op experiments and the unmodified third-party HF
+oracle are not the portable execution path in this brief.
+
+After this failure, use a NEW process and NEW RUN_ROOT, reusing the verified
+dataset. Do not continue a process whose NPU stream has already failed. The
+source hashes automatically select new compiled cache identities; retain the
+old logs. Repeat the contracts and all three smoke cases before full HR.
+
 The source branch is `codex/colqwen-warm-forward-profile` on origin. The server
 is pull-only: do not hand-edit tracked source, commit, push, create branches,
 patch dependencies, or replace its working CANN/torch/torch-npu stack. A detached
@@ -245,7 +262,8 @@ with this interpreter (these do not validate NPU kernels):
 
 ```bash
 run_phase contracts env PYTHONPATH=21_colqwen3_4b_inference "$PYTHON_BIN" -m unittest \
-  test_portable_smoke test_hr_evaluation test_optimized_prefill || exit 1
+  test_portable_smoke test_hr_evaluation test_optimized_prefill \
+  test_prepared_prefill test_indexing_compat || exit 1
 ```
 
 2. **Real-input smoke:** HR query 0, then distinct full pages 5 and 0. Run

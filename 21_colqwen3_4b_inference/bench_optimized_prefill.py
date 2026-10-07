@@ -51,10 +51,11 @@ def patch_comparison(conv, linear, pixels, repeats):
 def validity(value, reference):
     finite=bool(torch.isfinite(value).all())
     active=reference.float().norm(dim=-1)>0
-    error=float((value.float().norm(dim=-1)[active]-1).abs().max())
-    zeros=bool((value[~active]==0).all())
+    norms=value.float().norm(dim=-1)
+    error=float(torch.where(active,(norms-1).abs(),torch.zeros_like(norms)).max())
+    zeros=bool(((value==0) | active.unsqueeze(-1)).all())
     return {'finite':finite,'max_unit_norm_error':error,'zero_rows_preserved':zeros,
-            'passed':finite and error<.002 and zeros}
+            'passed':finite and bool(active.any()) and error<.002 and zeros}
 
 
 def memory_stats():
