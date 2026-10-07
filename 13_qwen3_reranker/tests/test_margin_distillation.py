@@ -1,6 +1,6 @@
 import pathlib,sys,unittest
 sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[1]))
-from margin_distillation import lr_at,margin_loss_and_score_gradient
+from margin_distillation import lr_at,margin_loss_and_score_gradient,benchmark_metrics,agreement
 
 
 class MarginTest(unittest.TestCase):
@@ -36,5 +36,23 @@ class MarginTest(unittest.TestCase):
         self.assertAlmostEqual(lr_at(6,50,1e-6,'warmup_linear'),1e-6)
         self.assertGreater(lr_at(50,50,1e-6,'warmup_linear'),0)
         self.assertEqual(lr_at(50,50,1e-6,'constant'),1e-6)
+
+    def test_suite_averages_tasks_instead_of_query_counts(self):
+        groups=[];scores={}
+        for task,lang,qid,hit in [('A','en','1',True),('A','en','2',True),
+                                  ('B','en','3',False),('C','zh','4',True)]:
+            did='positive' if hit else 'unjudged'
+            groups.append({'id':qid,'qid':qid,'task':task,'language':lang,
+                           'document_ids':[did],'qrels':{'positive':1},'ignore_identical_ids':False})
+            scores[qid]=[2.]
+        result=benchmark_metrics(groups,scores)
+        self.assertEqual(result['suite_macro_ndcg10'],{'en':.5,'zh':1.})
+        self.assertEqual(result['per_task']['B']['hole10'],1.)
+
+    def test_teacher_ties_are_excluded_and_student_ties_half_credit(self):
+        groups=[{'id':'g','documents':['a','b','c']}]
+        result=agreement(groups,{'g':[1.,1.,0.]},{'g':[2.,1.,1.]})
+        self.assertEqual(result['teacher_nontied_comparisons'],2)
+        self.assertEqual(result['pairwise_agreement'],.75)
 
 if __name__=='__main__':unittest.main()
