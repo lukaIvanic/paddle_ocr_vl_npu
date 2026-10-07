@@ -8,13 +8,13 @@ def validate_teacher_inputs(teacher, canonical, student, order):
     assert set(student) == set(canonical), 'Student sections differ'
     if order == 'query_first':
         assert student == canonical, 'Query-first student tokens differ'
-    elif order == 'contents_swapped':
+    elif order in {'contents_swapped', 'document_first'}:
         for section in canonical:
             assert student[section]['pairs'] == canonical[section]['pairs'], 'Student pair counts differ'
             assert canonical[section]['truncated'] == student[section]['truncated'] == 0, (
-                'This contents-swap pilot requires untruncated teacher and student inputs')
+                'This reordered-input pilot requires untruncated teacher and student inputs')
             assert student[section]['token_ids_sha256'] != canonical[section]['token_ids_sha256'], (
-                'Contents swap did not change token IDs')
+                'Reordered input did not change token IDs')
     else:
         raise ValueError(order)
 

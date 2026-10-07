@@ -26,14 +26,16 @@ def main():
     p.add_argument('--queries-per-update', type=int, default=32)
     p.add_argument('--learning-rate', type=float, default=1e-6)
     p.add_argument('--wall-time-limit', type=float, default=2400)
-    p.add_argument('--student-order', choices=['query_first', 'contents_swapped'], default='query_first')
+    p.add_argument('--student-order', choices=['query_first', 'contents_swapped', 'document_first'], default='query_first')
     p.add_argument('--query-first-reference', type=Path,
                    help='Completed query-first student result.json supplying the original baseline')
+    p.add_argument('--reserved-eval-steps', type=int, nargs='*', default=[],
+                   help='Additional evaluated updates receiving the reserved panel')
     args = p.parse_args()
     if args.mode == 'teacher':
         assert args.student_order == 'query_first', 'Teacher targets remain query first'
-    if args.student_order == 'contents_swapped':
-        assert args.query_first_reference, 'Contents swap requires the original query-first reference'
+    if args.student_order != 'query_first':
+        assert args.query_first_reference, 'Reordered input requires the original query-first reference'
     started = time.monotonic()
     args.output.mkdir(parents=True, exist_ok=True)
     data = read(args.dataset)
@@ -210,7 +212,7 @@ def main():
             print('UPDATE', json.dumps(row), flush=True)
             if step in {1, 3, 10, 25, 50} or step == args.steps:
                 checkpoint(step)
-                evaluate(step, endpoint=step == args.steps)
+                evaluate(step, endpoint=step == args.steps or step in args.reserved_eval_steps)
             save(args.output / 'result.json', result)
         else:
             result['status'] = 'completed'

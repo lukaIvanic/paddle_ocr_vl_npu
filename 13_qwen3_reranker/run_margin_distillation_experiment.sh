@@ -5,7 +5,7 @@ repo=$(git rev-parse --show-toplevel)
 data=${1:?Pass prepared dataset.json.gz}
 run_root=${2:?Pass a persistent evidence/checkpoint directory}
 arm=${3:-all}
-case "$arm" in all|constant|warmup_linear|contents_swapped) ;; *) echo 'Invalid training arm' >&2; exit 2 ;; esac
+case "$arm" in all|constant|warmup_linear|contents_swapped|document_first) ;; *) echo 'Invalid training arm' >&2; exit 2 ;; esac
 mkdir -p "$run_root"
 python=/usr/local/python3.12.13/bin/python3
 cd "$repo"
@@ -37,20 +37,24 @@ stage() (
     return "$code"
 )
 
-if [[ $arm == contents_swapped ]]; then
+if [[ $arm == contents_swapped || $arm == document_first ]]; then
     reference_root=${4:?Pass the completed query-first run directory}
     peak_lr=${5:-1e-6}
+    extra_eval=()
+    if [[ $arm == document_first ]]; then
+        extra_eval=(--reserved-eval-steps 10 25)
+    fi
     [[ -f $reference_root/teacher/teacher.json && -f $reference_root/warmup_linear/result.json ]] || exit 2
     stage control 13_qwen3_reranker/check_margin_distillation.py \
         --model /workspace/models/Qwen3-Reranker-0.6B --dataset "$data" \
-        --student-order contents_swapped --output "$run_root/control/control.json" || exit $?
+        --student-order "$arm" --output "$run_root/control/control.json" || exit $?
     stage warmup_linear 13_qwen3_reranker/run_margin_distillation.py --mode train \
         --model /workspace/models/Qwen3-Reranker-0.6B --dataset "$data" \
         --teacher "$reference_root/teacher/teacher.json" --control "$run_root/control/control.json" \
         --query-first-reference "$reference_root/warmup_linear/result.json" \
-        --student-order contents_swapped --output "$run_root/warmup_linear" \
+        --student-order "$arm" --output "$run_root/warmup_linear" \
         --schedule warmup_linear --steps 50 --queries-per-update 32 \
-        --learning-rate "$peak_lr" --wall-time-limit 2400 || exit $?
+        --learning-rate "$peak_lr" --wall-time-limit 2400 "${extra_eval[@]}" || exit $?
     exit 0
 fi
 

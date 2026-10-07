@@ -6,6 +6,7 @@ from pathlib import Path
 
 from distill_runtime import Runtime, read, save
 from margin_distillation import margin_loss_and_score_gradient
+from training_smoke_data import body
 
 
 def main():
@@ -13,7 +14,7 @@ def main():
     p.add_argument('--model', type=Path, required=True)
     p.add_argument('--dataset', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
-    p.add_argument('--student-order', choices=['query_first', 'contents_swapped'], default='query_first')
+    p.add_argument('--student-order', choices=['query_first', 'contents_swapped', 'document_first'], default='query_first')
     args = p.parse_args()
     runtime = Runtime(args.model)
     torch = runtime.torch
@@ -32,6 +33,13 @@ def main():
     result = {'passed': False, 'prompt_order': args.student_order,
               'group_id': group['id'], 'lengths': [len(r['ids']) for r in selected],
               'dtype': 'FP32 parameters, BF16 autocast', 'runs': {}}
+    example_body = body(group['instruction'], group['query'], group['documents'][0], args.student_order)
+    expected_ids = runtime.prefix + runtime.encode(example_body) + runtime.suffix
+    assert selected[0]['ids'] == expected_ids, 'Control prompt must be complete and preserve its wrapper'
+    assert runtime.tokenizer.decode(runtime.encode(example_body)) == example_body
+    result['prompt_example'] = {'body': example_body, 'prefix_token_ids': runtime.prefix,
+        'body_token_ids': runtime.encode(example_body), 'suffix_token_ids': runtime.suffix,
+        'decoded_input': runtime.tokenizer.decode(expected_ids)}
     baseline = None
     for mode in ['hf', 'eager', 'fusion_attention', 'replay']:
         if mode == 'hf':
