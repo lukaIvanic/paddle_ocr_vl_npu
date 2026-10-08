@@ -331,12 +331,20 @@ def main():
         # Recheck the winner and use exactly the same workload for replica scaling.
         with servers(args,args.devices[:1],server_config,'winner_recheck') as endpoints:
             measure(endpoints,client,'winner_recheck')
+        scaling_status = 'not_requested'
         if len(args.devices)>1:
-            with servers(args,args.devices,server_config,'replica_scaling') as endpoints:
-                measure(endpoints,client,'replica_scaling')
+            try:
+                assert_free(args.devices)
+            except RuntimeError as exc:
+                scaling_status = str(exc)
+                emit('scaling_unavailable', reason=scaling_status)
+            else:
+                with servers(args,args.devices,server_config,'replica_scaling') as endpoints:
+                    measure(endpoints,client,'replica_scaling')
+                scaling_status = 'complete'
         save(args.output/'summary.json', dict(status='complete',best_sweep_tag=best,
             selected_server_config=server_config,selected_client=client,
-            measured_replicas=len(args.devices), results=results))
+            measured_replicas=max(r['replicas'] for r in results), scaling_status=scaling_status, results=results))
         save(args.output/'completion.json',dict(status='complete'))
     except Exception as exc:
         save(args.output/'completion.json',dict(status='failed',error=repr(exc)))
