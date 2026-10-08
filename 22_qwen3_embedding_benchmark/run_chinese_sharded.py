@@ -79,7 +79,7 @@ def reference(args):
     torch.set_num_threads(8);torch.npu.set_device(0)
     torch.npu.set_compile_mode(jit_compile=False)
     model=AutoModelForCausalLM.from_pretrained(args.model,local_files_only=True,
-        dtype=torch.float16,attn_implementation='eager').eval().to('npu:0')
+        torch_dtype=torch.float16,attn_implementation='eager').eval().to('npu:0')
     assert model.lm_head.weight is model.model.embed_tokens.weight
     assert {str(p.dtype) for p in model.parameters()}=={'torch.float16'}
     no,yes=tok.convert_tokens_to_ids('no'),tok.convert_tokens_to_ids('yes')
