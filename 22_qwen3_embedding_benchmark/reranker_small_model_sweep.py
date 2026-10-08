@@ -45,7 +45,7 @@ def tokenize(tok, task, pairs):
 def assert_free(devices):
     snapshot = subprocess.check_output(['npu-smi', 'info'], text=True)
     busy = {int(m[0]): int(m[1]) for m in re.findall(
-        r'^\|[ \t]+(\d+)[ \t]+\d+[ \t]+(\d+)[ \t]+', snapshot, flags=re.M)}
+        r'^\|[ \t]+(\d+)[ \t]+\d+[ \t]*\|[ \t]*(\d+)[ \t]*\|', snapshot, flags=re.M)}
     # This coordinator's released HF reference may retain its runtime context.
     conflicts = {d: busy[d] for d in devices if d in busy and busy[d] != os.getpid()}
     if conflicts:
