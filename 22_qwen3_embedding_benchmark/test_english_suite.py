@@ -1,10 +1,11 @@
 """CPU contract tests; real NPU validation is separate."""
 from pathlib import Path
 from types import SimpleNamespace
+import json
 import tempfile
 import unittest
 from suite_protocol import ENGLISH, aggregate, format_embedding, validate_tasks
-from run_english_suite import dispatch, embedding_command, tokenize_rerank, save, validate_device_snapshot
+from run_english_suite import dispatch, embedding_command, tokenize_rerank, save, validate_device_snapshot, reuse_embedding, digest
 
 
 class EnglishTests(unittest.TestCase):
@@ -33,6 +34,31 @@ class EnglishTests(unittest.TestCase):
         self.assertIsNone(aggregate(rows[:-1],'embedding')['published_percent'])
         self.assertEqual(aggregate(rows,'embedding')['macro_ndcg_at_10_percent'],50)
         self.assertTrue(aggregate(rows,'reranker')['complete'])
+        self.assertEqual(aggregate(rows,'reranker',65.80)['published_percent'],65.80)
+        self.assertAlmostEqual(aggregate(rows,'reranker',65.80)['delta_pp'],-15.80)
+        self.assertIsNone(aggregate(rows[:-1],'reranker',65.80)['published_percent'])
+
+    def test_saved_candidates_are_verified_without_old_reranker_outputs(self):
+        with tempfile.TemporaryDirectory() as d:
+            source, output = Path(d)/'source', Path(d)/'output'
+            contract = dict(benchmark='test', mteb='1.38.9', tasks=list(ENGLISH),
+                            embedding_revision='fixed', embedding_max_length=8192,
+                            dtype='float16', top_k=100)
+            save(source/'manifest.json', contract)
+            save(source/'embedding/summary.json',
+                 {'complete':True, 'completed_tasks':list(ENGLISH)})
+            save(source/'embedding/results.json', [])
+            save(source/'reranker/summary.json', {'old':True})
+            for name in ENGLISH:
+                path=source/'embedding'/name/'mteb'/f'{name}_default_predictions.json'
+                save(path, {'q':{'d':.5}})
+                save(source/'embedding'/name/'result.json', {'candidates_sha256':digest(path)})
+            reuse_embedding(source, output, contract)
+            self.assertFalse((output/'reranker').exists())
+            self.assertTrue((output/'saved_embedding_provenance.json').exists())
+            save(path, {'corrupted':True})
+            with self.assertRaises(ValueError):
+                reuse_embedding(source, output, contract)
 
     def test_dispatch_preserves_all_work_with_zero_and_tail(self):
         results=[]

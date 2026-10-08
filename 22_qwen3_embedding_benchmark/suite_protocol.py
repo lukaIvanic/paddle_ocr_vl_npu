@@ -52,15 +52,16 @@ def validate_tasks(tasks):
             raise ValueError(f'Task contract changed: {meta.name}')
 
 
-def aggregate(rows, stage):
+def aggregate(rows, stage, published_percent=None):
     by_task = {row['task']: row['ndcg_at_10'] for row in rows}
     if len(rows) != len(by_task) or not set(by_task).issubset(ENGLISH):
         raise ValueError('Duplicate or unexpected task')
+    reference = REFERENCES[stage] if published_percent is None else published_percent
     complete = set(by_task) == set(ENGLISH)
     mean = 100 * sum(by_task.values()) / len(by_task) if by_task else None
     return {'benchmark': BENCHMARK, 'stage': stage, 'complete': complete,
             'completed_tasks': list(by_task), 'missing_tasks': sorted(set(ENGLISH) - set(by_task)),
             'macro_ndcg_at_10_percent': mean,
-            'published_percent': REFERENCES[stage] if complete else None,
-            'delta_pp': mean - REFERENCES[stage] if complete else None,
+            'published_percent': reference if complete else None,
+            'delta_pp': mean - reference if complete else None,
             'aggregation': 'unweighted task mean; partial means are NOT compared with full published aggregate'}

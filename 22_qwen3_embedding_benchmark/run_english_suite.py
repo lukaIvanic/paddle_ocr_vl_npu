@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 import re
 import signal
+import shutil
 import socket
 import subprocess
 import sys
@@ -25,6 +26,7 @@ import time
 from protocol import MODEL_REVISION
 from reranker_protocol import PREFIX, SUFFIX, MAX_LENGTH
 from run_evaluation import Observer, emit
+import run_reranker_evaluation as reranker_evaluator
 from run_reranker_evaluation import (batches, candidate_rows, command as reranker_command,
     metric_summary, restore_journal, score, unscored_rows, parity)
 from reranker_serving_sweep import BASE_PYTHON, MODEL as RERANKER_MODEL, request
@@ -65,6 +67,8 @@ def load_task(name, observer):
         if repo != path or kwargs.get('revision', revision) != revision:
             raise ValueError(f'Unexpected dataset request: {repo} {kwargs}')
         kwargs['revision'] = revision
+        if not args and 'name' not in kwargs:
+            kwargs['name'] = 'default'  # Explicit original qrels config for offline cache.
         calls.append({'path': repo, 'revision': revision, 'args': list(args)})
         return original(repo, *args, **kwargs)
 
@@ -395,15 +399,52 @@ def evaluate_reranker(args, tok, endpoints, observer, name):
     return row
 
 
+def reuse_embedding(source, output, contract):
+    """Copy only verified historical top100 inputs; never old reranker outputs."""
+    source = Path(source)
+    original = json.loads((source/'manifest.json').read_text())
+    for key in ('benchmark', 'mteb', 'tasks', 'embedding_revision',
+                'embedding_max_length', 'dtype', 'top_k'):
+        if original[key] != contract[key]:
+            raise ValueError(f'Saved embedding contract differs: {key}')
+    summary = json.loads((source/'embedding/summary.json').read_text())
+    if not summary['complete'] or set(summary['completed_tasks']) != set(ENGLISH):
+        raise ValueError('Saved embedding suite is incomplete')
+    files = ['summary.json', 'results.json']
+    hashes = {}
+    for name in ENGLISH:
+        candidate = f'{name}/mteb/{name}_default_predictions.json'
+        result = json.loads((source/'embedding'/name/'result.json').read_text())
+        if digest(source/'embedding'/candidate) != result['candidates_sha256']:
+            raise ValueError(f'Saved candidates changed: {name}')
+        files += [candidate, f'{name}/result.json']
+    for name in files:
+        src, dst = source/'embedding'/name, output/'embedding'/name
+        hashes[name] = digest(src)
+        if dst.exists():
+            if digest(dst) != hashes[name]:
+                raise ValueError(f'Existing saved input differs: {name}')
+        else:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+    save(output/'saved_embedding_provenance.json',
+         {'source':str(source), 'manifest_sha256':digest(source/'manifest.json'),
+          'files_sha256':hashes})
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--devices',type=int,nargs='+',default=[0,1,2,3,6])
     p.add_argument('--port',type=int,default=18530)
+    p.add_argument('--reranker-model', default=RERANKER_MODEL)
+    p.add_argument('--reranker-reference', type=float, default=69.76)
+    p.add_argument('--saved-embedding', type=Path)
     p.add_argument('--prepare-only',action='store_true')
     p.add_argument('--resume',action='store_true')
     p.add_argument('--prepared',type=Path,default=Path('tmp/22_qwen3_embedding_benchmark/reranker_serving_cc6c6841/prepared'))
     args = p.parse_args()
+    reranker_evaluator.MODEL = args.reranker_model
     if len(set(args.devices))!=len(args.devices) or set(args.devices)-{0,1,2,3,6}:
         p.error('Only the five reserved healthy devices may be used')
     if args.output.exists() and not args.resume:
@@ -423,6 +464,8 @@ def main():
         tasks=[t for t in mteb.get_benchmark(BENCHMARK).tasks if t.metadata.type=='Retrieval']
         validate_tasks(tasks)
         contract={'schema':1,'benchmark':BENCHMARK,'mteb':MTEB_VERSION,'qwen_commit':QWEN_COMMIT,
+                  'reranker_model':args.reranker_model,'reranker_published_percent':args.reranker_reference,
+                  'saved_embedding':str(args.saved_embedding) if args.saved_embedding else None,
                   'tasks':ENGLISH,'embedding_revision':MODEL_REVISION,'devices':args.devices,
                   'embedding_max_length':8192,'reranker_max_length':8192,
                   'dtype':'float16','compiled':False,'top_k':100,
@@ -437,6 +480,9 @@ def main():
         save(manifest,contract)
         save(args.output/f'invocation_{time.time_ns()}.json',{'argv':sys.argv,'hostname':socket.gethostname(),
              'commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'time':time.time()})
+        if args.saved_embedding:
+            reuse_embedding(args.saved_embedding,args.output,contract)
+            emit('saved_embedding_verified',source=str(args.saved_embedding))
         inventory=[]
         for name in ENGLISH:
             _, counts=load_task(name,observer)
@@ -459,7 +505,7 @@ def main():
                 if stage=='embedding':
                     encoder=Encoder(args,endpoints,observer)
                 else:
-                    tok=AutoTokenizer.from_pretrained(RERANKER_MODEL,local_files_only=True)
+                    tok=AutoTokenizer.from_pretrained(args.reranker_model,local_files_only=True)
                     parity(args,tok,endpoints,observer)
                 rows=[]
                 try:
@@ -467,7 +513,7 @@ def main():
                         row=(evaluate_embedding(args,encoder,observer,name) if stage=='embedding' else
                              evaluate_reranker(args,tok,endpoints,observer,name))
                         rows.append(row)
-                        summary=aggregate(rows,stage)
+                        summary=aggregate(rows,stage,published_percent=args.reranker_reference if stage=='reranker' else None)
                         save(args.output/stage/'results.json',rows)
                         save(args.output/stage/'summary.json',summary)
                         emit('suite_summary',**summary)
