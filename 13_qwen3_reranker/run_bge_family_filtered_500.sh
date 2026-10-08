@@ -5,7 +5,7 @@ source npu-setup
 set -u
 export ASCEND_RT_VISIBLE_DEVICES=2
 export HF_HOME=/workspace/.cache/huggingface HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 TOKENIZERS_PARALLELISM=true RAYON_NUM_THREADS=8
-root=/workspace/results/qwen_bge_family_excluded_500_20261008
+root=/workspace/results/qwen_bge_family_overlap_filtered_500_20261008
 /usr/local/python3.12.13/bin/python3 - <<'PY'
 import sys,json,os,shutil,subprocess
 from pathlib import Path
@@ -14,11 +14,13 @@ from distill_runtime import read,digest,save
 from margin_distillation import lr_at
 from bge_filtered_runtime import update_windows
 from prepare_bge_family_filter import EXCLUDED
-r=Path('/workspace/results/qwen_bge_family_excluded_500_20261008');p=r/'prepared';data=read(p/'dataset.json.gz');prep=read(p/'preparation.json');teacher=read(r/'teacher/teacher.json');old=read('/workspace/results/qwen_bge_document_first_10h/student/result.json')
+r=Path('/workspace/results/qwen_bge_family_overlap_filtered_500_20261008');p=r/'prepared';data=read(p/'dataset.json.gz');prep=read(p/'preparation.json');teacher=read(r/'teacher/teacher.json');old=read('/workspace/results/qwen_bge_document_first_10h/student/result.json')
 assert not (r/'student/result.json').exists(),'Refuse duplicate run'
 assert digest(p/'dataset.json.gz')==prep['dataset_sha256']==teacher['dataset_sha256']
 assert digest(r/'teacher/teacher.json')==prep['teacher_sha256']
 assert not {g['source'] for g in data['train']}&EXCLUDED
+assert_block=set(data['derivation']['overlap_excluded_group_ids'])
+assert not {g['parent_group_id'] for g in data['train']}&assert_block
 windows=update_windows(data['train'],500,32,'retained_original_slots')
 assert list(map(len,windows))==[x['queries'] for x in old['updates'][:500]]
 assert all(lr_at(i,1800,1e-5,'warmup_linear')==old['updates'][i-1]['lr'] for i in range(1,501))

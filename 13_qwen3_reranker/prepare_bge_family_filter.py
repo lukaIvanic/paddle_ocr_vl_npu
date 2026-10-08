@@ -8,8 +8,8 @@ from training_smoke_data import body
 from transformers_rerank import PREFIX,SUFFIX
 EXCLUDED={'hotpotqa','msmarco','mmarco_chinese','dureader','t2ranking','cMedQAv2'}
 
-def select_groups(parent,counts):
- available=[g for g in parent if g['source'] not in EXCLUDED]
+def select_groups(parent,counts,excluded_groups=()):
+ available=[g for g in parent if g['source'] not in EXCLUDED and g['id'] not in excluded_groups]
  slots=[g['id'] for g in parent if int(g['id'].split('/')[1])<len(counts)*32]
  assert len(slots)==sum(counts)<=len(available)
  selected=[]
@@ -33,13 +33,17 @@ def lengths(data,tok,order):
  return result
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--tokenizer',type=Path,default=Path('/workspace/models/Qwen3-Reranker-0.6B'));p.add_argument('--stop-at',type=int,default=500);a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--tokenizer',type=Path,default=Path('/workspace/models/Qwen3-Reranker-0.6B'));p.add_argument('--stop-at',type=int,default=500);p.add_argument('--exclude-groups',type=Path);a=p.parse_args()
  assert not (a.output/'prepared/preparation.json').exists(),'Refuse overwrite of completed preparation'
  parent=read(a.parent/'prepared/dataset.json.gz');cfg=read(a.parent/'run_configuration.json');old=read(a.parent/'student/result.json')
  assert digest(a.parent/'prepared/dataset.json.gz')==cfg['dataset_sha256']==old['dataset_sha256']
  counts=[x['queries'] for x in old['updates'][:a.stop_at]];assert len(counts)==a.stop_at
- data=copy.deepcopy(parent);data['train'],available=select_groups(parent['train'],counts)
+ exclusions=read(a.exclude_groups) if a.exclude_groups else {'groups':{}}
+ if a.exclude_groups:assert exclusions['status']=='approved_by_user'
+ data=copy.deepcopy(parent);data['train'],available=select_groups(parent['train'],counts,set(exclusions['groups']))
  data['derivation']={'kind':'family_exclusion','parent_dataset_sha256':cfg['dataset_sha256'],'reference_dataset_sha256':parent['derivation']['reference_dataset_sha256'],'excluded_sources':sorted(EXCLUDED),'benchmark_unchanged':True,'validation_unchanged':True,'policy':'Stable deletion from original uniform draw; no replacement candidates; fill same first-500 batch counts with consecutive retained groups; original IDs in parent_group_id','parent_first500_group_counts':counts}
+ data['derivation']['overlap_exclusions_sha256']=digest(a.exclude_groups) if a.exclude_groups else None
+ data['derivation']['overlap_excluded_group_ids']=sorted(exclusions['groups'])
  data['distribution']['train']=dict(collections.Counter(g['source'] for g in data['train']))
  data['sampling'].update(requested_exposures=len(data['train']),unique_rows=len({g['global_row'] for g in data['train']}),unique_query_hashes=len({g['query_hash'] for g in data['train']}),family_exclusion=True)
  for s in ('validation','benchmark','reserved_benchmark'):assert data[s]==parent[s]
