@@ -105,11 +105,11 @@ def embedding_command(port):
             '--no-enable-chunked-prefill', '--async-scheduling']
 
 
-def validate_device_snapshot(snapshot, devices):
+def validate_device_snapshot(snapshot, devices, allow_occupied=()):
     for device in devices:
         healthy = re.search(r'^\|\s*'+str(device)+r'\s+910B2\s*\|\s*OK\s*\|', snapshot, re.M)
         free = f'No running processes found in NPU {device}' in snapshot
-        if not healthy or not free:
+        if not healthy or (not free and device not in allow_occupied):
             raise RuntimeError(f'NPU {device} is not confirmed healthy and idle; refusing to start')
 
 
@@ -122,7 +122,7 @@ def servers(args, stage, observer):
     try:
         snapshot = subprocess.check_output(['npu-smi','info'],text=True,timeout=120)
         (root/'device_preflight.txt').write_text(snapshot)
-        validate_device_snapshot(snapshot,args.devices)
+        validate_device_snapshot(snapshot,args.devices,args.allow_occupied_devices)
         for i, device in enumerate(args.devices):
             port = args.port + i
             with socket.socket() as probe:
@@ -437,6 +437,8 @@ def main():
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--devices',type=int,nargs='+',default=[0,1,2,3,6])
     p.add_argument('--port',type=int,default=18530)
+    p.add_argument('--allow-occupied-devices',type=int,nargs='*',default=[],
+                   help='Explicitly authorized device sharing; does not bypass health or runtime HBM checks')
     p.add_argument('--reranker-model', default=RERANKER_MODEL)
     p.add_argument('--reranker-reference', type=float, default=69.76)
     p.add_argument('--saved-embedding', type=Path)
@@ -447,6 +449,8 @@ def main():
     reranker_evaluator.MODEL = args.reranker_model
     if len(set(args.devices))!=len(args.devices) or set(args.devices)-{0,1,2,3,6}:
         p.error('Only the five reserved healthy devices may be used')
+    if set(args.allow_occupied_devices)-set(args.devices):
+        p.error('Shared devices must be selected evaluation devices')
     if args.output.exists() and not args.resume:
         p.error('Output exists; use explicit --resume')
     args.output.mkdir(parents=True,exist_ok=True)
@@ -465,6 +469,7 @@ def main():
         validate_tasks(tasks)
         contract={'schema':1,'benchmark':BENCHMARK,'mteb':MTEB_VERSION,'qwen_commit':QWEN_COMMIT,
                   'reranker_model':args.reranker_model,'reranker_published_percent':args.reranker_reference,
+                  'allow_occupied_devices':args.allow_occupied_devices,
                   'saved_embedding':str(args.saved_embedding) if args.saved_embedding else None,
                   'tasks':ENGLISH,'embedding_revision':MODEL_REVISION,'devices':args.devices,
                   'embedding_max_length':8192,'reranker_max_length':8192,

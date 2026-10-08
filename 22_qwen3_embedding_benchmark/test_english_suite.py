@@ -16,6 +16,16 @@ class EnglishTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 validate_device_snapshot(value,[0])
 
+    def test_explicit_sharing_keeps_health_and_other_device_guards(self):
+        snapshot='| 0     910B2 | OK | 111 |'
+        with self.assertRaises(RuntimeError):
+            validate_device_snapshot(snapshot,[0])
+        validate_device_snapshot(snapshot,[0],allow_occupied=[0])
+        with self.assertRaises(RuntimeError):
+            validate_device_snapshot(snapshot.replace('OK','Alarm'),[0],allow_occupied=[0])
+        with self.assertRaises(RuntimeError):
+            validate_device_snapshot(snapshot+'\n| 2     910B2 | OK | 111 |',[0,2],allow_occupied=[0])
+
     def test_symmetric_prompts(self):
         for task, (_, _, instruction, symmetric) in ENGLISH.items():
             self.assertEqual(format_embedding('text',task,'query'),f'Instruct: {instruction}\nQuery:text')
