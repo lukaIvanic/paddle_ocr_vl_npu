@@ -44,7 +44,7 @@ def gate(root, count):
         pg_s=count/s['pipeline_wall_s'], crops=len(ids), vision_real_tokens=v['real_tokens'],
         vision_physical_tokens=v['physical_tokens'], padding_tokens=v['physical_tokens']-v['real_tokens'],
         padding_fraction=1-v['real_tokens']/v['physical_tokens'], vision=s.get('vision_timing'),
-        source_commit=s.get('commit'), setup=s.get('setup_s'), chip='Ascend910B2')
+        source_commit=s.get('git_commit'), setup=s.get('setup_s'), chip='Ascend910B2')
     (root/'gate.json').write_text(json.dumps(result,indent=2)+'\n')
     print('LIVE_D4_GATE_PASS '+json.dumps(result),flush=True)
     return s

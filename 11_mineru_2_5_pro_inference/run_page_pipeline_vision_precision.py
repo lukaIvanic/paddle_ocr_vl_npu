@@ -34,12 +34,54 @@ def converter_scope(op, ge, install, record):
             raise RuntimeError('failed to restore stock attention converter')
 
 
+def prewarm(selection_path, args, record):
+    """Real crops only, same production runtime/cache; no benchmark result."""
+    import torch
+    from PIL import Image
+    from transformers import AutoProcessor
+    from local_modeling_mineru import LocalMinerU2_5ForConditionalGeneration
+    from run_transformers_recognition_smoke import configure_npu, synchronize
+    from vision_prefill_compile import MinerUVisionPrefillRuntime, parse_vision_buckets
+    selection=json.loads(selection_path.read_text())
+    cfg=selection['config']
+    assert cfg['max_pixels'] == args.processor_max_pixels == 602112
+    assert cfg['min_pixels'] == args.processor_min_pixels == 25088
+    assert cfg['projection_impl'] == 'linear' and cfg['layer_norm_impl'] == 'manual_fp32'
+    assert cfg['attention_impl'] == 'prompt_flash_attention' and cfg['allow_internal_format']
+    assert cfg['promptfa_pad_head_dim_to'] == 0 and not cfg['approximate_precision']
+    assert set(r['bucket'] for r in selection['selected']) == {384,512,768,1024,1536,2048,3072}
+    torch.npu.config.allow_internal_format=True
+    configure_npu()
+    with torch.inference_mode():
+        model=LocalMinerU2_5ForConditionalGeneration.from_pretrained(args.model,dtype=torch.float16,device='npu:0').eval()
+        runtime=MinerUVisionPrefillRuntime(model.visual,buckets=parse_vision_buckets(args.local_vision_buckets),
+            cache_root=args.local_vision_torchair_cache_dir,model_dir=args.model,device=torch.device('npu:0'),dtype=torch.float16)
+        model.set_vision_attention_impl('prompt_flash_attention');model.set_vision_prefill_runtime(runtime)
+        processor=AutoProcessor.from_pretrained(args.model,use_fast=False,local_files_only=True).image_processor
+        processor.min_pixels,processor.max_pixels=25088,602112
+        if getattr(processor,'size',None) is not None:
+            processor.size['shortest_edge'],processor.size['longest_edge']=25088,602112
+        for row in selection['selected']:
+            path=Path(row['image'])
+            assert hashlib.sha256(path.read_bytes()).hexdigest() == row['image_sha256']
+            with Image.open(path) as image:
+                inp=processor(images=[image.convert('RGB')],return_tensors='pt')
+            assert int(inp.pixel_values.shape[0]) == row['real_tokens']
+            assert inp.image_grid_thw.tolist() == row['grid']
+            features=model.get_image_features(inp.pixel_values.to('npu:0',dtype=torch.float16),inp.image_grid_thw.to('npu:0'))
+            synchronize()
+            assert bool(torch.isfinite(features).all())
+            record(dict(event='prewarm_crop_complete',image=row['id'],real_tokens=row['real_tokens'],bucket=row['bucket']))
+        record(dict(event='prewarm_complete',runtime=runtime.metadata(),scope='cache warming only; no throughput result'))
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__,add_help=False)
     p.add_argument('--vision-inner-precise',type=int,choices=[1,4],required=True)
     p.add_argument('--precision-audit',type=Path,required=True)
     p.add_argument('--production-repo',type=Path,default=Path(__file__).resolve().parents[1])
     p.add_argument('--allow-unsupported-mode4-probe',action='store_true')
+    p.add_argument('--prewarm-only',type=Path,help='Real-crop selection JSON; warm production vision caches and exit without page inference')
     experiment,remaining=p.parse_known_args()
     production=experiment.production_repo.resolve()
     sys.path.insert(0,str(production/'11_mineru_2_5_pro_inference'))
@@ -55,7 +97,10 @@ def main():
         record(dict(event='requested', mode=experiment.vision_inner_precise,
             production_repo=str(production), scope='vision graphs only; stock text/decode'))
         if experiment.vision_inner_precise == 1:
-            run_pipeline(args)
+            if experiment.prewarm_only:
+                prewarm(experiment.prewarm_only,args,record)
+            else:
+                run_pipeline(args)
             record(dict(event='completed', mode=1, override_installed=False))
             return
         if args.local_vision_backend != 'torchair' or args.local_vision_attention != 'prompt_flash_attention':
@@ -107,7 +152,10 @@ def main():
             return first_call_scoped
         MinerUVisionPrefillRuntime._compiled_for_bucket=compile_selected
         try:
-            run_pipeline(args)
+            if experiment.prewarm_only:
+                prewarm(experiment.prewarm_only,args,record)
+            else:
+                run_pipeline(args)
         finally:
             MinerUVisionPrefillRuntime._compiled_for_bucket=original
         record(dict(event='completed',mode=4,supported_310p=supported,
