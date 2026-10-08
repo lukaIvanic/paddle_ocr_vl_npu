@@ -33,6 +33,7 @@ from reranker_serving_sweep import BASE_PYTHON, MODEL as RERANKER_MODEL, request
 from suite_protocol import (BENCHMARK, ENGLISH, MTEB_VERSION, QWEN_COMMIT,
                             aggregate, format_embedding, validate_tasks)
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / '13_qwen3_reranker'))
 EMBEDDING_MODEL = '/workspace/models/Qwen3-Embedding-0.6B'
 
 
@@ -277,11 +278,12 @@ class Encoder:
         return vectors
 
 
-def tokenize_rerank(tokenizer, name, rows):
+def tokenize_rerank(tokenizer, name, rows, input_order="query_first"):
     prefix = tokenizer.encode(PREFIX, add_special_tokens=False)
     suffix = tokenizer.encode(SUFFIX, add_special_tokens=False)
     limit = MAX_LENGTH-len(prefix)-len(suffix)
-    texts = [f'<Instruct>: {ENGLISH[name][2]}\n<Query>: {p["query"]}\n<Document>: {p["document"]}' for p in rows]
+    from training_smoke_data import body
+    texts = [body(ENGLISH[name][2], p['query'], p['document'], input_order) for p in rows]
     ids = tokenizer(texts, add_special_tokens=False, padding=False, truncation=False)['input_ids']
     return [prefix+x[:limit]+suffix for x in ids], sum(len(x)>limit for x in ids)
 
@@ -335,7 +337,8 @@ def evaluate_reranker(args, tok, endpoints, observer, name):
     task, counts = load_task(name, observer)
     baseline = json.loads(candidate_path.read_text())
     manifest = {**counts, 'candidates_sha256':candidate_digest, 'max_length':8192,
-                'prompt':'HF Transformers single-newline prefix/body/suffix; query instruction string'}
+                'prompt':'HF Transformers single-newline prefix/body/suffix; task-specific instruction',
+                'input_order':args.input_order}
     if (folder/'manifest.json').exists() and json.loads((folder/'manifest.json').read_text()) != manifest:
         raise ValueError('Reranker manifest mismatch')
     save(folder/'manifest.json', manifest)
@@ -353,7 +356,7 @@ def evaluate_reranker(args, tok, endpoints, observer, name):
     rows = candidate_rows(baseline, task.queries['test'], task.corpus['test'], corpus_to_str)
 
     def prepare(rows):
-        ids, truncated = tokenize_rerank(tok, name, rows)
+        ids, truncated = tokenize_rerank(tok, name, rows, args.input_order)
         return rows, ids, truncated
 
     def execute(endpoint, payload):
@@ -440,6 +443,7 @@ def main():
     p.add_argument('--allow-occupied-devices',type=int,nargs='*',default=[],
                    help='Explicitly authorized device sharing; does not bypass health or runtime HBM checks')
     p.add_argument('--reranker-model', default=RERANKER_MODEL)
+    p.add_argument('--input-order', choices=['query_first','document_first'], default='query_first')
     p.add_argument('--reranker-reference', type=float, default=69.76)
     p.add_argument('--saved-embedding', type=Path)
     p.add_argument('--prepare-only',action='store_true')
@@ -469,6 +473,8 @@ def main():
         validate_tasks(tasks)
         contract={'schema':1,'benchmark':BENCHMARK,'mteb':MTEB_VERSION,'qwen_commit':QWEN_COMMIT,
                   'reranker_model':args.reranker_model,'reranker_published_percent':args.reranker_reference,
+                  'input_order':args.input_order,
+                  'model_files':{p.name:digest(p) for p in sorted(Path(args.reranker_model).glob('*.safetensors'))},
                   'allow_occupied_devices':args.allow_occupied_devices,
                   'saved_embedding':str(args.saved_embedding) if args.saved_embedding else None,
                   'tasks':ENGLISH,'embedding_revision':MODEL_REVISION,'devices':args.devices,
@@ -511,7 +517,8 @@ def main():
                     encoder=Encoder(args,endpoints,observer)
                 else:
                     tok=AutoTokenizer.from_pretrained(args.reranker_model,local_files_only=True)
-                    parity(args,tok,endpoints,observer)
+                    parity(args,tok,endpoints,observer,
+                           tokenizer_fn=lambda tokenizer,name,pairs: tokenize_rerank(tokenizer,name,pairs,args.input_order))
                 rows=[]
                 try:
                     for name in ENGLISH:

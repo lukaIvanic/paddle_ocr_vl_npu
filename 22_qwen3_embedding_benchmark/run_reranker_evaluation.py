@@ -185,7 +185,7 @@ def score(endpoint, ids):
     return values
 
 
-def parity(args, tok, endpoints, observer):
+def parity(args, tok, endpoints, observer, tokenizer_fn=None):
     workloads = json.loads((args.prepared / 'workloads.json').read_text())
     refs = {r['task']: r for r in json.loads((args.prepared / 'hf_reference.json').read_text())}
     prep = json.loads((args.prepared / 'manifest.json').read_text())
@@ -195,7 +195,7 @@ def parity(args, tok, endpoints, observer):
     for endpoint in endpoints:
         for w in workloads:
             observer.state = {'section': 'hf_parity', 'endpoint': endpoint, 'task': w['task']}
-            full_ids, _ = tokenize_pairs(tok, w['task'], w['pairs'])
+            full_ids, _ = (tokenizer_fn or tokenize_pairs)(tok, w['task'], w['pairs'])
             assert hashlib.sha256(json.dumps(full_ids).encode()).hexdigest() == w['input_ids_sha256']
             ref = refs[w['task']]
             vals = score(endpoint, [full_ids[i] for i in ref['indices']])

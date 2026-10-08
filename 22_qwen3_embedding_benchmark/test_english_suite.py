@@ -108,6 +108,21 @@ class EnglishTests(unittest.TestCase):
         self.assertEqual(truncated,1)
         self.assertEqual(tok.texts,['<Instruct>: Given a claim, find documents that refute the claim\n<Query>: q\n<Document>: d'])
 
+    def test_document_first_preserves_field_meanings_and_original_default(self):
+        from training_smoke_data import body
+        class Tok:
+            def encode(self,text,**kwargs): return [1,2]
+            def __call__(self,texts,**kwargs):
+                self.texts=texts
+                return {'input_ids':[[3,4,5] for _ in texts]}
+        tok=Tok();pairs=[{'query':'actual query','document':'actual document'}]
+        original,_=tokenize_rerank(tok,'ArguAna',pairs)
+        self.assertEqual(tok.texts,[body(ENGLISH['ArguAna'][2],'actual query','actual document','query_first')])
+        reverse,_=tokenize_rerank(tok,'ArguAna',pairs,'document_first')
+        self.assertEqual(tok.texts,['<Instruct>: Given a claim, find documents that refute the claim\n<Document>: actual document\n<Query>: actual query'])
+        self.assertEqual(reverse,original)
+        with self.assertRaises(ValueError):tokenize_rerank(tok,'ArguAna',pairs,'contents_swapped')
+
 
 if __name__=='__main__':
     unittest.main()
