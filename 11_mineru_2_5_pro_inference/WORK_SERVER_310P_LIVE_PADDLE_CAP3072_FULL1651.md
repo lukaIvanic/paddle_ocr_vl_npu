@@ -218,7 +218,7 @@ is a sidecar: run_summary alone does not establish the precision mode.
 New precision requires its own vision-cache namespace, derived from the wrapper
 and converter helper hashes. This is an explicit exception to the old brief's
 ban on new cache roots. **Warm all seven reachable buckets before the measured
-full runs**, using actual crops with the normal slow processor. Otherwise a
+full runs**, using actual crops with the production fast processor. Otherwise a
 new-precision full run could include cold compilation while the original reused
 compiled graphs. First-use cache loading still remains inside each page run,
 as in the original zero-warmup-page benchmark. Do not subtract it after the fact.
@@ -302,7 +302,7 @@ launch_stage() {
 export STAGE_DEADLINE_S=900
 launch_stage "$CHAIN_ROOT/select_crops" "$PYTHON_BIN" \
   "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/vision_length_sweep.py" select \
-  --model "$MODEL_DIR" --per-bucket 1 --output "$CHAIN_ROOT/selection.json"
+  --model "$MODEL_DIR" --processor fast --per-bucket 1 --output "$CHAIN_ROOT/selection.json"
 while test ! -f "$CHAIN_ROOT/select_crops/exit_code.txt"; do sleep 15; done
 test "$(cat "$CHAIN_ROOT/select_crops/exit_code.txt")" = 0 || exit 1
 # Inspect all seven actual token grids before proceeding.

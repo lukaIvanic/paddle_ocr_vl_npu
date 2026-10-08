@@ -43,6 +43,7 @@ def prewarm(selection_path, args, record):
     from run_transformers_recognition_smoke import configure_npu, synchronize
     from vision_prefill_compile import MinerUVisionPrefillRuntime, parse_vision_buckets
     selection=json.loads(selection_path.read_text())
+    assert selection['processor_fast'], 'production page pipeline uses the fast processor'
     cfg=selection['config']
     assert cfg['max_pixels'] == args.processor_max_pixels == 602112
     assert cfg['min_pixels'] == args.processor_min_pixels == 25088
@@ -57,7 +58,7 @@ def prewarm(selection_path, args, record):
         runtime=MinerUVisionPrefillRuntime(model.visual,buckets=parse_vision_buckets(args.local_vision_buckets),
             cache_root=args.local_vision_torchair_cache_dir,model_dir=args.model,device=torch.device('npu:0'),dtype=torch.float16)
         model.set_vision_attention_impl('prompt_flash_attention');model.set_vision_prefill_runtime(runtime)
-        processor=AutoProcessor.from_pretrained(args.model,use_fast=False,local_files_only=True).image_processor
+        processor=AutoProcessor.from_pretrained(args.model,use_fast=True,local_files_only=True).image_processor
         processor.min_pixels,processor.max_pixels=25088,602112
         if getattr(processor,'size',None) is not None:
             processor.size['shortest_edge'],processor.size['longest_edge']=25088,602112

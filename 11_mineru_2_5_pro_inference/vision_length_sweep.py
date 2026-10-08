@@ -34,11 +34,11 @@ def choose(inventory, buckets, count):
 
 
 def select(args):
-    # Use the same installed slow processor as capture, not a guessed resize rule.
+    # Capture uses slow; the production cache prewarm explicitly selects fast.
     from PIL import Image
     from transformers import AutoProcessor
     cfg = load_config(args.config_json)
-    processor = AutoProcessor.from_pretrained(args.model, use_fast=False, local_files_only=True).image_processor
+    processor = AutoProcessor.from_pretrained(args.model, use_fast=args.processor == 'fast', local_files_only=True).image_processor
     processor.min_pixels, processor.max_pixels = cfg['min_pixels'], cfg['max_pixels']
     if getattr(processor, 'size', None) is not None:
         processor.size['shortest_edge'], processor.size['longest_edge'] = cfg['min_pixels'], cfg['max_pixels']
@@ -58,7 +58,7 @@ def select(args):
     args.output.parent.mkdir(parents=True, exist_ok=True)
     if args.output.exists():
         raise FileExistsError(args.output)
-    save(args.output, dict(config=cfg, model=str(args.model.resolve()), per_bucket=args.per_bucket,
+    save(args.output, dict(config=cfg, model=str(args.model.resolve()), per_bucket=args.per_bucket,processor_fast=args.processor == 'fast',
         inventory=inventory, selected=picked,
         scope='real single crops at normal processor sizes; no small-crop packing or production frequency weighting'))
     for row in picked:
@@ -125,6 +125,8 @@ def report(root):
 
 def run(args):
     selection = json.loads(args.selection.read_text())
+    if selection.get('processor_fast',False):
+        raise ValueError('capture-crops uses slow processor; fast selection is for the production prewarm, not this controlled replay')
     cfg = load_config(inherited=selection['config'])
     if cfg['approximate_precision'] or cfg['attention_impl'] != 'prompt_flash_attention':
         raise ValueError('capture must use non-approximate PromptFA baseline')
@@ -176,6 +178,7 @@ def main():
     s.add_argument('--manifest', type=Path, default=HERE.parent/'crops'/'hotswap_100_manifest.json')
     s.add_argument('--config-json', type=Path, default=HERE/'vision_length_config.json')
     s.add_argument('--per-bucket', type=int, default=2)
+    s.add_argument('--processor',choices=['slow','fast'],default='slow')
     s.add_argument('--output', type=Path, required=True)
     r = sub.add_parser('run')
     r.add_argument('--selection', type=Path, required=True)
