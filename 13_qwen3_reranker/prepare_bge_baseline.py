@@ -81,12 +81,21 @@ def main():
  p.add_argument('--tokenizer',type=pathlib.Path,default='/workspace/models/Qwen3-Reranker-0.6B')
  p.add_argument('--seed',type=int,default=1047);p.add_argument('--steps',type=int,default=50);p.add_argument('--queries-per-update',type=int,default=32);p.add_argument('--validation-queries',type=int,default=64)
  p.add_argument('--defer-length-audit',action='store_true',help='Defer token-length audit to the subsequent mandatory two-order whole-group filter')
+ p.add_argument('--reuse-query-audit',type=pathlib.Path)
+ p.add_argument('--assert-prefix-data',type=pathlib.Path)
  p.add_argument('--max-example-num-per-dataset',type=int,default=100000000)
  p.add_argument('--stage',choices=['audit','extract','prepare'],default='prepare');args=p.parse_args();args.output.mkdir(parents=True,exist_ok=True)
  if args.stage=='audit':blocklist(args);return
  assets=extract(args.archive,args.extracted)
  if args.stage=='extract':return
- blocked,coverage,translations,blocked_ids=blocklist(args)
+ if args.reuse_query_audit:
+  audit=read(args.reuse_query_audit);blocked=set(audit['blocked_normalized_query_hashes']);coverage=audit['coverage'];translations={}
+  from audit_missing_sources import tsv_queries
+  for name,sha in coverage['translation_links']['assets'].items():
+   assert digest(name)==sha
+   translations[pathlib.Path(name).name]=tsv_queries(pathlib.Path(name))
+  save(args.output/'query_audit.json',audit)
+ else:blocked,coverage,translations,blocked_ids=blocklist(args)
  files=sorted(args.extracted/r['path'] for r in assets if pathlib.Path(r['path']).suffix in {'.json','.jsonl'})
  if not files:raise ValueError('No upstream JSON training files')
  manifest=[];start=time.monotonic();Base=reference_dataset_class()
@@ -145,6 +154,10 @@ def main():
   schedule.append({k:v for k,v in g.items() if k not in ['query','instruction','documents']});return g
  val=[group(i,n,0,'validation') for n,i in enumerate(validation_ids)]
  train=[group(i,n,e,'train') for n,(e,i) in enumerate(order)]
+ if args.assert_prefix_data:
+  previous=read(args.assert_prefix_data)
+  assert train[:len(previous['train'])]==previous['train'], 'Expanded random sample changed the existing prefix'
+  assert val==previous['validation'], 'Validation changed'
  panels=read(args.panels);distribution={s:dict(collections.Counter(g['source'] for g in gs)) for s,gs in [('train',train),('validation',val)]}
  data={'train':train,'validation':val,'benchmark':panels['panel'],'reserved_benchmark':panels['reserved'],'distribution':distribution,
   'checks':{'evaluation_queries_filtered':True,'new_validation_overlap':not bool({g['query_hash'] for g in train}&val_hashes),'query_audit_coverage':coverage,'unresolved':'No exhaustive semantic/paraphrase check; source IDs absent or unmapped in some released records'},
