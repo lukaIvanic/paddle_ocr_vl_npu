@@ -53,6 +53,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--original',type=Path,required=True)
     p.add_argument('--approximate',type=Path)
+    p.add_argument('--approximate-prewarm-audit',type=Path)
     p.add_argument('--chip',choices=['910B','310P'],required=True)
     p.add_argument('--output',type=Path,required=True)
     a=p.parse_args()
@@ -61,8 +62,17 @@ def main():
     comparison=None
     if a.approximate:
         approximate=load(a.approximate)
+        audit=[json.loads(line) for line in (a.approximate/'precision.jsonl').read_text().splitlines()]
+        assert audit[-1]['event'] == 'completed' and audit[-1]['mode'] == 4
+        assert a.chip != '310P' or audit[-1]['supported_310p']
+        assert a.approximate_prewarm_audit, 'provide the mode4 prewarm audit, not only a filename labelled approximate'
+        warm=[json.loads(line) for line in a.approximate_prewarm_audit.read_text().splitlines()]
+        assert warm[-1]['event'] == 'completed' and warm[-1]['mode'] == 4
+        assert {r['bucket'] for r in warm if r['event'] == 'prewarm_crop_complete'} == {384,512,768,1024,1536,2048,3072}
+        assert all(r['inner_precise'] == 4 for r in warm if r['event'] == 'vision_ge_promptfa')
         rows.append(('approximate',approximate))
         comparison=dict(model_hashes_match=original[0]['model_hashes'] == approximate[0]['model_hashes'],
+            layout_model_hashes_match=original[0]['layout_model_hashes'] == approximate[0]['layout_model_hashes'],
             crop_geometry_hashes_match=original[2] == approximate[2],
             prompt_ids_and_image_hashes_match=original[3] == approximate[3],
             changed_output_requests=sum(original[4].get(k) != approximate[4].get(k) for k in original[4].keys()|approximate[4].keys()),
@@ -75,7 +85,7 @@ def main():
         v=s['local_compiled_vision'];total=s['vision_timing']['all']
         result['lanes'][label]=dict(wall_s=s['pipeline_wall_s'],pg_s=1651/s['pipeline_wall_s'],
             setup_s=s['setup_s'],vision=total,lengths=length_rows(samples),
-            precision_audit_required=label == 'approximate')
+            precision_audit_checked=label == 'approximate')
         print(f"| {a.chip} | {label} | 1651 | {s['pipeline_wall_s']:.3f} | {s['setup_s']:.3f} | "
             f"{1651/s['pipeline_wall_s']:.6f} | {v['real_tokens']} | {v['physical_tokens']-v['real_tokens']} | "
             f"{100*(1-v['real_tokens']/v['physical_tokens']):.3f} | {total['real_tok_s']:.1f} |")

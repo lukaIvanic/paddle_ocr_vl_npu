@@ -478,6 +478,7 @@ length-distribution tables (the reporter requires complete live 1651-page runs):
 ```bash
 "$PYTHON_BIN" "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/report_e2e_vision_precision.py" \
   --original "$CHAIN_ROOT/full1651" --approximate "$CHAIN_ROOT/approx_full1651" \
+  --approximate-prewarm-audit "$CHAIN_ROOT/prewarm_4/precision.jsonl" \
   --chip 310P --output "$CHAIN_ROOT/precision_pair.json"
 ```
 
