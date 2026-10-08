@@ -56,13 +56,21 @@ def main():
     p.add_argument('--run-root',type=Path,required=True)
     p.add_argument('--reference-summary',type=Path,required=True)
     p.add_argument('--lock-file',type=Path,required=True)
+    p.add_argument('--continue-after-smoke',action='store_true',help='Validate an existing successful smoke, then launch only the untouched full stage')
     a=p.parse_args()
     source=a.source_repo.resolve()
     assert subprocess.check_output(['git','-C',str(source),'rev-parse','HEAD'],text=True).strip() == D4
     assert not subprocess.check_output(['git','-C',str(source),'status','--porcelain','--untracked-files=no'],text=True).strip()
     ref=json.loads(a.reference_summary.read_text())
-    root=a.run_root.resolve();root.mkdir(parents=True,exist_ok=False)
-    (root/'source_commit.txt').write_text(D4+'\n')
+    root=a.run_root.resolve()
+    if a.continue_after_smoke:
+        assert (root/'source_commit.txt').read_text().strip() == D4
+        assert json.loads((root/'smoke2'/'receipt'/'exit.json').read_text())['status'] == 'completed'
+        gate(root/'smoke2',2)
+        assert not (root/'full1651').exists()
+    else:
+        root.mkdir(parents=True,exist_ok=False)
+        (root/'source_commit.txt').write_text(D4+'\n')
     common=[sys.executable,'-u',str(source/'11_mineru_2_5_pro_inference/run_page_pipeline.py'),
         '--layout-backend','pp-doclayout-v3','--no-layout-graph-capture',
         '--processor-min-pixels','25088','--processor-max-pixels','602112',
@@ -84,11 +92,16 @@ def main():
     with a.lock_file.open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         for name,command,count,deadline in [('smoke2',smoke,2,1800),('full1651',full,1651,7200)]:
+            if name == 'smoke2' and a.continue_after_smoke:
+                continue
             stage=root/name;stage.mkdir()
             row=run_lane(command,stage/'receipt',deadline,stage/'run.log')
             (stage/'exit_code.txt').write_text(str(row['exit_code'])+'\n')
             s=gate(stage,count)
-            assert s['model_hashes'] == ref['model_hashes'],'model/data hashes differ from historical reference'
+            for key,expected in ref['model_hashes'].items():
+                if count == 2 and key == 'dataset_json':
+                    continue  # Explicit-image smoke generates its own two-page manifest.
+                assert s['model_hashes'][key] == expected,f'model/data hash differs: {key}'
     print('D4_REPRODUCTION_COMPLETED '+str(root),flush=True)
 
 
