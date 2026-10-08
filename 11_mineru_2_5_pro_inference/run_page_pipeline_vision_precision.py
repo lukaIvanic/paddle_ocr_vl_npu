@@ -108,6 +108,8 @@ def main():
             raise ValueError('mode4 requires compiled PromptFA vision')
         import torch
         import torch_npu
+        # Match production before any device query can initialize the runtime.
+        torch.npu.config.allow_internal_format=True
         soc=int(torch_npu.npu.get_soc_version())
         supported=200 <= soc <= 205
         if not supported and not experiment.allow_unsupported_mode4_probe:
@@ -124,7 +126,7 @@ def main():
         identity=hashlib.sha256(Path(__file__).read_bytes()+helper.read_bytes()).hexdigest()[:16]
         args.local_vision_torchair_cache_dir=Path(args.local_vision_torchair_cache_dir)/('vision_innerprecise4_'+identity)
         record(dict(event='configuration', soc=soc, device=torch_npu.npu.get_device_name(0),
-            supported_310p=supported, unsupported_device_probe=not supported,
+            supported_310p=supported, unsupported_device_probe=not supported,allow_internal_format=True,
             helper_sha256=hashlib.sha256(helper.read_bytes()).hexdigest(),
             vision_cache=str(args.local_vision_torchair_cache_dir),
             note='Separate vision cache prevents stock graphs from being reused for mode4. No text/decode converter override.'))
