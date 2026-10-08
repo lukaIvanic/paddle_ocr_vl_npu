@@ -95,7 +95,7 @@ def preserve_attempt(root, names, reason):
             pg = json.loads(process.read_text())['process_group']
             try: os.killpg(pg, 0)
             except ProcessLookupError: pass
-            else: raise RuntimeError(f'previous process group {pg} is still alive; stop its owner before resuming')
+            else: raise RuntimeError(f'recorded process group {pg} is still alive; verify its identity before resuming; no files moved')
     archive = root/'attempts'/(datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'_'+uuid.uuid4().hex[:8])
     archive.mkdir(parents=True)
     for path in existing: path.rename(archive/path.name)

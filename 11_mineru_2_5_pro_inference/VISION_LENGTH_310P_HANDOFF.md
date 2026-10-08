@@ -1,5 +1,12 @@
 # MinerU: approximate PromptFA improvement by real crop length (310P)
 
+**Supplementary controlled experiment.** The current full-page task is
+`WORK_SERVER_310P_LIVE_PADDLE_CAP3072_FULL1651.md`: two full 1,651-page runs
+and evaluations, including vision throughput comparisons by actual input length.
+That full-page handoff does not invoke this separate 14-crop replay sweep.
+Use this brief only for the additional repeated, fixed-input length experiment;
+it is not a replacement or prerequisite for the full E2E runs.
+
 This brief is self-contained. The question is whether the approximate PromptFA
 gain seen at short input lengths persists or grows for recognition crops up to
 3,072 raw vision tokens. Run on **310P**, FP16. Do not substitute isolated
@@ -79,12 +86,12 @@ WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
 cd "$WORK_SERVER_REPO"
 git fetch origin codex/mineru-vision-length-sweep
 git checkout --detach FETCH_HEAD
-git merge-base --is-ancestor 5335a3cd HEAD
+git merge-base --is-ancestor 4570d394 HEAD
 git rev-parse HEAD
 ```
 
-The pin names the first harness commit; later evidence/brief commits are
-descendants. Record actual HEAD. No installs, downloads, source edits, commits,
+The pin includes the independent cache parameter and interrupted-sweep recovery.
+Record actual HEAD. No installs, downloads, source edits, commits,
 pushes, branches, resets, or termination of unrelated processes on this server.
 Use the existing successful MinerU torch/torch-npu/TorchAir environment and
 checkpoint. Set `PYTHON` to its absolute interpreter and `MODEL` to the existing
@@ -111,7 +118,7 @@ An unavailable clock/mode query remains explicitly unavailable.
 EXP=11_mineru_2_5_pro_inference
 RUN_ROOT="$WORK_SERVER_REPO/tmp/$EXP/vision_lengths_310P_$(date -u +%Y%m%dT%H%M%SZ)_$(git rev-parse --short HEAD)"
 mkdir -p "$RUN_ROOT"
-"$PYTHON" -m unittest discover -s "$EXP" -p test_vision_length_sweep.py
+"$PYTHON" -m unittest discover -s "$EXP" -p 'test_vision_length*.py'
 "$PYTHON" -m unittest discover -s "$EXP" -p test_production_vision_attention.py
 nohup "$PYTHON" -u "$EXP/vision_diagnostic_runner.py" \
   --output-dir "$RUN_ROOT/selection.receipt" --timeout-s 900 -- \
@@ -128,8 +135,10 @@ the selected actual useful lengths before running; empty bucket is a failure,
 not permission to generate dummy inputs or alter the pixel cap.
 
 ```bash
+GRAPH_CACHE_ROOT="${GRAPH_CACHE_ROOT:-$RUN_ROOT/sweep/cache}"
 nohup "$PYTHON" -u "$EXP/vision_length_sweep.py" run \
   --selection "$RUN_ROOT/selection.json" --output-dir "$RUN_ROOT/sweep" \
+  --cache-root "$GRAPH_CACHE_ROOT" \
   --steps 30 --repeats 2 --capture-timeout-s 3600 --lane-timeout-s 1800 \
   > "$RUN_ROOT/sweep.driver.log" 2>&1 </dev/null &
 printf '%s\n' "$!" > "$RUN_ROOT/sweep.pid"
@@ -141,6 +150,60 @@ owned process group, preserves artifacts and stops. No automatic fallback or
 retry. Stop and report on device error, baseline mismatch with capture,
 nonfinite/nondeterministic output, or compilation inside the measured timer.
 Finite approximate drift does **not** disqualify throughput; report it.
+
+### Reuse cache or resume after interruption
+
+`--output-dir` and `--cache-root` are independent. Set GRAPH_CACHE_ROOT to an
+existing compatible sweep cache before a **new** run to reuse its compiled
+graphs while writing fresh results in a new output directory. Model, operator,
+configuration and graph-cache keys are unchanged by this controller update.
+This saves compilation; a new run still measures all lanes.
+
+To continue the **same interrupted sweep**, retain its selection and output
+directory and add `--resume`. First check that its old driver and child/compiler
+processes have stopped; if still active, monitor that job instead of starting a
+second writer. Restore the same established NPU environment. Set RUN_ROOT to
+the existing run's parent directory, not a new timestamped path:
+
+```bash
+RESUME_LOG="$RUN_ROOT/sweep.resume.$(date -u +%Y%m%dT%H%M%SZ).driver.log"
+nohup "$PYTHON" -u "$EXP/vision_length_sweep.py" run --resume \
+  --selection "$RUN_ROOT/selection.json" --output-dir "$RUN_ROOT/sweep" \
+  --steps 30 --repeats 2 --capture-timeout-s 3600 --lane-timeout-s 1800 \
+  > "$RESUME_LOG" 2>&1 </dev/null &
+printf '%s\n' "$!" > "$RUN_ROOT/sweep.resume.pid"
+```
+
+Use the original steps/repeats if they differed from 30/2. Resume uses the
+recorded cache path; older runs without run_state.json use their original
+`sweep/cache` default. An explicit --cache-root must match the saved capture.
+
+- Successful capture and complete baseline/approximate **pairs** are verified
+  and reused. Inputs, tensors, checkpoint hashes, model/timing source,
+  configuration, schedule and successful timing/parity gates are checked.
+- If only half a pair finished, both members of that pair are rerun adjacently.
+  Earlier files move intact into `sweep/attempts/`; they are not deleted or
+  overwritten. A capture interrupted before its successful receipt is similarly
+  preserved and recaptured using the existing graph cache.
+- Changed recorded settings/environment, corrupt capture, or a live old child
+  process group stop recovery. A run/cache ownership lock prevents simultaneous
+  updated sweep runners. Never share this cache with another active writer.
+- Older runs lack a complete environment fingerprint. Recovery checks the
+  evidence they did record and explicitly reports that full old CANN/processor
+  equality cannot be established. Original per-lane runtime metadata and device/
+  host snapshots remain available. New attempts record their environment.
+- `resume_history.jsonl` and the final tables disclose reuse/retry decisions.
+  Retained pairs keep their original measurement times; repetitions can span
+  separate sessions. Inspect their receipts rather than treating them as one
+  uninterrupted benchmark. Correctness/device failures still require reporting;
+  resume is not a fallback that changes the model or attention implementation.
+
+Validation of this controller change: nine CPU bookkeeping tests passed,
+including interrupted capture/pair recovery, unchanged completed receipts,
+shared cache with fresh output, corruption rejection and active-child refusal.
+No new NPU throughput or 310P validation is claimed from those tests. The
+32-block benchmark implementation, precision converter and timing regions are
+unchanged.
 
 The last block of the driver log prints the tables. To regenerate after a stop:
 

@@ -7,6 +7,13 @@ precision: a two-page smoke, full 1,651-page run and evaluation for each mode.
 Do not ask for another approval after a passing gate. This updates the handoff
 that existed in `d4e7fdd`; that commit was not itself a receipt for 0.289 pg/s.
 
+**This is the primary full E2E handoff.** It includes original-versus-approximate
+vision throughput comparisons by length from the two actual full-page runs.
+`VISION_LENGTH_310P_HANDOFF.md` is a supplementary fixed-input encoder replay
+sweep; it is not launched here and is not a prerequisite. This brief reuses only
+that script's CPU crop-selection command for cache warming. Its new --resume
+option applies to the separate sweep, not these full-page jobs.
+
 ## Goal and scope
 
 Run **all 1,651 original OmniDocBench images → live PP-DocLayoutV3 → crops →
@@ -259,9 +266,11 @@ After prewarming, require every reachable bucket's compile record and all
 seven prewarm_crop_complete entries in both audits. Original and approximate
 cache directories must differ; original text/decode paths must match.
 
-For 310P, **never** pass `--allow-unsupported-mode4-probe`. That flag exists
-solely for a deliberately labelled two-page 910B compatibility attempt; success
-there would not prove that a 910B kernel performed 310P approximate arithmetic.
+Omit `--allow-unsupported-mode4-probe` on 310P. Approximate vision is selected by
+`--vision-inner-precise 4`, which needs no device-guard override on a recognized
+310P. The override only bypasses our script's device check for a deliberately
+labelled two-page 910B attempt; it cannot add CANN support. The actual 910B
+attempt was rejected by CANN as recorded above.
 
 Use `run_page_pipeline.py`; do **not** use the 910B-specific shell launcher,
 which has 910B paths and `npu-setup` assumptions. Its production defaults are
