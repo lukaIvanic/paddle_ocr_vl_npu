@@ -3,7 +3,12 @@ set -eo pipefail
 cd /workspace/repos/qwen-family-filter-500
 source npu-setup
 set -u
-export ASCEND_RT_VISIBLE_DEVICES=2
+# Use the idle physical device selected by npu-setup; preserve every existing job.
+npu-smi info > /tmp/qwen-family-launch-npu-status.txt
+if ! grep -q "No running processes found in NPU ${ASCEND_RT_VISIBLE_DEVICES} " /tmp/qwen-family-launch-npu-status.txt; then
+  echo "Selected NPU is no longer idle; refusing launch" >&2
+  exit 75
+fi
 export HF_HOME=/workspace/.cache/huggingface HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 TOKENIZERS_PARALLELISM=true RAYON_NUM_THREADS=8
 root=/workspace/results/qwen_bge_family_overlap_filtered_500_20261008
 /usr/local/python3.12.13/bin/python3 - <<'PY'
