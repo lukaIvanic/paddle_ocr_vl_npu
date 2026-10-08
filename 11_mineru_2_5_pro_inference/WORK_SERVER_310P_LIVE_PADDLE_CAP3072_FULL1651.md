@@ -7,12 +7,9 @@ precision: a two-page smoke, full 1,651-page run and evaluation for each mode.
 Do not ask for another approval after a passing gate. This updates the handoff
 that existed in `d4e7fdd`; that commit was not itself a receipt for 0.289 pg/s.
 
-**This is the primary full E2E handoff.** It includes original-versus-approximate
-vision throughput comparisons by length from the two actual full-page runs.
-`VISION_LENGTH_310P_HANDOFF.md` is a supplementary fixed-input encoder replay
-sweep; it is not launched here and is not a prerequisite. This brief reuses only
-that script's CPU crop-selection command for cache warming. Its new --resume
-option applies to the separate sweep, not these full-page jobs.
+**This is the single active handoff for this task.** Follow the complete sequence
+below: original-precision and approximate-precision full 1,651-page runs, both
+evaluations, and vision throughput comparisons by length from those actual runs.
 
 ## Goal and scope
 
@@ -322,6 +319,9 @@ launch_stage() {
   printf 'LOG=%s/run.log\n' "$stage_root"
 }
 ```
+
+The `select` command below only chooses real crops for cache warming. Measured
+vision throughput by length comes from the two full E2E runs.
 
 ```bash
 export STAGE_DEADLINE_S=900
