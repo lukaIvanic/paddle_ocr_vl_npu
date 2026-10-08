@@ -39,6 +39,10 @@ def main():
  summary={'parent_sha256':cfg['dataset_sha256'],'excluded_sources':sorted(EXCLUDED),'retained_groups':len(allgroups),'scheduled_groups':exposure,'methods':{'query':'NFKC/casefold/whitespace exact + character3-5 TF-IDF cosine, top2 per eval query >=0.65, fitted jointly per task; diagnostic only','documents':'Normalized full-text exact + HTML/punctuation-normalized 5-unit shingle neighbors (English words, Chinese characters), 8 minimum CRC32 anchors, ignore anchors occurring in >200 training documents; verify Jaccard>=0.60 or shorter-text containment>=0.85 with >=20 shared shingles and >=60 characters','limitations':['Lexical audit is not exhaustive semantic/paraphrase/translation detection','Documents checked are union of actual top100 candidates, not full corpora','Anchor screening is approximate; query thresholds are review triggers, not exclusion rules']},'tasks':{}}
  for name in list(TASKS)+list(ENGLISH):
   started=time.monotonic();print('LOAD',name,flush=True)
+  existing=a.output/f'{name}.json'
+  if existing.exists():
+   prior=read(a.output/'summary.json');assert prior['parent_sha256']==cfg['dataset_sha256'] and prior['excluded_sources']==sorted(EXCLUDED)
+   summary['tasks'][name]=prior['tasks'][name];print('REUSE',name,flush=True);continue
   if name in TASKS:
    task=mteb.get_tasks(tasks=[name])[0];validate_task(task);task.load_data();split='dev';cp=Path(inv[name]['candidate_file']);sha=inv[name]['candidate_sha256']
   else:
