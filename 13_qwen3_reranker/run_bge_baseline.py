@@ -12,7 +12,8 @@ from distill_runtime import Runtime, read, digest, model_manifest, save, plans
 from margin_distillation import (agreement, benchmark_metrics, lr_at,
                                 validate_teacher_inputs)
 
-from bge_baseline import loss_and_score_gradient, PIN
+from bge_baseline import PIN
+from paired_bge_training import ORDERS, backward_window
 from bge_filtered_runtime import update_windows, filtered_reference_baseline, validation_objective, expanded_reference_baseline
 
 def main():
@@ -37,9 +38,14 @@ def main():
     p.add_argument('--student-order', choices=['query_first', 'contents_swapped', 'document_first'], default='query_first')
     p.add_argument('--query-first-reference', type=Path,
                    help='Completed query-first student result.json supplying the original baseline')
+    p.add_argument('--paired-orders', action='store_true',
+                   help='Train/evaluate both orders with equal loss weighting; requires document_first student order')
     p.add_argument('--reserved-eval-steps', type=int, nargs='*', default=[],
                    help='Additional evaluated updates receiving the reserved panel')
     args = p.parse_args()
+    if args.paired_orders:
+        assert args.mode != 'teacher' and args.student_order == 'document_first'
+    orders = ORDERS if args.paired_orders else (args.student_order,)
     schedule_steps = args.schedule_steps or args.steps
     assert schedule_steps >= args.steps
     eval_steps = sorted(set([0,args.steps]+[s for s in args.eval_steps if 0 <= s <= args.steps]))
@@ -56,13 +62,15 @@ def main():
     import torch_npu
     import transformers
     sections = ['train', 'validation', 'benchmark', 'reserved_benchmark']
+    canonical_records = {}
     if args.student_order != 'query_first':
-        for s in sections:
-            runtime.records(data[s], s)
+        canonical_records = {s: runtime.records(data[s], s) for s in sections}
     canonical_lengths = dict(runtime.lengths)
     records = {s: runtime.records(data[s], s, args.student_order) for s in sections}
     if args.student_order == 'query_first':
         canonical_lengths = dict(runtime.lengths)
+    records_by_order = ({'query_first': canonical_records, 'document_first': records}
+                        if args.paired_orders else {args.student_order: records})
     model = runtime.load(args.model)
     result = {'status': 'running', 'dataset_sha256': digest(args.dataset),
               'model_sha256': model_manifest(args.model), 'lengths': runtime.lengths,
@@ -74,6 +82,8 @@ def main():
               'config': {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
               'distribution': data['distribution'], 'split_checks': data['checks'],
               'evaluations': {}, 'updates': [], 'checkpoints': []}
+    if args.paired_orders:
+        result['lengths_by_order'] = {'query_first': canonical_lengths, 'document_first': dict(runtime.lengths)}
     save(args.output / 'result.json', result)
     scoring_config = {'order':'query_first','margin':'yes-minus-no raw logits','max_length':8192,'body_truncation':'right before fixed suffix','weights':'FP32','autocast':'BF16','attention':'fusion_attention','tokenizer_files':{f.name:digest(f) for f in args.model.glob('*token*') if f.is_file()},'prefix_suffix_source_sha256':digest(Path(__file__).parent/'transformers_rerank.py')}
     if args.mode == 'teacher':
@@ -140,12 +150,17 @@ def main():
         'padding': 'left, microbatch max rounded up to128', 'prompt_order': args.student_order,
         'score_gradient_replay': 'deterministic no-grad pass followed by microbatch backward',
         'weights': 'FP32', 'autocast': 'BF16', 'warmup_updates': 5, 'reference_commit': PIN['code_commit'], 'optimizer_updates_allowed': args.mode == 'train'}
+    result['recipe']['order_weights'] = {order: 1 / len(orders) for order in orders}
+    result['recipe']['order_reduction'] = 'separate eight-candidate group objectives; mean orderings, mean underlying queries'
     optimizer = torch_npu.optim.NpuFusedAdamW(model.parameters(), lr=args.learning_rate,
                         betas=(.9, .999), eps=1e-8, weight_decay=0)
     assert not optimizer.state
-    by_group = collections.defaultdict(list)
-    for r in records['train']:
-        by_group[r['group_id']].append(r)
+    by_order = {}
+    for order, order_records in records_by_order.items():
+        by_order[order] = collections.defaultdict(list)
+        for r in order_records['train']:
+            by_order[order][r['group_id']].append(r)
+    target_for_group = stream.get if stream else teacher['scores']['train'].__getitem__
     windows = update_windows(data['train'], args.steps, args.queries_per_update, args.batch_schedule)
     result['training_group_counts_per_update'] = [len(w) for w in windows]
     if args.batch_schedule == 'retained_original_slots':
@@ -187,9 +202,10 @@ def main():
         'baseline_endpoint_180': {'queries': 180, 'steps': [0, args.steps]},
         'membership_sha256': hashlib.sha256(json.dumps(
             {'frequent': sorted(frequent_keys), 'reserved': sorted(reserved_keys)}
-        ).encode()).hexdigest()}
+        ).encode()).hexdigest(),
+        'orders': list(orders)}
 
-    def evaluate(step, endpoint=False):
+    def evaluate_order(step, order, records, endpoint=False):
         t = time.monotonic()
         scores, seconds = runtime.score(model, records['benchmark'], 'benchmark')
         val, val_s = runtime.score(model, records['validation'], 'validation')
@@ -207,19 +223,35 @@ def main():
                 data['benchmark'] + data['reserved_benchmark'], scores | rs)
             item['seconds']['reserved_benchmark'] = rt
         item['seconds']['total'] = time.monotonic() - t
-        result['evaluations'][str(step)] = item
-        save(args.output / 'result.json', result)
-        print('EVALUATION', json.dumps({'step': step,
+        print('EVALUATION_ORDER' if args.paired_orders else 'EVALUATION', json.dumps({'step': step, 'order': order,
               'trajectory_108': item['trajectory_108']['suite_macro_ndcg10'],
               'baseline_endpoint_180': item.get('baseline_endpoint_180', {}).get('suite_macro_ndcg10'),
               'agreement': item['agreement'], 'validation_objective': item['validation_objective'], 'seconds': item['seconds']}), flush=True)
         if 'query_first_baseline' in result:
             original = result['query_first_baseline']['benchmark']['suite_macro_ndcg10']
-            print('QUERY_FIRST_COMPARISON', json.dumps({'step': step,
+            print('QUERY_FIRST_COMPARISON', json.dumps({'step': step, 'order': order,
                   'original': original,
                   'delta_ndcg_points': {lang: 100 * (value-original[lang]) for lang, value in
                                        item['benchmark']['suite_macro_ndcg10'].items()}}), flush=True)
-        assert seconds + val_s < 180, 'Frequent evaluation exceeds three-minute budget; resize fixture before training'
+        assert seconds + val_s < 180, 'Frequent evaluation exceeds three-minute budget; report timing before changing the fixture'
+        return item
+
+    def evaluate(step, endpoint=False):
+        started_eval = time.monotonic()
+        items = {order: evaluate_order(step, order, rows, endpoint)
+                 for order, rows in records_by_order.items()}
+        item = ({'by_order': items, 'seconds': {'total': time.monotonic() - started_eval}}
+                if args.paired_orders else items[args.student_order])
+        result['evaluations'][str(step)] = item
+        save(args.output / 'result.json', result)
+        if args.paired_orders:
+            print('PAIRED_EVALUATION', json.dumps({'step': step, 'by_order': {
+                order: {'trajectory_108': v['trajectory_108']['suite_macro_ndcg10'],
+                        'baseline_endpoint_180': v.get('baseline_endpoint_180', {}).get('suite_macro_ndcg10'),
+                        'validation_objective': v['validation_objective']}
+                for order, v in items.items()}, 'seconds': item['seconds']}), flush=True)
+            frequent_s = sum(v['seconds']['benchmark'] + v['seconds']['validation'] for v in items.values())
+            assert frequent_s < 180, 'Combined paired frequent evaluation exceeds three minutes; report before changing anything'
 
     try:
         if args.mode != 'profile' or args.profile_eval: evaluate(0)
@@ -240,31 +272,17 @@ def main():
             for param_group in optimizer.param_groups:
                 param_group['lr'] = learning_rate
             window = windows[step - 1]
-            total_loss = torch.zeros((), device=runtime.device)
-            micros = 0
-            for group in window:
-                rows = by_group[group['id']]
-                microplan = list(plans(rows, 4, 8192))
-                values = torch.empty(8, device=runtime.device)
-                with torch.no_grad():
-                    for micro in microplan:
-                        z = runtime.logits(model, micro)
-                        values[[r['candidate'] for r in micro]] = z
-                target_values = stream.get(group['id']) if stream else teacher['scores']['train'][group['id']]
-                target = torch.tensor(target_values, device=runtime.device)
-                loss, gradient = loss_and_score_gradient(values, target)
-                total_loss += loss.detach() / len(window)
-                for micro in microplan:
-                    z = runtime.logits(model, micro)
-                    indices = [r['candidate'] for r in micro]
-                    assert torch.equal(z.detach(), values[indices]), 'Replay must be deterministic'
-                    (z * (gradient[indices] / len(window))).sum().backward()
-                    micros += 1
+            total_loss, order_losses, order_micros = backward_window(
+                runtime, model, window, by_order, target_for_group)
+            micros = sum(order_micros.values())
             norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0, error_if_nonfinite=True)
             if args.mode != 'profile': optimizer.step()
             torch.npu.synchronize()
             row = {'step': step, 'optimizer_step_applied':args.mode == 'train', 'lr': learning_rate, 'loss': total_loss.item(), 'gradient_norm': norm.item(),
-                   'seconds': time.monotonic() - begin, 'queries': len(window), 'pairs': len(window)*8,
+                   'seconds': time.monotonic() - begin, 'queries': len(window), 'pairs': len(window)*8*len(orders),
+                   'unique_candidate_pairs': len(window)*8, 'order_count': len(orders),
+                   'loss_by_order': {o:v.item() for o,v in order_losses.items()},
+                   'backward_microbatches_by_order': order_micros,
                    'backward_microbatches': micros, 'peak_allocated_gib': torch.npu.max_memory_allocated()/1024**3}
             result['updates'].append(row)
             print('UPDATE', json.dumps(row), flush=True)
