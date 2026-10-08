@@ -1,9 +1,11 @@
-# 310P: live PP-DocLayoutV3 + custom MinerU, cap 3072, full 1651 + evaluation
+# 310P: live PP-DocLayoutV3 + MinerU cap3072, original versus approximate vision precision
 
 This is a new execution handoff for Luka's pull-only 310P work agent. It replaces
 older native-MinerU-layout or selective-replay instructions for this task.
-Luka authorizes the two-page smoke, then (if it passes) one full run and one
-evaluation. Do not stop to ask for another approval after a passing smoke.
+Luka authorizes original-precision revalidation followed by approximate vision
+precision: a two-page smoke, full 1,651-page run and evaluation for each mode.
+Do not ask for another approval after a passing gate. This updates the handoff
+that existed in `d4e7fdd`; that commit was not itself a receipt for 0.289 pg/s.
 
 ## Goal and scope
 
@@ -76,16 +78,21 @@ switch environments, packages, dtype, graph mode or source to force a pass.
 - The checkout is pull-only. Never edit tracked files, packages, `/vllm-workspace`,
   model configs/weights, datasets or evaluator source. No commits, pushes,
   branches, resets, stashes or discarding user changes.
-- Inspect `git status --short`; pull with `git pull --ff-only origin main`.
-  If changes conflict, preserve them and report the issue. Require
-  `git merge-base --is-ancestor 8528414f HEAD` and this new brief to exist.
+- Inspect `git status --short`; preserve tracked changes. With clean tracked
+  source, `git fetch origin codex/mineru-vision-length-sweep`, then
+  `git checkout --detach FETCH_HEAD`. Require
+  `git merge-base --is-ancestor a588764e HEAD`; record actual HEAD. Do not
+  switch a dirty checkout. The baseline production files must match d4e7fdd:
+  `git diff --exit-code d4e7fdd HEAD -- 11_mineru_2_5_pro_inference/run_page_pipeline.py 11_mineru_2_5_pro_inference/run_official_transformers_omnidocbench.py 11_mineru_2_5_pro_inference/vision_prefill_compile.py 11_mineru_2_5_pro_inference/local_modeling_mineru.py 11_mineru_2_5_pro_inference/fixed_batch_engine.py 11_mineru_2_5_pro_inference/streaming_decode.py 11_mineru_2_5_pro_inference/text_prefill_compile.py 11_mineru_2_5_pro_inference/paddle_layout_source.py`.
 - Resolve `WORK_SERVER_REPO` using `git rev-parse --show-toplevel`.
 - Reuse the successful custom MinerU 310P Python/CANN environment and its three
   existing cache paths. Resolve them from a successful run's command/summary:
   `local_torchair_cache_dir`, `local_vision_torchair_cache_dir`, and
   `local_text_torchair_cache_dir`. Resolve repo-relative paths against your
-  checkout. Do not clear caches, use a fresh cache root, or run concurrent cache
-  owners. A new output directory is required; that is not a new graph cache.
+  checkout. Do not clear caches or run concurrent cache owners. Original
+  precision reuses those cache roots. The explicitly authorized new precision
+  uses a separate vision subdirectory selected by the wrapper below; text and
+  decode keep their original caches. A new output directory is required.
 - Find the **converted PP-DocLayoutV3 safetensors folder** from the successful
   Paddle pipeline. It needs `inference.yml`, config/processor JSON and weights.
   A Paddle `.pdparams` directory is not a substitute. Verify hashes below.
@@ -180,7 +187,65 @@ Require the established TeX Live 2025/pdfTeX 1.40.28, ImageMagick 7.1.1-47,
 Ghostscript 9.55.0, CJK support and runtime `status: pass`. Do not substitute
 ambient TeX Live 2022 or ImageMagick 6. Record CANN/driver/device health too.
 
-## Commands: smoke, then full run
+## Original precision: smoke, then full run
+
+### Precision-pair method (new, explicitly requested)
+
+Keep the original page/crop/scheduler settings below. Original precision is the
+stock GE PromptFA innerPrecise=1 path, FP16 D80; approximate precision is the
+previously tested **310P** innerPrecise=4 path. It does not change weights,
+vision LayerNorm, layout precision, text prefill or decode. It is not BF16.
+The reference 310P3 full-32-block matrix reported +10.9% useful tok/s at
+640/672 useful tokens (bucket768), and +35.2% at 5476 tokens (bucket5632 layout
+image). The latter is valid historical evidence beyond this recognition cap.
+No corresponding retained 1k–3k approximate-crop measurements exist.
+
+The new experimental entrypoint is `run_page_pipeline_vision_precision.py`.
+It reuses the owned `_register_promptfa_inner_precise_converter(4)` from
+`09_persistent_page_engine/scripts/vision_matmul_lab.py`, scopes it to each
+vision graph's first call, and restores the exact original converter in a
+finally block. Text-prefill and decode retain stock converters. It records
+each cold GE PromptFA lowering's actual requested precision in an immutable
+JSONL audit. A warm-cache load may have no new GE-lowering rows; retain the
+earlier prewarm audit proving how that cache was built.
+
+This process-local interception is an experimental implementation choice,
+not a claim that upstream MinerU exposes this precision flag. The pipeline has
+one NPU owner thread; do not run concurrent compilation threads in this process.
+No tracked production implementation or default is changed. Wrapper metadata
+is a sidecar: run_summary alone does not establish the precision mode.
+
+New precision requires its own vision-cache namespace, derived from the wrapper
+and converter helper hashes. This is an explicit exception to the old brief's
+ban on new cache roots. **Warm all seven reachable buckets before the measured
+full runs**, using actual crops with the normal slow processor. Otherwise a
+new-precision full run could include cold compilation while the original reused
+compiled graphs. First-use cache loading still remains inside each page run,
+as in the original zero-warmup-page benchmark. Do not subtract it after the fact.
+
+After COMMON, CHAIN_ROOT, the cache lock and launch_stage below are defined,
+but **before the original smoke**, run this CPU selection and both real-crop
+cache prewarms sequentially. The prewarm flag exits without page inference;
+these are setup artifacts, never throughput results. Preserve shell variables
+in the same coordinator session. Poll each job to durable exit 0 before the next.
+
+The executable cache-warming sequence is placed after launch_stage below.
+Original precision warms first; approximate precision warms only after original
+full inference and evaluation complete.
+
+
+Selection deadline 900 seconds; each prewarm deadline 3600 seconds, with short
+polls. The launch_stage function below uses vision_diagnostic_runner.py to enforce
+these deadlines and capture before/after health/load/CPU/job state. It stops
+only the owned child process group on timeout. Preserve logs and report; do not
+retry or substitute kernels. Keep runner.log and receipt/*.json with run.log.
+After prewarming, require every reachable bucket's compile record and all
+seven prewarm_crop_complete entries in both audits. Original and approximate
+cache directories must differ; original text/decode paths must match.
+
+For 310P, **never** pass `--allow-unsupported-mode4-probe`. That flag exists
+solely for a deliberately labelled two-page 910B compatibility attempt; success
+there would not prove that a 910B kernel performed 310P approximate arithmetic.
 
 Use `run_page_pipeline.py`; do **not** use the 910B-specific shell launcher,
 which has 910B paths and `npu-setup` assumptions. Its production defaults are
@@ -216,10 +281,14 @@ launch_stage() {
   mkdir -p "$stage_root"
   printf '%q ' "$@" > "$stage_root/command.txt"
   printf '\n' >> "$stage_root/command.txt"
+  ln -s receipt/run.log "$stage_root/run.log"
   nohup setsid bash -c '
     root="$1"; shift
     set +e
-    /usr/bin/time -f %e -o "$root/process_wall_s.txt" "$@" > "$root/run.log" 2>&1
+    /usr/bin/time -f %e -o "$root/process_wall_s.txt" \
+      "$PYTHON_BIN" "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/vision_diagnostic_runner.py" \
+      --output-dir "$root/receipt" --timeout-s "${STAGE_DEADLINE_S:-7200}" -- "$@" \
+      > "$root/runner.log" 2>&1
     status=$?
     printf "%s\n" "$status" > "$root/exit_code.txt"
     exit "$status"
@@ -227,7 +296,38 @@ launch_stage() {
   printf '%s\n' "$!" > "$stage_root/pid.txt"
   printf 'LOG=%s/run.log\n' "$stage_root"
 }
+```
 
+```bash
+export STAGE_DEADLINE_S=900
+launch_stage "$CHAIN_ROOT/select_crops" "$PYTHON_BIN" \
+  "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/vision_length_sweep.py" select \
+  --model "$MODEL_DIR" --per-bucket 1 --output "$CHAIN_ROOT/selection.json"
+while test ! -f "$CHAIN_ROOT/select_crops/exit_code.txt"; do sleep 15; done
+test "$(cat "$CHAIN_ROOT/select_crops/exit_code.txt")" = 0 || exit 1
+# Inspect all seven actual token grids before proceeding.
+export STAGE_DEADLINE_S=3600
+prewarm_precision() {
+  local precision="$1"
+  export STAGE_DEADLINE_S=3600
+  launch_stage "$CHAIN_ROOT/prewarm_$precision" "$PYTHON_BIN" \
+    "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/run_page_pipeline_vision_precision.py" \
+    --vision-inner-precise "$precision" \
+    --precision-audit "$CHAIN_ROOT/prewarm_$precision/precision.jsonl" \
+    --prewarm-only "$CHAIN_ROOT/selection.json" "${COMMON[@]:2}" \
+    --input-images "$IMAGES_DIR/page-573c437e-c309-4483-a038-ef2f440b104a.png" \
+    --limit 1 --output-dir "$CHAIN_ROOT/prewarm_$precision/unused_page_output"
+  while test ! -f "$CHAIN_ROOT/prewarm_$precision/exit_code.txt"; do
+    tail -n 5 "$CHAIN_ROOT/prewarm_$precision/run.log"
+    sleep 15
+  done
+  test "$(cat "$CHAIN_ROOT/prewarm_$precision/exit_code.txt")" = 0 || exit 1
+}
+prewarm_precision 1
+export STAGE_DEADLINE_S=1800
+```
+
+```bash
 export RUN_ROOT="$CHAIN_ROOT/smoke2"
 launch_stage "$RUN_ROOT" "${COMMON[@]}" --limit 2 --output-dir "$RUN_ROOT/output" \
   --input-images "$IMAGES_DIR/page-573c437e-c309-4483-a038-ef2f440b104a.png" \
@@ -278,7 +378,7 @@ After a passing smoke, automatically launch the full run with the same device,
 environment and caches. Reprocessing those two pages in the full run is intended.
 
 ```bash
-export RUN_ROOT="$CHAIN_ROOT/full1651"
+export RUN_ROOT="$CHAIN_ROOT/full1651" STAGE_DEADLINE_S=7200
 launch_stage "$RUN_ROOT" "${COMMON[@]}" --dataset-json "$DATASET_JSON" \
   --offset 0 --limit 1651 --output-dir "$RUN_ROOT/output"
 ```
@@ -297,11 +397,11 @@ quiet log, final progress line or tool timeout is not a successful exit.
 Inspect durable progress, phase start/finish pairs and the child's exit file.
 Do not call a pause "slow compilation" without phase/process evidence.
 
-After the full inference gate passes, release the coordinator's cache lock
+After each full inference gate passes, release the coordinator's cache lock
 (`exec 9>&-`) and launch evaluation. Keep `RUN_ROOT` pointing at `full1651`:
 
 ```bash
-export LIMIT=1651
+export LIMIT=1651 STAGE_DEADLINE_S=14400
 launch_stage "$CHAIN_ROOT/eval_launcher" bash \
   "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/run_serving_accuracy.sh"
 ```
@@ -312,7 +412,82 @@ the frozen evaluator. Monitor both `eval_launcher/run.log` and
 `full1651/evaluation/run.log` through page matching, CDM, TEDS and exit. Require
 both `eval_launcher/exit_code.txt` and `full1651/evaluation/exit_code.txt` = 0.
 
-## Final reply to Luka — directly in plain text
+## Final reply to Luka — directly in plain text, with tables for both modes
+
+### Run the approximate-precision lane before the final reply
+
+Only after original full inference and evaluation pass, reacquire the same
+cache-owner lock. Retain original outputs. The prewarm audits above already
+establish all seven approximate vision caches; do not clear them.
+
+```bash
+exec 9>"$WORK_SERVER_REPO/.runtime_cache/11_mineru_2_5_pro_inference/serving_validation.lock"
+flock -n 9 || { echo 'Existing MinerU cache owner is busy'; exit 2; }
+prewarm_precision 4
+export STAGE_DEADLINE_S=1800
+export RUN_ROOT="$CHAIN_ROOT/approx_smoke2"
+launch_stage "$RUN_ROOT" "$PYTHON_BIN" \
+  "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/run_page_pipeline_vision_precision.py" \
+  --vision-inner-precise 4 --precision-audit "$RUN_ROOT/precision.jsonl" \
+  "${COMMON[@]:2}" --limit 2 --output-dir "$RUN_ROOT/output" \
+  --input-images "$IMAGES_DIR/page-573c437e-c309-4483-a038-ef2f440b104a.png" \
+                 "$IMAGES_DIR/page-9bcba6da-bdb0-4403-97cb-8874898ac8ab.png"
+```
+
+Wait for durable exit 0; apply the same smoke gate with EXPECTED_PAGES=2.
+Compare crop hashes and prompt token IDs with original smoke, and report output
+token/Markdown differences. Finite output drift is expected to be possible and
+is reported separately from throughput; no token-equality gate is imposed on
+approximate precision. Stop on nonfinite output or device errors.
+
+```bash
+export STAGE_DEADLINE_S=7200
+export RUN_ROOT="$CHAIN_ROOT/approx_full1651"
+launch_stage "$RUN_ROOT" "$PYTHON_BIN" \
+  "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/run_page_pipeline_vision_precision.py" \
+  --vision-inner-precise 4 --precision-audit "$RUN_ROOT/precision.jsonl" \
+  "${COMMON[@]:2}" --dataset-json "$DATASET_JSON" --offset 0 --limit 1651 \
+  --output-dir "$RUN_ROOT/output"
+```
+
+Wait for exit 0; apply the same full gate with EXPECTED_PAGES=1651. Compare
+layout_regions' crop_pixel_sha256 values, model/data hashes and recognition
+prompt IDs against original full output before claiming matched real inputs.
+Different scheduler packing may still change group counts; disclose it.
+Require all mode4 vision cache paths to lie under the precision-specific
+subdirectory, no eager-overflow crops, and the same text/decode caches as
+original. The wrapper's sidecar audit must reach completed with
+supported_310p=true and must show stock_converter_restored after each bucket's
+first call. Keep the prewarm audit to establish cached graphs' GE precision.
+
+```bash
+exec 9>&-
+export LIMIT=1651 STAGE_DEADLINE_S=14400
+launch_stage "$CHAIN_ROOT/approx_eval_launcher" bash \
+  "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/run_serving_accuracy.sh"
+```
+
+Monitor through evaluator exit as for original. Do not obscure a measured speed
+result because quality changed; report both. Do not treat execution success as
+proof of equal OCR quality or a production benefit. No 310P result was produced
+by the authoring session that prepared this update.
+
+After both full runs complete, generate and paste the paired E2E and actual
+length-distribution tables (the reporter requires complete live 1651-page runs):
+
+```bash
+"$PYTHON_BIN" "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/report_e2e_vision_precision.py" \
+  --original "$CHAIN_ROOT/full1651" --approximate "$CHAIN_ROOT/approx_full1651" \
+  --chip 310P --output "$CHAIN_ROOT/precision_pair.json"
+```
+
+This compares actual crop geometry/pixel hashes, post-helper image hashes,
+prompt IDs and model hashes, and reports changes in output tokens independently.
+It shows every bin's group length distribution match flag beside its speed gain.
+It does not suppress measured throughput when a flag is false; disclose why a
+nonmatched distribution weakens the length-specific comparison. The reported
+overall vision rate uses all actual input tokens divided by all vision event
+time; the E2E page rate includes the actual full pipeline. Report both.
 
 Read `output/run_summary_shard_00.json` and
 `evaluation/work/result/predictions_quick_match_metric_result.json`.
@@ -341,6 +516,13 @@ Report:
 - the four score anchors, their deltas against the 910B scores below, and the
   auxiliary scores; evaluation sample counts, timeouts/errors/fallbacks;
 - main vision/text-prefill/decode device times and layout host time separately;
+- real and physical vision tokens, padding count and percentage, crop count,
+  all per-bucket vision latency / useful tok/s / share of vision time from
+  `vision_timing`; sum(tokens)/sum(seconds), never mean(per-call tok/s);
+- original-versus-approximate E2E pg/s gain and per-bucket vision useful tok/s
+  gain. Label packed_768 separately. Show input/packing distribution changes
+  first, and do not claim a matched length comparison if the groups differ;
+- precision audit paths and confirmation that only vision requested mode4;
   length-cap counts by crop type, mentioning repetition if observed;
 - full inference/evaluation log and artifact roots.
 
