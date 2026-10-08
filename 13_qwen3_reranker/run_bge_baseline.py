@@ -25,6 +25,7 @@ def main():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--schedule', choices=['constant', 'warmup_linear'], default='constant')
     p.add_argument('--steps', type=int, default=50)
+    p.add_argument('--schedule-steps', type=int, help='LR horizon, independent of the intentional stopping update')
     p.add_argument('--eval-steps', type=int, nargs='+', default=[0,1,3,10,25,50])
     p.add_argument('--query-first-reference-dataset', type=Path)
     p.add_argument('--profile-updates', type=int, default=3)
@@ -39,6 +40,8 @@ def main():
     p.add_argument('--reserved-eval-steps', type=int, nargs='*', default=[],
                    help='Additional evaluated updates receiving the reserved panel')
     args = p.parse_args()
+    schedule_steps = args.schedule_steps or args.steps
+    assert schedule_steps >= args.steps
     eval_steps = sorted(set([0,args.steps]+[s for s in args.eval_steps if 0 <= s <= args.steps]))
     if args.mode == 'teacher':
         assert args.student_order == 'query_first', 'Teacher targets remain query first'
@@ -115,7 +118,7 @@ def main():
             assert reference['lengths'] == canonical_lengths
             assert reference['teacher_sha256'] == digest(args.teacher)
             result['query_first_baseline'] = reference['evaluations']['0']
-        elif data.get('derivation', {}).get('kind') == 'expanded_bge_length_filter':
+        elif data.get('derivation', {}).get('kind') in ('expanded_bge_length_filter', 'family_exclusion'):
             assert args.query_first_reference_dataset
             assert digest(args.query_first_reference_dataset) == reference['dataset_sha256'] == data['derivation']['reference_dataset_sha256']
             result['query_first_baseline'] = expanded_reference_baseline(data, read(args.query_first_reference_dataset), reference, canonical_lengths, teacher)
@@ -146,7 +149,7 @@ def main():
     windows = update_windows(data['train'], args.steps, args.queries_per_update, args.batch_schedule)
     result['training_group_counts_per_update'] = [len(w) for w in windows]
     if args.batch_schedule == 'retained_original_slots':
-        assert data['derivation']['kind'] in ('whole_group_length_filter','expanded_bge_length_filter')
+        assert data['derivation']['kind'] in ('whole_group_length_filter','expanded_bge_length_filter','family_exclusion')
     assert all(len(g['documents']) == 8 for g in data['train'])
 
     def checkpoint(step):
@@ -159,7 +162,7 @@ def main():
             return x
         state = {'model': cpu(model.state_dict()), 'optimizer': cpu(optimizer.state_dict()),
                  'scheduler': {'schedule': args.schedule, 'completed_updates': step,
-                               'steps': args.steps, 'peak_lr': args.learning_rate, 'warmup': 5},
+                               'steps': schedule_steps, 'stop_after': args.steps, 'peak_lr': args.learning_rate, 'warmup': 5},
                  'rng': torch.get_rng_state(), 'npu_rng': torch.npu.get_rng_state(),
                  'dataset_sha256': result['dataset_sha256'], 'teacher_sha256': result['teacher_sha256'],
                  'training_order_ids': [g['id'] for g in data['train']], 'config': result['config'],
@@ -233,7 +236,7 @@ def main():
             # This checkpoint has no dropout: eval mode retains full autograd.
             model.eval()
             optimizer.zero_grad(set_to_none=False)
-            learning_rate = lr_at(step, args.steps, args.learning_rate, args.schedule)
+            learning_rate = lr_at(step, schedule_steps, args.learning_rate, args.schedule)
             for param_group in optimizer.param_groups:
                 param_group['lr'] = learning_rate
             window = windows[step - 1]

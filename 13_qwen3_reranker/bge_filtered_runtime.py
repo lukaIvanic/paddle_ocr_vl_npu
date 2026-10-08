@@ -65,7 +65,7 @@ def validation_objective(scores, teacher):
 
 def expanded_reference_baseline(data, reference_data, reference, canonical_lengths, teacher):
     """Reuse released-weight scores only for provably identical evaluation inputs."""
-    assert data['derivation']['kind'] == 'expanded_bge_length_filter'
+    assert data['derivation']['kind'] in ('expanded_bge_length_filter', 'family_exclusion')
     for section in ('benchmark', 'reserved_benchmark'):
         assert data[section] == reference_data[section]
         assert canonical_lengths[section] == reference['lengths'][section]
