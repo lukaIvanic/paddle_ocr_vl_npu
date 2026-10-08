@@ -17,6 +17,7 @@ import signal
 import socket
 import statistics
 import subprocess
+import sys
 import time
 import urllib.request
 
@@ -65,11 +66,24 @@ def prepare(args, tok):
     if args.english_evaluation:
         from mteb.evaluation.evaluators.RetrievalEvaluator import corpus_to_str
         from run_english_suite import load_task
+        import importlib
         import random
         class Observer:
             state = {}
         for name in ['ArguAna', 'ClimateFEVERHardNegatives']:
-            task, meta = load_task(name, Observer())
+            # Offline datasets cannot infer the default qrels config when
+            # corpus/queries/default are all cached; select that same config explicitly.
+            loader_module = importlib.import_module('mteb.abstasks.AbsTaskRetrieval')
+            original_loader = loader_module.load_dataset
+            def explicit_default(repo, *a, **kw):
+                if not a and 'name' not in kw:
+                    kw['name'] = 'default'
+                return original_loader(repo, *a, **kw)
+            loader_module.load_dataset = explicit_default
+            try:
+                task, meta = load_task(name, Observer())
+            finally:
+                loader_module.load_dataset = original_loader
             path = args.english_evaluation / 'embedding' / name / 'mteb' / f'{name}_default_predictions.json'
             candidates = json.loads(path.read_text())
             qids = sorted(random.Random(20261008).sample(sorted(candidates), 8))
@@ -256,7 +270,13 @@ def main():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--devices', type=int, nargs='+', required=True)
     p.add_argument('--port', type=int, default=18360)
+    p.add_argument('--reference-only', action='store_true', help=argparse.SUPPRESS)
     args = p.parse_args()
+    if args.reference_only:
+        from transformers import AutoTokenizer
+        tok = AutoTokenizer.from_pretrained(args.model, local_files_only=True, padding_side='left')
+        reference(args, tok, json.loads((args.output/'workloads.json').read_text()))
+        return
     if args.output.exists() or len(set(args.devices)) != len(args.devices):
         p.error('Require a fresh output and distinct devices')
     args.output.mkdir(parents=True)
@@ -274,7 +294,12 @@ def main():
         save(args.output/'manifest.json', config)
         save(args.output/'initial_npu_snapshot.json', assert_free(args.devices))
         workloads = prepare(args, tok)
-        refs = reference(args, tok, workloads)
+        # End the HF worker completely before allocating serving replicas.
+        # empty_cache() alone does not release the NPU runtime context.
+        subprocess.run([sys.executable, __file__, '--reference-only', '--model', args.model,
+            '--prepared', str(args.prepared), '--output', str(args.output),
+            '--devices', str(args.devices[0])], check=True)
+        refs = json.loads((args.output/'hf_reference.json').read_text())
         def measure(endpoints, client, tag):
             for endpoint in endpoints:
                 trial(args, tok, workloads, [endpoint], 16, 1, tag+'_parity', 0, refs)
