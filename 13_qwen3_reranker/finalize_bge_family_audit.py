@@ -6,6 +6,7 @@ from prepare_bge_family_filter import EXCLUDED
 
 def main():
  p=argparse.ArgumentParser();p.add_argument('--root',type=Path,required=True);a=p.parse_args();r=a.root
+ (r/'audit_review.json').unlink(missing_ok=True)
  prep=read(r/'prepared/preparation.json');data=read(r/'prepared/dataset.json.gz');pool=read(r/'prepared/retained_pool.json.gz');ex=read(r/'approved_exclusions.json');audit=read(r/'audit/summary.json')
  assert ex['status']=='approved_by_user'
  assert audit['status']=='completed' and len(audit['tasks'])==18
