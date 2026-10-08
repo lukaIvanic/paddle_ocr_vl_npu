@@ -70,13 +70,7 @@ def prepare(args, tok):
             state = {}
         for name in ['ArguAna', 'ClimateFEVERHardNegatives']:
             task, meta = load_task(name, Observer())
-            path = args.english_evaluation / 'embedding' / name / 'predictions.json'
-            if not path.exists():
-                # Existing English runner saves one top100 file in this folder.
-                files = list((args.english_evaluation / 'embedding' / name).glob('*predictions*.json'))
-                if len(files) != 1:
-                    raise ValueError(f'Cannot identify saved candidates for {name}: {files}')
-                path = files[0]
+            path = args.english_evaluation / 'embedding' / name / 'mteb' / f'{name}_default_predictions.json'
             candidates = json.loads(path.read_text())
             qids = sorted(random.Random(20261008).sample(sorted(candidates), 8))
             pairs = []
