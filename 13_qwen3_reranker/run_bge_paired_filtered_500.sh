@@ -4,6 +4,11 @@ mode=${1:?Specify profile or train}
 [[ "$mode" == profile || "$mode" == train ]] || exit 2
 cd /workspace/repos/qwen-paired-orders
 source npu-setup
+if [[ -n ${QWEN_PAIRED_DEVICE:-} ]]; then
+  [[ "$QWEN_PAIRED_DEVICE" =~ ^[0-7]$ ]] || exit 2
+  export ASCEND_RT_VISIBLE_DEVICES="$QWEN_PAIRED_DEVICE"
+  echo "Explicit physical NPU override: $ASCEND_RT_VISIBLE_DEVICES (idle check follows)"
+fi
 set -u
 root=/workspace/results/qwen_bge_paired_filtered_500_20261008
 npu-smi info > "$root/${mode}_npu_before.txt"
