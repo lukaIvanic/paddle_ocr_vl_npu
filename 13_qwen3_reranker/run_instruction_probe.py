@@ -7,13 +7,14 @@ import argparse
 from collections import Counter
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import platform
 import subprocess
 import time
 
-from distill_runtime import Runtime, read, digest, model_manifest, save
+from distill_runtime import Runtime, read, digest, model_manifest, save, plans
 from margin_distillation import benchmark_metrics
 from training_smoke_data import body
 
@@ -25,6 +26,21 @@ def instruction_groups(groups, variant):
         raise ValueError(variant)
     return [{**g, 'instruction': DEFAULT_INSTRUCTION if variant == 'default' else g['instruction']}
             for g in groups]
+
+
+def matched_instruction_batches(default, custom, batch_size=16, token_budget=16384):
+    """Both variants get identical pairs, batch boundaries and padded shapes."""
+    key = lambda r: (r['group_id'], r['candidate'])
+    a, b = {key(r):r for r in default}, {key(r):r for r in custom}
+    assert len(a)==len(b)==len(default)==len(custom) and a.keys()==b.keys()
+    joint = [{'ids': range(max(len(r['ids']),len(b[key(r)]['ids']))),
+              'index':r['index'], 'key':key(r)} for r in default]
+    output = {'default':[], 'task_specific':[]}
+    for micro in plans(joint,batch_size,token_budget):
+        length = math.ceil(max(len(r['ids']) for r in micro)/128)*128
+        for variant,lookup in [('default',a),('task_specific',b)]:
+            output[variant].append([{**lookup[r['key']], 'paired_padding_length':length} for r in micro])
+    return output
 
 
 def ranking(g, scores):
@@ -131,6 +147,12 @@ def main():
                     section=f'{key}_{panel}'
                     records[key][panel]=runtime.records(instruction_groups(gs,variant),section,order)
                     assert runtime.lengths[section]['truncated']==0, f'Unexpected truncation: {section}'
+        paired_plans={}
+        for name in ('original','checkpoint500'):
+            for panel in ('benchmark','reserved_benchmark'):
+                paired_plans[(name,panel)]=matched_instruction_batches(
+                    records[f'{name}_default'][panel], records[f'{name}_task_specific'][panel])
+        result['batching']='paired instruction variants: identical candidate order, microbatch membership and padded sequence length'
         result['lengths']=runtime.lengths
         result['status']='scoring'
         save(args.output/'result.json',result)
@@ -152,7 +174,7 @@ def main():
                 key=f'{name}_{variant}'
                 scores={}; seconds=0
                 for panel,rs in records[key].items():
-                    values,elapsed=runtime.score(model,rs,f'{key}_{panel}')
+                    values,elapsed=runtime.score(model,rs,f'{key}_{panel}',batch_plan=paired_plans[(name,panel)][variant])
                     scores.update(values); seconds+=elapsed
                 assert set(scores)=={g['id'] for g in groups}
                 reference_check=None
@@ -160,7 +182,7 @@ def main():
                     expected=source['query_first_baseline']['benchmark_scores'] if name=='original' else source['evaluations']['500']['benchmark_scores']
                     diffs=[abs(a-b) for g in frequent for a,b in zip(scores[g['id']],expected[g['id']])]
                     reference_check={'same_runtime_saved_108_max_abs_margin_difference':max(diffs),'exact_scores':max(diffs)==0}
-                    assert max(diffs)==0, 'Same-input checkpoint replay differs from saved scores; inspect before interpretation'
+                    reference_check['note']='First probe verified exact replay with historical batching; matched instruction batches intentionally use new shared shapes.'
                 metrics=benchmark_metrics(groups,scores)
                 condition={'input_order':order,'instruction_variant':variant,'seconds':seconds,
                            'metrics':metrics,'saved_evaluation_replay':reference_check}
@@ -169,6 +191,12 @@ def main():
                 all_scores[key]=scores
                 save(args.output/'result.json',result)
                 print('CONDITION_FINISHED',json.dumps({'condition':key,'seconds':seconds,'suite':metrics['suite_macro_ndcg10'],'replay':reference_check}),flush=True)
+        result['identical_instruction_control']={}
+        control=[g for g in groups if g['instruction']==DEFAULT_INSTRUCTION]
+        for name in ('original','checkpoint500'):
+            largest=max(abs(a-b) for g in control for a,b in zip(all_scores[f'{name}_default'][g['id']],all_scores[f'{name}_task_specific'][g['id']]))
+            result['identical_instruction_control'][name]={'queries':len(control),'max_abs_margin_difference':largest}
+            assert largest==0, 'Identical instruction control failed despite matched shapes'
         result['comparisons']={}
         for name in ('original','checkpoint500'):
             summary,details=differences(groups,all_scores[f'{name}_default'],all_scores[f'{name}_task_specific'],name)

@@ -85,10 +85,12 @@ class Runtime:
         assert not any(isinstance(m, self.torch.nn.Dropout) and m.p for m in model.modules())
         return model
 
-    def logits(self, model, rows, hf=False):
+    def logits(self, model, rows, hf=False, padded_length=None):
         from local_modeling_qwen3_reranker import build_left_padded_causal_bool_mask, build_left_padded_causal_mask
         import torch.nn.functional as F
-        length = math.ceil(max(len(r['ids']) for r in rows) / 128) * 128
+        minimum = math.ceil(max(len(r['ids']) for r in rows) / 128) * 128
+        length = minimum if padded_length is None else padded_length
+        assert length >= minimum and length % 128 == 0
         x = self.tokenizer.pad({'input_ids': [r['ids'] for r in rows]}, padding='max_length',
                                max_length=length, return_tensors='pt')
         x = {k: v.to(self.device) for k, v in x.items()}
@@ -104,14 +106,15 @@ class Runtime:
                 z = F.linear(h[:, -1], model.lm_head.weight[self.answers])
         return z.float()[:, 1] - z.float()[:, 0]
 
-    def score(self, model, rows, section, batch_size=16, token_budget=16384):
+    def score(self, model, rows, section, batch_size=16, token_budget=16384, batch_plan=None):
         model.eval()
         values = collections.defaultdict(dict)
         started = time.monotonic()
         done = 0
         with self.torch.no_grad():
-            for i, micro in enumerate(plans(rows, batch_size, token_budget), 1):
-                scores = self.logits(model, micro).cpu().tolist()
+            schedule = plans(rows, batch_size, token_budget) if batch_plan is None else batch_plan
+            for i, micro in enumerate(schedule, 1):
+                scores = self.logits(model, micro, padded_length=micro[0].get('paired_padding_length')).cpu().tolist()
                 assert all(math.isfinite(s) for s in scores)
                 for r, s in zip(micro, scores):
                     values[r['group_id']][r['candidate']] = s
