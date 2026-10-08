@@ -74,6 +74,7 @@ def main():
   targets[g['id']]=values
  teacher.pop('stream');teacher['scores']['train']=targets;teacher['dataset_sha256']=digest(a.output/'prepared/dataset.json.gz');teacher['lengths']=token_audit['query_first']
  teacher['cache_derivation']={'parent_teacher_sha256':oldhash,'chunk_sha256':chunk_hashes,'exact_group_signatures_verified':len(targets),'candidate_contents_unchanged':True,'all_parent_tokens_audited':True}
+ (a.output/'teacher').mkdir(parents=True,exist_ok=True)
  save(a.output/'teacher/teacher.json',teacher)
  summary={'dataset_sha256':teacher['dataset_sha256'],'teacher_sha256':digest(a.output/'teacher/teacher.json'),'parent_sha256':cfg['dataset_sha256'],'excluded_sources':sorted(EXCLUDED),'original_groups':len(parent['train']),'retained_available':len(available),'scheduled_groups':len(data['train']),'unique_queries':len({g['query_hash'] for g in data['train']}),'group_counts':counts,'source_counts':data['distribution']['train'],'lengths':token_audit,'teacher_cache_verification':teacher['cache_derivation']}
  save(a.output/'prepared/preparation.json',summary)
