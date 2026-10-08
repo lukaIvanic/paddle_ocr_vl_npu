@@ -32,6 +32,7 @@ for execution in "${executions[@]}"; do
     run_logged "$execution" "$PYTHON_BIN" -u 21_colqwen3_4b_inference/profile_portable_stages.py \
       --model "$COLQWEN_MODEL" --dataset-root "$HR_DATASET" --cache-root "$COLQWEN_CACHE" \
       --output-dir "$PROFILE_ROOT/$execution" --execution "$execution" \
+      --text-weight-format "${TEXT_WEIGHT_FORMAT:-native}" \
       --expected-chip "${EXPECTED_CHIP:-310P}" --page-index "${PROFILE_PAGE_INDEX:-5}" \
       --warmups "${PROFILE_WARMUPS:-5}" --repeats "${PROFILE_REPEATS:-20}" \
       --profile-steps "${PROFILE_STEPS:-3}" --metrics "${metrics[@]}" --scopes "${scopes[@]}"

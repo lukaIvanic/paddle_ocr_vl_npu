@@ -143,6 +143,9 @@ def analyze_run(root):
                scopes={},scope_definitions=r['scope_definitions'],source=r['source'],
                same_implementation_diagnostic=r['compiled_vs_eager'],model_map=r['model_map'],
                input_contract=r['input_contract'])
+    out['text_options']=r.get('text_options',r.get('options',{}))
+    out['weight_formats']=r.get('weight_formats')
+    out['nz_vs_native']=r.get('nz_vs_native')
     for name,scope in r['scopes'].items():
         before,after = scope['before'],scope['after']
         clean = distribution(before['wall_samples_ms']+after['wall_samples_ms'])

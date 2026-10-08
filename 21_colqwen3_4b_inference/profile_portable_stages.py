@@ -8,7 +8,7 @@ eager/compiled text measurements use the same production preparation route.
 """
 import argparse
 from contextlib import nullcontext
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import hashlib
 import inspect
 import io
@@ -28,7 +28,7 @@ import torch
 from bench_prepared_prefill import compare, cpu
 from forward_profile_analysis import distribution
 from local_modeling_colqwen3 import LocalColQwen3
-from optimized_prefill import Options, OptimizedVisionStage, OptimizedTextStage, configure_compiler, text_args_for_promptfa
+from optimized_prefill import Options, OptimizedVisionStage, OptimizedTextStage, configure_compiler, text_args_for_promptfa, weight_formats
 from patch_embedding import LinearPatchEmbed, prepare_linear_patch_inputs
 from prepared_prefill import StageCompiler, prepare_text
 from profile_warm_forward import Forward, measure
@@ -175,6 +175,8 @@ def run(args,r,progress):
     batch={k:v.to('npu:0') for k,v in inputs.items()}
     options=Options()
     r['options']=asdict(options)
+    text_options=replace(options,weight_format=args.text_weight_format)
+    r['text_options']=asdict(text_options)
     patch=LinearPatchEmbed(model.visual.patch_embed).eval()
     vision,text=OptimizedVisionStage(model,options).eval(),OptimizedTextStage(model,options).eval()
     r['model_map']=projection_map(vision,text,model)
@@ -187,6 +189,24 @@ def run(args,r,progress):
     vc=compiler.get('optimized_vision',vision,va)
     visual=vc(*va)
     ta=text_args_for_promptfa(prepare_text(model,prepared,visual))
+    if args.text_weight_format=='fractal_nz':
+        progress.set('native_text_weight_reference')
+        native_text=cpu(text(*ta))
+        native_embeddings=cpu(Forward(model,batch,patch,vc,text)())
+        # Reuse the established Linear constructor: fuse first, then cast only
+        # text projection weights. Vision and all non-projection weights stay native.
+        del text
+        progress.set('prepare_text_nz_weights')
+        start=time.perf_counter()
+        text=OptimizedTextStage(model,text_options).eval()
+        torch.npu.synchronize()
+        r['text_weight_setup_s']=time.perf_counter()-start
+    r['weight_formats']=dict(vision=weight_formats(vision),text=weight_formats(text))
+    if args.text_weight_format=='fractal_nz' and set(r['weight_formats']['text'])!={'29'}:
+        raise RuntimeError('Not all text projection weights are FRACTAL_NZ')
+    emit('weight_formats',**r['weight_formats'])
+    # Vision keeps its original cache identity; only text selects a new graph.
+    configure_compiler(compiler,text_options)
     progress.set('load_or_compile_text')
     tc=compiler.get('optimized_text',text,ta)
     tc(*ta)
@@ -200,6 +220,15 @@ def run(args,r,progress):
     compiled=Forward(model,batch,patch,vc,tc)
     progress.set('same_implementation_diagnostic')
     r['compiled_vs_eager']=compare(compiled(),eager())
+    if args.text_weight_format=='fractal_nz':
+        r['nz_vs_native']=dict(
+            text_eager=compare(text(*ta),native_text),
+            text_compiled=compare(tc(*ta),native_text),
+            embeddings_compiled_vision_eager_text=compare(
+                Forward(model,batch,patch,vc,text)(),native_embeddings),
+            embeddings_compiled=compare(compiled(),native_embeddings),
+            reference='Native text weights, identical compiled vision and frozen text inputs; diagnostics, not a retrieval-quality gate')
+        emit('nz_vs_native',**r['nz_vs_native'])
     # Accuracy has already been accepted through full HR. Record embedding
     # differences, but do not impose an uncalibrated cross-lane quality gate.
     calls=dict(full=compiled if args.execution=='torchair' else eager,
@@ -239,6 +268,8 @@ def main():
     p.add_argument('--cache-root',type=Path,required=True)
     p.add_argument('--output-dir',type=Path,required=True)
     p.add_argument('--execution',choices=('torchair','raw_eager'),default='torchair')
+    p.add_argument('--text-weight-format',choices=('native','fractal_nz'),default='native',
+                   help='One-time text projection weight conversion before compile; vision remains native')
     p.add_argument('--expected-chip',choices=('310P','910B'),default='310P')
     p.add_argument('--page-index',type=int,default=5)
     p.add_argument('--scopes',nargs='+',choices=('full','vision','text'),default=['full','vision','text'])
