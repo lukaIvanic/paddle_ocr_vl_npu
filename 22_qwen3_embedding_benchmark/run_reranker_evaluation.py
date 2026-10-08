@@ -209,12 +209,20 @@ def parity(args, tok, endpoints, observer, tokenizer_fn=None):
                 raise ValueError('HF parity diagnostic failed; refusing full evaluation')
 
 
-def evaluate(args, tok, endpoints, observer, name):
+def select_query_shard(baseline, qrels, index, count):
+    if set(baseline) != set(qrels) or not 0 <= index < count:
+        raise ValueError('Invalid full candidate coverage or query shard')
+    ids = sorted(qrels)[index::count]
+    return {q: baseline[q] for q in ids}, {q: qrels[q] for q in ids}
+
+
+def evaluate(args, tok, endpoints, observer, name, tokenizer_fn=None, query_shard=None):
     import mteb
     import numpy as np
     from mteb.evaluation.evaluators.RetrievalEvaluator import corpus_to_str
     observer.state = {'section': 'loading_task', 'task': name}
     task_start = time.monotonic()
+    task_started_at = time.time()
     task = mteb.get_tasks(tasks=[name])[0]
     validate_task(task)
     task.load_data()
@@ -223,12 +231,20 @@ def evaluate(args, tok, endpoints, observer, name):
     qrels = task.relevant_docs['dev']
     if set(baseline) != set(qrels):
         raise ValueError('Saved candidates do not cover the exact full dev query set')
+    full_queries = len(qrels)
+    if query_shard is not None:
+        baseline, qrels = select_query_shard(baseline, qrels, *query_shard)
     folder = args.output / name
     folder.mkdir()
-    save(folder / 'manifest.json', {'candidate_file': str(candidate_path), 'sha256': digest(candidate_path),
+    manifest = {'candidate_file': str(candidate_path), 'sha256': digest(candidate_path),
          'dataset_revision': TASKS[name][0], 'qrels_revision': TASKS[name][1],
          'instruction': TASKS[name][2], 'queries': len(qrels), 'pairs': len(qrels)*100,
-         'ignore_identical_ids': task.ignore_identical_ids})
+         'ignore_identical_ids': task.ignore_identical_ids}
+    if query_shard is not None:
+        manifest.update(query_shard=list(query_shard), full_queries=full_queries,
+                        query_ids_sha256=hashlib.sha256(json.dumps(sorted(qrels)).encode()).hexdigest(),
+                        input_order=args.input_order)
+    save(folder / 'manifest.json', manifest)
     predictions, records = {}, []
     resume_folder = args.resume_partial_run / name if args.resume_partial_run else None
     historical_wall = None
@@ -267,6 +283,7 @@ def evaluate(args, tok, endpoints, observer, name):
     finished_queries = sum(len(v)==100 for v in predictions.values())
     initial_completed, initial_tokens = completed, tokens
     scoring_start = time.monotonic()
+    scoring_started_at = time.time()
     state = {'section': 'scoring', 'task': name, 'total_pairs': len(qrels)*100,
              'completed_pairs': 0, 'completed_queries': 0, 'npu_count': len(endpoints)}
     observer.state = state
@@ -276,7 +293,7 @@ def evaluate(args, tok, endpoints, observer, name):
         if rows is None:
             return None
         t0 = time.monotonic()
-        ids, count = tokenize_pairs(tok, name, rows)
+        ids, count = (tokenizer_fn or tokenize_pairs)(tok, name, rows)
         tokenize_s = time.monotonic()-t0
         lengths = list(map(len, ids))
         def one():
@@ -316,6 +333,7 @@ def evaluate(args, tok, endpoints, observer, name):
                 truncated += record['truncated']
                 elapsed = time.monotonic()-scoring_start
                 state.update(completed_pairs=completed, completed_queries=finished_queries,
+                             tokens=tokens, truncated_pairs=truncated,
                              elapsed_s=elapsed, restored_pairs=initial_completed,
                              total_scoring_elapsed_s=(historical_wall or 0)+elapsed if not initial_completed or historical_wall is not None else None,
                              input_tok_s=(tokens-initial_tokens)/elapsed,
@@ -325,6 +343,7 @@ def evaluate(args, tok, endpoints, observer, name):
                 if replacement is not None:
                     pending[replacement] = endpoint
     scoring_wall = time.monotonic()-scoring_start
+    scoring_ended_at = time.time()
     observer.state = {'section': 'metrics_and_save', 'task': name}
     metrics, per_query = metric_summary(predictions, baseline, qrels, task.ignore_identical_ids)
     save(folder / 'predictions.json', predictions)
@@ -334,6 +353,8 @@ def evaluate(args, tok, endpoints, observer, name):
     row = {'task': name, 'queries': len(qrels), 'pairs': completed, 'tokens': tokens,
         'truncated_pairs': truncated, 'max_input_length': max(lengths),
         'scoring_wall_s': combined_wall, 'task_wall_s': time.monotonic()-task_start,
+        'task_started_at': task_started_at, 'scoring_started_at': scoring_started_at,
+        'scoring_ended_at': scoring_ended_at,
         'input_tok_s': tokens/combined_wall if combined_wall else None,
         'pairs_s': completed/combined_wall if combined_wall else None,
         'query_s': len(qrels)/combined_wall if combined_wall else None,

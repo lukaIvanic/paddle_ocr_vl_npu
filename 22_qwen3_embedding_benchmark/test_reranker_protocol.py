@@ -11,6 +11,16 @@ class CharacterTokenizer:
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_document_first_preserves_field_meanings(self):
+        ids, count = tokenize_pairs(CharacterTokenizer(), 'T2Retrieval',
+            [{'query':'query text', 'document':'document text'}], 'document_first')
+        text = ''.join(map(chr,ids[0]))
+        self.assertEqual(text, PREFIX + body('T2Retrieval','query text','document text','document_first') + SUFFIX)
+        self.assertIn('\n<Document>: document text\n<Query>: query text',text)
+        self.assertEqual(count,0)
+        with self.assertRaises(ValueError):
+            body('T2Retrieval','query','document','unknown')
+
     def test_fields_and_suffix(self):
         pairs = [{'query': '商品查询', 'document': '商品描述'}]
         ids, count = tokenize_pairs(CharacterTokenizer(), 'EcomRetrieval', pairs)

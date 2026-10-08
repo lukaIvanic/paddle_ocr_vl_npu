@@ -3,10 +3,24 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
-from run_reranker_evaluation import candidate_rows, batches, command, metric_summary, suite_summary, restore_journal, unscored_rows
+from run_reranker_evaluation import candidate_rows, batches, command, metric_summary, suite_summary, restore_journal, unscored_rows, select_query_shard
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_query_shards_are_disjoint_complete_and_keep_candidate_groups(self):
+        baseline={f'q{i}':{str(j):float(j) for j in range(100)} for i in range(11)}
+        qrels={q:{'0':1} for q in baseline}
+        seen=set()
+        sizes=[]
+        for index in range(4):
+            selected,rels=select_query_shard(baseline,qrels,index,4)
+            self.assertFalse(seen.intersection(selected))
+            self.assertEqual(set(selected),set(rels))
+            self.assertTrue(all(selected[q] is baseline[q] for q in selected))
+            seen.update(selected);sizes.append(len(selected))
+        self.assertEqual(seen,set(baseline))
+        self.assertEqual(sizes,[3,3,3,2])
+
     def test_resume_preserves_scores_and_partial_queries(self):
         rows = [{'qid':'q1','did':'d1'}, {'qid':'q1','did':'d2'}, {'qid':'q2','did':'d1'}]
         entry = {'pairs':2, 'tokens':30, 'lengths':[10,20], 'truncated':0,
