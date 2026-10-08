@@ -1,0 +1,760 @@
+{
+  "validation_date": "2026-10-08",
+  "device": "Ascend910B2",
+  "physical_npu": "0",
+  "capture_commit": "db770025a9aaf5ae3c98e6e255795d16a5e17d43",
+  "scope": "Tooling validation, not 310P performance or new retrieval-quality evaluation",
+  "raw_run_root": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/portable_profile_db770025",
+  "lanes": {
+    "torchair": {
+      "command": [
+        "21_colqwen3_4b_inference/profile_portable_stages.py",
+        "--model",
+        "/workspace/models/Ops-Colqwen3-4B",
+        "--dataset-root",
+        "/workspace/datasets/ViDoRe_v3_hr_mteb_reference",
+        "--cache-root",
+        "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/indexing_compat_b40b7efa/cache",
+        "--output-dir",
+        "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/portable_profile_db770025/torchair",
+        "--execution",
+        "torchair",
+        "--expected-chip",
+        "910B",
+        "--page-index",
+        "5",
+        "--warmups",
+        "5",
+        "--repeats",
+        "20",
+        "--profile-steps",
+        "3",
+        "--metrics",
+        "pipe",
+        "memory",
+        "--scopes",
+        "full",
+        "vision",
+        "text"
+      ],
+      "source": {
+        "profile_portable_stages.py": "7e9dbe14f9953d1c18f3a9ca205b9a6258201f5eab707f809170fd32c8f4e7f8",
+        "local_modeling_colqwen3.py": "d1879070f9226f5483761f762391eaf66707b260fc9221151cd131c810edac49",
+        "optimized_prefill.py": "5f2f98f5bea2462731735260bc6d369363fed38159fb349626eb5e409193d353",
+        "prepared_prefill.py": "72895d6f1c5cb741627a2c6743e4af374835613e1479bbefdea4a05d6ad4970d",
+        "patch_embedding.py": "19c466a2eb8b0601c62531601981de7f68cd8def36db407f96cb4eeee0435f6d"
+      },
+      "status": "completed",
+      "input_contract": {
+        "batch_shapes": {
+          "input_ids": [
+            1,
+            1274
+          ],
+          "attention_mask": [
+            1,
+            1274
+          ],
+          "pixel_values": [
+            1,
+            5040,
+            1536
+          ],
+          "image_grid_thw": [
+            1,
+            3
+          ]
+        },
+        "vision_shapes": [
+          [
+            5040,
+            1024
+          ],
+          [
+            5040,
+            64
+          ],
+          [
+            5040,
+            64
+          ]
+        ],
+        "text_shapes": [
+          [
+            1,
+            1274,
+            2560
+          ],
+          [
+            1,
+            1274,
+            128
+          ],
+          [
+            1,
+            1274,
+            128
+          ],
+          [
+            1,
+            1,
+            1274,
+            1274
+          ],
+          [
+            1,
+            1274,
+            2560
+          ],
+          [
+            1,
+            1274,
+            2560
+          ],
+          [
+            1,
+            1274,
+            2560
+          ]
+        ],
+        "vision_sha256": "2b90f35111f591fbe154b0c8880a22dbe5c245811e43fafaa7ea67e52f4848d4",
+        "text_sha256": "650104b9b9ff93f855cb2743902b59924e7c75c777ffa039bc1c5f515f0e9696",
+        "frozen_text_source": "compiled vision; production text preparation; no prealignment substitution"
+      },
+      "scopes": {
+        "full": {
+          "clean_wall_ms": {
+            "count": 40,
+            "mean": 141.09574150061235,
+            "p50": 140.64332000270952,
+            "p90": 142.3585150099825,
+            "p99": 144.95550551160704,
+            "min": 140.26591999572702,
+            "max": 145.40266001131386
+          },
+          "profiles": {
+            "pipe": {
+              "kernel_rows": 7448,
+              "attention_calls_per_forward": 60.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 127.12008700000001,
+              "counter_columns_with_values": [
+                "aic_fixpipe_ratio",
+                "aic_fixpipe_time(us)",
+                "aic_icache_miss_rate",
+                "aic_mac_ratio",
+                "aic_mac_time(us)",
+                "aic_mte1_ratio",
+                "aic_mte1_time(us)",
+                "aic_mte2_ratio",
+                "aic_mte2_time(us)",
+                "aic_scalar_ratio",
+                "aic_scalar_time(us)",
+                "aic_total_cycles",
+                "aiv_icache_miss_rate",
+                "aiv_mte2_ratio",
+                "aiv_mte2_time(us)",
+                "aiv_mte3_ratio",
+                "aiv_mte3_time(us)",
+                "aiv_scalar_ratio",
+                "aiv_scalar_time(us)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_vec_ratio",
+                "aiv_vec_time(us)",
+                "cube_utilization(%)"
+              ],
+              "raw_csv_sha256": "937bd3a9678a0dc3f62dfe364def8cc010d881cbaf7ecb34a4e6c7bb635b879c"
+            },
+            "memory": {
+              "kernel_rows": 7448,
+              "attention_calls_per_forward": 60.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 127.12658833333332,
+              "counter_columns_with_values": [
+                "aic_l1_read_bw(GB/s)",
+                "aic_l1_write_bw(GB/s)",
+                "aic_l2_read_bw(GB/s)",
+                "aic_l2_write_bw(GB/s)",
+                "aic_main_mem_read_bw(GB/s)",
+                "aic_main_mem_write_bw(GB/s)",
+                "aic_total_cycles",
+                "aiv_l2_read_bw(GB/s)",
+                "aiv_l2_write_bw(GB/s)",
+                "aiv_main_mem_read_bw(GB/s)",
+                "aiv_main_mem_write_bw(GB/s)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_ub_read_bw(GB/s)",
+                "aiv_ub_write_bw(GB/s)"
+              ],
+              "raw_csv_sha256": "5291bb00ca3e92e5e8d5cedef899687b5b94ba862c8d5705d710c37ccbeb81a2"
+            }
+          }
+        },
+        "vision": {
+          "clean_wall_ms": {
+            "count": 40,
+            "mean": 54.79869650080218,
+            "p50": 54.77996000263374,
+            "p90": 54.905360998236574,
+            "p99": 55.41522488754708,
+            "min": 54.65540001750924,
+            "max": 55.68123998818919
+          },
+          "profiles": {
+            "pipe": {
+              "kernel_rows": 2895,
+              "attention_calls_per_forward": 24.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 54.545749666666666,
+              "counter_columns_with_values": [
+                "aic_fixpipe_ratio",
+                "aic_fixpipe_time(us)",
+                "aic_icache_miss_rate",
+                "aic_mac_ratio",
+                "aic_mac_time(us)",
+                "aic_mte1_ratio",
+                "aic_mte1_time(us)",
+                "aic_mte2_ratio",
+                "aic_mte2_time(us)",
+                "aic_scalar_ratio",
+                "aic_scalar_time(us)",
+                "aic_total_cycles",
+                "aiv_icache_miss_rate",
+                "aiv_mte2_ratio",
+                "aiv_mte2_time(us)",
+                "aiv_mte3_ratio",
+                "aiv_mte3_time(us)",
+                "aiv_scalar_ratio",
+                "aiv_scalar_time(us)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_vec_ratio",
+                "aiv_vec_time(us)",
+                "cube_utilization(%)"
+              ],
+              "raw_csv_sha256": "2f715b0413c2532a32c9736850e8639529c9c2e5b1167135f0b7a00d347c03a5"
+            },
+            "memory": {
+              "kernel_rows": 2895,
+              "attention_calls_per_forward": 24.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 54.53398300000001,
+              "counter_columns_with_values": [
+                "aic_l1_read_bw(GB/s)",
+                "aic_l1_write_bw(GB/s)",
+                "aic_l2_read_bw(GB/s)",
+                "aic_l2_write_bw(GB/s)",
+                "aic_main_mem_read_bw(GB/s)",
+                "aic_main_mem_write_bw(GB/s)",
+                "aic_total_cycles",
+                "aiv_l2_read_bw(GB/s)",
+                "aiv_l2_write_bw(GB/s)",
+                "aiv_main_mem_read_bw(GB/s)",
+                "aiv_main_mem_write_bw(GB/s)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_ub_read_bw(GB/s)",
+                "aiv_ub_write_bw(GB/s)"
+              ],
+              "raw_csv_sha256": "cf8a0569dfdf19e60b70bbef561c1c9e391e76069e624a047d059c8fe20d7123"
+            }
+          }
+        },
+        "text": {
+          "clean_wall_ms": {
+            "count": 40,
+            "mean": 61.27448949991958,
+            "p50": 61.220075003802776,
+            "p90": 61.37979099585209,
+            "p99": 61.96371290367097,
+            "min": 61.109760019462556,
+            "max": 62.19065000186674
+          },
+          "profiles": {
+            "pipe": {
+              "kernel_rows": 4191,
+              "attention_calls_per_forward": 36.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 61.02640599999999,
+              "counter_columns_with_values": [
+                "aic_fixpipe_ratio",
+                "aic_fixpipe_time(us)",
+                "aic_icache_miss_rate",
+                "aic_mac_ratio",
+                "aic_mac_time(us)",
+                "aic_mte1_ratio",
+                "aic_mte1_time(us)",
+                "aic_mte2_ratio",
+                "aic_mte2_time(us)",
+                "aic_scalar_ratio",
+                "aic_scalar_time(us)",
+                "aic_total_cycles",
+                "aiv_icache_miss_rate",
+                "aiv_mte2_ratio",
+                "aiv_mte2_time(us)",
+                "aiv_mte3_ratio",
+                "aiv_mte3_time(us)",
+                "aiv_scalar_ratio",
+                "aiv_scalar_time(us)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_vec_ratio",
+                "aiv_vec_time(us)",
+                "cube_utilization(%)"
+              ],
+              "raw_csv_sha256": "278f785ccc781c547fb40a38fd89bf77fd7f2faf927dfdb96031b25b10196661"
+            },
+            "memory": {
+              "kernel_rows": 4191,
+              "attention_calls_per_forward": 36.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 61.04392433333333,
+              "counter_columns_with_values": [
+                "aic_l1_read_bw(GB/s)",
+                "aic_l1_write_bw(GB/s)",
+                "aic_l2_read_bw(GB/s)",
+                "aic_l2_write_bw(GB/s)",
+                "aic_main_mem_read_bw(GB/s)",
+                "aic_main_mem_write_bw(GB/s)",
+                "aic_total_cycles",
+                "aiv_l2_read_bw(GB/s)",
+                "aiv_l2_write_bw(GB/s)",
+                "aiv_main_mem_read_bw(GB/s)",
+                "aiv_main_mem_write_bw(GB/s)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_ub_read_bw(GB/s)",
+                "aiv_ub_write_bw(GB/s)"
+              ],
+              "raw_csv_sha256": "6986428c4b29fbe1bdda3f756cddd120abc3316f96f9f4e3aa65f01e1531fe9c"
+            }
+          }
+        }
+      }
+    },
+    "raw_eager": {
+      "command": [
+        "21_colqwen3_4b_inference/profile_portable_stages.py",
+        "--model",
+        "/workspace/models/Ops-Colqwen3-4B",
+        "--dataset-root",
+        "/workspace/datasets/ViDoRe_v3_hr_mteb_reference",
+        "--cache-root",
+        "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/indexing_compat_b40b7efa/cache",
+        "--output-dir",
+        "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/portable_profile_db770025/raw_eager",
+        "--execution",
+        "raw_eager",
+        "--expected-chip",
+        "910B",
+        "--page-index",
+        "5",
+        "--warmups",
+        "5",
+        "--repeats",
+        "20",
+        "--profile-steps",
+        "3",
+        "--metrics",
+        "pipe",
+        "memory",
+        "--scopes",
+        "full",
+        "vision",
+        "text"
+      ],
+      "source": {
+        "profile_portable_stages.py": "7e9dbe14f9953d1c18f3a9ca205b9a6258201f5eab707f809170fd32c8f4e7f8",
+        "local_modeling_colqwen3.py": "d1879070f9226f5483761f762391eaf66707b260fc9221151cd131c810edac49",
+        "optimized_prefill.py": "5f2f98f5bea2462731735260bc6d369363fed38159fb349626eb5e409193d353",
+        "prepared_prefill.py": "72895d6f1c5cb741627a2c6743e4af374835613e1479bbefdea4a05d6ad4970d",
+        "patch_embedding.py": "19c466a2eb8b0601c62531601981de7f68cd8def36db407f96cb4eeee0435f6d"
+      },
+      "status": "completed",
+      "input_contract": {
+        "batch_shapes": {
+          "input_ids": [
+            1,
+            1274
+          ],
+          "attention_mask": [
+            1,
+            1274
+          ],
+          "pixel_values": [
+            1,
+            5040,
+            1536
+          ],
+          "image_grid_thw": [
+            1,
+            3
+          ]
+        },
+        "vision_shapes": [
+          [
+            5040,
+            1024
+          ],
+          [
+            5040,
+            64
+          ],
+          [
+            5040,
+            64
+          ]
+        ],
+        "text_shapes": [
+          [
+            1,
+            1274,
+            2560
+          ],
+          [
+            1,
+            1274,
+            128
+          ],
+          [
+            1,
+            1274,
+            128
+          ],
+          [
+            1,
+            1,
+            1274,
+            1274
+          ],
+          [
+            1,
+            1274,
+            2560
+          ],
+          [
+            1,
+            1274,
+            2560
+          ],
+          [
+            1,
+            1274,
+            2560
+          ]
+        ],
+        "vision_sha256": "2b90f35111f591fbe154b0c8880a22dbe5c245811e43fafaa7ea67e52f4848d4",
+        "text_sha256": "650104b9b9ff93f855cb2743902b59924e7c75c777ffa039bc1c5f515f0e9696",
+        "frozen_text_source": "compiled vision; production text preparation; no prealignment substitution"
+      },
+      "scopes": {
+        "full": {
+          "clean_wall_ms": {
+            "count": 40,
+            "mean": 171.08652024762705,
+            "p50": 169.95722998399287,
+            "p90": 174.37604000151623,
+            "p99": 184.7402793954825,
+            "min": 166.98310000356287,
+            "max": 187.5555099977646
+          },
+          "profiles": {
+            "pipe": {
+              "kernel_rows": 11334,
+              "attention_calls_per_forward": 60.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 151.73934199999997,
+              "counter_columns_with_values": [
+                "aic_fixpipe_ratio",
+                "aic_fixpipe_time(us)",
+                "aic_icache_miss_rate",
+                "aic_mac_ratio",
+                "aic_mac_time(us)",
+                "aic_mte1_ratio",
+                "aic_mte1_time(us)",
+                "aic_mte2_ratio",
+                "aic_mte2_time(us)",
+                "aic_scalar_ratio",
+                "aic_scalar_time(us)",
+                "aic_total_cycles",
+                "aiv_icache_miss_rate",
+                "aiv_mte2_ratio",
+                "aiv_mte2_time(us)",
+                "aiv_mte3_ratio",
+                "aiv_mte3_time(us)",
+                "aiv_scalar_ratio",
+                "aiv_scalar_time(us)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_vec_ratio",
+                "aiv_vec_time(us)",
+                "cube_utilization(%)"
+              ],
+              "raw_csv_sha256": "e230138e4c3eb82d9dca4a951cb24bc00d50090302fe2b0aa8f2e0cb7ecc2792"
+            },
+            "memory": {
+              "kernel_rows": 11334,
+              "attention_calls_per_forward": 60.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 151.702108,
+              "counter_columns_with_values": [
+                "aic_l1_read_bw(GB/s)",
+                "aic_l1_write_bw(GB/s)",
+                "aic_l2_read_bw(GB/s)",
+                "aic_l2_write_bw(GB/s)",
+                "aic_main_mem_read_bw(GB/s)",
+                "aic_main_mem_write_bw(GB/s)",
+                "aic_total_cycles",
+                "aiv_l2_read_bw(GB/s)",
+                "aiv_l2_write_bw(GB/s)",
+                "aiv_main_mem_read_bw(GB/s)",
+                "aiv_main_mem_write_bw(GB/s)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_ub_read_bw(GB/s)",
+                "aiv_ub_write_bw(GB/s)"
+              ],
+              "raw_csv_sha256": "7066ea6f24cfe9ffc95d68a1ff254b43974814c90eb82802b3b75825da2adf9a"
+            }
+          }
+        },
+        "vision": {
+          "clean_wall_ms": {
+            "count": 40,
+            "mean": 64.78628325130558,
+            "p50": 64.74498001625761,
+            "p90": 64.82949301134795,
+            "p99": 66.07089960569283,
+            "min": 64.52680000802502,
+            "max": 66.80229000630789
+          },
+          "profiles": {
+            "pipe": {
+              "kernel_rows": 4176,
+              "attention_calls_per_forward": 24.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 64.02487233333333,
+              "counter_columns_with_values": [
+                "aic_fixpipe_ratio",
+                "aic_fixpipe_time(us)",
+                "aic_icache_miss_rate",
+                "aic_mac_ratio",
+                "aic_mac_time(us)",
+                "aic_mte1_ratio",
+                "aic_mte1_time(us)",
+                "aic_mte2_ratio",
+                "aic_mte2_time(us)",
+                "aic_scalar_ratio",
+                "aic_scalar_time(us)",
+                "aic_total_cycles",
+                "aiv_icache_miss_rate",
+                "aiv_mte2_ratio",
+                "aiv_mte2_time(us)",
+                "aiv_mte3_ratio",
+                "aiv_mte3_time(us)",
+                "aiv_scalar_ratio",
+                "aiv_scalar_time(us)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_vec_ratio",
+                "aiv_vec_time(us)",
+                "cube_utilization(%)"
+              ],
+              "raw_csv_sha256": "51fe0ead1d16afae1833d12fdc9969951c5b8e3be09d803b8334fc7b108ed149"
+            },
+            "memory": {
+              "kernel_rows": 4176,
+              "attention_calls_per_forward": 24.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 64.026946,
+              "counter_columns_with_values": [
+                "aic_l1_read_bw(GB/s)",
+                "aic_l1_write_bw(GB/s)",
+                "aic_l2_read_bw(GB/s)",
+                "aic_l2_write_bw(GB/s)",
+                "aic_main_mem_read_bw(GB/s)",
+                "aic_main_mem_write_bw(GB/s)",
+                "aic_total_cycles",
+                "aiv_l2_read_bw(GB/s)",
+                "aiv_l2_write_bw(GB/s)",
+                "aiv_main_mem_read_bw(GB/s)",
+                "aiv_main_mem_write_bw(GB/s)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_ub_read_bw(GB/s)",
+                "aiv_ub_write_bw(GB/s)"
+              ],
+              "raw_csv_sha256": "44af8773ac5110ceefa11a1b2a74ae4729b4e92fc4cb500331c89e40ae185c13"
+            }
+          }
+        },
+        "text": {
+          "clean_wall_ms": {
+            "count": 40,
+            "mean": 80.19137400187901,
+            "p50": 79.30430500709917,
+            "p90": 81.34935600101016,
+            "p99": 91.91525160335004,
+            "min": 78.10082999640144,
+            "max": 95.65596000174992
+          },
+          "profiles": {
+            "pipe": {
+              "kernel_rows": 6795,
+              "attention_calls_per_forward": 36.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 76.22372666666666,
+              "counter_columns_with_values": [
+                "aic_fixpipe_ratio",
+                "aic_fixpipe_time(us)",
+                "aic_icache_miss_rate",
+                "aic_mac_ratio",
+                "aic_mac_time(us)",
+                "aic_mte1_ratio",
+                "aic_mte1_time(us)",
+                "aic_mte2_ratio",
+                "aic_mte2_time(us)",
+                "aic_scalar_ratio",
+                "aic_scalar_time(us)",
+                "aic_total_cycles",
+                "aiv_icache_miss_rate",
+                "aiv_mte2_ratio",
+                "aiv_mte2_time(us)",
+                "aiv_mte3_ratio",
+                "aiv_mte3_time(us)",
+                "aiv_scalar_ratio",
+                "aiv_scalar_time(us)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_vec_ratio",
+                "aiv_vec_time(us)",
+                "cube_utilization(%)"
+              ],
+              "raw_csv_sha256": "c0ff16e4a9b566015ffdbd8bb29c015255fe1a5ac48b3a993d9ace9ebc96dcbe"
+            },
+            "memory": {
+              "kernel_rows": 6795,
+              "attention_calls_per_forward": 36.0,
+              "replay": {
+                "exact": true,
+                "finite": true
+              },
+              "kernel_sum_ms_per_forward": 76.22883066666665,
+              "counter_columns_with_values": [
+                "aic_l1_read_bw(GB/s)",
+                "aic_l1_write_bw(GB/s)",
+                "aic_l2_read_bw(GB/s)",
+                "aic_l2_write_bw(GB/s)",
+                "aic_main_mem_read_bw(GB/s)",
+                "aic_main_mem_write_bw(GB/s)",
+                "aic_total_cycles",
+                "aiv_l2_read_bw(GB/s)",
+                "aiv_l2_write_bw(GB/s)",
+                "aiv_main_mem_read_bw(GB/s)",
+                "aiv_main_mem_write_bw(GB/s)",
+                "aiv_time(us)",
+                "aiv_total_cycles",
+                "aiv_ub_read_bw(GB/s)",
+                "aiv_ub_write_bw(GB/s)"
+              ],
+              "raw_csv_sha256": "b348c91de8024ee9ae9fa9ff85b4c5a52a82a6c950a34a5bac09640faf7ac48c"
+            }
+          }
+        }
+      }
+    }
+  },
+  "frozen_inputs_identical_between_execution_lanes": true,
+  "basic_capture": {
+    "command": [
+      "21_colqwen3_4b_inference/profile_portable_stages.py",
+      "--model",
+      "/workspace/models/Ops-Colqwen3-4B",
+      "--dataset-root",
+      "/workspace/datasets/ViDoRe_v3_hr_mteb_reference",
+      "--cache-root",
+      "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/indexing_compat_b40b7efa/cache",
+      "--output-dir",
+      "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/portable_profile_db770025_basic/torchair",
+      "--execution",
+      "torchair",
+      "--expected-chip",
+      "910B",
+      "--page-index",
+      "5",
+      "--warmups",
+      "5",
+      "--repeats",
+      "20",
+      "--profile-steps",
+      "3",
+      "--metrics",
+      "basic",
+      "--scopes",
+      "text"
+    ],
+    "status": "completed",
+    "source": {
+      "profile_portable_stages.py": "7e9dbe14f9953d1c18f3a9ca205b9a6258201f5eab707f809170fd32c8f4e7f8",
+      "local_modeling_colqwen3.py": "d1879070f9226f5483761f762391eaf66707b260fc9221151cd131c810edac49",
+      "optimized_prefill.py": "5f2f98f5bea2462731735260bc6d369363fed38159fb349626eb5e409193d353",
+      "prepared_prefill.py": "72895d6f1c5cb741627a2c6743e4af374835613e1479bbefdea4a05d6ad4970d",
+      "patch_embedding.py": "19c466a2eb8b0601c62531601981de7f68cd8def36db407f96cb4eeee0435f6d"
+    },
+    "clean_wall_ms": {
+      "count": 40,
+      "mean": 61.29631724907085,
+      "p50": 61.18953999248333,
+      "p90": 61.38469099532813,
+      "p99": 62.784643495688215,
+      "min": 61.10523999086581,
+      "max": 62.90645999251865
+    },
+    "kernel_rows": 4191,
+    "replay": {
+      "exact": true,
+      "finite": true
+    },
+    "counter_columns_with_values": [],
+    "unknown_type_rows": 4191,
+    "metadata_limitations": "Level0 export lacks operator types/shapes; grouped by exact kernel name; role matching unavailable",
+    "raw_csv_sha256": "377518b7f542d0fab1408191770281f535e278741e2bcbe8bf46fa5319597a0f"
+  },
+  "analyzer_sha256": "b4ac196be3b6ac5dd89569ea8d2ed761b182e39dff61e8b6368abe95ae20b492",
+  "parser_accounting_tests_passed": 10
+}

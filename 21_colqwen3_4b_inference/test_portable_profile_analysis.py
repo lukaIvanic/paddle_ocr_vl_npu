@@ -53,6 +53,15 @@ class ProfileAnalysis(unittest.TestCase):
         self.assertEqual(category('Add','Add_12'),'other_elementwise_or_unclassified')
         self.assertEqual(category('StridedSliceD','StridedSliceD_1'),'layout_slice_repeat_padding')
 
+    def test_basic_capture_missing_types_does_not_merge_unrelated_kernels(self):
+        with tempfile.TemporaryDirectory() as root:
+            r=analyze_csv(self.write(root,[{'Type':'N/A','Name':'Cast','Duration(us)':'10'},
+                                          {'Type':'N/A','Name':'MatMul_2','Duration(us)':'100'}]),1,[])
+        self.assertEqual(len(r['groups']),2)
+        self.assertEqual(r['unknown_type_rows'],2)
+        self.assertEqual(r['family_hints_ms']['matrix_multiplication'],.1)
+        self.assertEqual(r['family_hints_ms']['cast_or_fused_cast'],.01)
+
 
 if __name__=='__main__':
     unittest.main()

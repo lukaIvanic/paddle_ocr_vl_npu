@@ -130,6 +130,9 @@ is an explicitly allowed diagnostic fallback: in a NEW PROFILE_ROOT set
 `PROFILE_METRICS=basic` and rerun the SAME shell runner. Label this as lacking
 PMU evidence; it cannot settle compute-versus-bandwidth questions. Do not use
 this fallback for model execution/parity errors or to hide an analysis bug.
+Basic mode can also lack operator types and shapes (observed in the 910B test).
+The analyzer then groups exact kernel names, flags the metadata limitation,
+and leaves projection-role attribution unresolved rather than inventing it.
 
 For a second same-shape page only if the first timings are unstable or its
 bottleneck is unclear, use NEW PROFILE_ROOT and `PROFILE_PAGE_INDEX=0`.
@@ -155,7 +158,7 @@ analysis code is needed. Give Luka:
    throughput or compare profiled latency as a clean speed benchmark.
 3. For compiled vision and text: top kernel types/shapes, ms/forward, percent
    of kernel sum, calls/forward, names and projection-role candidates; include
-   `TARGETED_KERNELS` for transpose, strided slice, TransData, indexing,
+   `TARGETED_KERNEL` rows for transpose, strided slice, TransData, indexing,
    normalization, rotary and activation/gating work. Do not combine the two
    towers into an unlabelled list. Include full-forward hotspots outside them.
 4. Available top-kernel pipe/memory counters, using their printed column units.
@@ -184,5 +187,25 @@ API support. CANN documents inference-series counter collection but warns that
 available fields vary by product. The installed 310P stack must validate actual
 capture/export support. No claim of 310P profiling success is made in advance.
 
-910B capture/analysis validation is pending while this brief is being authored;
-Luka will provide the validated final commit with the handoff.
+Validated on **910B2 physical NPU 0**, 2026-10-08, with the unchanged capture
+runner from `db770025`: all 12 default captures and automatic analysis passed
+(three scopes × two metrics × two execution lanes). Same-lane replays were
+bit-exact, frozen vision/text inputs matched between processes, and attention
+counts were 24 vision / 36 text / 60 full per recorded forward. A separate
+compiled-text `basic` capture and analysis also passed. This validates the
+tooling on 910B, not target-chip profiler availability or 310P performance.
+
+Clean means from that same-page 910B run:
+
+| Scope | Compiled | Raw eager |
+|---|---:|---:|
+| Full model forward | 141.10 ms | 171.09 ms |
+| Vision graph | 54.80 ms | 64.79 ms |
+| Text graph, including production alignment/trim | 61.27 ms | 80.19 ms |
+
+The parser was also tested with missing/NA counters, legitimate zero counters,
+overlapping intervals, alternate CSV headers, malformed durations and ambiguous
+projection shapes and absent Level0 operator metadata. All ten parser/accounting
+tests passed. The concise final
+console summary was regenerated from the real 910B CSVs. Compact validation
+provenance and CSV hashes are in `references/portable_profile_910b/validation.json`.
