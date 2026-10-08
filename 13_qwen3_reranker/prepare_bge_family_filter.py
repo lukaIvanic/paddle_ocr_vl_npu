@@ -34,7 +34,7 @@ def lengths(data,tok,order):
 
 def main():
  p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--tokenizer',type=Path,default=Path('/workspace/models/Qwen3-Reranker-0.6B'));p.add_argument('--stop-at',type=int,default=500);a=p.parse_args()
- assert not (a.output/'prepared/dataset.json.gz').exists(),'Refuse overwrite'
+ assert not (a.output/'prepared/preparation.json').exists(),'Refuse overwrite of completed preparation'
  parent=read(a.parent/'prepared/dataset.json.gz');cfg=read(a.parent/'run_configuration.json');old=read(a.parent/'student/result.json')
  assert digest(a.parent/'prepared/dataset.json.gz')==cfg['dataset_sha256']==old['dataset_sha256']
  counts=[x['queries'] for x in old['updates'][:a.stop_at]];assert len(counts)==a.stop_at
@@ -43,7 +43,9 @@ def main():
  data['distribution']['train']=dict(collections.Counter(g['source'] for g in data['train']))
  data['sampling'].update(requested_exposures=len(data['train']),unique_rows=len({g['global_row'] for g in data['train']}),unique_query_hashes=len({g['query_hash'] for g in data['train']}),family_exclusion=True)
  for s in ('validation','benchmark','reserved_benchmark'):assert data[s]==parent[s]
- a.output.mkdir(parents=True,exist_ok=True);save_data(a.output/'prepared/dataset.json.gz',data)
+ a.output.mkdir(parents=True,exist_ok=True)
+ if (a.output/'prepared/dataset.json.gz').exists():assert read(a.output/'prepared/dataset.json.gz')==data, 'Partial preparation differs'
+ save_data(a.output/'prepared/dataset.json.gz',data)
  save_data(a.output/'prepared/retained_pool.json.gz',available)
  from transformers import AutoTokenizer
  tok=AutoTokenizer.from_pretrained(a.tokenizer,local_files_only=True)
@@ -53,7 +55,10 @@ def main():
  assert progress['teacher_manifest_sha256']==oldhash
  assert teacher['dataset_sha256']==cfg['dataset_sha256']
  assert teacher['scoring_config']['order']=='query_first'
- assert teacher['scoring_config']['tokenizer_files']=={f.name:digest(f) for f in a.tokenizer.glob('*token*') if f.is_file()}
+ teacher_model=Path('/workspace/models/Qwen3-Reranker-4B')
+ assert teacher['scoring_config']['tokenizer_files']=={f.name:digest(f) for f in teacher_model.glob('*token*') if f.is_file()}
+ teacher_tok=AutoTokenizer.from_pretrained(teacher_model,local_files_only=True)
+ assert lengths(data,teacher_tok,'query_first')==token_audit['query_first'], 'Teacher/student query-first token streams differ'
  assert teacher['scoring_config']['prefix_suffix_source_sha256']==digest(Path(__file__).parent/'transformers_rerank.py')
  original_by_id={g['id']:g for g in parent['train']};chunkids={g['id']:i//teacher['stream']['groups_per_chunk'] for i,g in enumerate(parent['train'])};cache={};chunk_hashes={};targets={}
  for g in data['train']:
