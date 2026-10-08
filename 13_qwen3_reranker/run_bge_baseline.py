@@ -42,6 +42,8 @@ def main():
                    help='Train/evaluate both orders with equal loss weighting; requires document_first student order')
     p.add_argument('--reserved-eval-steps', type=int, nargs='*', default=[],
                    help='Additional evaluated updates receiving the reserved panel')
+    p.add_argument('--resume-checkpoint', type=Path)
+    p.add_argument('--resume-parent-root', type=Path)
     args = p.parse_args()
     if args.paired_orders:
         assert args.mode != 'teacher' and args.student_order == 'document_first'
@@ -166,6 +168,16 @@ def main():
     if args.batch_schedule == 'retained_original_slots':
         assert data['derivation']['kind'] in ('whole_group_length_filter','expanded_bge_length_filter','family_exclusion')
     assert all(len(g['documents']) == 8 for g in data['train'])
+    start_step = 0
+    if args.resume_checkpoint:
+        from resume_bge_training import restore
+        start_step, parent_result = restore(args, data, teacher, model, optimizer, torch)
+        for key in ('updates', 'checkpoints'):
+            result[key] = [v for v in parent_result[key] if v['step'] <= start_step]
+        result['evaluations'] = {k:v for k,v in parent_result['evaluations'].items() if int(k)<=start_step}
+        result['resume'] = {'step':start_step, 'checkpoint_sha256':digest(args.resume_checkpoint),
+            'parent_root':str(args.resume_parent_root), 'state':'model, optimizer moments/steps, CPU and NPU RNG restored; LR uses unchanged global update index'}
+        save(args.output / 'result.json', result)
 
     def checkpoint(step):
         t = time.monotonic()
@@ -254,9 +266,16 @@ def main():
             assert frequent_s < 180, 'Combined paired frequent evaluation exceeds three minutes; report before changing anything'
 
     try:
-        if args.mode != 'profile' or args.profile_eval: evaluate(0)
+        if start_step:
+            expected = result['evaluations'][str(start_step)]['benchmark_scores']
+            evaluate(start_step, endpoint=True)
+            actual = result['evaluations'][str(start_step)]['benchmark_scores']
+            assert actual == expected, 'Resumed checkpoint evaluation differs from saved parent scores'
+            result['resume']['benchmark_scores_bitwise_equal'] = True
+            print('RESUME_VERIFIED',json.dumps(result['resume']),flush=True)
+        elif args.mode != 'profile' or args.profile_eval: evaluate(0)
         torch.npu.reset_peak_memory_stats()
-        for step in range(1, args.steps + 1):
+        for step in range(start_step + 1, args.steps + 1):
             if time.monotonic() - started > args.wall_time_limit:
                 result['status'] = 'time_limit'
                 if args.mode != 'profile':

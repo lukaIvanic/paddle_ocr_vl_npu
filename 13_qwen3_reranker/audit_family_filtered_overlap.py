@@ -17,7 +17,7 @@ def shingles(t):
 def save(p,x):
  p=Path(p);p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(x,ensure_ascii=False,indent=2))
 def main():
- p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--eval-repo',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--exclude-groups',type=Path);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
+ p=argparse.ArgumentParser();p.add_argument('--parent',type=Path);p.add_argument('--dataset',type=Path);p.add_argument('--eval-repo',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--exclude-groups',type=Path);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
  sys.path.insert(0,str(a.eval_repo/'22_qwen3_embedding_benchmark'))
  from protocol import TASKS,validate_task
  from suite_protocol import ENGLISH
@@ -25,9 +25,13 @@ def main():
  from mteb.evaluation.evaluators.RetrievalEvaluator import corpus_to_str
  import mteb,types,numpy as np
  from sklearn.feature_extraction.text import TfidfVectorizer
- data=read(a.parent/'prepared/dataset.json.gz');cfg=read(a.parent/'run_configuration.json');assert digest(a.parent/'prepared/dataset.json.gz')==cfg['dataset_sha256']
+ if a.dataset:
+  data=read(a.dataset);cfg={'dataset_sha256':digest(a.dataset)};exposure=0
+ else:
+  data=read(a.parent/'prepared/dataset.json.gz');cfg=read(a.parent/'run_configuration.json');assert digest(a.parent/'prepared/dataset.json.gz')==cfg['dataset_sha256']
+  exposure=sum(x['queries'] for x in read(a.parent/'student/result.json')['updates'][:500])
  removed=set(read(a.exclude_groups)['groups']) if a.exclude_groups else set();exclusion_sha=digest(a.exclude_groups) if a.exclude_groups else None
- allgroups=[g for g in data['train'] if g['source'] not in EXCLUDED and g['id'] not in removed];exposure=sum(x['queries'] for x in read(a.parent/'student/result.json')['updates'][:500]);used={g['id'] for g in allgroups[:exposure]}
+ allgroups=[g for g in data['train'] if g['source'] not in EXCLUDED and g['id'] not in removed];used={g['id'] for g in allgroups[:exposure]}
  tq=[norm(g['query']) for g in allgroups];docmap=collections.defaultdict(list)
  for g in allgroups:
   for j,doc in enumerate(g['documents']):docmap[norm(doc)].append({'id':g['id'],'source':g['source'],'candidate':j,'pool':g['candidate_origins'][j]['pool'],'query':g['query'],'scheduled':g['id'] in used})
