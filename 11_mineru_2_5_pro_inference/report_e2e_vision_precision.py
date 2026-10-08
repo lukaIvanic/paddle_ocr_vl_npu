@@ -79,15 +79,15 @@ def main():
             e2e_pg_s_gain_pct=100*(original[0]['pipeline_wall_s']/approximate[0]['pipeline_wall_s']-1))
         print('PAIR_INPUT_AND_OUTPUT_COMPARISON '+json.dumps(comparison))
     result=dict(chip=a.chip,comparison=comparison,lanes={})
-    print('| Chip | Precision | Pages | Wall s | Setup s | pg/s | Useful vision tokens | Padding positions | Padding % | Vision event tok/s |')
-    print('|---|---|---:|---:|---:|---:|---:|---:|---:|---:|')
-    for label,(s,samples,*_) in rows:
+    print('| Chip | Precision | Pages | Wall s | Setup s | pg/s | Output tokens incl EOS | Useful vision tokens | Padding positions | Padding % | Vision event tok/s |')
+    print('|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|')
+    for label,(s,samples,geometry,prompts,generated) in rows:
         v=s['local_compiled_vision'];total=s['vision_timing']['all']
         result['lanes'][label]=dict(wall_s=s['pipeline_wall_s'],pg_s=1651/s['pipeline_wall_s'],
-            setup_s=s['setup_s'],vision=total,lengths=length_rows(samples),
+            setup_s=s['setup_s'],output_tokens_including_eos=sum(map(len,generated.values())),vision=total,lengths=length_rows(samples),
             precision_audit_checked=label == 'approximate')
         print(f"| {a.chip} | {label} | 1651 | {s['pipeline_wall_s']:.3f} | {s['setup_s']:.3f} | "
-            f"{1651/s['pipeline_wall_s']:.6f} | {v['real_tokens']} | {v['physical_tokens']-v['real_tokens']} | "
+            f"{1651/s['pipeline_wall_s']:.6f} | {sum(map(len,generated.values()))} | {v['real_tokens']} | {v['physical_tokens']-v['real_tokens']} | "
             f"{100*(1-v['real_tokens']/v['physical_tokens']):.3f} | {total['real_tok_s']:.1f} |")
     print('\nVision event regions include launch gaps and initial cache loads, as in production. Not isolated kernels.')
     print('| Chip | Precision | Useful length bin / kind | Actual useful range | Groups / crops | Vision time share % | Mean / p50 / p99 ms | Useful tok/s |')

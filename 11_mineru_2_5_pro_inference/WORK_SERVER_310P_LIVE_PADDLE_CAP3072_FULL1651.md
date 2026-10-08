@@ -81,7 +81,7 @@ switch environments, packages, dtype, graph mode or source to force a pass.
 - Inspect `git status --short`; preserve tracked changes. With clean tracked
   source, `git fetch origin codex/mineru-vision-length-sweep`, then
   `git checkout --detach FETCH_HEAD`. Require
-  `git merge-base --is-ancestor a588764e HEAD`; record actual HEAD. Do not
+  `git merge-base --is-ancestor b590f47e HEAD`; record actual HEAD. Do not
   switch a dirty checkout. The baseline production files must match d4e7fdd:
   `git diff --exit-code d4e7fdd HEAD -- 11_mineru_2_5_pro_inference/run_page_pipeline.py 11_mineru_2_5_pro_inference/run_official_transformers_omnidocbench.py 11_mineru_2_5_pro_inference/vision_prefill_compile.py 11_mineru_2_5_pro_inference/local_modeling_mineru.py 11_mineru_2_5_pro_inference/fixed_batch_engine.py 11_mineru_2_5_pro_inference/streaming_decode.py 11_mineru_2_5_pro_inference/text_prefill_compile.py 11_mineru_2_5_pro_inference/paddle_layout_source.py`.
 - Resolve `WORK_SERVER_REPO` using `git rev-parse --show-toplevel`.
@@ -489,6 +489,9 @@ It does not suppress measured throughput when a flag is false; disclose why a
 nonmatched distribution weakens the length-specific comparison. The reported
 overall vision rate uses all actual input tokens divided by all vision event
 time; the E2E page rate includes the actual full pipeline. Report both.
+Report total generated tokens as well: approximate vision may change output
+lengths and therefore decode work. An E2E gain alone cannot establish that
+vision kernels got faster; the separately measured vision rates answer that.
 
 Read `output/run_summary_shard_00.json` and
 `evaluation/work/result/predictions_quick_match_metric_result.json`.
