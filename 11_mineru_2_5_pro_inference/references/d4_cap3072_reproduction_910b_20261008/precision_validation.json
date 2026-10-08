@@ -1,0 +1,24 @@
+{
+  "chip": "Ascend910B2",
+  "source_commit": "d4e7fdd0efd90bf6408c21efab320cc3292f07a4",
+  "wrapper_commit": "0e7940237c749b39ad3a5c3283fd4b1c995e5976",
+  "original_prewarm_buckets": [
+    384,
+    512,
+    768,
+    1024,
+    1536,
+    2048,
+    3072
+  ],
+  "original_prewarm_status": "completed",
+  "mode4_status": "unsupported_by_installed_CANN_on_Atlas_A2",
+  "mode4_audited_vision_promptfa_lowerings": 32,
+  "mode4_first_bucket": 768,
+  "mode4_causal_error": "not support APPROXIMATE_COMPUTATION when curShortSocName is Atlas A2",
+  "mode4_causal_location": "prompt_flash_attention_tiling.cpp:3924",
+  "mode4_throughput": null,
+  "mode4_full_pipeline_validated": false,
+  "fallback_used": false,
+  "note": "No 310P execution here; 310P integration and performance remain to be validated."
+}

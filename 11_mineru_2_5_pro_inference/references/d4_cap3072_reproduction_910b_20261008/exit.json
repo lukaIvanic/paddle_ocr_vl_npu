@@ -1,0 +1,7 @@
+{
+  "status": "completed",
+  "exit_code": 0,
+  "child_wall_s": 1753.0154256999958,
+  "log": "/workspace/repos/paddle_ocr_vl_npu_mineru_lengths/tmp/11_mineru_2_5_pro_inference/d4_live_cap3072_910B_20261008T083246Z/full1651/run.log",
+  "receipt_dir": "/workspace/repos/paddle_ocr_vl_npu_mineru_lengths/tmp/11_mineru_2_5_pro_inference/d4_live_cap3072_910B_20261008T083246Z/full1651/receipt"
+}

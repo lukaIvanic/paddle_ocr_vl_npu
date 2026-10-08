@@ -1,0 +1,12 @@
+{
+  "chip": "910B",
+  "actual_tokens": 16809232,
+  "measured_physical_positions_with_packing": 18887040,
+  "actual_tokens_discarded_by_batching": 0,
+  "padding_positions": 2077808,
+  "padding_fraction_of_physical_positions": 0.11001236826945884,
+  "counterfactual_separate_smallest_bucket_positions": 22742912,
+  "packing_position_savings": 3855872,
+  "packing_position_savings_fraction": 0.16954170160795592,
+  "scope": "Arithmetic token-position comparison on measured crop lengths; separate-crop execution was not benchmarked. No latency or speedup prediction."
+}

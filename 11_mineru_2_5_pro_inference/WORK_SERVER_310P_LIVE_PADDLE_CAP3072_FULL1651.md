@@ -24,13 +24,28 @@ Paddle recognizer. Every page gets live layout detection and fresh recognition.
 Image/chart analysis remains off, as in the reference. Input is images, not
 PDF originals; do not include or invent PDF rendering throughput.
 
-Authoring validation on 910B at inference commit `8528414f`: the exact two
-affected smoke pages below passed with 2 live layout calls, 20 recognition
-requests, zero failed pages and 13.215 s pipeline wall (23.972 s setup
-separately). The targeted text/table crops used 2,904 / 2,976 raw vision tokens
-and both completed at EOS. Evidence is in
-`references/live_cap3072_handoff_smoke_910b/affected/`. This validates the live
-lower-cap integration on 910B, **not** 310P compatibility or full-run speed.
+Authoring validation on **910B2, 2026-10-08**, used a clean detached
+`d4e7fdd0efd90bf6408c21efab320cc3292f07a4` checkout and the settings in this
+brief. The full live run completed 1,651/1,651 pages and 32,051 crops, zero
+failed/skipped pages: **1,685.602498 s pipeline wall, 0.979472 pages/s**;
+setup 30.293181 s separately. It processed 16,809,232 actual vision tokens
+in 378.759687 s of full-encoder event regions (**44,379.7 useful tokens/s**),
+with 2,077,808 padding positions / 18,887,040 physical positions (**11.0012%**).
+No warmup pages or first-use cached-graph loads were subtracted.
+Evidence: `references/d4_cap3072_reproduction_910b_20261008/`.
+Its complete 910B evaluation scored text **96.234624**, Page TEDS **93.520375**,
+Page CDM **97.054051**, overall **95.603017**. All 1,651 pages were matched;
+665 table and 2,352 formula samples, with zero evaluator timeouts/errors.
+26 recognition crops hit their existing output length limits and remain in the
+evaluation. This is a 910B reference, not a 310P quality guarantee.
+
+The production fast-processor prewarm passed all seven reachable vision buckets
+on 910B. The mode4 two-page compatibility attempt reached all 32 GE vision
+PromptFA lowerings, each audited as innerPrecise=4, then CANN rejected bucket768:
+`not support APPROXIMATE_COMPUTATION when curShortSocName is Atlas A2`
+(`prompt_flash_attention_tiling.cpp:3924`). No approximate 910B throughput or
+full-path validation exists. This failure does not predict 310P behavior; the
+310P mode4 prewarm, smoke, full run and evaluation below remain required.
 
 ## Shared Paddle layout implementation and 310P reference
 
@@ -81,7 +96,7 @@ switch environments, packages, dtype, graph mode or source to force a pass.
 - Inspect `git status --short`; preserve tracked changes. With clean tracked
   source, `git fetch origin codex/mineru-vision-length-sweep`, then
   `git checkout --detach FETCH_HEAD`. Require
-  `git merge-base --is-ancestor b590f47e HEAD`; record actual HEAD. Do not
+  `git merge-base --is-ancestor 0e794023 HEAD`; record actual HEAD. Do not
   switch a dirty checkout. The baseline production files must match d4e7fdd:
   `git diff --exit-code d4e7fdd HEAD -- 11_mineru_2_5_pro_inference/run_page_pipeline.py 11_mineru_2_5_pro_inference/run_official_transformers_omnidocbench.py 11_mineru_2_5_pro_inference/vision_prefill_compile.py 11_mineru_2_5_pro_inference/local_modeling_mineru.py 11_mineru_2_5_pro_inference/fixed_batch_engine.py 11_mineru_2_5_pro_inference/streaming_decode.py 11_mineru_2_5_pro_inference/text_prefill_compile.py 11_mineru_2_5_pro_inference/paddle_layout_source.py`.
 - Resolve `WORK_SERVER_REPO` using `git rev-parse --show-toplevel`.
@@ -224,8 +239,9 @@ compiled graphs. First-use cache loading still remains inside each page run,
 as in the original zero-warmup-page benchmark. Do not subtract it after the fact.
 
 After COMMON, CHAIN_ROOT, the cache lock and launch_stage below are defined,
-but **before the original smoke**, run this CPU selection and both real-crop
-cache prewarms sequentially. The prewarm flag exits without page inference;
+but **before the original smoke**, run CPU selection and the original-precision
+real-crop prewarm. Run the approximate prewarm at its later step, after original
+full inference and evaluation. The prewarm flag exits without page inference;
 these are setup artifacts, never throughput results. Preserve shell variables
 in the same coordinator session. Poll each job to durable exit 0 before the next.
 
@@ -530,14 +546,18 @@ Report:
   length-cap counts by crop type, mentioning repetition if observed;
 - full inference/evaluation log and artifact roots.
 
-Reference 910B lower-cap scores: text **96.234624**, Page TEDS **93.520705**,
-Page CDM **97.053718**, overall **95.603016**. They come from hash-verified
-selective recognition replay with full-page reconstruction/evaluation, not a
-full lower-cap E2E timing run. See `references/crop_cap3072_live_910b/`.
+Use the new **910B full live lower-cap** reference scores for the delta table:
+text **96.234624**, Page TEDS **93.520375**, Page CDM **97.054051**, overall
+**95.603017**. See `references/d4_cap3072_reproduction_910b_20261008/`.
+The older selective replay/reconstruction reference remains in
+`references/crop_cap3072_live_910b/`: text 96.234624, Page TEDS 93.520705,
+Page CDM 97.053718, overall 95.603016. Its receipts have not been rewritten.
 
-The measured 910B **higher-cap** live run was **0.932911 pg/s**. The lower-cap
-**0.993678 pg/s is only an estimate**, so do not present it as a measured
-cross-chip speed baseline. Your run will establish the real 310P E2E number.
+The measured 910B **higher-cap** live run was **0.932911 pg/s**. The former
+lower-cap **0.993678 pg/s is only an estimate**. The new exact-d4 full live
+lower-cap 910B reproduction measured **0.979472 pg/s**. These are 910B reference
+points, not 310P predictions or a controlled interleaved cap comparison. Your
+run will establish the real 310P E2E number.
 No cross-chip token-parity gate or invented accuracy cutoff is imposed. If
 scores differ substantially, report the facts; do not silently change settings.
 

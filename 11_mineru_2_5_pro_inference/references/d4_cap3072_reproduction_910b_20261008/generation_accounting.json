@@ -1,0 +1,199 @@
+{
+  "chip": "910B",
+  "requests": 32051,
+  "output_tokens_including_eos": 1804363,
+  "stop_reasons": {
+    "eos": 32025,
+    "length": 26
+  },
+  "non_eos_block_types": {
+    "equation": 10,
+    "text": 10,
+    "table": 4,
+    "footer": 2
+  },
+  "non_eos_requests": [
+    {
+      "request_id": "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png:recognition:11",
+      "block_type": "equation",
+      "stop_reason": "length",
+      "output_tokens": 3340,
+      "max_new_tokens": 3340
+    },
+    {
+      "request_id": "page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.png:recognition:3",
+      "block_type": "equation",
+      "stop_reason": "length",
+      "output_tokens": 3327,
+      "max_new_tokens": 3327
+    },
+    {
+      "request_id": "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png:recognition:3",
+      "block_type": "equation",
+      "stop_reason": "length",
+      "output_tokens": 3933,
+      "max_new_tokens": 3933
+    },
+    {
+      "request_id": "page-7050793e-109f-4066-be91-107f94b617b9.png:recognition:2",
+      "block_type": "equation",
+      "stop_reason": "length",
+      "output_tokens": 3738,
+      "max_new_tokens": 3738
+    },
+    {
+      "request_id": "page-83a675ab-0021-4979-8293-8af0d36146a0.png:recognition:3",
+      "block_type": "equation",
+      "stop_reason": "length",
+      "output_tokens": 3807,
+      "max_new_tokens": 3807
+    },
+    {
+      "request_id": "page-9b70f2f0-2a0e-4337-8750-84e79503e939.png:recognition:10",
+      "block_type": "equation",
+      "stop_reason": "length",
+      "output_tokens": 3821,
+      "max_new_tokens": 3821
+    },
+    {
+      "request_id": "page-27a46d41-49b5-4562-a546-6cbbafd23a81.png:recognition:3",
+      "block_type": "equation",
+      "stop_reason": "length",
+      "output_tokens": 3735,
+      "max_new_tokens": 3735
+    },
+    {
+      "request_id": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png:recognition:8",
+      "block_type": "equation",
+      "stop_reason": "length",
+      "output_tokens": 3471,
+      "max_new_tokens": 3471
+    },
+    {
+      "request_id": "page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.png:recognition:11",
+      "block_type": "equation",
+      "stop_reason": "length",
+      "output_tokens": 3873,
+      "max_new_tokens": 3873
+    },
+    {
+      "request_id": "page-2d8358c5-114a-4bda-92c3-e8480d9ab082.png:recognition:6",
+      "block_type": "text",
+      "stop_reason": "length",
+      "output_tokens": 3983,
+      "max_new_tokens": 3983
+    },
+    {
+      "request_id": "page-56023e3d-ae9b-486d-b7bb-419624d18356.png:recognition:9",
+      "block_type": "text",
+      "stop_reason": "length",
+      "output_tokens": 3696,
+      "max_new_tokens": 3696
+    },
+    {
+      "request_id": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png:recognition:2",
+      "block_type": "text",
+      "stop_reason": "length",
+      "output_tokens": 3991,
+      "max_new_tokens": 3991
+    },
+    {
+      "request_id": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png:recognition:8",
+      "block_type": "text",
+      "stop_reason": "length",
+      "output_tokens": 3999,
+      "max_new_tokens": 3999
+    },
+    {
+      "request_id": "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png:recognition:0",
+      "block_type": "table",
+      "stop_reason": "length",
+      "output_tokens": 3351,
+      "max_new_tokens": 3351
+    },
+    {
+      "request_id": "page-00b6ac57-4466-4eb0-937d-bb29a44fa0d3.png:recognition:45",
+      "block_type": "footer",
+      "stop_reason": "length",
+      "output_tokens": 3881,
+      "max_new_tokens": 3881
+    },
+    {
+      "request_id": "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png:recognition:3",
+      "block_type": "table",
+      "stop_reason": "length",
+      "output_tokens": 3327,
+      "max_new_tokens": 3327
+    },
+    {
+      "request_id": "page-f3e750d8-8201-4a22-9419-9776798b7a32.png:recognition:0",
+      "block_type": "table",
+      "stop_reason": "length",
+      "output_tokens": 3345,
+      "max_new_tokens": 3345
+    },
+    {
+      "request_id": "docstructbench_dianzishu_zhongwenzaixian-o.O-61510863.pdf_73.jpg:recognition:8",
+      "block_type": "text",
+      "stop_reason": "length",
+      "output_tokens": 4033,
+      "max_new_tokens": 4033
+    },
+    {
+      "request_id": "jiaocaineedrop_jiaocai_needrop_en_1118.jpg:recognition:2",
+      "block_type": "footer",
+      "stop_reason": "length",
+      "output_tokens": 4029,
+      "max_new_tokens": 4029
+    },
+    {
+      "request_id": "jiaocaineedrop_jiaocai_needrop_en_2652.jpg:recognition:11",
+      "block_type": "text",
+      "stop_reason": "length",
+      "output_tokens": 4032,
+      "max_new_tokens": 4032
+    },
+    {
+      "request_id": "jiaocaineedrop_jiaocai_needrop_en_349.jpg:recognition:5",
+      "block_type": "text",
+      "stop_reason": "length",
+      "output_tokens": 3963,
+      "max_new_tokens": 3963
+    },
+    {
+      "request_id": "jiaocaineedrop_jiaocai_needrop_en_664.jpg:recognition:5",
+      "block_type": "text",
+      "stop_reason": "length",
+      "output_tokens": 3371,
+      "max_new_tokens": 3371
+    },
+    {
+      "request_id": "jiaocaineedrop_jiaocai_needrop_en_383.jpg:recognition:21",
+      "block_type": "text",
+      "stop_reason": "length",
+      "output_tokens": 4029,
+      "max_new_tokens": 4029
+    },
+    {
+      "request_id": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png:recognition:12",
+      "block_type": "table",
+      "stop_reason": "length",
+      "output_tokens": 3951,
+      "max_new_tokens": 3951
+    },
+    {
+      "request_id": "book_en_[\u642c\u4e66\u5320#893][Pyomo\u2014Optimization Modeling in Python].2012.\u82f1\u6587\u7248_page_016.png:recognition:2",
+      "block_type": "text",
+      "stop_reason": "length",
+      "output_tokens": 3336,
+      "max_new_tokens": 3336
+    },
+    {
+      "request_id": "exam_paper_en-file-putnam-archive_2006_Solutions_2006s_page_007.png:recognition:29",
+      "block_type": "equation",
+      "stop_reason": "length",
+      "output_tokens": 3991,
+      "max_new_tokens": 3991
+    }
+  ]
+}
