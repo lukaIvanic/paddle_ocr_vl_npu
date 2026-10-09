@@ -1,0 +1,231 @@
+{
+  "chip": "910B2",
+  "physical_card": 2,
+  "source_commit": "a5ca976c713135f0a50e05a510779ae3d43302ae",
+  "scope": "One first-384-page ABAB comparison; live PP-DocLayoutV3; 602112-pixel cap; warm separate caches; no full 1651-page run.",
+  "rows": [
+    {
+      "lane": "baseline",
+      "repeat": 1,
+      "chip": "910B2",
+      "pages": 384,
+      "wall_s": 279.31186159001663,
+      "pages_per_s": 1.3748073490829693,
+      "request_h2d_submit_s": 15.995286138029769,
+      "cpu_prepare_wait_s": 20.09466045262525,
+      "vision_position_prepare_s": 11.675804183125493,
+      "prefill_s": 129.0062564285472,
+      "wall_minus_measured_prefill_and_decode_s": 100.14793016447496,
+      "layout_host_wall_s": 46.37143975996878,
+      "vision_encoder_s": 59.43016033744809,
+      "text_prefill_s": 39.293107577323944,
+      "decode_s": 59.935089255809814,
+      "idle_estimate_s": 53.77649040450618,
+      "idle_estimate_formula": "wall - named prefill event regions - decode event time - layout host wall (proxy); metrics-off unavailable",
+      "idle_estimate_limit": "Residual includes layout, other device work, launch gaps and host work; not measured NPU idle.",
+      "exactness": null
+    },
+    {
+      "lane": "c5",
+      "repeat": 1,
+      "chip": "910B2",
+      "pages": 384,
+      "wall_s": 265.4614420500002,
+      "pages_per_s": 1.446537760944103,
+      "request_h2d_submit_s": 13.144079591322225,
+      "cpu_prepare_wait_s": 19.28733264055336,
+      "vision_position_prepare_s": null,
+      "prefill_s": 82.67713565938175,
+      "wall_minus_measured_prefill_and_decode_s": null,
+      "layout_host_wall_s": 47.712989209918305,
+      "vision_encoder_s": null,
+      "text_prefill_s": null,
+      "decode_s": 57.38598957920077,
+      "idle_estimate_s": null,
+      "idle_estimate_formula": "wall - named prefill event regions - decode event time - layout host wall (proxy); metrics-off unavailable",
+      "idle_estimate_limit": "Residual includes layout, other device work, launch gaps and host work; not measured NPU idle.",
+      "exactness": {
+        "exact_requests": 4397,
+        "exact_pages": 384
+      }
+    },
+    {
+      "lane": "baseline",
+      "repeat": 2,
+      "chip": "910B2",
+      "pages": 384,
+      "wall_s": 274.87059921002947,
+      "pages_per_s": 1.3970210022592646,
+      "request_h2d_submit_s": 15.648417446762323,
+      "cpu_prepare_wait_s": 18.73358975839801,
+      "vision_position_prepare_s": 11.666793494343754,
+      "prefill_s": 128.2932599799824,
+      "wall_minus_measured_prefill_and_decode_s": 95.79773287614253,
+      "layout_host_wall_s": 44.48523548990488,
+      "vision_encoder_s": 58.69568002986908,
+      "text_prefill_s": 39.331957894325214,
+      "decode_s": 60.02966395378113,
+      "idle_estimate_s": 51.31249738623765,
+      "idle_estimate_formula": "wall - named prefill event regions - decode event time - layout host wall (proxy); metrics-off unavailable",
+      "idle_estimate_limit": "Residual includes layout, other device work, launch gaps and host work; not measured NPU idle.",
+      "exactness": {
+        "exact_requests": 4397,
+        "exact_pages": 384
+      }
+    },
+    {
+      "lane": "c5",
+      "repeat": 2,
+      "chip": "910B2",
+      "pages": 384,
+      "wall_s": 266.48715484002605,
+      "pages_per_s": 1.4409700168494712,
+      "request_h2d_submit_s": 14.035675822757185,
+      "cpu_prepare_wait_s": 19.075101200316567,
+      "vision_position_prepare_s": null,
+      "prefill_s": 82.89458721934352,
+      "wall_minus_measured_prefill_and_decode_s": null,
+      "layout_host_wall_s": 44.126144230540376,
+      "vision_encoder_s": null,
+      "text_prefill_s": null,
+      "decode_s": 59.228002045631406,
+      "idle_estimate_s": null,
+      "idle_estimate_formula": "wall - named prefill event regions - decode event time - layout host wall (proxy); metrics-off unavailable",
+      "idle_estimate_limit": "Residual includes layout, other device work, launch gaps and host work; not measured NPU idle.",
+      "exactness": {
+        "exact_requests": 4397,
+        "exact_pages": 384
+      }
+    }
+  ],
+  "baseline_mean_wall_s": 277.09123040002305,
+  "combined_mean_wall_s": 265.9742984450131,
+  "baseline_spread_s": 4.441262379987165,
+  "baseline_spread_pct_of_mean": 1.602815929459598,
+  "combined_spread_s": 1.0257127900258638,
+  "mean_wall_saved_s": 11.116931955009932,
+  "aggregate_baseline_pages_per_s": 1.3858251646782107,
+  "aggregate_combined_pages_per_s": 1.4437485209849599,
+  "throughput_improvement_pct": 4.179701580191675,
+  "wall_reduction_pct": 4.012011473246901,
+  "limits": [
+    "Two repetitions per configuration give an observed spread, not a statistical confidence interval.",
+    "Combined prefill metrics disabled: position/vision/text event times are unavailable, not zero.",
+    "Prefill host time with metrics off changes wait attribution and is not directly a device-time saving.",
+    "No individual C1/C2/C5 performance attribution; no 310P performance claim."
+  ],
+  "evidence_sha256": "13f866bcda2b722a39091bfd4ae4b6ce1452f7147b1d976c629aab37dcb1d930",
+  "host_state": [
+    {
+      "before": {
+        "utc": "2026-10-09T14:25:12.050057+00:00",
+        "load_average": [
+          27.021484375,
+          27.2353515625,
+          26.9189453125
+        ],
+        "cpu_count": 192,
+        "affinity_cpu_count": 192,
+        "visible_devices": "2"
+      },
+      "after": {
+        "utc": "2026-10-09T14:30:52.572993+00:00",
+        "load_average": [
+          27.9755859375,
+          28.29541015625,
+          27.51611328125
+        ],
+        "cpu_count": 192,
+        "affinity_cpu_count": 192,
+        "visible_devices": "2"
+      },
+      "lane": "performance_r1_baseline",
+      "requests": 4397
+    },
+    {
+      "before": {
+        "utc": "2026-10-09T14:30:58.582371+00:00",
+        "load_average": [
+          27.4970703125,
+          28.1904296875,
+          27.486328125
+        ],
+        "cpu_count": 192,
+        "affinity_cpu_count": 192,
+        "visible_devices": "2"
+      },
+      "after": {
+        "utc": "2026-10-09T14:36:26.496394+00:00",
+        "load_average": [
+          27.234375,
+          27.5556640625,
+          27.388671875
+        ],
+        "cpu_count": 192,
+        "affinity_cpu_count": 192,
+        "visible_devices": "2"
+      },
+      "lane": "performance_r1_c5",
+      "requests": 4397
+    },
+    {
+      "before": {
+        "utc": "2026-10-09T14:36:33.837450+00:00",
+        "load_average": [
+          27.4560546875,
+          27.5966796875,
+          27.40283203125
+        ],
+        "cpu_count": 192,
+        "affinity_cpu_count": 192,
+        "visible_devices": "2"
+      },
+      "after": {
+        "utc": "2026-10-09T14:42:08.902186+00:00",
+        "load_average": [
+          27.6162109375,
+          28.00634765625,
+          27.65771484375
+        ],
+        "cpu_count": 192,
+        "affinity_cpu_count": 192,
+        "visible_devices": "2"
+      },
+      "lane": "performance_r2_baseline",
+      "requests": 4397
+    },
+    {
+      "before": {
+        "utc": "2026-10-09T14:42:16.360061+00:00",
+        "load_average": [
+          27.326171875,
+          27.939453125,
+          27.6376953125
+        ],
+        "cpu_count": 192,
+        "affinity_cpu_count": 192,
+        "visible_devices": "2"
+      },
+      "after": {
+        "utc": "2026-10-09T14:47:44.546084+00:00",
+        "load_average": [
+          29.51025390625,
+          28.65185546875,
+          27.98779296875
+        ],
+        "cpu_count": 192,
+        "affinity_cpu_count": 192,
+        "visible_devices": "2"
+      },
+      "lane": "performance_r2_c5",
+      "requests": 4397
+    }
+  ],
+  "not_in_384_comparison": [
+    "C3 uint8 transfer",
+    "C4 preparation workers",
+    "profiling/GIL investigation",
+    "unvalidated H2D-thread extension"
+  ],
+  "subsequent_scope": "C2b/C3/C4 were subsequently implemented and tested; see ../host_overlap_short_910b_20261009/summary.json."
+}

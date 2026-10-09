@@ -1,0 +1,96 @@
+{
+  "chip": "910B2",
+  "lane": "c5",
+  "flags": [
+    "--local-vision-grid-device",
+    "cpu",
+    "--local-input-transfer",
+    "pinned-nonblocking",
+    "--no-local-prefill-metrics"
+  ],
+  "settings": {
+    "local_vision_grid_device": "cpu",
+    "local_input_transfer": "pinned-nonblocking",
+    "local_compact_uint8": false,
+    "local_prefill_metrics": false,
+    "prepare_workers": 1,
+    "frontend_workers": 2
+  },
+  "source_commit": "6a5f932bea3abcc1cffbf0473fa1f266d25f33d2",
+  "basis": "Select the fastest actually measured cumulative configuration by the one completed wall-time measurement. Report marginal steps separately; do not claim untested combinations.",
+  "mean_wall_s": 39.18674314999953,
+  "baseline_spread_s": null,
+  "individual_steps": [
+    {
+      "lane": "baseline",
+      "mean_wall_s": 42.50442151003517,
+      "aggregate_pages_per_s": 0.7528628519845845,
+      "spread_s": null,
+      "wall_saved_vs_previous_s": null,
+      "flags": []
+    },
+    {
+      "lane": "c5",
+      "mean_wall_s": 39.18674314999953,
+      "aggregate_pages_per_s": 0.8166026933524427,
+      "spread_s": null,
+      "wall_saved_vs_previous_s": 3.317678360035643,
+      "flags": [
+        "--local-vision-grid-device",
+        "cpu",
+        "--local-input-transfer",
+        "pinned-nonblocking",
+        "--no-local-prefill-metrics"
+      ]
+    },
+    {
+      "lane": "c5_thread",
+      "mean_wall_s": 43.55320721998578,
+      "aggregate_pages_per_s": 0.734733491344715,
+      "spread_s": null,
+      "wall_saved_vs_previous_s": -4.36646406998625,
+      "flags": [
+        "--local-vision-grid-device",
+        "cpu",
+        "--local-input-transfer",
+        "pinned-thread",
+        "--no-local-prefill-metrics"
+      ]
+    },
+    {
+      "lane": "c3",
+      "mean_wall_s": 43.353222300007474,
+      "aggregate_pages_per_s": 0.7381227577170079,
+      "spread_s": null,
+      "wall_saved_vs_previous_s": 0.1999849199783057,
+      "flags": [
+        "--local-vision-grid-device",
+        "cpu",
+        "--local-input-transfer",
+        "pinned-thread",
+        "--no-local-prefill-metrics",
+        "--local-compact-uint8"
+      ]
+    },
+    {
+      "lane": "c4",
+      "mean_wall_s": 42.92921673995443,
+      "aggregate_pages_per_s": 0.745413087637759,
+      "spread_s": null,
+      "wall_saved_vs_previous_s": 0.4240055600530468,
+      "flags": [
+        "--local-vision-grid-device",
+        "cpu",
+        "--local-input-transfer",
+        "pinned-thread",
+        "--no-local-prefill-metrics",
+        "--local-compact-uint8",
+        "--prepare-workers",
+        "2",
+        "--frontend-workers",
+        "2"
+      ]
+    }
+  ],
+  "requires_310p_validation": true
+}

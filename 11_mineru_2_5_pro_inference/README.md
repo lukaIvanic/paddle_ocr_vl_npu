@@ -1,5 +1,14 @@
 # Experiment 11: MinerU2.5-Pro Local Inference
 
+**Current execution task (2026-10-09): host overhead only.** The single active
+[310P full-page handoff](WORK_SERVER_310P_LIVE_PADDLE_CAP3072_FULL1651.md) compares
+baseline with the best measured host configuration, both at approximate vision
+precision and the 602,112-pixel cap. Opt-in controls cover CPU vision grids,
+pinned transfers, a dedicated H2D thread, exact uint8 staging, prefill metrics,
+and preparation/frontend worker counts. Production defaults stay unchanged.
+No further profiling/GIL work is part of this task. Earlier vision/kernel
+handoffs below are background, not additional steps for this comparison.
+
 **Current 310P optimization target: vision encoding.** See
 [VISION_310P_TARGET.md](VISION_310P_TARGET.md) and the self-contained
 [vision crop handoff](VISION_CROP_310P_HANDOFF.md). Decode KV-cache benchmarks below
