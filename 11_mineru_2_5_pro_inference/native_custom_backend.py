@@ -291,7 +291,11 @@ def make_local_fixed_batch_vlm_client(
             trace_prompt_ids = (
                 inputs.input_ids[0].tolist() if self.generation_trace is not None else None
             )
-            cpu_image_grid_thw = getattr(inputs, "image_grid_thw", None)
+            # Keep CPU metadata out of BatchFeature.to entirely: the old C1
+            # implementation copied an unused grid and then selected the CPU one.
+            cpu_image_grid_thw = (
+                inputs.pop("image_grid_thw", None) if vision_grid_device == "cpu" else None
+            )
             host_staging = ()
             if input_transfer == "pinned-nonblocking":
                 from host_input_staging import move_pinned_inputs
