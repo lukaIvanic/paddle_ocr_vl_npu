@@ -18,6 +18,7 @@ def main():
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--candidate-grid',choices=['cpu','npu'],default='cpu')
     p.add_argument('--candidate-transfer',default='blocking')
+    p.add_argument('--candidate-metrics-off',action='store_true')
     p.add_argument('--count',type=int,default=200)
     a=p.parse_args()
     import torch
@@ -25,7 +26,9 @@ def main():
     from transformers import AutoProcessor
     from run_transformers_recognition_smoke import configure_npu
     from local_modeling_mineru import LocalMinerU2_5ForConditionalGeneration
-    from fixed_batch_engine import FixedBatchDecodeEngine
+    from fixed_batch_engine import ContinuousBatchDecodeEngine
+    from mineru_prefill_timing import PrefillDeviceTimeline
+    from unittest.mock import patch
     from native_custom_backend import make_local_fixed_batch_vlm_client
     from vision_prefill_compile import MinerUVisionPrefillRuntime, parse_vision_buckets
     from run_official_transformers_omnidocbench import apply_processor_pixel_limits
@@ -61,7 +64,7 @@ def main():
     runtime=MinerUVisionPrefillRuntime(model.visual,buckets=prod.local_vision_buckets,
         cache_root=a.cache_root,model_dir=model_path,device=model.device,dtype=torch.float16)
     model.set_vision_prefill_runtime(runtime)
-    engine=FixedBatchDecodeEngine(model,None,batch_size=32,cache_length=4096,
+    engine=ContinuousBatchDecodeEngine(model,None,batch_size=32,cache_length=4096,
         eos_token_id=model.config.eos_token_id,pad_token_id=model.config.pad_token_id,
         vision_pack_target=768,vision_lookahead=32)
     processor=AutoProcessor.from_pretrained(model_path,use_fast=True,local_files_only=True)
@@ -81,12 +84,10 @@ def main():
         return len(x)==len(y) and all(equal(i,j) for i,j in zip(x,y))
     class Recorder:
         def __init__(self):self.values=[];self.routes=Counter()
-        def measure(self,name,fn,*,tags=None):
-            result=fn()
+        def capture(self,name,result,tags):
             if name in ['vision_patch_embed','vision_position_prepare','vision_transformer_blocks']:
                 self.values.append((name,tags,cpu(result)))
             if tags:self.routes[tags['route']]+=1
-            return result
     def image(row):
         geo=json.loads((ref/'layout_regions'/f"{Path(row['page']).stem}.json").read_text())
         record=geo['blocks'][row['block_index']]
@@ -114,7 +115,15 @@ def main():
                     request=client._finish_generation(inputs,None,pos,delta)
                     requests.append((0,start+offset,request))
                 record=Recorder()
-                outputs=engine._build_group_inputs_embeds(requests,record)
+                original_measure=PrefillDeviceTimeline.measure
+                def instrument(timeline,name,fn,*,tags=None):
+                    result=original_measure(timeline,name,fn,tags=tags)
+                    record.capture(name,result,tags)
+                    return result
+                engine.collect_prefill_metrics=not (label=='candidate' and a.candidate_metrics_off)
+                with patch.object(PrefillDeviceTimeline,'measure',instrument):
+                    engine._prepare_vision_window([(index,req) for _slot,index,req in requests])
+                outputs=[req.inputs_embeds for _slot,index,req in requests]
                 record.values.append(('final_embeddings',None,cpu(outputs)))
                 if references is None:references=record;routes.update(record.routes)
                 else:
@@ -130,6 +139,7 @@ def main():
     result=dict(chip=torch.npu.get_device_name(),crops=checked,exact=True,routes=dict(routes),
         checked_fields=['hidden_states','rope_cos','rope_sin','cu_seqlens','full_32_block_encoder_output','final_embeddings'],
         candidate_grid=a.candidate_grid,candidate_transfer=a.candidate_transfer,
+        candidate_metrics_off=a.candidate_metrics_off,comparison='raw tensor bytes (including signed zero)',
         buckets_above_cap_not_applicable=[b for b in prod.local_vision_buckets if b>3072],
         scope='Level 2 correctness only; same production vision grouping and graphs, real hash-verified crops')
     (a.output/'result.json').write_text(json.dumps(result,indent=2)+'\n')

@@ -19,6 +19,8 @@ HERE=Path(__file__).resolve().parent
 FLAGS={
  'baseline':[],
  'c1':['--local-vision-grid-device','cpu'],
+ 'c2_only':['--local-input-transfer','pinned-nonblocking'],
+ 'c5_only':['--no-local-prefill-metrics'],
  'c2':['--local-vision-grid-device','cpu','--local-input-transfer','pinned-nonblocking'],
  'c5':['--local-vision-grid-device','cpu','--local-input-transfer','pinned-nonblocking','--no-local-prefill-metrics'],
 }
@@ -44,6 +46,7 @@ def main():
     p.add_argument('--stage',choices=['vision','smoke','diagnostic','performance','full'],required=True)
     p.add_argument('--lanes',nargs='+',choices=list(FLAGS),default=['baseline','c1'])
     p.add_argument('--vision-transfer',default='blocking')
+    p.add_argument('--vision-metrics-off',action='store_true')
     p.add_argument('--vision-grid',choices=['cpu','npu'],default='cpu')
     a=p.parse_args()
     a.root.mkdir(parents=True,exist_ok=True)
@@ -80,11 +83,12 @@ def main():
                 '--output-dir',str(a.root/name/'output')]+FLAGS[label]
             return cmd
         if a.stage=='vision':
-            label=f'vision_{a.vision_grid}_{a.vision_transfer}'
+            label=f'vision_{a.vision_grid}_{a.vision_transfer}'+('_metrics_off' if a.vision_metrics_off else '')
             cmd=[sys.executable,'-u',str(HERE/'check_host_overlap_vision.py'),
                 '--reference-run',str(a.reference_run),'--cache-root',cache('validation')['local_vision_torchair_cache_dir'],
                 '--output',str(a.root/label/'check'),'--candidate-grid',a.vision_grid,
                 '--candidate-transfer',a.vision_transfer]
+            if a.vision_metrics_off:cmd+=['--candidate-metrics-off']
             run(label,cmd)
             return
         if a.stage=='diagnostic':
@@ -109,12 +113,12 @@ def main():
                 g=s['local_compiled_generation'];m=g['prefill_metrics'];st=s['streaming']
                 # Event regions can contain launch gaps; layout is a host span.
                 # This residual is requested but is NOT measured device idle.
-                measured=sum(float(m.get(k,0)) for k in ['vision_transformer_blocks','text_transformer_prefill'])+g['decode_s']
+                measured=sum(float(m.get(k,0)) for k in ['token_embedding','vision_patch_embed','vision_position_prepare','vision_transformer_blocks','vision_merger','image_embed_scatter','mrope_prepare','text_transformer_prefill','text_kv_redistribute','prefill_lm_head'])+g['decode_s']
                 table.append(dict(lane=lane,repeat=repeat+1,chip='910B2',pages=count,
                     wall_s=s['pipeline_wall_s'],pages_per_s=count/s['pipeline_wall_s'],
                     request_h2d_submit_s=st['request_h2d_submit_s'],cpu_prepare_wait_s=st['cpu_prepare_wait_s'],
                     vision_position_prepare_s=m.get('vision_position_prepare'),prefill_s=g['prefill_s'],
-                    wall_minus_vision_text_decode_s=(s['pipeline_wall_s']-measured) if s['local_prefill_metrics'] else None,
+                    wall_minus_measured_prefill_and_decode_s=(s['pipeline_wall_s']-measured) if s['local_prefill_metrics'] else None,
                     idle_estimate_limit='Residual includes layout, other device work, launch gaps and host work; not measured NPU idle.',
                     exactness=parity))
                 save(a.root/f'{a.stage}_results.json',table)

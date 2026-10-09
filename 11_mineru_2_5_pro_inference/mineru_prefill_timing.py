@@ -11,8 +11,9 @@ import torch
 class PrefillDeviceTimeline:
     """Measure queued device work and synchronize once at prefill completion."""
 
-    def __init__(self, device: torch.device, samples: list[dict[str, Any]] | None = None):
+    def __init__(self, device: torch.device, samples: list[dict[str, Any]] | None = None, *, enabled: bool = True):
         self.device = device
+        self.enabled = bool(enabled)
         self.samples = samples
         self._events: list[tuple[str, Any, Any, dict[str, Any] | None]] = []
 
@@ -26,6 +27,8 @@ class PrefillDeviceTimeline:
         return None
 
     def measure(self, name: str, fn: Callable[[], Any], *, tags: dict[str, Any] | None = None) -> Any:
+        if not self.enabled:
+            return fn()
         start = self._event()
         end = self._event()
         if start is None or end is None:

@@ -824,7 +824,8 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             request_count=len(requests),
             request_ids=[int(request_index) for request_index, _request in requests],
         )
-        timeline = PrefillDeviceTimeline(self.model.device, self.vision_timing_samples)
+        timeline = PrefillDeviceTimeline(
+            self.model.device, self.vision_timing_samples, enabled=self.collect_prefill_metrics)
         entries = [
             (0, request_index, request)
             for request_index, request in requests
@@ -907,7 +908,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         from text_prefill_compile import PreparedTextMember
 
         runtime = self.packed_text_prefill_runtime
-        timeline = PrefillDeviceTimeline(self.model.device)
+        timeline = PrefillDeviceTimeline(self.model.device, enabled=self.collect_prefill_metrics)
         precomputed = [request.inputs_embeds for _slot, _index, request in entries]
         if all(inputs_embeds is not None for inputs_embeds in precomputed):
             inputs_embeds_list = [
