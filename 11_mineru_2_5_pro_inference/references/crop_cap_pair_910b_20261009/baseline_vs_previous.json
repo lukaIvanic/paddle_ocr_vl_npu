@@ -1,0 +1,18 @@
+{
+  "common_requests": 32051,
+  "old_only": [],
+  "new_only": [],
+  "generated_token_ids_different_count": 0,
+  "generated_token_ids_first_differences": [],
+  "prompt_token_ids_different_count": 0,
+  "prompt_token_ids_first_differences": [],
+  "image_sha256_different_count": 0,
+  "image_sha256_first_differences": [],
+  "stop_reason_different_count": 0,
+  "stop_reason_first_differences": [],
+  "generated_tokens": 1804363,
+  "markdown_different_count": 0,
+  "markdown_different_pages": [],
+  "layout_different_count": 0,
+  "layout_different_pages": []
+}

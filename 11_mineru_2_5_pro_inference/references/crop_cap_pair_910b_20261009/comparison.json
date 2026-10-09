@@ -1,0 +1,1601 @@
+{
+  "baseline": {
+    "chip": "910B2",
+    "pages": 1651,
+    "requests": 32051,
+    "max_pixels": 602112,
+    "setup_s": 29.275794950022828,
+    "pipeline_wall_s": 1632.5672165599826,
+    "pages_per_s": 1.01129067351901,
+    "vision_s": 365.3401756687164,
+    "vision_real_tokens": 16809232,
+    "vision_physical_tokens": 18887040,
+    "vision_real_tok_s": 46009.809814188884,
+    "padding_fraction": 0.11001236826945882,
+    "generated_tokens": 1804363,
+    "stop_reasons": {
+      "eos": 32025,
+      "length": 26
+    },
+    "non_eos_categories": {
+      "equation": 10,
+      "text": 10,
+      "table": 4,
+      "footer": 2
+    },
+    "decode_s": 247.6669567837715,
+    "prefill_metrics": {
+      "vision_prepare_window_count": 1007,
+      "vision_prepare_request_count": 32051,
+      "token_embedding": 7.544382655585179,
+      "vision_patch_embed": 13.788551272872821,
+      "vision_position_prepare": 94.20608715403094,
+      "vision_transformer_blocks": 365.34017566871637,
+      "vision_merger": 5.326882661227143,
+      "image_embed_scatter": 4.245170960288493,
+      "request_count": 32051,
+      "raw_vision_tokens": 16809232,
+      "merged_vision_tokens": 4202308,
+      "text_prefill_tokens": 5003583,
+      "physical_text_prefill_tokens": 7332736,
+      "text_prefill_pack_count": 23571,
+      "text_prefill_overflow_count": 0,
+      "text_kv_redistribute_bytes": 61484027904,
+      "text_transformer_prefill": 241.6493527679432,
+      "text_kv_redistribute": 42.30715020477742,
+      "prefill_lm_head": 6.359007278189055,
+      "raw_vision_tok_s": 0.0,
+      "merged_vision_tok_s": 0.0,
+      "text_prefill_tok_s": 20705.964831633377,
+      "physical_text_prefill_tok_s": 30344.52985703485
+    },
+    "cpu_prepare_wait_s": 137.13040379880113,
+    "layout_host_wall_s": 207.69417636003345,
+    "decode_active_slot_fraction": 0.9779957289046917,
+    "accuracy": {
+      "text_accuracy": 96.23462448196373,
+      "page_teds": 93.52037466520076,
+      "page_cdm": 97.05405086318851,
+      "overall": 95.60301667011767
+    },
+    "evaluation_stages": {
+      "page_match": {
+        "workers": 24,
+        "page_count": 1651,
+        "quick_match_truncated_timeout_sec": 300,
+        "match_timeout_sec": 420,
+        "fallbacks": {
+          "quick_match_timeout": {
+            "count": 0,
+            "cases": []
+          },
+          "page_timeout": {
+            "count": 0,
+            "cases": []
+          }
+        }
+      },
+      "metrics": {
+        "display_formula": {
+          "CDM": {
+            "workers": 12,
+            "timeout_sec": null,
+            "sample_count": 2352,
+            "timeout_case_count": 0,
+            "timeout_cases": [],
+            "error_case_count": 0,
+            "error_cases": [],
+            "exception_case_count": 0,
+            "exception_cases": []
+          }
+        },
+        "table": {
+          "TEDS": {
+            "workers": 12,
+            "timeout_sec": 120.0,
+            "sample_count": 665,
+            "timeout_case_count": 0,
+            "timeout_cases": [],
+            "error_case_count": 0,
+            "error_cases": [],
+            "exception_case_count": 0,
+            "exception_cases": []
+          }
+        }
+      }
+    },
+    "evaluation_wall_s": 884.14,
+    "cdm_final_progress_line": "CDM: 100%|##############################################################################################| 2352/2352 [10:49<00:00,  3.62it/s]",
+    "cdm_aggregate_samples_per_s": 3.62,
+    "observed_max_python_children_per_parent": null
+  },
+  "comparison": {
+    "chip": "910B2",
+    "pages": 1651,
+    "requests": 32051,
+    "max_pixels": 401408,
+    "setup_s": 29.390122449985938,
+    "pipeline_wall_s": 1658.8622766799817,
+    "pages_per_s": 0.9952604403689755,
+    "vision_s": 351.0839190711975,
+    "vision_real_tokens": 15253444,
+    "vision_physical_tokens": 17013376,
+    "vision_real_tok_s": 43446.71792531376,
+    "padding_fraction": 0.10344401957612648,
+    "generated_tokens": 1811204,
+    "stop_reasons": {
+      "eos": 32023,
+      "length": 28
+    },
+    "non_eos_categories": {
+      "equation": 11,
+      "text": 9,
+      "footer": 2,
+      "table": 6
+    },
+    "decode_s": 245.2697010769845,
+    "prefill_metrics": {
+      "vision_prepare_window_count": 1008,
+      "vision_prepare_request_count": 32051,
+      "token_embedding": 8.232504675639328,
+      "vision_patch_embed": 17.119383527809756,
+      "vision_position_prepare": 99.79671983087052,
+      "vision_transformer_blocks": 351.0839190711981,
+      "vision_merger": 6.549451805148276,
+      "image_embed_scatter": 5.167575755141678,
+      "request_count": 32051,
+      "raw_vision_tokens": 15253444,
+      "merged_vision_tokens": 3813361,
+      "text_prefill_tokens": 4614636,
+      "physical_text_prefill_tokens": 6863616,
+      "text_prefill_pack_count": 23363,
+      "text_prefill_overflow_count": 0,
+      "text_kv_redistribute_bytes": 56704647168,
+      "text_transformer_prefill": 242.81158628749796,
+      "text_kv_redistribute": 40.073590071112235,
+      "prefill_lm_head": 6.093836059734193,
+      "raw_vision_tok_s": 0.0,
+      "merged_vision_tok_s": 0.0,
+      "text_prefill_tok_s": 19005.007423888328,
+      "physical_text_prefill_tok_s": 28267.250772264313
+    },
+    "cpu_prepare_wait_s": 128.92363110758015,
+    "layout_host_wall_s": 224.53989864938194,
+    "decode_active_slot_fraction": 0.9784283812750657,
+    "accuracy": {
+      "text_accuracy": 96.31326484354676,
+      "page_teds": 93.01996752571097,
+      "page_cdm": 96.95306471411068,
+      "overall": 95.42876569445613
+    },
+    "evaluation_stages": {
+      "page_match": {
+        "workers": 24,
+        "page_count": 1651,
+        "quick_match_truncated_timeout_sec": 300,
+        "match_timeout_sec": 420,
+        "fallbacks": {
+          "quick_match_timeout": {
+            "count": 0,
+            "cases": []
+          },
+          "page_timeout": {
+            "count": 0,
+            "cases": []
+          }
+        }
+      },
+      "metrics": {
+        "display_formula": {
+          "CDM": {
+            "workers": 96,
+            "timeout_sec": null,
+            "sample_count": 2352,
+            "timeout_case_count": 0,
+            "timeout_cases": [],
+            "error_case_count": 0,
+            "error_cases": [],
+            "exception_case_count": 0,
+            "exception_cases": []
+          }
+        },
+        "table": {
+          "TEDS": {
+            "workers": 12,
+            "timeout_sec": 120.0,
+            "sample_count": 665,
+            "timeout_case_count": 0,
+            "timeout_cases": [],
+            "error_case_count": 0,
+            "error_cases": [],
+            "exception_case_count": 0,
+            "exception_cases": []
+          }
+        }
+      }
+    },
+    "evaluation_wall_s": 348.58,
+    "cdm_final_progress_line": "CDM: 100%|##############################################################################################| 2352/2352 [01:54<00:00, 20.56it/s]",
+    "cdm_aggregate_samples_per_s": 20.56,
+    "observed_max_python_children_per_parent": 96
+  },
+  "configuration_differences_except_max_pixels": {},
+  "throughput_gain_pct": -1.5851261728987986,
+  "real_vision_token_reduction_pct": 9.255556708361212,
+  "accuracy_delta_pp": {
+    "text_accuracy": 0.07864036158302667,
+    "page_teds": -0.5004071394897949,
+    "page_cdm": -0.10098614907782633,
+    "overall": -0.17425097566153624
+  },
+  "per_page": {
+    "text_accuracy": {
+      "common_pages": 1557,
+      "baseline_only": [],
+      "comparison_only": [],
+      "worse": 26,
+      "better": 31,
+      "equal": 1500,
+      "worse_by_more_than_1pp": 8,
+      "worst_10": [
+        {
+          "image": "notes_9e951846094758afac08c620144e3a76_12.jpg",
+          "baseline": 34.33029908972692,
+          "comparison": 1.2647434986499895,
+          "delta_pp": -33.06555559107693
+        },
+        {
+          "image": "jiaocaineedrop_jiaocai_needrop_en_620.jpg",
+          "baseline": 76.25,
+          "comparison": 71.26168224299066,
+          "delta_pp": -4.988317757009341
+        },
+        {
+          "image": "notes_f7f010b78016aeebd76e56d9283eb67f_4.jpg",
+          "baseline": 99.625468164794,
+          "comparison": 95.50561797752809,
+          "delta_pp": -4.119850187265911
+        },
+        {
+          "image": "exam_paper_2004-2019\u4e0a\u6d77\u9ad8\u8003\u82f1\u8bed\u542c\u529b\u539f\u6587\u548c\u7b54\u6848_page_010.png",
+          "baseline": 94.77936606587943,
+          "comparison": 90.70455891059798,
+          "delta_pp": -4.074807155281448
+        },
+        {
+          "image": "jiaocaineedrop_jiaocai_needrop_en_2732.jpg",
+          "baseline": 91.12343966712899,
+          "comparison": 88.69625520110958,
+          "delta_pp": -2.427184466019412
+        },
+        {
+          "image": "PPT_ch7_page_136.png",
+          "baseline": 99.04458598726114,
+          "comparison": 96.81528662420382,
+          "delta_pp": -2.229299363057322
+        },
+        {
+          "image": "notes_9e951846094758afac08c620144e3a76_15.jpg",
+          "baseline": 50.88757396449704,
+          "comparison": 49.112426035502956,
+          "delta_pp": -1.7751479289940804
+        },
+        {
+          "image": "PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png",
+          "baseline": 100.0,
+          "comparison": 98.91891891891892,
+          "delta_pp": -1.0810810810810807
+        },
+        {
+          "image": "PPT_ch7_page_030.png",
+          "baseline": 98.75776397515527,
+          "comparison": 97.82608695652173,
+          "delta_pp": -0.9316770186335361
+        },
+        {
+          "image": "notes_f7f010b78016aeebd76e56d9283eb67f_3.jpg",
+          "baseline": 99.66887417218543,
+          "comparison": 99.00662251655629,
+          "delta_pp": -0.6622516556291345
+        }
+      ],
+      "best_10": [
+        {
+          "image": "book_en_[\u642c\u4e66\u5320#893][Pyomo\u2014Optimization Modeling in Python].2012.\u82f1\u6587\u7248_page_016.png",
+          "baseline": 1.5113350125944613,
+          "comparison": 100.0,
+          "delta_pp": 98.48866498740554
+        },
+        {
+          "image": "page-07088b2f-f9d6-4c38-9c97-d7f98bc3d556.png",
+          "baseline": 64.4927536231884,
+          "comparison": 83.87096774193549,
+          "delta_pp": 19.37821411874708
+        },
+        {
+          "image": "notes_f7f010b78016aeebd76e56d9283eb67f_2.jpg",
+          "baseline": 82.77153558052434,
+          "comparison": 99.25093632958801,
+          "delta_pp": 16.47940074906367
+        },
+        {
+          "image": "jiaocaineedrop_jiaocai_needrop_en_3685.jpg",
+          "baseline": 66.20689655172414,
+          "comparison": 79.3103448275862,
+          "delta_pp": 13.103448275862064
+        },
+        {
+          "image": "yanbaopptmerge_yanbaoPPT_4125.jpg",
+          "baseline": 84.0,
+          "comparison": 96.88715953307393,
+          "delta_pp": 12.887159533073927
+        },
+        {
+          "image": "jiaocaineedrop_jiaocai_needrop_en_664.jpg",
+          "baseline": 79.78468899521532,
+          "comparison": 87.71021992238033,
+          "delta_pp": 7.925530927165013
+        },
+        {
+          "image": "notes_9e951846094758afac08c620144e3a76_9.jpg",
+          "baseline": 74.57627118644068,
+          "comparison": 76.27118644067797,
+          "delta_pp": 1.6949152542372872
+        },
+        {
+          "image": "jiaocaineedrop_jiaocai_needrop_en_1198.jpg",
+          "baseline": 81.98924731182795,
+          "comparison": 83.60215053763442,
+          "delta_pp": 1.6129032258064626
+        },
+        {
+          "image": "page-dad79c54-8125-4927-9988-ee1d2a139d7b.png",
+          "baseline": 89.76034858387798,
+          "comparison": 91.2472647702407,
+          "delta_pp": 1.4869161863627198
+        },
+        {
+          "image": "book_zh_JJD10031991_extracted_page_6.png",
+          "baseline": 92.4380704041721,
+          "comparison": 93.8722294654498,
+          "delta_pp": 1.434159061277711
+        }
+      ]
+    },
+    "page_teds": {
+      "common_pages": 458,
+      "baseline_only": [],
+      "comparison_only": [],
+      "worse": 85,
+      "better": 44,
+      "equal": 329,
+      "worse_by_more_than_1pp": 35,
+      "worst_10": [
+        {
+          "image": "page-f6b6cfb8-3bb5-4393-b3fb-70efef72aca5.png",
+          "baseline": 100.0,
+          "comparison": 30.677601898532146,
+          "delta_pp": -69.32239810146785
+        },
+        {
+          "image": "page-50ffe5d2-cd27-449a-a813-d4a8c44b12ea.png",
+          "baseline": 96.23698690595688,
+          "comparison": 31.198992504671775,
+          "delta_pp": -65.0379944012851
+        },
+        {
+          "image": "docstructbench_dianzishu_zhongwenzaixian-o.O-61518266.pdf_149.jpg",
+          "baseline": 82.57575757575756,
+          "comparison": 39.656385281385276,
+          "delta_pp": -42.91937229437229
+        },
+        {
+          "image": "page-c7771a62-5b6b-48f0-b591-6b657d26e125.png",
+          "baseline": 92.09542028868009,
+          "comparison": 53.08130445109781,
+          "delta_pp": -39.01411583758228
+        },
+        {
+          "image": "yanbaor2_0aa9545ccbc482a37e3b55c96897f0f24cee08bb80c7addfb0c219814af44a3b.pdf_27.jpg",
+          "baseline": 84.48522367598237,
+          "comparison": 50.12875145687645,
+          "delta_pp": -34.35647221910592
+        },
+        {
+          "image": "page-be2ebf31-5f24-4d3e-97f0-4a8df7e773b4.png",
+          "baseline": 93.73706004140787,
+          "comparison": 61.020531400966185,
+          "delta_pp": -32.71652864044169
+        },
+        {
+          "image": "yanbaor2_afad9eb86f2a04271428aa988aec7d1949713bb5a5ce5c0cf26f320650b7966a.pdf_14.jpg",
+          "baseline": 73.8071256657837,
+          "comparison": 41.5007770443476,
+          "delta_pp": -32.3063486214361
+        },
+        {
+          "image": "page-ab4f331b-e8f3-41fb-ba6b-8da5ade54983.png",
+          "baseline": 85.42708224136796,
+          "comparison": 68.05975688450091,
+          "delta_pp": -17.367325356867042
+        },
+        {
+          "image": "page-8d707810-de48-43ba-81a7-b976918e7be2.png",
+          "baseline": 74.36823743553443,
+          "comparison": 58.609631771150326,
+          "delta_pp": -15.758605664384099
+        },
+        {
+          "image": "notes_1ba14cb325bc448f7201b20502ecf2b5_96.jpg",
+          "baseline": 97.38593395752109,
+          "comparison": 83.52427761372815,
+          "delta_pp": -13.861656343792944
+        }
+      ],
+      "best_10": [
+        {
+          "image": "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png",
+          "baseline": 0.22883295194507935,
+          "comparison": 76.65426555317522,
+          "delta_pp": 76.42543260123014
+        },
+        {
+          "image": "yanbaor2_yanbaoPPT_5877.jpg",
+          "baseline": 54.14609053497943,
+          "comparison": 99.58504801097394,
+          "delta_pp": 45.438957475994506
+        },
+        {
+          "image": "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg",
+          "baseline": 75.15253890253891,
+          "comparison": 99.93243243243244,
+          "delta_pp": 24.779893529893528
+        },
+        {
+          "image": "page-d29fe4d2-832a-4ad6-ac80-dc01cf8b0e16.png",
+          "baseline": 77.41604244694132,
+          "comparison": 97.41604244694132,
+          "delta_pp": 20.0
+        },
+        {
+          "image": "newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_2.jpg",
+          "baseline": 83.88581952620552,
+          "comparison": 99.06197206042195,
+          "delta_pp": 15.176152534216428
+        },
+        {
+          "image": "page-dd5b0a99-4cc6-4fa9-ab63-a277947735b1.png",
+          "baseline": 75.52484049633999,
+          "comparison": 87.98135214792056,
+          "delta_pp": 12.45651165158057
+        },
+        {
+          "image": "scihub_s12237-014-9873-7.pdf_4.jpg",
+          "baseline": 51.56599732547718,
+          "comparison": 63.9081298455277,
+          "delta_pp": 12.34213252005052
+        },
+        {
+          "image": "page-3f8eed58-8b86-4f3a-958d-13671977d3c6.png",
+          "baseline": 66.1749209694415,
+          "comparison": 75.38461538461539,
+          "delta_pp": 9.209694415173885
+        },
+        {
+          "image": "page-472c26e2-6bc2-4c05-9889-05132c87a8a9.png",
+          "baseline": 86.1083453941006,
+          "comparison": 94.67618738478912,
+          "delta_pp": 8.567841990688521
+        },
+        {
+          "image": "page-9f6bc620-1983-4503-bb0f-f9c7949ccb77.png",
+          "baseline": 91.83443447186902,
+          "comparison": 99.88365328679465,
+          "delta_pp": 8.049218814925638
+        }
+      ]
+    },
+    "page_cdm": {
+      "common_pages": 313,
+      "baseline_only": [],
+      "comparison_only": [],
+      "worse": 12,
+      "better": 7,
+      "equal": 294,
+      "worse_by_more_than_1pp": 5,
+      "worst_10": [
+        {
+          "image": "page-1ce383cc-63a3-43c9-b6f2-7498a952b65c.png",
+          "baseline": 99.9090909090909,
+          "comparison": 41.11818181818182,
+          "delta_pp": -58.79090909090909
+        },
+        {
+          "image": "notes_9e951846094758afac08c620144e3a76_16.jpg",
+          "baseline": 100.0,
+          "comparison": 97.36,
+          "delta_pp": -2.6400000000000006
+        },
+        {
+          "image": "page-b2cc5729-a6b2-49ba-af62-788bf069b617.png",
+          "baseline": 99.925,
+          "comparison": 98.54375,
+          "delta_pp": -1.3812499999999943
+        },
+        {
+          "image": "notes_9e951846094758afac08c620144e3a76_14.jpg",
+          "baseline": 71.525,
+          "comparison": 70.15,
+          "delta_pp": -1.375
+        },
+        {
+          "image": "page-c7fec126-2adb-4094-8110-5d81a92e05b0.png",
+          "baseline": 99.6,
+          "comparison": 98.26666666666667,
+          "delta_pp": -1.3333333333333286
+        },
+        {
+          "image": "page-ccd77e4e-4f94-45df-8e3d-e054a951f65f.png",
+          "baseline": 99.85454545454546,
+          "comparison": 99.4090909090909,
+          "delta_pp": -0.44545454545455243
+        },
+        {
+          "image": "page-c9654418-0624-48d4-8be7-6065f45dd1f9.png",
+          "baseline": 98.13333333333333,
+          "comparison": 97.82,
+          "delta_pp": -0.3133333333333326
+        },
+        {
+          "image": "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png",
+          "baseline": 95.7,
+          "comparison": 95.39999999999999,
+          "delta_pp": -0.30000000000001137
+        },
+        {
+          "image": "page-7d2d833d-37b1-4c18-9ee6-4e09d352e265.png",
+          "baseline": 99.72142857142858,
+          "comparison": 99.46428571428571,
+          "delta_pp": -0.2571428571428669
+        },
+        {
+          "image": "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png",
+          "baseline": 99.45454545454545,
+          "comparison": 99.20454545454545,
+          "delta_pp": -0.25
+        }
+      ],
+      "best_10": [
+        {
+          "image": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+          "baseline": 42.827777777777776,
+          "comparison": 73.62222222222222,
+          "delta_pp": 30.794444444444444
+        },
+        {
+          "image": "PPT_lecture1_page_022.png",
+          "baseline": 98.1,
+          "comparison": 100.0,
+          "delta_pp": 1.9000000000000057
+        },
+        {
+          "image": "page-e4053f20-e6e6-430e-83ef-db298a3199aa.png",
+          "baseline": 97.80526315789474,
+          "comparison": 98.77368421052631,
+          "delta_pp": 0.9684210526315695
+        },
+        {
+          "image": "page-d2816bbe-3c28-4905-ad6d-5f873b525de3.png",
+          "baseline": 98.43076923076923,
+          "comparison": 99.37692307692308,
+          "delta_pp": 0.9461538461538481
+        },
+        {
+          "image": "page-5b2f2dec-8e96-450f-aea0-b73d46eac172.png",
+          "baseline": 98.72307692307692,
+          "comparison": 99.25384615384615,
+          "delta_pp": 0.5307692307692378
+        },
+        {
+          "image": "notes_9e951846094758afac08c620144e3a76_15.jpg",
+          "baseline": 91.04285714285714,
+          "comparison": 91.45714285714286,
+          "delta_pp": 0.41428571428571104
+        },
+        {
+          "image": "page-e13fef95-c179-4a0f-94f9-1cc970aab788.png",
+          "baseline": 99.9,
+          "comparison": 100.0,
+          "delta_pp": 0.09999999999999432
+        }
+      ]
+    }
+  },
+  "categories": {
+    "text_accuracy": {
+      "ALL": {
+        "baseline": 96.23462448196373,
+        "comparison": 96.31326484354676,
+        "delta_pp": 0.07864036158302667
+      },
+      "None": {
+        "baseline": 97.1947872641009,
+        "comparison": 97.41754547709164,
+        "delta_pp": 0.2227582129907404
+      },
+      "colorful_backgroud": {
+        "baseline": 96.6717181431367,
+        "comparison": 96.70829725398241,
+        "delta_pp": 0.03657911084570742
+      },
+      "data_source: PPT2PDF": {
+        "baseline": 97.52541493684589,
+        "comparison": 97.56070106774509,
+        "delta_pp": 0.035286130899194745
+      },
+      "data_source: academic_literature": {
+        "baseline": 96.97444097772768,
+        "comparison": 96.97305088472338,
+        "delta_pp": -0.0013900930043035942
+      },
+      "data_source: book": {
+        "baseline": 96.18898822970753,
+        "comparison": 96.58621025205143,
+        "delta_pp": 0.3972220223438967
+      },
+      "data_source: colorful_textbook": {
+        "baseline": 94.52085067781557,
+        "comparison": 94.61462679173937,
+        "delta_pp": 0.09377611392379492
+      },
+      "data_source: exam_paper": {
+        "baseline": 94.62553709547622,
+        "comparison": 94.62221250547866,
+        "delta_pp": -0.0033245899975611337
+      },
+      "data_source: historical_document": {
+        "baseline": 86.99626759255325,
+        "comparison": 91.12619020529935,
+        "delta_pp": 4.1299226127461
+      },
+      "data_source: magazine": {
+        "baseline": 96.85503083000229,
+        "comparison": 96.85363246716545,
+        "delta_pp": -0.0013983628368379186
+      },
+      "data_source: newspaper": {
+        "baseline": 94.91357469965487,
+        "comparison": 94.91349180243104,
+        "delta_pp": -8.289722383381104e-05
+      },
+      "data_source: note": {
+        "baseline": 95.58408361202258,
+        "comparison": 95.40085513411789,
+        "delta_pp": -0.18322847790469154
+      },
+      "data_source: research_report": {
+        "baseline": 99.58671171401849,
+        "comparison": 99.58671171401849,
+        "delta_pp": 0.0
+      },
+      "fuzzy_content": {
+        "baseline": 90.67542721176724,
+        "comparison": 95.51998074145402,
+        "delta_pp": 4.844553529686777
+      },
+      "fuzzy_scan": {
+        "baseline": 95.90540082204652,
+        "comparison": 95.76957391687047,
+        "delta_pp": -0.1358269051760459
+      },
+      "geometric_deformation": {
+        "baseline": 95.31031414646431,
+        "comparison": 96.99694016666965,
+        "delta_pp": 1.6866260202053382
+      },
+      "handwriting": {
+        "baseline": 70.15561502626623,
+        "comparison": 70.15561502626623,
+        "delta_pp": 0.0
+      },
+      "language: en_ch_mixed": {
+        "baseline": 97.21384734716224,
+        "comparison": 97.22758863639042,
+        "delta_pp": 0.013741289228178744
+      },
+      "language: english": {
+        "baseline": 96.97032485731295,
+        "comparison": 97.09405900234019,
+        "delta_pp": 0.12373414502724245
+      },
+      "language: other": {
+        "baseline": 99.87179487179488,
+        "comparison": 99.87179487179488,
+        "delta_pp": 0.0
+      },
+      "language: simplified_chinese": {
+        "baseline": 95.40379629422623,
+        "comparison": 95.41880261825952,
+        "delta_pp": 0.01500632403329405
+      },
+      "language: traditional_chinese": {
+        "baseline": 91.44301956404229,
+        "comparison": 93.19612039428856,
+        "delta_pp": 1.753100830246268
+      },
+      "layout: 1andmore_column": {
+        "baseline": 97.46393932964764,
+        "comparison": 97.42851087533843,
+        "delta_pp": -0.03542845430921204
+      },
+      "layout: double_column": {
+        "baseline": 97.19666411202401,
+        "comparison": 97.20828255631102,
+        "delta_pp": 0.01161844428700931
+      },
+      "layout: other_layout": {
+        "baseline": 93.69552411620128,
+        "comparison": 93.8087696207289,
+        "delta_pp": 0.11324550452761173
+      },
+      "layout: single_column": {
+        "baseline": 96.98301853520478,
+        "comparison": 97.0864363308142,
+        "delta_pp": 0.10341779560941688
+      },
+      "layout: three_column": {
+        "baseline": 95.50138362005468,
+        "comparison": 95.52878769476831,
+        "delta_pp": 0.02740407471362971
+      },
+      "subset: equation_hard": {
+        "baseline": 91.16936380133578,
+        "comparison": 91.16936380133578,
+        "delta_pp": 0.0
+      },
+      "subset: layout_hard": {
+        "baseline": 93.47647109090393,
+        "comparison": 93.70903947970362,
+        "delta_pp": 0.23256838879969166
+      },
+      "subset: table_hard": {
+        "baseline": 99.7163825952206,
+        "comparison": 99.72253651150929,
+        "delta_pp": 0.006153916288695882
+      },
+      "subset: v1.5": {
+        "baseline": 96.65058090876369,
+        "comparison": 96.72750084725864,
+        "delta_pp": 0.07691993849495304
+      },
+      "text_L-shaped_wrap": {
+        "baseline": 94.43563160164514,
+        "comparison": 94.43563160164514,
+        "delta_pp": 0.0
+      },
+      "text_O-shaped_wrap": {
+        "baseline": 83.75634517766497,
+        "comparison": 83.75634517766497,
+        "delta_pp": 0.0
+      },
+      "text_embedded_in_image": {
+        "baseline": 53.5179640718563,
+        "comparison": 53.5179640718563,
+        "delta_pp": 0.0
+      },
+      "transparent_pages": {
+        "baseline": 94.29459117242536,
+        "comparison": 94.42972630756049,
+        "delta_pp": 0.13513513513512976
+      },
+      "watermark": {
+        "baseline": 94.81284297491383,
+        "comparison": 94.84329661203166,
+        "delta_pp": 0.030453637117830112
+      },
+      "with_watermark": {
+        "baseline": 98.80652492013408,
+        "comparison": 98.80652492013408,
+        "delta_pp": 0.0
+      }
+    },
+    "page_teds": {
+      "ALL": {
+        "baseline": 93.52037466520076,
+        "comparison": 93.01996752571097,
+        "delta_pp": -0.5004071394897949
+      },
+      "None": {
+        "baseline": 81.76615243437556,
+        "comparison": 81.76615243437556,
+        "delta_pp": 0.0
+      },
+      "colorful_backgroud": {
+        "baseline": 94.8879310991098,
+        "comparison": 94.70447624221927,
+        "delta_pp": -0.18345485689053476
+      },
+      "data_source: PPT2PDF": {
+        "baseline": 94.5830006082321,
+        "comparison": 93.16678924031149,
+        "delta_pp": -1.41621136792061
+      },
+      "data_source: academic_literature": {
+        "baseline": 89.44496298239777,
+        "comparison": 88.49484480757009,
+        "delta_pp": -0.9501181748276792
+      },
+      "data_source: book": {
+        "baseline": 95.3425614723323,
+        "comparison": 94.86451219157101,
+        "delta_pp": -0.47804928076129727
+      },
+      "data_source: colorful_textbook": {
+        "baseline": 96.66171981783938,
+        "comparison": 96.50091493244854,
+        "delta_pp": -0.1608048853908457
+      },
+      "data_source: exam_paper": {
+        "baseline": 96.66268099432874,
+        "comparison": 96.77167983362477,
+        "delta_pp": 0.10899883929603504
+      },
+      "data_source: magazine": {
+        "baseline": 97.41059686874173,
+        "comparison": 95.8237531907667,
+        "delta_pp": -1.5868436779750397
+      },
+      "data_source: newspaper": {
+        "baseline": 79.1831427557651,
+        "comparison": 80.1931549542035,
+        "delta_pp": 1.010012198438389
+      },
+      "data_source: note": {
+        "baseline": 92.87849547234717,
+        "comparison": 92.4684112757696,
+        "delta_pp": -0.41008419657757145
+      },
+      "data_source: research_report": {
+        "baseline": 94.88322562964012,
+        "comparison": 94.39407827168952,
+        "delta_pp": -0.4891473579505998
+      },
+      "fuzzy_scan": {
+        "baseline": 98.68801750498179,
+        "comparison": 98.68801750498179,
+        "delta_pp": 0.0
+      },
+      "geometric_deformation": {
+        "baseline": 99.50207223626515,
+        "comparison": 99.50207223626515,
+        "delta_pp": 0.0
+      },
+      "language: en_ch_mixed": {
+        "baseline": 92.94308384793844,
+        "comparison": 92.5245965977648,
+        "delta_pp": -0.41848725017364075
+      },
+      "language: english": {
+        "baseline": 90.09264323230768,
+        "comparison": 89.59628413280406,
+        "delta_pp": -0.49635909950362134
+      },
+      "language: simplified_chinese": {
+        "baseline": 95.6066834625367,
+        "comparison": 95.0951031724896,
+        "delta_pp": -0.5115802900470925
+      },
+      "language: traditional_chinese": {
+        "baseline": 84.7906941258747,
+        "comparison": 84.34473796563282,
+        "delta_pp": -0.44595616024187734
+      },
+      "layout: 1andmore_column": {
+        "baseline": 93.32712663670816,
+        "comparison": 93.79237508862704,
+        "delta_pp": 0.46524845191888176
+      },
+      "layout: double_column": {
+        "baseline": 96.05752627066101,
+        "comparison": 95.78377101616695,
+        "delta_pp": -0.2737552544940627
+      },
+      "layout: other_layout": {
+        "baseline": 89.48605695585051,
+        "comparison": 89.23617270853293,
+        "delta_pp": -0.2498842473175813
+      },
+      "layout: single_column": {
+        "baseline": 94.04074719853641,
+        "comparison": 93.27872767692668,
+        "delta_pp": -0.7620195216097301
+      },
+      "layout: three_column": {
+        "baseline": 96.36820813178602,
+        "comparison": 96.36820813178602,
+        "delta_pp": 0.0
+      },
+      "subset: equation_hard": {
+        "baseline": 87.4177974524587,
+        "comparison": 88.03517368650402,
+        "delta_pp": 0.6173762340453237
+      },
+      "subset: layout_hard": {
+        "baseline": 92.99819264845198,
+        "comparison": 93.0516114518708,
+        "delta_pp": 0.05341880341882188
+      },
+      "subset: table_hard": {
+        "baseline": 90.3767511552314,
+        "comparison": 88.59456080089225,
+        "delta_pp": -1.78219035433915
+      },
+      "subset: v1.5": {
+        "baseline": 94.43579942596004,
+        "comparison": 94.27062532792336,
+        "delta_pp": -0.1651740980366867
+      },
+      "watermark": {
+        "baseline": 96.50442887122092,
+        "comparison": 96.47767743924179,
+        "delta_pp": -0.026751431979135987
+      },
+      "with_watermark": {
+        "baseline": 95.9113507537775,
+        "comparison": 97.80143880636214,
+        "delta_pp": 1.8900880525846446
+      }
+    },
+    "page_cdm": {
+      "ALL": {
+        "baseline": 97.05405086318851,
+        "comparison": 96.95306471411068,
+        "delta_pp": -0.10098614907782633
+      },
+      "None": {
+        "baseline": 98.44719976540546,
+        "comparison": 98.4599514432578,
+        "delta_pp": 0.012751677852335774
+      },
+      "colorful_backgroud": {
+        "baseline": 96.14827922077922,
+        "comparison": 96.14827922077922,
+        "delta_pp": 0.0
+      },
+      "data_source: PPT2PDF": {
+        "baseline": 98.41409523809524,
+        "comparison": 98.46159523809523,
+        "delta_pp": 0.04749999999998522
+      },
+      "data_source: academic_literature": {
+        "baseline": 95.28004451706406,
+        "comparison": 94.79448029014644,
+        "delta_pp": -0.48556422691761725
+      },
+      "data_source: book": {
+        "baseline": 96.80065424354666,
+        "comparison": 96.77661571550894,
+        "delta_pp": -0.024038528037721107
+      },
+      "data_source: colorful_textbook": {
+        "baseline": 98.46354166666667,
+        "comparison": 98.46354166666667,
+        "delta_pp": 0.0
+      },
+      "data_source: exam_paper": {
+        "baseline": 98.41235566302818,
+        "comparison": 98.41235566302818,
+        "delta_pp": 0.0
+      },
+      "data_source: note": {
+        "baseline": 86.99464285714285,
+        "comparison": 86.3945238095238,
+        "delta_pp": -0.6001190476190459
+      },
+      "fuzzy_content": {
+        "baseline": 96.4875,
+        "comparison": 96.4875,
+        "delta_pp": 0.0
+      },
+      "fuzzy_scan": {
+        "baseline": 99.48333333333332,
+        "comparison": 99.48333333333332,
+        "delta_pp": 0.0
+      },
+      "geometric_deformation": {
+        "baseline": 97.98080808080807,
+        "comparison": 97.98080808080807,
+        "delta_pp": 0.0
+      },
+      "handwriting": {
+        "baseline": 98.80555555555554,
+        "comparison": 98.80555555555554,
+        "delta_pp": 0.0
+      },
+      "language: en_ch_mixed": {
+        "baseline": 96.7,
+        "comparison": 96.7,
+        "delta_pp": 0.0
+      },
+      "language: english": {
+        "baseline": 97.96155337456945,
+        "comparison": 97.8387075582362,
+        "delta_pp": -0.12284581633325331
+      },
+      "language: simplified_chinese": {
+        "baseline": 94.78417435560694,
+        "comparison": 94.73682550595471,
+        "delta_pp": -0.047348849652223635
+      },
+      "layout: 1andmore_column": {
+        "baseline": 98.72617252767336,
+        "comparison": 98.72617252767336,
+        "delta_pp": 0.0
+      },
+      "layout: double_column": {
+        "baseline": 98.64038949086805,
+        "comparison": 98.64038949086805,
+        "delta_pp": 0.0
+      },
+      "layout: other_layout": {
+        "baseline": 96.06578189300411,
+        "comparison": 96.05467078189301,
+        "delta_pp": -0.011111111111105743
+      },
+      "layout: single_column": {
+        "baseline": 96.50922875383405,
+        "comparison": 96.34700769341248,
+        "delta_pp": -0.16222106042157236
+      },
+      "layout: three_column": {
+        "baseline": 89.42007936507936,
+        "comparison": 89.42007936507936,
+        "delta_pp": 0.0
+      },
+      "subset: equation_hard": {
+        "baseline": 95.55717894448593,
+        "comparison": 95.22852014914915,
+        "delta_pp": -0.32865879533677855
+      },
+      "subset: layout_hard": {
+        "baseline": 99.41056166056167,
+        "comparison": 99.41056166056167,
+        "delta_pp": 0.0
+      },
+      "subset: table_hard": {
+        "baseline": 99.6,
+        "comparison": 99.6,
+        "delta_pp": 0.0
+      },
+      "subset: v1.5": {
+        "baseline": 97.53950403208928,
+        "comparison": 97.53128802104717,
+        "delta_pp": -0.008216011042108562
+      },
+      "text_L-shaped_wrap": {
+        "baseline": 99.62142857142857,
+        "comparison": 99.62142857142857,
+        "delta_pp": 0.0
+      },
+      "text_O-shaped_wrap": {
+        "baseline": 100.0,
+        "comparison": 100.0,
+        "delta_pp": 0.0
+      },
+      "watermark": {
+        "baseline": 91.42958333333333,
+        "comparison": 91.42958333333333,
+        "delta_pp": 0.0
+      },
+      "with_watermark": {
+        "baseline": 99.00416666666668,
+        "comparison": 99.00416666666668,
+        "delta_pp": 0.0
+      }
+    }
+  },
+  "generation_comparison": {
+    "common_requests": 32051,
+    "baseline_only": [],
+    "comparison_only": [],
+    "changed_prompt_requests": 1821,
+    "changed_output_limits": 1821,
+    "increased_output_limits": 1821,
+    "changed_output_requests": 474,
+    "changed_request_ids": [
+      "PPT_1637904769_page_017.png:recognition:3",
+      "PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png:recognition:2",
+      "PPT_BaharMartonosi_page_010.png:recognition:0",
+      "PPT_Catalysis.ppt_page_016.png:recognition:1",
+      "PPT_EnglishtoAmericanTransition_page_005.png:recognition:3",
+      "PPT_LEP power point presentation-English-FINAL-10-31-07_page_011.png:recognition:0",
+      "PPT_StewartCalcET7e_03_02_page_014.png:recognition:3",
+      "PPT_ch7_page_030.png:recognition:4",
+      "PPT_ch7_page_034.png:recognition:6",
+      "PPT_ch7_page_136.png:recognition:2",
+      "PPT_lecture1_page_005.png:recognition:2",
+      "PPT_lecture1_page_022.png:recognition:1",
+      "PPT_lecture1_page_022.png:recognition:2",
+      "book_en_[\u642c\u4e66\u5320#20][HTML5 Canvas].2011.\u82f1\u6587\u7248_page_208.png:recognition:0",
+      "book_en_[\u642c\u4e66\u5320#893][Pyomo\u2014Optimization Modeling in Python].2012.\u82f1\u6587\u7248_page_016.png:recognition:2",
+      "book_en_\u56fd\u5916\u6570\u5b66\u6559\u6750-An Excursion through Elementary Mathematics\uff08\u521d\u7b49\u6570\u5b66\u6f2b\u6e38\uff09-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0596.png:recognition:5",
+      "book_en_\u642c\u4e66\u5320-3282-Python Web Scraping 2nd Edition-2017-\u82f1\u6587\u7248_page_195.png:recognition:5",
+      "book_en_\u642c\u4e66\u5320-3299-Swift Data Structure and Algorithms-2016-\u82f1\u6587\u7248_page_066.png:recognition:5",
+      "book_en_\u642c\u4e66\u5320-3396-iPhone The Missing Manual 10th Edition-2017-\u82f1\u6587\u7248_page_099.png:recognition:3",
+      "book_en_\u642c\u4e66\u5320-3473-Reactive Programming with RxJS-2015-\u82f1\u6587\u7248_page_021.png:recognition:3",
+      "book_zh_JJD10031991_extracted_page_6.png:recognition:9",
+      "color_textbook_\u6559\u6750\u5168\u89e31+1\u4e8c\u5e74\u7ea7\u4e0b\u518c\u82f1\u8bed\u4e0a\u6d77\u725b\u6d25\u7248_page_006.png:recognition:4",
+      "color_textbook_\u6559\u6750\u5168\u89e31+1\u4e8c\u5e74\u7ea7\u4e0b\u518c\u82f1\u8bed\u4e0a\u6d77\u725b\u6d25\u7248_page_081.png:recognition:27",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-60403612.pdf_179.jpg:recognition:3",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-60599898.pdf_30.jpg:recognition:5",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-61323717.pdf_203.jpg:recognition:1",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-61510621.pdf_161.jpg:recognition:1",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-61518266.pdf_149.jpg:recognition:5",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-61518266.pdf_149.jpg:recognition:9",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-61520553.pdf_328.jpg:recognition:3",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-61520779.pdf_76.jpg:recognition:2",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-61521384.pdf_750.jpg:recognition:6",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-61521429.pdf_358.jpg:recognition:2",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-61521600.pdf_210.jpg:recognition:1",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-61523162.pdf_276.jpg:recognition:7",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg:recognition:4",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-63677793.pdf_332.jpg:recognition:0",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-63688043.pdf_110.jpg:recognition:6",
+      "docstructbench_dianzishu_zhongwenzaixian-o.O-63710191.pdf_336.jpg:recognition:2",
+      "docstructbench_enbook-zlib-o.O-17208435.pdf_105.jpg:recognition:2",
+      "docstructbench_enbook-zlib-o.O-17208435.pdf_105.jpg:recognition:3",
+      "docstructbench_enbook-zlib-o.O-17208435.pdf_105.jpg:recognition:4",
+      "docstructbench_enbook-zlib-o.O-17761417.pdf_894.jpg:recognition:13",
+      "docstructbench_llm-raw-scihub-o.O-ajhb.10190.pdf_5.jpg:recognition:8",
+      "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg:recognition:3",
+      "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg:recognition:6",
+      "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg:recognition:9",
+      "docstructbench_llm-raw-scihub-o.O-ceat.200600410.pdf_5.jpg:recognition:4",
+      "docstructbench_llm-raw-scihub-o.O-ceat.200600410.pdf_8.jpg:recognition:11",
+      "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg:recognition:3",
+      "docstructbench_llm-raw-scihub-o.O-ijc.22994.pdf_3.jpg:recognition:6",
+      "docstructbench_llm-raw-scihub-o.O-ijc.22999.pdf_3.jpg:recognition:9",
+      "docstructbench_llm-raw-scihub-o.O-j.1444-2906.2002.00466.x.pdf_4.jpg:recognition:13",
+      "docstructbench_llm-raw-scihub-o.O-j.apcata.2006.05.010.pdf_2.jpg:recognition:11",
+      "docstructbench_llm-raw-scihub-o.O-j.apcata.2006.05.010.pdf_2.jpg:recognition:8",
+      "docstructbench_llm-raw-scihub-o.O-j.apcata.2007.01.024.pdf_7.jpg:recognition:8",
+      "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.03.134.pdf_6.jpg:recognition:3",
+      "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.05.085.pdf_4.jpg:recognition:6",
+      "docstructbench_llm-raw-scihub-o.O-j.physletb.2004.02.015.pdf_4.jpg:recognition:3",
+      "docstructbench_llm-raw-scihub-o.O-s00128-007-9171-1.pdf_3.jpg:recognition:3",
+      "docstructbench_llm-raw-scihub-o.O-s00128-010-0006-0.pdf_5.jpg:recognition:3",
+      "docstructbench_llm-raw-scihub-o.O-s001280000131.pdf_5.jpg:recognition:1",
+      "docstructbench_llm-raw-scihub-o.O-s00348-003-0689-7.pdf_3.jpg:recognition:11",
+      "docstructbench_llm-raw-scihub-o.O-s00348-005-0004-x.pdf_3.jpg:recognition:4",
+      "docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg:recognition:3",
+      "docstructbench_llm-raw-scihub-o.O-s00374-004-0768-9.pdf_2.jpg:recognition:11",
+      "docstructbench_llm-raw-scihub-o.O-s00374-006-0103-8.pdf_11.jpg:recognition:1",
+      "docstructbench_llm-raw-scihub-o.O-s00374-006-0103-8.pdf_11.jpg:recognition:5",
+      "docstructbench_llm-raw-scihub-o.O-s003950050126.pdf_6.jpg:recognition:3",
+      "docstructbench_llm-raw-scihub-o.O-s00396-003-0935-9.pdf_2.jpg:recognition:12",
+      "docstructbench_llm-raw-scihub-o.O-s0167-8655%2800%2900107-0.pdf_6.jpg:recognition:6",
+      "docstructbench_llm-raw-scihub-o.O-s0167-8655%2801%2900019-8.pdf_10.jpg:recognition:3",
+      "docstructbench_llm-raw-scihub-o.O-s10555-005-1578-8.pdf_5.jpg:recognition:3",
+      "docstructbench_llm-raw-scihub-o.O-s10653-010-9369-8.pdf_11.jpg:recognition:6",
+      "docstructbench_llm-raw-the-eye-o.O-Character%20Sheet%20-%20Form%20Fillable.pdf_2.jpg:recognition:1",
+      "eastmoney_6be3f3cd9e5361946ee49252f12dd57fe7c73df330116d6998e2198ec79a05c9.pdf_2.jpg:recognition:4",
+      "eastmoney_6e1cdb75430fe7d7a7757754d163d1a4a8a1c2a3fca38b74a8a2e8df009f2ce0.pdf_2.jpg:recognition:5",
+      "eastmoney_7f55aa1223310144165074707803522240cf20120b15f5d78fdf61eb4dcefba3.pdf_2.jpg:recognition:10",
+      "eastmoney_7f55aa1223310144165074707803522240cf20120b15f5d78fdf61eb4dcefba3.pdf_2.jpg:recognition:6",
+      "eastmoney_8e0ecdad6ea6edd7014a328fa79e4b69230c1b4f82cc031dd247c3c1c39744cf.pdf_11.jpg:recognition:16",
+      "eastmoney_8f87670d793f4415afca95380e8e46cc8517d6f97fa65a6680308bfc34fa7b5e.pdf_4.jpg:recognition:9",
+      "eastmoney_bd6c2b9aa7ca0ebf8672f8f50e3eacab7f67d0ffa15e0d94b1f3c0d1b5f179b8.pdf_19.jpg:recognition:6",
+      "eastmoney_bdbfdb8a6ab56be3ab1b40009ee648b6d250013ce653c146f2d2023bd8d14772.pdf_26.jpg:recognition:7",
+      "eastmoney_c07e6795bc92e8782d09bf3af7dc766960a1db2088262126a0856311d95361a2.pdf_6.jpg:recognition:4",
+      "eastmoney_c1c12db90c6ecfae16a8eafa49caecfbc0e5f5654140320fe127f7c09bde96c9.pdf_1.jpg:recognition:3",
+      "eastmoney_c1c12db90c6ecfae16a8eafa49caecfbc0e5f5654140320fe127f7c09bde96c9.pdf_1.jpg:recognition:6",
+      "eastmoney_c87249cc61825e8bcd1e0ba5434d32606fecb2ff8302f8602f8d6860fd773252.pdf_1.jpg:recognition:5",
+      "eastmoney_d08a4020e49029cf68b5dbf69e5ecaa40e969f918819c62579e5f4b1a357422f.pdf_3.jpg:recognition:16",
+      "eastmoney_ea59610b9b1a8f0df46f7a89da1116cbf256c772e1148f26017991e28c8bca21.pdf_18.jpg:recognition:3",
+      "eastmoney_fca0676d8b0c4d3926a2d02229fa3372f87a45dbfbf7472773c6dbe04d35af65.pdf_3.jpg:recognition:4",
+      "eastmoney_fcc1c7940f94c7f36157a4aa9c1c804fe16e6b681ca1cef589af39c6d3e0cb90.pdf_0.jpg:recognition:7",
+      "exam_paper_2004-2019\u4e0a\u6d77\u9ad8\u8003\u82f1\u8bed\u542c\u529b\u539f\u6587\u548c\u7b54\u6848_page_010.png:recognition:5",
+      "exam_paper_2016\u5e74\u5b89\u5fbd\u7701\u4e2d\u8003\u82f1\u8bed\u8bd5\u9898\uff08\u89e3\u6790\uff09_page_012.png:recognition:9",
+      "exam_paper_2016\u5e74\u5b89\u5fbd\u7701\u4e2d\u8003\u82f1\u8bed\u8bd5\u9898\uff08\u89e3\u6790\uff09_page_015.png:recognition:0",
+      "exam_paper_2018\u5e74\u5e7f\u897f\u5317\u6d77\u3001\u94a6\u5dde\u3001\u5357\u5b81\u3001\u6765\u5bbe\u3001\u5d07\u5de6\u3001\u9632\u57ce\u6e2f\u3001\u5317\u90e8\u6e7e\u7ecf\u6d4e\u533a\u4e2d\u8003\u82f1\u8bed\u8bd5\u9898\uff08\u7a7a\u767d\u5377\uff09_page_003.png:recognition:11",
+      "exam_paper_en-file-putnam-archive_1991_Problems_1991_page_001.png:recognition:33",
+      "exam_paper_en-file-putnam-archive_1996_Solutions_1996s_page_002.png:recognition:12",
+      "exam_paper_en-file-putnam-archive_1997_Solutions_1997s_page_001.png:recognition:16",
+      "exam_paper_en-file-putnam-archive_2003_Solutions_2003s_page_001.png:recognition:15",
+      "exam_paper_en-file-putnam-archive_2007_Problems_2007_page_001.png:recognition:2",
+      "exam_paper_en-file-putnam-archive_2009_Problems_2009_page_001.png:recognition:21",
+      "exam_paper_en-file-putnam-archive_2011_Problems_2011_page_001.png:recognition:20",
+      "exam_paper_en-file-putnam-archive_2015_Problems_2015_page_001.png:recognition:22",
+      "jiaocai_jiaocai_en_6.jpg:recognition:15",
+      "jiaocai_jiaocai_en_932.jpg:recognition:13",
+      "jiaocaineedrop_Evans_PDE_Solution_Chapter_6_Second-Order_Elliptic_Equations.pdf_5.jpg:recognition:11",
+      "jiaocaineedrop_chap5.pdf_4.jpg:recognition:4",
+      "jiaocaineedrop_chem-436205.pdf_793.jpg:recognition:1",
+      "jiaocaineedrop_jiaocai_needrop_en_1118.jpg:recognition:1",
+      "jiaocaineedrop_jiaocai_needrop_en_1198.jpg:recognition:1",
+      "jiaocaineedrop_jiaocai_needrop_en_1198.jpg:recognition:4",
+      "jiaocaineedrop_jiaocai_needrop_en_1358.jpg:recognition:8",
+      "jiaocaineedrop_jiaocai_needrop_en_1363.jpg:recognition:1",
+      "jiaocaineedrop_jiaocai_needrop_en_1363.jpg:recognition:2",
+      "jiaocaineedrop_jiaocai_needrop_en_1363.jpg:recognition:3",
+      "jiaocaineedrop_jiaocai_needrop_en_1363.jpg:recognition:4",
+      "jiaocaineedrop_jiaocai_needrop_en_1363.jpg:recognition:6",
+      "jiaocaineedrop_jiaocai_needrop_en_1363.jpg:recognition:7",
+      "jiaocaineedrop_jiaocai_needrop_en_1363.jpg:recognition:8",
+      "jiaocaineedrop_jiaocai_needrop_en_1449.jpg:recognition:1",
+      "jiaocaineedrop_jiaocai_needrop_en_155.jpg:recognition:10",
+      "jiaocaineedrop_jiaocai_needrop_en_155.jpg:recognition:13",
+      "jiaocaineedrop_jiaocai_needrop_en_155.jpg:recognition:15",
+      "jiaocaineedrop_jiaocai_needrop_en_155.jpg:recognition:18",
+      "jiaocaineedrop_jiaocai_needrop_en_155.jpg:recognition:5",
+      "jiaocaineedrop_jiaocai_needrop_en_1608.jpg:recognition:19",
+      "jiaocaineedrop_jiaocai_needrop_en_206.jpg:recognition:11",
+      "jiaocaineedrop_jiaocai_needrop_en_206.jpg:recognition:12",
+      "jiaocaineedrop_jiaocai_needrop_en_206.jpg:recognition:5",
+      "jiaocaineedrop_jiaocai_needrop_en_206.jpg:recognition:9",
+      "jiaocaineedrop_jiaocai_needrop_en_2263.jpg:recognition:10",
+      "jiaocaineedrop_jiaocai_needrop_en_2263.jpg:recognition:22",
+      "jiaocaineedrop_jiaocai_needrop_en_2263.jpg:recognition:23",
+      "jiaocaineedrop_jiaocai_needrop_en_2263.jpg:recognition:26",
+      "jiaocaineedrop_jiaocai_needrop_en_2263.jpg:recognition:39",
+      "jiaocaineedrop_jiaocai_needrop_en_2263.jpg:recognition:45",
+      "jiaocaineedrop_jiaocai_needrop_en_2263.jpg:recognition:5",
+      "jiaocaineedrop_jiaocai_needrop_en_2263.jpg:recognition:6",
+      "jiaocaineedrop_jiaocai_needrop_en_2263.jpg:recognition:7",
+      "jiaocaineedrop_jiaocai_needrop_en_237.jpg:recognition:14",
+      "jiaocaineedrop_jiaocai_needrop_en_237.jpg:recognition:21",
+      "jiaocaineedrop_jiaocai_needrop_en_2374.jpg:recognition:24",
+      "jiaocaineedrop_jiaocai_needrop_en_2374.jpg:recognition:32",
+      "jiaocaineedrop_jiaocai_needrop_en_2374.jpg:recognition:5",
+      "jiaocaineedrop_jiaocai_needrop_en_2374.jpg:recognition:62",
+      "jiaocaineedrop_jiaocai_needrop_en_2399.jpg:recognition:5",
+      "jiaocaineedrop_jiaocai_needrop_en_2444.jpg:recognition:15",
+      "jiaocaineedrop_jiaocai_needrop_en_2444.jpg:recognition:16",
+      "jiaocaineedrop_jiaocai_needrop_en_2444.jpg:recognition:19",
+      "jiaocaineedrop_jiaocai_needrop_en_2559.jpg:recognition:13",
+      "jiaocaineedrop_jiaocai_needrop_en_2604.jpg:recognition:13",
+      "jiaocaineedrop_jiaocai_needrop_en_2732.jpg:recognition:15",
+      "jiaocaineedrop_jiaocai_needrop_en_2901.jpg:recognition:2",
+      "jiaocaineedrop_jiaocai_needrop_en_3063.jpg:recognition:3",
+      "jiaocaineedrop_jiaocai_needrop_en_3063.jpg:recognition:4",
+      "jiaocaineedrop_jiaocai_needrop_en_3063.jpg:recognition:5",
+      "jiaocaineedrop_jiaocai_needrop_en_3063.jpg:recognition:6",
+      "jiaocaineedrop_jiaocai_needrop_en_3114.jpg:recognition:9",
+      "jiaocaineedrop_jiaocai_needrop_en_3173.jpg:recognition:8",
+      "jiaocaineedrop_jiaocai_needrop_en_3222.jpg:recognition:2",
+      "jiaocaineedrop_jiaocai_needrop_en_3341.jpg:recognition:32",
+      "jiaocaineedrop_jiaocai_needrop_en_3428.jpg:recognition:1",
+      "jiaocaineedrop_jiaocai_needrop_en_3428.jpg:recognition:11",
+      "jiaocaineedrop_jiaocai_needrop_en_3428.jpg:recognition:7",
+      "jiaocaineedrop_jiaocai_needrop_en_3685.jpg:recognition:7",
+      "jiaocaineedrop_jiaocai_needrop_en_3738.jpg:recognition:14",
+      "jiaocaineedrop_jiaocai_needrop_en_397.jpg:recognition:9",
+      "jiaocaineedrop_jiaocai_needrop_en_3984.jpg:recognition:12",
+      "jiaocaineedrop_jiaocai_needrop_en_3984.jpg:recognition:15",
+      "jiaocaineedrop_jiaocai_needrop_en_3984.jpg:recognition:5",
+      "jiaocaineedrop_jiaocai_needrop_en_3984.jpg:recognition:9",
+      "jiaocaineedrop_jiaocai_needrop_en_467.jpg:recognition:18",
+      "jiaocaineedrop_jiaocai_needrop_en_467.jpg:recognition:20",
+      "jiaocaineedrop_jiaocai_needrop_en_467.jpg:recognition:22",
+      "jiaocaineedrop_jiaocai_needrop_en_467.jpg:recognition:23",
+      "jiaocaineedrop_jiaocai_needrop_en_546.jpg:recognition:38",
+      "jiaocaineedrop_jiaocai_needrop_en_620.jpg:recognition:57",
+      "jiaocaineedrop_jiaocai_needrop_en_664.jpg:recognition:1",
+      "jiaocaineedrop_jiaocai_needrop_en_664.jpg:recognition:5",
+      "jiaocaineedrop_jiaocai_needrop_en_673.jpg:recognition:2",
+      "jiaocaineedrop_jiaocai_needrop_en_678.jpg:recognition:13",
+      "jiaocaineedrop_jiaocai_needrop_en_952.jpg:recognition:1",
+      "jiaocaineedrop_jiaocai_needrop_en_952.jpg:recognition:12",
+      "jiaocaineedrop_jiaocai_needrop_en_952.jpg:recognition:15",
+      "jiaocaineedrop_jiaocai_needrop_en_952.jpg:recognition:18",
+      "magazine_TheEconomist.2023.11.18_page_030.png:recognition:11",
+      "magazine_TheEconomist.2023.11.18_page_068.png:recognition:13",
+      "magazine_TheEconomist.2023.11.18_page_082.png:recognition:20",
+      "magazine_TheEconomist.2023.11.18_page_082.png:recognition:8",
+      "magazine_TheEconomist.2023.11.25_page_006.png:recognition:3",
+      "magazine_TheEconomist.2023.12.02_page_031.png:recognition:10",
+      "magazine_TheEconomist.2023.12.02_page_031.png:recognition:18",
+      "magazine_TheEconomist.2023.12.02_page_031.png:recognition:3",
+      "magazine_TheEconomist.2023.12.02_page_031.png:recognition:4",
+      "magazine_TheEconomist.2023.12.02_page_031.png:recognition:9",
+      "magazine_TheEconomist.2023.12.02_page_056.png:recognition:13",
+      "magazine_TheEconomist.2023.12.02_page_056.png:recognition:15",
+      "magazine_TheEconomist.2023.12.02_page_056.png:recognition:25",
+      "magazine_TheEconomist.2023.12.02_page_062.png:recognition:23",
+      "magazine_TheEconomist.2023.12.09_page_015.png:recognition:2",
+      "magazine_TheEconomist.2023.12.16_page_019.png:recognition:20",
+      "magazine_TheEconomist.2023.12.16_page_026.png:recognition:15",
+      "magazine_TheEconomist.2023.12.16_page_026.png:recognition:20",
+      "magazine_TheEconomist.2023.12.16_page_026.png:recognition:5",
+      "magazine_TheEconomist.2023.12.16_page_062.png:recognition:13",
+      "magazine_TheEconomist.2023.12.16_page_062.png:recognition:8",
+      "magazine_TheEconomist.2023.12.23_page_012.png:recognition:15",
+      "magazine_TheEconomist.2023.12.23_page_024.png:recognition:9",
+      "magazine_TheEconomist.2023.12.23_page_052.png:recognition:8",
+      "magazine_TheEconomist.2023.12.23_page_060.png:recognition:12",
+      "magazine_TheEconomist.2023.12.23_page_104.png:recognition:6",
+      "magazine_TheEconomist.2024.02.24_page_007.png:recognition:6",
+      "magazine_TheEconomist.2024.02.24_page_007.png:recognition:9",
+      "magazine_TheEconomist.2024.02.24_page_008.png:recognition:16",
+      "magazine_TheEconomist.2024.02.24_page_076.png:recognition:13",
+      "magazine_TheEconomist.2024.02.24_page_076.png:recognition:4",
+      "magazine_TheEconomist.2024.02.24_page_076.png:recognition:7",
+      "magazine_TheEconomist.2024.03.02_page_025.png:recognition:14",
+      "magazine_TheEconomist.2024.03.02_page_025.png:recognition:15",
+      "magazine_TheEconomist.2024.03.02_page_075.png:recognition:12",
+      "magazine_TheEconomist.2024.03.02_page_075.png:recognition:20",
+      "magazine_TheEconomist.2024.03.09_page_016.png:recognition:12",
+      "magazine_TheEconomist.2024.03.09_page_016.png:recognition:3",
+      "magazine_TheEconomist.2024.03.09_page_079.png:recognition:17",
+      "newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg:recognition:103",
+      "newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg:recognition:166",
+      "newspaper_0b86dae4d8f328a0e79d9ac394000dec_1.jpg:recognition:37",
+      "newspaper_0cfb8a42b5d4194d8c73dba0cdf6256c_1.jpg:recognition:52",
+      "newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_16.jpg:recognition:5",
+      "newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_18.jpg:recognition:27",
+      "newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_2.jpg:recognition:10",
+      "newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_2.jpg:recognition:6",
+      "newspaper_4b4ad1f6cba28a4844d7ffa9306223a4_1.jpg:recognition:67",
+      "newspaper_5e266dfd9c498cab274e12a7b4a75755_1.jpg:recognition:38",
+      "newspaper_74fc3b01b2cc4a7e6ca0f1af2b998187_1.jpg:recognition:6",
+      "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png:recognition:48",
+      "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png:recognition:88",
+      "newspaper_Daily Star 2025-1-8@magazinesclubnew_page_060.png:recognition:32",
+      "newspaper_The Guardian UK_0801@magazinesclubnew_page_048.png:recognition:22",
+      "newspaper_The Guardian UK_0801@magazinesclubnew_page_051.png:recognition:39",
+      "newspaper_The Times UK_0801@magazinesclubnew_page_083.png:recognition:66",
+      "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_025.png:recognition:103",
+      "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png:recognition:46",
+      "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_029.png:recognition:32",
+      "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_029.png:recognition:38",
+      "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_029.png:recognition:39",
+      "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_033.png:recognition:14",
+      "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_033.png:recognition:30",
+      "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_041.png:recognition:15",
+      "newspaper_TheWashingtonPost-2025-01-08@magazinesclubnew_page_042.png:recognition:81",
+      "newspaper_a105e3b0ddb10be6a596f76407c79180_1.jpg:recognition:65",
+      "newspaper_a9c9e3816aa5cb6866d02c10273dc665_1.jpg:recognition:29",
+      "newspaper_b615618f3cdb0f2c13ffb5865dea799c_1.jpg:recognition:7",
+      "newspaper_d1716a12000a38e1e4c0bf66309558db_1.jpg:recognition:42",
+      "newspaper_ef5c785d9cc21ccf6b73d143f231b5c5_1.jpg:recognition:152",
+      "newspaper_fe5ed29024932fad071afc53807b16ba_4.jpg:recognition:4",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_123.jpg:recognition:7",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_124.jpg:recognition:1",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_125.jpg:recognition:5",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_126.jpg:recognition:1",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_126.jpg:recognition:3",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_13.jpg:recognition:8",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_16.jpg:recognition:18",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_31.jpg:recognition:4",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_33.jpg:recognition:1",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_35.jpg:recognition:5",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_37.jpg:recognition:9",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_53.jpg:recognition:4",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_55.jpg:recognition:8",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_60.jpg:recognition:5",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_78.jpg:recognition:6",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_79.jpg:recognition:1",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_79.jpg:recognition:5",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_81.jpg:recognition:3",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_82.jpg:recognition:2",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_96.jpg:recognition:1",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_97.jpg:recognition:11",
+      "notes_1ba14cb325bc448f7201b20502ecf2b5_98.jpg:recognition:10",
+      "notes_9e951846094758afac08c620144e3a76_10.jpg:recognition:3",
+      "notes_9e951846094758afac08c620144e3a76_11.jpg:recognition:3",
+      "notes_9e951846094758afac08c620144e3a76_11.jpg:recognition:5",
+      "notes_9e951846094758afac08c620144e3a76_12.jpg:recognition:2",
+      "notes_9e951846094758afac08c620144e3a76_13.jpg:recognition:3",
+      "notes_9e951846094758afac08c620144e3a76_14.jpg:recognition:3",
+      "notes_9e951846094758afac08c620144e3a76_15.jpg:recognition:2",
+      "notes_9e951846094758afac08c620144e3a76_16.jpg:recognition:5",
+      "notes_9e951846094758afac08c620144e3a76_17.jpg:recognition:5",
+      "notes_9e951846094758afac08c620144e3a76_9.jpg:recognition:3",
+      "notes_f7f010b78016aeebd76e56d9283eb67f_115.jpg:recognition:7",
+      "notes_f7f010b78016aeebd76e56d9283eb67f_118.jpg:recognition:3",
+      "notes_f7f010b78016aeebd76e56d9283eb67f_2.jpg:recognition:3",
+      "notes_f7f010b78016aeebd76e56d9283eb67f_3.jpg:recognition:1",
+      "notes_f7f010b78016aeebd76e56d9283eb67f_4.jpg:recognition:1",
+      "notes_f7f010b78016aeebd76e56d9283eb67f_47.jpg:recognition:7",
+      "notes_f7f010b78016aeebd76e56d9283eb67f_5.jpg:recognition:1",
+      "notes_f7f010b78016aeebd76e56d9283eb67f_53.jpg:recognition:8",
+      "notes_f7f010b78016aeebd76e56d9283eb67f_67.jpg:recognition:6",
+      "notes_f7f010b78016aeebd76e56d9283eb67f_67.jpg:recognition:8",
+      "notes_f7f010b78016aeebd76e56d9283eb67f_97.jpg:recognition:3",
+      "page-00b6ac57-4466-4eb0-937d-bb29a44fa0d3.png:recognition:22",
+      "page-035cb436-c01e-41db-b40e-8977678777eb.png:recognition:3",
+      "page-07088b2f-f9d6-4c38-9c97-d7f98bc3d556.png:recognition:16",
+      "page-07088b2f-f9d6-4c38-9c97-d7f98bc3d556.png:recognition:23",
+      "page-07088b2f-f9d6-4c38-9c97-d7f98bc3d556.png:recognition:8",
+      "page-0b20ed47-7c6c-4578-bbdf-057a89a083ec.png:recognition:6",
+      "page-112859dc-07d9-473a-a027-94904db8fd84.png:recognition:0",
+      "page-141c2c16-4b50-4c3b-a64b-3e2fd8bb4002.png:recognition:4",
+      "page-14a6b411-9097-4eec-86da-92075868d243.png:recognition:1",
+      "page-1955f827-fb35-4806-b3a4-463d9e0d6cc8.png:recognition:6",
+      "page-1ce383cc-63a3-43c9-b6f2-7498a952b65c.png:recognition:2",
+      "page-1cecd66d-3563-422a-a204-999bba0bb528.png:recognition:4",
+      "page-213e6a57-ba81-4afb-8184-2e1cf2a7664d.png:recognition:3",
+      "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png:recognition:11",
+      "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png:recognition:9",
+      "page-232d386f-6c9d-4b50-9463-89dedce995e5.png:recognition:3",
+      "page-232d386f-6c9d-4b50-9463-89dedce995e5.png:recognition:4",
+      "page-25cb2b2a-e44a-4043-90e1-3f7058d8b99e.png:recognition:4",
+      "page-25cb2b2a-e44a-4043-90e1-3f7058d8b99e.png:recognition:6",
+      "page-25cb2b2a-e44a-4043-90e1-3f7058d8b99e.png:recognition:8",
+      "page-2b4c4f44-c0de-41b6-9561-96195c233f47.png:recognition:7",
+      "page-2dc37c8b-1547-43dd-8643-fdbecfe5eea8.png:recognition:0",
+      "page-2deb83b3-abe2-442c-a544-0b6a8db464f1.png:recognition:8",
+      "page-31fb2a53-5b32-40f6-9db1-52b357f3201f.png:recognition:2",
+      "page-35ecd651-17dd-43e6-8a6f-8f55d6796d96.png:recognition:3",
+      "page-374e9c4b-6fdb-4176-8ac7-519b86d97e40.png:recognition:4",
+      "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png:recognition:3",
+      "page-3c690b07-30d7-4e77-bf20-012f0080fb1d.png:recognition:4",
+      "page-3ce15378-6ffd-4f3c-9473-8b897451c770.png:recognition:5",
+      "page-3f8eed58-8b86-4f3a-958d-13671977d3c6.png:recognition:10",
+      "page-4009495f-1a7c-46dc-9f52-7f80f5f0cc5c.png:recognition:11",
+      "page-423cdc11-af52-4e41-8feb-a40741b15855.png:recognition:5",
+      "page-4540d82a-19d8-44ef-8f18-6d42fdb2a2de.png:recognition:7",
+      "page-458ab820-615f-42fe-af33-3a8fb15ad691.png:recognition:3",
+      "page-472c26e2-6bc2-4c05-9889-05132c87a8a9.png:recognition:2",
+      "page-47977c29-59ca-4534-9a00-becad3bfdaa4.png:recognition:2",
+      "page-49746735-505c-442d-b3f6-c55b1bf9e48b.png:recognition:0",
+      "page-49776237-a9be-441d-a326-002eb7084385.png:recognition:4",
+      "page-50ffe5d2-cd27-449a-a813-d4a8c44b12ea.png:recognition:3",
+      "page-573c437e-c309-4483-a038-ef2f440b104a.png:recognition:3",
+      "page-57d5842c-85c2-41c9-9d37-65aad59c1277.png:recognition:10",
+      "page-57d5842c-85c2-41c9-9d37-65aad59c1277.png:recognition:12",
+      "page-5b2f2dec-8e96-450f-aea0-b73d46eac172.png:recognition:7",
+      "page-5cb4b2fe-c14d-450e-9b97-4b6e7c99493b.png:recognition:3",
+      "page-5d58cdf7-6d00-4ea5-97b2-358cbc0cab21.png:recognition:8",
+      "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png:recognition:11",
+      "page-66aa2b38-32c0-4222-839a-50df648218df.png:recognition:4",
+      "page-68e347d8-6f34-431b-a2a2-549b3634dabc.png:recognition:2",
+      "page-6c29d065-b8f0-4bb0-b7c3-779f9cbab09a.png:recognition:4",
+      "page-74961b9a-ef4c-42d8-a95f-406e6b84cf63.png:recognition:3",
+      "page-7a7566fd-43d8-46e4-8a4f-0330e1f27a88.png:recognition:20",
+      "page-7d2d833d-37b1-4c18-9ee6-4e09d352e265.png:recognition:3",
+      "page-7e4386d0-51fa-49cc-ad79-dc011a0772d9.png:recognition:11",
+      "page-80a540c8-88d4-4643-b40e-282489353fb8.png:recognition:3",
+      "page-80a540c8-88d4-4643-b40e-282489353fb8.png:recognition:5",
+      "page-8524b54d-6372-4f9e-a662-5254349cfda3.png:recognition:6",
+      "page-8524b54d-6372-4f9e-a662-5254349cfda3.png:recognition:8",
+      "page-85377cdf-d6a2-4611-bd50-08795bf7acb6.png:recognition:5",
+      "page-8792f466-c570-468c-86dc-402a510e9bb7.png:recognition:6",
+      "page-8d707810-de48-43ba-81a7-b976918e7be2.png:recognition:5",
+      "page-91b20bf2-3ad5-41f4-b739-4cc4b18ab1eb.png:recognition:2",
+      "page-92062914-ea02-4640-8f54-24623dba4388.png:recognition:3",
+      "page-9390721f-e06c-47ea-8b21-0f27c72df7b7.png:recognition:1",
+      "page-942ac90d-4704-43f3-9286-719c7be9e655.png:recognition:0",
+      "page-9b70f2f0-2a0e-4337-8750-84e79503e939.png:recognition:7",
+      "page-9cca07f9-2e06-4da7-b4f4-496c6e305543.png:recognition:2",
+      "page-9f6bc620-1983-4503-bb0f-f9c7949ccb77.png:recognition:5",
+      "page-a6d06208-475c-4c6e-9d84-858f7e2ecf72.png:recognition:1",
+      "page-ab4f331b-e8f3-41fb-ba6b-8da5ade54983.png:recognition:3",
+      "page-ab4f331b-e8f3-41fb-ba6b-8da5ade54983.png:recognition:4",
+      "page-aee8f1d9-7240-4517-b615-389594556d57.png:recognition:5",
+      "page-b0bdb7a8-c7de-4e6c-9e9c-bf979f3a3227.png:recognition:19",
+      "page-b23ec9d4-e4aa-458f-8e65-c2c7f8e9dd46.png:recognition:11",
+      "page-b2cc5729-a6b2-49ba-af62-788bf069b617.png:recognition:1",
+      "page-b3394f89-fe60-4f69-a0ee-aca79889950d.png:recognition:6",
+      "page-b9d507e7-1239-42de-b70a-d7ca65393dc9.png:recognition:5",
+      "page-be2ebf31-5f24-4d3e-97f0-4a8df7e773b4.png:recognition:3",
+      "page-c1c135ad-427e-482b-b01c-05c0ccbc6e76.png:recognition:4",
+      "page-c7771a62-5b6b-48f0-b591-6b657d26e125.png:recognition:3",
+      "page-c7771a62-5b6b-48f0-b591-6b657d26e125.png:recognition:4",
+      "page-c7a51204-5142-4c7a-bc9d-1faf1fe1be02.png:recognition:6",
+      "page-c7fec126-2adb-4094-8110-5d81a92e05b0.png:recognition:14",
+      "page-c7fec126-2adb-4094-8110-5d81a92e05b0.png:recognition:8",
+      "page-c9654418-0624-48d4-8be7-6065f45dd1f9.png:recognition:4",
+      "page-cb30bac7-d4bd-47d0-ac84-e0b46d051fe9.png:recognition:2",
+      "page-ccd77e4e-4f94-45df-8e3d-e054a951f65f.png:recognition:8",
+      "page-cd70bbf7-d3ee-4329-8e82-74144e709481.png:recognition:3",
+      "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png:recognition:5",
+      "page-d0b2bb59-ce8e-4a1c-9ba1-a805606a477f.png:recognition:2",
+      "page-d127acc0-f8c9-4f01-8e87-b4c19be7cbb0.png:recognition:5",
+      "page-d2816bbe-3c28-4905-ad6d-5f873b525de3.png:recognition:0",
+      "page-d29fe4d2-832a-4ad6-ac80-dc01cf8b0e16.png:recognition:3",
+      "page-d2cdac80-318c-4157-ac6e-bdab333f66bd.png:recognition:3",
+      "page-d9cbe0d2-9aa5-4be4-8b43-e328e2bea931.png:recognition:9",
+      "page-dad79c54-8125-4927-9988-ee1d2a139d7b.png:recognition:18",
+      "page-dad79c54-8125-4927-9988-ee1d2a139d7b.png:recognition:26",
+      "page-dad79c54-8125-4927-9988-ee1d2a139d7b.png:recognition:31",
+      "page-dad79c54-8125-4927-9988-ee1d2a139d7b.png:recognition:4",
+      "page-dbed9c07-e155-4ba1-92f9-a2962dc9a8f9.png:recognition:9",
+      "page-dc728bd5-50a9-41e8-9e5a-d4b01e6664a2.png:recognition:6",
+      "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png:recognition:0",
+      "page-dd5b0a99-4cc6-4fa9-ab63-a277947735b1.png:recognition:4",
+      "page-ddb9d794-5230-4b43-b1ec-273b9e7ebc11.png:recognition:3",
+      "page-e13fef95-c179-4a0f-94f9-1cc970aab788.png:recognition:1",
+      "page-e13fef95-c179-4a0f-94f9-1cc970aab788.png:recognition:3",
+      "page-e4053f20-e6e6-430e-83ef-db298a3199aa.png:recognition:5",
+      "page-e4053f20-e6e6-430e-83ef-db298a3199aa.png:recognition:9",
+      "page-e7681b54-2c4a-40a2-9abe-caebba01cefb.png:recognition:8",
+      "page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.png:recognition:3",
+      "page-ed0f3b67-a631-4e9d-b8d8-d9594a5aa652.png:recognition:3",
+      "page-eff3dc3a-8d44-4c68-9c3a-55df4aaf1e36.png:recognition:3",
+      "page-f222e5f3-8628-47cd-a0b6-40f62123228f.png:recognition:2",
+      "page-f3e750d8-8201-4a22-9419-9776798b7a32.png:recognition:0",
+      "page-f5b824d0-be81-48a9-aae6-3060d11a6503.png:recognition:3",
+      "page-f6b6cfb8-3bb5-4393-b3fb-70efef72aca5.png:recognition:4",
+      "page-f8c08102-a96d-4533-b3a1-dac6020513b5.png:recognition:6",
+      "page-fb79f57d-9d7e-4129-a08c-6fc189e84a21.png:recognition:13",
+      "page-fd7003ba-9af2-4b60-8c45-1e2ac1c7f474.png:recognition:2",
+      "scihub_AEM.01420-09.pdf_3.jpg:recognition:4",
+      "scihub_c2gc35284b.pdf_6.jpg:recognition:4",
+      "scihub_carcin%2Fbgh032.pdf_2.jpg:recognition:9",
+      "scihub_ie102256j.pdf_4.jpg:recognition:15",
+      "scihub_ijop.12033.pdf_5.jpg:recognition:4",
+      "scihub_j.1528-1167.2008.01552.x.pdf_3.jpg:recognition:2",
+      "scihub_j.cbpb.2019.110324.pdf_6.jpg:recognition:14",
+      "scihub_j.jallcom.2003.09.015.pdf_1.jpg:recognition:3",
+      "scihub_j.jmb.2003.10.009.pdf_4.jpg:recognition:3",
+      "scihub_j.physe.2007.10.027.pdf_0.jpg:recognition:15",
+      "scihub_jai.12343.pdf_3.jpg:recognition:4",
+      "scihub_jb%2Fmvh022.pdf_1.jpg:recognition:3",
+      "scihub_jb%2Fmvh022.pdf_1.jpg:recognition:4",
+      "scihub_jgh.13044.pdf_2.jpg:recognition:3",
+      "scihub_jneurosci.16-15-04625.1996.pdf_2.jpg:recognition:3",
+      "scihub_jneurosci.16-15-04625.1996.pdf_2.jpg:recognition:9",
+      "scihub_journal.pone.0166577.pdf_5.jpg:recognition:3",
+      "scihub_md.0000000000002934.pdf_0.jpg:recognition:7",
+      "scihub_mol.66.4.921.pdf_1.jpg:recognition:12",
+      "scihub_s00381-021-05138-3.pdf_3.jpg:recognition:2",
+      "scihub_s12237-014-9873-7.pdf_4.jpg:recognition:2",
+      "yanbaopptmerge_0dd24976bcc395ad595cf73b411d627e14c19ba0299bb3fa0d8108993d079545.pdf_8.jpg:recognition:2",
+      "yanbaopptmerge_2b8553b00244437fa3e502aa2d3d319ed74459a1e264a4fdd9ecc14ce46609d5.pdf_2.jpg:recognition:3",
+      "yanbaopptmerge_2f4902871606698497c53ccb18d3fec2f83d05047d883cd65bbce26bfb27bcd2.pdf_1.jpg:recognition:3",
+      "yanbaopptmerge_593a9a157e4d56a5a57eb14f1d1beec5.pdf_944.jpg:recognition:24",
+      "yanbaopptmerge_593a9a157e4d56a5a57eb14f1d1beec5.pdf_944.jpg:recognition:3",
+      "yanbaopptmerge_7c6e8be0695a66c716176c95257a76e940f7d08d8227b37e9ee47142eca6b448.pdf_5.jpg:recognition:2",
+      "yanbaopptmerge_903cf6cd7820b5463e95c5aaab9f16134f9853cd7963567497337527e73b9bcc.pdf_7.jpg:recognition:2",
+      "yanbaopptmerge_SE20.pdf_2.jpg:recognition:11",
+      "yanbaopptmerge_baa6d02928efcac46ccf7dfd3859de565cfb0bea918ae0ec0eed50944a7c20b4.pdf_11.jpg:recognition:1",
+      "yanbaopptmerge_d4fc7cba428625974e93183edfccea73.pdf_89.jpg:recognition:2",
+      "yanbaopptmerge_e3b48594d5a2a6dc86b51244737f24867a0c1781e9f0e4fb52d96bbc6f9d95c7.pdf_3.jpg:recognition:2",
+      "yanbaopptmerge_ee19df4a08e3d07ac1190446f5b3dd3f25438c661b87cf4fbb9040ac5fac443b.pdf_1.jpg:recognition:9",
+      "yanbaopptmerge_yanbaoPPT_1020.jpg:recognition:2",
+      "yanbaopptmerge_yanbaoPPT_1625.jpg:recognition:0",
+      "yanbaopptmerge_yanbaoPPT_1810.jpg:recognition:2",
+      "yanbaopptmerge_yanbaoPPT_2400.jpg:recognition:4",
+      "yanbaopptmerge_yanbaoPPT_3125.jpg:recognition:9",
+      "yanbaopptmerge_yanbaoPPT_3290.jpg:recognition:2",
+      "yanbaopptmerge_yanbaoPPT_4125.jpg:recognition:7",
+      "yanbaopptmerge_yanbaoPPT_4630.jpg:recognition:4",
+      "yanbaopptmerge_yanbaoPPT_4750.jpg:recognition:2",
+      "yanbaopptmerge_yanbaoPPT_5205.jpg:recognition:1",
+      "yanbaopptmerge_yanbaoPPT_5930.jpg:recognition:1",
+      "yanbaopptmerge_yanbaoPPT_6170.jpg:recognition:1",
+      "yanbaopptmerge_yanbaoPPT_870.jpg:recognition:0",
+      "yanbaopptmerge_yanbaoPPT_935.jpg:recognition:0",
+      "yanbaor2_0aa9545ccbc482a37e3b55c96897f0f24cee08bb80c7addfb0c219814af44a3b.pdf_27.jpg:recognition:2",
+      "yanbaor2_3e1be78252e2fdfe1adf12bba38ec2a7b30699e152d61269aa6e5827f5adcc35.pdf_13.jpg:recognition:4",
+      "yanbaor2_4862cd850679e945a98c54c8d4c37be0154b5790d2c32da35d0f5ca0be413693.pdf_9.jpg:recognition:3",
+      "yanbaor2_6895262fb7b86d4e1dbb324a50fae4294eaf0713d2e1796866cb9f7ecb88d644.pdf_11.jpg:recognition:2",
+      "yanbaor2_6a016aa81b2fc8281a2a51bae6417769e4cae7fbe161cbc4351596b82e7002fa.pdf_8.jpg:recognition:2",
+      "yanbaor2_89c3718f5a45179ef57a5063c6df36fc2c9b7e3ab4275f4905ed89f1c17232ea.pdf_14.jpg:recognition:6",
+      "yanbaor2_afad9eb86f2a04271428aa988aec7d1949713bb5a5ce5c0cf26f320650b7966a.pdf_14.jpg:recognition:2",
+      "yanbaor2_yanbaoPPT_2098.jpg:recognition:1",
+      "yanbaor2_yanbaoPPT_5.jpg:recognition:0",
+      "yanbaor2_yanbaoPPT_5877.jpg:recognition:1"
+    ]
+  },
+  "layout_changed_pages": [],
+  "metric_input_comparison": {
+    "CDM": {
+      "baseline_samples": 2352,
+      "comparison_samples": 2352,
+      "common_ground_truth_matches": 2341,
+      "same_prediction": 2189,
+      "different_prediction": 152,
+      "different_prediction_changed_score": 52
+    },
+    "TEDS": {
+      "baseline_samples": 665,
+      "comparison_samples": 665,
+      "common_ground_truth_matches": 665,
+      "different_prediction": 145,
+      "different_prediction_changed_score": 137,
+      "same_prediction": 520
+    }
+  }
+}

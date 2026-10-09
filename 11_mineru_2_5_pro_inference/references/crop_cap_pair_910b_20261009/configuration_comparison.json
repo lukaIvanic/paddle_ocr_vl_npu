@@ -1,0 +1,14 @@
+{
+  "inference_source_commit": "d4e7fdd0efd90bf6408c21efab320cc3292f07a4",
+  "same_environment": true,
+  "command_differences": {
+    "--output-dir": {
+      "baseline": "/workspace/repos/paddle_ocr_vl_npu_mineru_lengths/tmp/11_mineru_2_5_pro_inference/d4_cap3072_repeat_910b_20261009T110942Z/full1651/output",
+      "comparison": "/workspace/repos/paddle_ocr_vl_npu_mineru_lengths/tmp/11_mineru_2_5_pro_inference/d4_cap2048_910b_20261009T115709Z/full1651/output"
+    },
+    "--processor-max-pixels": {
+      "baseline": "602112",
+      "comparison": "401408"
+    }
+  }
+}
