@@ -6,6 +6,11 @@ mineru_repo="$PWD"
 mineru_root="${RUN_ROOT:?Set RUN_ROOT to the completed run directory}"
 mineru_root="$(cd "$mineru_root" && pwd)"
 mineru_dataset_json="${DATASET_JSON:-/workspace/datasets/OmniDocBench/OmniDocBench.json}"
+mineru_cdm_workers="${CDM_WORKERS:-12}"
+if [[ ! "$mineru_cdm_workers" =~ ^[1-9][0-9]*$ ]]; then
+  echo 'CDM_WORKERS must be a positive integer' >&2
+  exit 2
+fi
 source 09_persistent_page_engine/scripts/omnidocbench_eval_env.sh
 mineru_eval="$mineru_root/evaluation"
 mineru_eval_commit="$(git -C "$OMNIDOCBENCH_EVALUATOR_ROOT" rev-parse HEAD)"
@@ -17,6 +22,7 @@ test "$(cat "$mineru_root/exit_code.txt")" = 0
   --run-output "$mineru_root/output" \
   --dataset-json "$mineru_dataset_json" \
   --evaluation-root "$mineru_eval" --expected-pages "${LIMIT:-1651}" \
+  --cdm-workers "$mineru_cdm_workers" \
   --evaluator-root "$OMNIDOCBENCH_EVALUATOR_ROOT"
 git rev-parse HEAD > "$mineru_eval/authoring_commit.txt"
 printf '%s\n' "$mineru_eval_commit" > "$mineru_eval/evaluator_commit.txt"
