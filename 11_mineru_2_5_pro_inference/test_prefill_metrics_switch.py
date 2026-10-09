@@ -5,6 +5,12 @@ from mineru_prefill_timing import PrefillDeviceTimeline
 
 
 class TimelineSwitchTests(unittest.TestCase):
+    def test_production_cli_can_disable_default_metrics(self):
+        from run_page_pipeline import pipeline_args
+        args=['--dataset-json','/tmp/unused.json','--output-dir','/tmp/unused']
+        self.assertTrue(pipeline_args(args).local_prefill_metrics)
+        self.assertFalse(pipeline_args(args+['--no-local-prefill-metrics']).local_prefill_metrics)
+
     def test_disabled_does_not_create_events_or_sync(self):
         timeline=PrefillDeviceTimeline(torch.device('cpu'),enabled=False)
         value=object();fn=Mock(return_value=value)
