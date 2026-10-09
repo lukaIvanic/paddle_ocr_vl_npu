@@ -51,8 +51,10 @@ def main():
             record=dict(fields={id(v):k for k,v in inputs.items()},copies=[],fence_s=fence)
             record['fields'].update({id(positions):'position_ids',id(deltas):'rope_deltas'})
             start=time.perf_counter();cpu=time.thread_time();tls.record=record
+            torch.Tensor.to=tensor_to
             try:return original(inputs,params,positions,deltas)
             finally:
+                torch.Tensor.to=original_to
                 tls.record=None
                 record.update(wall_s=time.perf_counter()-start,thread_cpu_s=time.thread_time()-cpu)
                 record.pop('fields');rows.append(record)
@@ -72,7 +74,6 @@ def main():
                 with lock:jobs.append(info)
         return original_submit(executor,job)
 
-    torch.Tensor.to=tensor_to
     native.make_local_fixed_batch_vlm_client=factory
     ThreadPoolExecutor.submit=submit
     try:runner.main(runner.pipeline_args(rest))
