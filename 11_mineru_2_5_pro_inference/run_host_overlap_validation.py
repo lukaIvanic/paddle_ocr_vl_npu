@@ -45,6 +45,9 @@ def main():
     p.add_argument('--cache-root',type=Path,help='Shared study cache parent; each configuration still has its own directory')
     p.add_argument('--stage',choices=['vision','smoke','diagnostic','performance','full'],required=True)
     p.add_argument('--lanes',nargs='+',choices=list(FLAGS),default=['baseline','c1'])
+    p.add_argument('--diagnostic-pages',type=int,default=8)
+    p.add_argument('--diagnostic-drain',choices=['both','queued','drained'],default='both')
+    p.add_argument('--diagnostic-profiler',type=Path,help='Optional standalone py-spy binary; diagnostic only')
     p.add_argument('--vision-transfer',default='blocking')
     p.add_argument('--vision-metrics-off',action='store_true')
     p.add_argument('--vision-grid',choices=['cpu','npu'],default='cpu')
@@ -93,9 +96,14 @@ def main():
             return
         if a.stage=='diagnostic':
             for lane in a.lanes:
-                for drain in [False,True]:
+                for drain in ([False,True] if a.diagnostic_drain=='both' else [a.diagnostic_drain=='drained']):
                     name=f'diagnostic_{lane}_{"drained" if drain else "queued"}'
-                    run(name,command(lane,8,name,diagnostic=True,drain=drain))
+                    cmd=command(lane,a.diagnostic_pages,name,diagnostic=True,drain=drain)
+                    if a.diagnostic_profiler:
+                        cmd=[str(a.diagnostic_profiler),'record','--rate','49','--format','raw',
+                             '--threads','--native','--idle','--output',str(a.root/name/'native_stacks.txt'),'--']+cmd
+                    run(name,cmd)
+
             return
         count={'smoke':64,'performance':384,'full':1651}[a.stage]
         repeats=2 if a.stage=='performance' else 1
