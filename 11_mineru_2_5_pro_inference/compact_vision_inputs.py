@@ -59,7 +59,8 @@ class CompactVisionInputs:
         index=(rgb.to(torch.int64)+self.channel_offsets).reshape(-1)
         normalized=self.table.index_select(0,index).reshape(3,height,width)
         # Exact Qwen2-VL still-image temporal duplication and merge-aware order.
-        patches=normalized[None,None].expand(1,2,3,height,width)
-        patches=patches.reshape(1,1,2,3,gh//2,2,14,gw//2,2,14)
-        patches=patches.permute(0,1,4,7,5,8,3,2,6,9)
+        # Omit singleton batch/grid_t axes: Ascend Copy rejects rank > 8.
+        patches=normalized[None].expand(2,3,height,width)
+        patches=patches.reshape(2,3,gh//2,2,14,gw//2,2,14)
+        patches=patches.permute(2,5,3,6,1,0,4,7)
         return patches.reshape(gh*gw,3*2*14*14).to(dtype).contiguous()
