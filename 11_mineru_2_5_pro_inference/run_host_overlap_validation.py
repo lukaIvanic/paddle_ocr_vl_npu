@@ -48,6 +48,7 @@ def main():
     p.add_argument('--diagnostic-pages',type=int,default=8)
     p.add_argument('--diagnostic-drain',choices=['both','queued','drained'],default='both')
     p.add_argument('--diagnostic-profiler',type=Path,help='Optional standalone py-spy binary; diagnostic only')
+    p.add_argument('--diagnostic-sampling',choices=['native','gil'],default='native')
     p.add_argument('--vision-transfer',default='blocking')
     p.add_argument('--vision-metrics-off',action='store_true')
     p.add_argument('--vision-grid',choices=['cpu','npu'],default='cpu')
@@ -101,7 +102,8 @@ def main():
                     cmd=command(lane,a.diagnostic_pages,name,diagnostic=True,drain=drain)
                     if a.diagnostic_profiler:
                         cmd=[str(a.diagnostic_profiler),'record','--rate','49','--format','raw',
-                             '--threads','--native','--idle','--output',str(a.root/name/'native_stacks.txt'),'--']+cmd
+                             '--threads']+(['--native','--idle'] if a.diagnostic_sampling=='native' else ['--gil'])+[
+                             '--output',str(a.root/name/(a.diagnostic_sampling+'_stacks.txt')),'--']+cmd
                     run(name,cmd)
 
             return

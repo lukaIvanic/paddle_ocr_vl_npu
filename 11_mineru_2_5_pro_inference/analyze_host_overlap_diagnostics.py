@@ -62,10 +62,19 @@ def summarize(path):
             if '_prepare_cpu (' in stack:counts['prep_worker_samples']+=count
             if any(s in stack for s in ['_layout_job (','_expand (','crops (']):counts['frontend_worker_samples']+=count
         sampling=dict(counts=counts,top_pipeline_owner_leaves=tops.most_common(20),take_gil_leaves=waiting.most_common(10),
-            interpretation='49 Hz native/idle sampling; take_gil with futex/condition wait identifies sampled main-thread GIL waits. Worker samples alone do not establish GIL ownership or causality. Counts across threads are not additive wall time.')
+            interpretation='49 Hz native/idle sampling. This interpreter hides take_gil frames even in the positive GIL-contention control: zero named take_gil frames DOES NOT exclude contention. Worker samples alone do not establish GIL ownership or causality. Counts across threads are not additive wall time.')
+    gil=None
+    if (path/'gil_stacks.txt').exists():
+        counts=Counter()
+        for line in (path/'gil_stacks.txt').read_text().splitlines():
+            stack,count=line.rsplit(' ',1);count=int(count);counts['total_owner_samples']+=count
+            if 'run_decode_stream (' in stack:counts['npu_owner_pipeline']+=count
+            if '_prepare_cpu (' in stack:counts['prep_worker']+=count
+            if any(s in stack for s in ['_layout_job (','_expand (','crops (']):counts['frontend_worker']+=count
+        gil=dict(counts=counts,interpretation='GIL-owner samples only; startup is included in total. Pool busy spans give the preparation window. Ownership is not a direct measurement of another thread waiting.')
     return dict(lane=str(path),scope='Diagnostic only; profiler/hooks/fences perturb scheduling',
         transfers=json.loads((diagnostic/'summary.json').read_text()),pools=pools,pixel_copy_size_fit=fit,pixel_copy_size_bins=bins,
-        size_fit_limit='Observational per-request fit, not a controlled bandwidth experiment; includes host allocation/cast/GIL effects.',sampling=sampling)
+        size_fit_limit='Observational per-request fit, not a controlled bandwidth experiment; includes host allocation/cast/GIL effects.',sampling=sampling,gil_sampling=gil)
 
 
 def main():
