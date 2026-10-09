@@ -257,7 +257,8 @@ def parse_args(argv=None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--local-prefill-metrics",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=False,
         help="Record opt-in NPU-event timings and token counts for local prefill.",
     )
     parser.add_argument(
