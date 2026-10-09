@@ -62,7 +62,7 @@ def summarize(path):
             if '_prepare_cpu (' in stack:counts['prep_worker_samples']+=count
             if any(s in stack for s in ['_layout_job (','_expand (','crops (']):counts['frontend_worker_samples']+=count
         sampling=dict(counts=counts,top_pipeline_owner_leaves=tops.most_common(20),take_gil_leaves=waiting.most_common(10),
-            interpretation='49 Hz native/idle sampling. This interpreter hides take_gil frames even in the positive GIL-contention control: zero named take_gil frames DOES NOT exclude contention. Worker samples alone do not establish GIL ownership or causality. Counts across threads are not additive wall time.')
+            interpretation='5 Hz native/idle sampling. This interpreter hides take_gil frames even in the positive GIL-contention control: zero named take_gil frames DOES NOT exclude contention. Worker samples alone do not establish GIL ownership or causality. Counts across threads are not additive wall time.')
     gil=None
     if (path/'gil_stacks.txt').exists():
         counts=Counter()

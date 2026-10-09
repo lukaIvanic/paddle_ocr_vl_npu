@@ -127,7 +127,7 @@ def main():
                     name=f'diagnostic_{lane}_{"drained" if drain else "queued"}'
                     cmd=command(lane,a.diagnostic_pages,name,diagnostic=True,drain=drain)
                     if a.diagnostic_profiler:
-                        cmd=[str(a.diagnostic_profiler),'record','--rate','49','--format','raw',
+                        cmd=[str(a.diagnostic_profiler),'record','--rate',('5' if a.diagnostic_sampling=='native' else '49'),'--format','raw',
                              '--threads']+(['--native','--idle'] if a.diagnostic_sampling=='native' else ['--gil'])+[
                              '--output',str(a.root/name/(a.diagnostic_sampling+'_stacks.txt')),'--']+cmd
                     run(name,cmd)
