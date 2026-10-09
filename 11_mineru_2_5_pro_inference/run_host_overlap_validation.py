@@ -127,6 +127,10 @@ def main():
                     request_h2d_submit_s=st['request_h2d_submit_s'],cpu_prepare_wait_s=st['cpu_prepare_wait_s'],
                     vision_position_prepare_s=m.get('vision_position_prepare'),prefill_s=g['prefill_s'],
                     wall_minus_measured_prefill_and_decode_s=(s['pipeline_wall_s']-measured) if s['local_prefill_metrics'] else None,
+                    layout_host_wall_s=st['layout_host_wall_s'],
+                    vision_encoder_s=m.get('vision_transformer_blocks'),text_prefill_s=m.get('text_transformer_prefill'),decode_s=g['decode_s'],
+                    idle_estimate_s=(s['pipeline_wall_s']-measured-st['layout_host_wall_s']) if s['local_prefill_metrics'] else None,
+                    idle_estimate_formula='wall - named prefill event regions - decode event time - layout host wall (proxy); metrics-off unavailable',
                     idle_estimate_limit='Residual includes layout, other device work, launch gaps and host work; not measured NPU idle.',
                     exactness=parity))
                 save(a.root/f'{a.stage}_results.json',table)
