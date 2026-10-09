@@ -35,6 +35,8 @@ class PreparedGeneration:
     position_ids: torch.Tensor | None = None
     rope_deltas: torch.Tensor | None = None
     inputs_embeds: torch.Tensor | None = None
+    # Keep async-copy source storage alive through completion of prefill.
+    host_staging: tuple[torch.Tensor, ...] = ()
 
 
 @dataclass
@@ -874,6 +876,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         # this version.  This synchronization matches the fixed-cohort path's
         # semantics; only slot refill is under test.
         token_id = int(token[0, 0].item())
+        request.host_staging = ()  # Existing token read has completed prefill.
         return {
             "token": token,
             "token_id": token_id,
@@ -1037,6 +1040,8 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         for state in states.values():
             if state["token_id"] is None:
                 state["token_id"] = int(state["token"][0, 0].item())
+        for _slot, _index, request in entries:
+            request.host_staging = ()  # Existing token reads completed this prefill.
         aggregate: dict[str, float | int] = {
             "request_count": len(entries),
             "raw_vision_tokens": sum(member.raw_vision_tokens for member in members),

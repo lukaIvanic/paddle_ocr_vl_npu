@@ -77,7 +77,7 @@ def main():
         if isinstance(value,(tuple,list)):return tuple(cpu(v) for v in value)
         raise TypeError(type(value))
     def equal(x,y):
-        if isinstance(x,torch.Tensor):return x.dtype==y.dtype and x.shape==y.shape and torch.equal(x,y)
+        if isinstance(x,torch.Tensor):return x.dtype==y.dtype and x.shape==y.shape and torch.equal(x.contiguous().view(torch.uint8),y.contiguous().view(torch.uint8))
         return len(x)==len(y) and all(equal(i,j) for i,j in zip(x,y))
     class Recorder:
         def __init__(self):self.values=[];self.routes=Counter()

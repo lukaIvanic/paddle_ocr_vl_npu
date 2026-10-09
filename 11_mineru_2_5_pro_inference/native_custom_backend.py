@@ -227,6 +227,7 @@ def make_local_fixed_batch_vlm_client(
     continuous_refill: bool = False,
     prepare_prefetch_depth: int = 0,
     vision_grid_device: str = "npu",
+    input_transfer: str = "blocking",
     system_prompt: str,
     allow_truncated_content: bool,
 ):
@@ -234,6 +235,9 @@ def make_local_fixed_batch_vlm_client(
 
     if vision_grid_device not in ("npu", "cpu"):
         raise ValueError(f"unsupported vision grid device {vision_grid_device!r}")
+
+    if input_transfer not in ("blocking", "pinned-nonblocking"):
+        raise ValueError(f"unsupported input transfer {input_transfer!r}")
 
     from fixed_batch_engine import PreparedGeneration
     from mineru_vl_utils.vlm_client.base_client import SingleImageType, UnsupportedError
@@ -265,6 +269,9 @@ def make_local_fixed_batch_vlm_client(
                 inputs.attention_mask,
             )
             mrope_s = time.perf_counter() - mrope_started
+            if input_transfer == "pinned-nonblocking":
+                from host_input_staging import pin_processor_outputs
+                position_ids, rope_deltas = pin_processor_outputs(inputs, position_ids, rope_deltas)
             return (
                 inputs,
                 position_ids,
@@ -285,7 +292,13 @@ def make_local_fixed_batch_vlm_client(
                 inputs.input_ids[0].tolist() if self.generation_trace is not None else None
             )
             cpu_image_grid_thw = getattr(inputs, "image_grid_thw", None)
-            inputs = inputs.to(device=model.device, dtype=model.dtype)
+            host_staging = ()
+            if input_transfer == "pinned-nonblocking":
+                from host_input_staging import move_pinned_inputs
+                inputs, position_ids, rope_deltas, host_staging = move_pinned_inputs(
+                    inputs, position_ids, rope_deltas, device=model.device, dtype=model.dtype)
+            else:
+                inputs = inputs.to(device=model.device, dtype=model.dtype)
             # "cpu" keeps the small grid on host, as experiments 05/09 do, so vision
             # position preparation reads its shape without device scalar syncs.
             image_grid_thw = (
@@ -293,8 +306,9 @@ def make_local_fixed_batch_vlm_client(
                 if vision_grid_device == "cpu"
                 else getattr(inputs, "image_grid_thw", None)
             )
-            position_ids = position_ids.to(device=model.device)
-            rope_deltas = rope_deltas.to(device=model.device)
+            if input_transfer == "blocking":
+                position_ids = position_ids.to(device=model.device)
+                rope_deltas = rope_deltas.to(device=model.device)
             max_new_tokens = params.max_new_tokens
             if max_new_tokens is None:
                 max_new_tokens = max(
@@ -317,6 +331,7 @@ def make_local_fixed_batch_vlm_client(
                 max_new_tokens=max_new_tokens,
                 position_ids=position_ids,
                 rope_deltas=rope_deltas,
+                host_staging=host_staging,
             )
 
         def _prepare_generation(

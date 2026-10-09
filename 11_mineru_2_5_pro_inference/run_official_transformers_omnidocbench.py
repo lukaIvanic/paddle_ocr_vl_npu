@@ -233,6 +233,10 @@ def parse_args(argv=None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--local-input-transfer", choices=("blocking", "pinned-nonblocking"), default="blocking",
+        help="Opt-in pinned CPU processor outputs and non-blocking H2D; preserves FP32 inputs and FP16 cast.",
+    )
+    parser.add_argument(
         "--local-vision-grid-device",
         choices=("npu", "cpu"),
         default="npu",
@@ -967,6 +971,7 @@ def main(args=None) -> None:
                     else 0
                 ),
                 vision_grid_device=args.local_vision_grid_device,
+                input_transfer=args.local_input_transfer,
                 system_prompt=client.client.system_prompt,
                 allow_truncated_content=client.client.allow_truncated_content,
             )
@@ -1260,6 +1265,7 @@ def main(args=None) -> None:
             if args.backend == "local-continuous-client"
             else None
         ),
+        "local_input_transfer": args.local_input_transfer,
         "local_vision_grid_device": (
             args.local_vision_grid_device
             if args.backend == "local-continuous-client"
