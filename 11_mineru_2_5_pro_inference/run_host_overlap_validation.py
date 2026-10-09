@@ -58,6 +58,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--reference-run',type=Path,required=True)
     p.add_argument('--root',type=Path,required=True)
+    p.add_argument('--exact-reference-output',type=Path,help='Smoke-only reuse of an existing exact 64-page baseline; never performance')
     p.add_argument('--cache-root',type=Path,help='Shared study cache parent; each configuration still has its own directory')
     p.add_argument('--stage',choices=['vision','smoke','diagnostic','performance','full'],required=True)
     p.add_argument('--lanes',nargs='+',choices=list(FLAGS),default=['baseline','c1'])
@@ -70,6 +71,8 @@ def main():
     p.add_argument('--vision-grid',choices=['cpu','npu'],default='cpu')
     a=p.parse_args()
     a.root.mkdir(parents=True,exist_ok=True)
+    if a.exact_reference_output and a.stage!='smoke':
+        p.error('External exactness reference is only allowed for smoke checks')
     if a.stage=='performance' and len(a.lanes)!=2:
         p.error('performance requires exactly two adjacent configurations, run in A B A B order')
     assert not subprocess.check_output(['git','status','--porcelain','--untracked-files=no'],text=True).strip()
@@ -135,7 +138,7 @@ def main():
             return
         count={'smoke':64,'performance':384,'full':1651}[a.stage]
         repeats=2 if a.stage=='performance' else 1
-        reference=None;table=[]
+        reference=a.exact_reference_output;table=[]
         for repeat in range(repeats):
             for lane in a.lanes:
                 name=f'{a.stage}_r{repeat+1}_{lane}'
