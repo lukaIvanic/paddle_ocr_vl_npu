@@ -5,6 +5,7 @@ receipt and stops on any output difference; comparison never allows drift.
 """
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -36,6 +37,21 @@ def exact(reference,candidate,path):
         assert not result[key],f'{key}: see {path}'
     assert result['candidate_trace_accounting'] and all(result['candidate_trace_accounting'].values())
     return dict(exact_requests=result['candidate_requests'],exact_pages=result['byte_identical_pages'])
+
+
+def cache_artifacts(command):
+    artifacts={}
+    for flag in ['--local-torchair-cache-dir','--local-vision-torchair-cache-dir','--local-text-torchair-cache-dir']:
+        root=Path(command[command.index(flag)+1])
+        for path in sorted(root.rglob('*')):
+            if not path.is_file() or (path.suffix not in ['.om','.idx'] and path.name!='compiled_module'):
+                continue
+            digest=hashlib.sha256()
+            with path.open('rb') as f:
+                for chunk in iter(lambda:f.read(1024*1024),b''):digest.update(chunk)
+            artifacts[str(path)]=dict(size=path.stat().st_size,sha256=digest.hexdigest())
+    assert artifacts, 'No warm graph artifacts found'
+    return artifacts
 
 
 def main():
@@ -72,8 +88,18 @@ def main():
             return result
         def run(name,command,deadline=3600):
             stage=a.root/name;stage.mkdir(exist_ok=False)
-            result=run_lane(command,stage/'receipt',deadline,stage/'run.log')
+            audit=a.stage in ['performance','full']
+            if audit:
+                before=cache_artifacts(command);save(stage/'cache_before.json',before)
+            result=run_lane(command,stage/'receipt',deadline,stage/'run.log',require_idle_card=True)
             (stage/'exit_code.txt').write_text(str(result['exit_code'])+'\n')
+            if audit:
+                after=cache_artifacts(command);save(stage/'cache_after.json',after)
+                changed=[name for name in sorted(set(before)|set(after)) if before.get(name)!=after.get(name)]
+                save(stage/'cache_audit.json',dict(unchanged=not changed,changed=changed,
+                     scope='Graph .om/.idx and compiled_module hashes before/after; outside pipeline timer. First-use warm graph loading remains included.'))
+                assert not changed, 'Graph artifacts changed during timed run; stop and inspect cache_audit.json'
+
             return stage
         def command(label,count,name,diagnostic=None,drain=False):
             cmd=[sys.executable,'-u',str(HERE/('host_overlap_diagnostics.py' if diagnostic else 'run_page_pipeline.py'))]

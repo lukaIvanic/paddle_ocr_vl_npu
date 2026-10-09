@@ -50,7 +50,7 @@ def write_new(path, data):
         f.write('\n')
 
 
-def run_lane(command, receipt_dir, timeout_s, log_path=None):
+def run_lane(command, receipt_dir, timeout_s, log_path=None, *, require_idle_card=False):
     root = Path(receipt_dir)
     root.mkdir(parents=True, exist_ok=False)
     write_new(root/'command.json', dict(argv=command, shell_display=shlex.join(command),
@@ -63,6 +63,12 @@ def run_lane(command, receipt_dir, timeout_s, log_path=None):
     if before['device_error']:
         write_new(root/'exit.json', dict(status='device_error_before_launch', exit_code=1))
         raise RuntimeError('selected device reports an error; no child launched')
+    if require_idle_card:
+        card=before['visible_devices']
+        inventory=next((r.get('stdout','') for r in before['commands'] if r['argv']==['npu-smi','info']), '')
+        if not card.isdigit() or not re.search(r'No running processes found in NPU\s+'+re.escape(card)+r'\b',inventory):
+            write_new(root/'exit.json',dict(status='card_not_confirmed_idle',exit_code=1))
+            raise RuntimeError('Selected card is occupied or occupancy is unavailable; no child launched')
     log = Path(log_path) if log_path else root/'run.log'
     start = time.monotonic()
     timed_out = False
