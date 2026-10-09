@@ -262,6 +262,10 @@ def make_local_fixed_batch_vlm_client(
             if input_transfer == "pinned-thread":
                 import torch_npu
                 self._host_transfer_stream = torch_npu.npu.Stream(device=model.device)
+                # LUT/device constants created on the owner stream must be ready
+                # before background normalization reads them. No host sync.
+                self._host_init_event = torch_npu.npu.current_stream().record_event()
+                self._host_transfer_stream.wait_event(self._host_init_event)
 
         def _stage_generation_inputs(self, inputs, position_ids, rope_deltas):
             if self._host_transfer_stream is None:
