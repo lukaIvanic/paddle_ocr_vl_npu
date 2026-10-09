@@ -27,7 +27,7 @@ def main():
     from local_modeling_mineru import LocalMinerU2_5ForConditionalGeneration
     from fixed_batch_engine import FixedBatchDecodeEngine
     from native_custom_backend import make_local_fixed_batch_vlm_client
-    from vision_prefill_compile import MinerUVisionPrefillRuntime
+    from vision_prefill_compile import MinerUVisionPrefillRuntime, parse_vision_buckets
     from run_official_transformers_omnidocbench import apply_processor_pixel_limits
     from prepare_crop_cap_replay import baseline_helper
     from generation_trace import image_fingerprint
@@ -40,7 +40,8 @@ def main():
     summary=json.loads((ref/'run_summary_shard_00.json').read_text())
     model_path=Path(summary['model'])
     cfg=json.loads((model_path/'config.json').read_text())
-    prod=pipeline_args(['--dataset-json',summary['dataset_json'],'--processor-max-pixels','602112'])
+    prod=pipeline_args(['--dataset-json',summary['dataset_json'],'--processor-max-pixels','602112','--output-dir',str(a.output)])
+    prod.local_vision_buckets=parse_vision_buckets(prod.local_vision_buckets)
     buckets=[b for b in prod.local_vision_buckets if b<=3072]
     rows=[json.loads(line) for line in (ref/'generation_trace.jsonl').open()]
     counts=Counter();chosen=[];seen=set()
