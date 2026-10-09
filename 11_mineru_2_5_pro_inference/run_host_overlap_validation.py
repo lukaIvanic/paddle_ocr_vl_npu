@@ -21,6 +21,11 @@ FLAGS={
  'baseline':[],
  'c1':['--local-vision-grid-device','cpu'],
  'c2_only':['--local-input-transfer','pinned-nonblocking'],
+ 'c2_thread_only':['--local-input-transfer','pinned-thread'],
+ 'c2_thread':['--local-vision-grid-device','cpu','--local-input-transfer','pinned-thread'],
+ 'c5_thread':['--local-vision-grid-device','cpu','--local-input-transfer','pinned-thread','--no-local-prefill-metrics'],
+ 'c3':['--local-vision-grid-device','cpu','--local-input-transfer','pinned-thread','--no-local-prefill-metrics','--local-compact-uint8'],
+ 'c4':['--local-vision-grid-device','cpu','--local-input-transfer','pinned-thread','--no-local-prefill-metrics','--local-compact-uint8','--prepare-workers','2','--frontend-workers','2'],
  'c5_only':['--no-local-prefill-metrics'],
  'c2':['--local-vision-grid-device','cpu','--local-input-transfer','pinned-nonblocking'],
  'c5':['--local-vision-grid-device','cpu','--local-input-transfer','pinned-nonblocking','--no-local-prefill-metrics'],
@@ -60,17 +65,20 @@ def main():
     p.add_argument('--root',type=Path,required=True)
     p.add_argument('--exact-reference-output',type=Path,help='Smoke-only reuse of an existing exact 64-page baseline; never performance')
     p.add_argument('--cache-root',type=Path,help='Shared study cache parent; each configuration still has its own directory')
-    p.add_argument('--stage',choices=['vision','smoke','diagnostic','performance','full'],required=True)
+    p.add_argument('--stage',choices=['vision','smoke','diagnostic','performance','quick','full'],required=True)
     p.add_argument('--lanes',nargs='+',choices=list(FLAGS),default=['baseline','c1'])
     p.add_argument('--diagnostic-pages',type=int,default=8)
     p.add_argument('--diagnostic-drain',choices=['both','queued','drained'],default='both')
     p.add_argument('--diagnostic-profiler',type=Path,help='Optional standalone py-spy binary; diagnostic only')
     p.add_argument('--diagnostic-sampling',choices=['native','gil'],default='native')
     p.add_argument('--vision-transfer',default='blocking')
+    p.add_argument('--vision-compact-uint8',action='store_true')
     p.add_argument('--vision-metrics-off',action='store_true')
     p.add_argument('--vision-grid',choices=['cpu','npu'],default='cpu')
     a=p.parse_args()
     a.root.mkdir(parents=True,exist_ok=True)
+    if a.stage=='diagnostic' and any('thread' in lane for lane in a.lanes) and a.diagnostic_drain!='queued':
+        p.error('Threaded-copy diagnostics require --diagnostic-drain queued; a main-thread fence cannot precede background H2D')
     if a.exact_reference_output and a.stage!='smoke':
         p.error('External exactness reference is only allowed for smoke checks')
     if a.stage=='performance' and len(a.lanes)!=2:
@@ -91,7 +99,7 @@ def main():
             return result
         def run(name,command,deadline=3600):
             stage=a.root/name;stage.mkdir(exist_ok=False)
-            audit=a.stage in ['performance','full']
+            audit=a.stage in ['performance','quick','full']
             if audit:
                 before=cache_artifacts(command);save(stage/'cache_before.json',before)
             result=run_lane(command,stage/'receipt',deadline,stage/'run.log',require_idle_card=True)
@@ -121,6 +129,7 @@ def main():
                 '--reference-run',str(a.reference_run),'--cache-root',cache('validation')['local_vision_torchair_cache_dir'],
                 '--output',str(a.root/label/'check'),'--candidate-grid',a.vision_grid,
                 '--candidate-transfer',a.vision_transfer]
+            if a.vision_compact_uint8:cmd+=['--candidate-compact-uint8']
             if a.vision_metrics_off:cmd+=['--candidate-metrics-off']
             run(label,cmd)
             return
@@ -136,8 +145,8 @@ def main():
                     run(name,cmd)
 
             return
-        count={'smoke':64,'performance':384,'full':1651}[a.stage]
-        repeats=2 if a.stage=='performance' else 1
+        count={'smoke':64,'performance':384,'quick':32,'full':1651}[a.stage]
+        repeats=2 if a.stage in ['performance','quick'] else 1
         reference=a.exact_reference_output;table=[]
         for repeat in range(repeats):
             for lane in a.lanes:
@@ -147,15 +156,18 @@ def main():
                 assert (s['completed'],s['failed'],s['skipped'])==(count,0,0)
                 assert s['processor_max_pixels']==602112 and s['layout_backend']=='pp-doclayout-v3'
                 assert s['streaming']['layout_calls']==count
-                if reference is None:reference=stage/'output';parity=None
+                if a.stage=='quick':parity=None
+                elif reference is None:reference=stage/'output';parity=None
                 else:parity=exact(reference,stage/'output',stage/'exactness.json')
                 g=s['local_compiled_generation'];m=g['prefill_metrics'];st=s['streaming']
                 # Event regions can contain launch gaps; layout is a host span.
                 # This residual is requested but is NOT measured device idle.
                 measured=sum(float(m.get(k,0)) for k in ['token_embedding','vision_patch_embed','vision_position_prepare','vision_transformer_blocks','vision_merger','image_embed_scatter','mrope_prepare','text_transformer_prefill','text_kv_redistribute','prefill_lm_head'])+g['decode_s']
                 table.append(dict(lane=lane,repeat=repeat+1,chip='910B2',pages=count,
-                    wall_s=s['pipeline_wall_s'],pages_per_s=count/s['pipeline_wall_s'],
+                    flags=FLAGS[lane],wall_s=s['pipeline_wall_s'],pages_per_s=count/s['pipeline_wall_s'],
                     request_h2d_submit_s=st['request_h2d_submit_s'],cpu_prepare_wait_s=st['cpu_prepare_wait_s'],
+                    request_h2d_worker_submit_s=st.get('request_h2d_worker_submit_s'),request_h2d_future_wait_s=st.get('request_h2d_future_wait_s'),
+                    request_h2d_counter_scope=st.get('request_h2d_counter_scope','main-thread request finalization'),
                     vision_position_prepare_s=m.get('vision_position_prepare'),prefill_s=g['prefill_s'],
                     wall_minus_measured_prefill_and_decode_s=(s['pipeline_wall_s']-measured) if s['local_prefill_metrics'] else None,
                     layout_host_wall_s=st['layout_host_wall_s'],

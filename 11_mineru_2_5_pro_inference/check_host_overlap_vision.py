@@ -6,6 +6,7 @@ No throughput claim: CPU snapshots deliberately synchronize the device.
 """
 import argparse
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import sys
@@ -18,6 +19,7 @@ def main():
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--candidate-grid',choices=['cpu','npu'],default='cpu')
     p.add_argument('--candidate-transfer',default='blocking')
+    p.add_argument('--candidate-compact-uint8',action='store_true')
     p.add_argument('--candidate-metrics-off',action='store_true')
     p.add_argument('--count',type=int,default=200)
     a=p.parse_args()
@@ -72,6 +74,7 @@ def main():
     kwargs=dict(batch_size=32,system_prompt='',allow_truncated_content=False)
     base=make_local_fixed_batch_vlm_client(model,processor,engine,vision_grid_device='npu',**kwargs)
     if a.candidate_transfer!='blocking':kwargs['input_transfer']=a.candidate_transfer
+    kwargs['compact_uint8']=a.candidate_compact_uint8
     candidate=make_local_fixed_batch_vlm_client(model,processor,engine,vision_grid_device=a.candidate_grid,**kwargs)
     helper=baseline_helper();routes=Counter();checked=0
 
@@ -104,15 +107,26 @@ def main():
     single_ids={r['request_id'] for r in singles}
     rest=[r for r in chosen if r['request_id'] not in single_ids]
     cohorts=[[r] for r in singles]+[rest[i:i+32] for i in range(0,len(rest),32)]
-    with torch.inference_mode():
+    with torch.inference_mode(), ThreadPoolExecutor(max_workers=1, thread_name_prefix="mineru-h2d-validation") as h2d:
         for cohort in cohorts:
-            start=checked;images=[image(r) for r in cohort];references=None
+            start=checked;images=[image(r) for r in cohort];references=None;reference_pixels=[]
             for label,client in [('baseline',base),('candidate',candidate)]:
-                requests=[]
+                requests=[];cpu_inputs=[]
                 for offset,(row,img) in enumerate(zip(cohort,images)):
                     inputs,pos,delta,*_=client._prepare_cpu_inputs(img,row['chat_prompt'])
                     assert inputs.input_ids[0].tolist()==row['prompt_token_ids'],row['request_id']
-                    request=client._finish_generation(inputs,None,pos,delta)
+                    if label=='baseline':reference_pixels.append(cpu(inputs.pixel_values))
+                    elif a.candidate_compact_uint8:
+                        decoded=candidate.compact_codec.decode(inputs.pixel_values.to(model.device),dtype=torch.float32)
+                        assert equal(reference_pixels[offset],cpu(decoded)),f'FP32 pixel mismatch {row["request_id"]}'
+                    if label=='candidate' and a.candidate_transfer=='pinned-thread':
+                        future=h2d.submit(client._stage_generation_inputs,inputs,pos,delta)
+                        cpu_inputs.append((offset,inputs,pos,delta,future))
+                    else:
+                        request=client._finish_generation(inputs,None,pos,delta)
+                        requests.append((0,start+offset,request))
+                for offset,inputs,pos,delta,future in cpu_inputs:
+                    request=client._finish_generation(inputs,None,pos,delta,staged=future.result())
                     requests.append((0,start+offset,request))
                 record=Recorder()
                 original_measure=PrefillDeviceTimeline.measure
@@ -137,9 +151,9 @@ def main():
     expected={f'bucket_{b}' for b in buckets}|{'packed_768'}
     assert expected<=set(routes),(expected,routes)
     result=dict(chip=torch.npu.get_device_name(),crops=checked,exact=True,routes=dict(routes),
-        checked_fields=['hidden_states','rope_cos','rope_sin','cu_seqlens','full_32_block_encoder_output','final_embeddings'],
+        checked_fields=(['processor_pixel_values_fp32'] if a.candidate_compact_uint8 else [])+['hidden_states','rope_cos','rope_sin','cu_seqlens','full_32_block_encoder_output','final_embeddings'],
         candidate_grid=a.candidate_grid,candidate_transfer=a.candidate_transfer,
-        candidate_metrics_off=a.candidate_metrics_off,comparison='raw tensor bytes (including signed zero)',
+        candidate_compact_uint8=a.candidate_compact_uint8,candidate_metrics_off=a.candidate_metrics_off,comparison='raw tensor bytes (including signed zero)',
         buckets_above_cap_not_applicable=[b for b in prod.local_vision_buckets if b>3072],
         scope='Level 2 correctness only; same production vision grouping and graphs, real hash-verified crops')
     (a.output/'result.json').write_text(json.dumps(result,indent=2)+'\n')

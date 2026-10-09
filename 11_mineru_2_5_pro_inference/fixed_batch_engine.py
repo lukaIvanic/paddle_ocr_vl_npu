@@ -35,8 +35,8 @@ class PreparedGeneration:
     position_ids: torch.Tensor | None = None
     rope_deltas: torch.Tensor | None = None
     inputs_embeds: torch.Tensor | None = None
-    # Keep async-copy source storage alive through completion of prefill.
-    host_staging: tuple[torch.Tensor, ...] = ()
+    # Keep async-copy sources and their ready event alive through prefill.
+    host_staging: tuple[Any, ...] = ()
 
 
 @dataclass

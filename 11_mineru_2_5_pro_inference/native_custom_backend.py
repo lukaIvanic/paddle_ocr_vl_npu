@@ -228,6 +228,7 @@ def make_local_fixed_batch_vlm_client(
     prepare_prefetch_depth: int = 0,
     vision_grid_device: str = "npu",
     input_transfer: str = "blocking",
+    compact_uint8: bool = False,
     system_prompt: str,
     allow_truncated_content: bool,
 ):
@@ -236,7 +237,7 @@ def make_local_fixed_batch_vlm_client(
     if vision_grid_device not in ("npu", "cpu"):
         raise ValueError(f"unsupported vision grid device {vision_grid_device!r}")
 
-    if input_transfer not in ("blocking", "pinned-nonblocking"):
+    if input_transfer not in ("blocking", "pinned-nonblocking", "pinned-thread"):
         raise ValueError(f"unsupported input transfer {input_transfer!r}")
 
     from fixed_batch_engine import PreparedGeneration
@@ -249,6 +250,26 @@ def make_local_fixed_batch_vlm_client(
             super().__init__(**kwargs)
             self.generation_metrics: list[dict[str, Any]] = []
             self.generation_trace = None
+            self.compact_codec = None
+            if compact_uint8:
+                if input_transfer == "blocking":
+                    raise ValueError("compact uint8 requires pinned input staging")
+                from compact_vision_inputs import CompactVisionInputs
+                self.compact_codec = CompactVisionInputs(self.processor, model.device)
+                self.processor = self.compact_codec.processor
+            self.input_transfer = input_transfer
+            self._host_transfer_stream = None
+            if input_transfer == "pinned-thread":
+                import torch_npu
+                self._host_transfer_stream = torch_npu.npu.Stream(device=model.device)
+
+        def _stage_generation_inputs(self, inputs, position_ids, rope_deltas):
+            if self._host_transfer_stream is None:
+                raise RuntimeError("background staging requested without a transfer stream")
+            from host_input_staging import stage_pinned_inputs
+            return stage_pinned_inputs(inputs, position_ids, rope_deltas,
+                stream=self._host_transfer_stream, device=model.device, dtype=model.dtype,
+                keep_grid_on_cpu=vision_grid_device == "cpu", compact_codec=self.compact_codec)
 
         def _prepare_cpu_inputs(
             self,
@@ -269,7 +290,7 @@ def make_local_fixed_batch_vlm_client(
                 inputs.attention_mask,
             )
             mrope_s = time.perf_counter() - mrope_started
-            if input_transfer == "pinned-nonblocking":
+            if input_transfer in ("pinned-nonblocking", "pinned-thread"):
                 from host_input_staging import pin_processor_outputs
                 position_ids, rope_deltas = pin_processor_outputs(inputs, position_ids, rope_deltas)
             return (
@@ -286,6 +307,8 @@ def make_local_fixed_batch_vlm_client(
             sampling_param,
             position_ids,
             rope_deltas,
+            *,
+            staged=None,
         ) -> PreparedGeneration:
             params = self.build_sampling_params(sampling_param)
             trace_prompt_ids = (
@@ -293,15 +316,25 @@ def make_local_fixed_batch_vlm_client(
             )
             # Keep CPU metadata out of BatchFeature.to entirely: the old C1
             # implementation copied an unused grid and then selected the CPU one.
-            cpu_image_grid_thw = (
-                inputs.pop("image_grid_thw", None) if vision_grid_device == "cpu" else None
-            )
+            cpu_image_grid_thw = None
             host_staging = ()
+            if input_transfer == "pinned-thread":
+                if staged is None:
+                    raise RuntimeError("pinned-thread requires the streaming H2D executor; no synchronous fallback")
+                import torch_npu
+                torch_npu.npu.current_stream().wait_event(staged.ready_event)
+                inputs, position_ids, rope_deltas = staged.inputs, staged.position_ids, staged.rope_deltas
+                cpu_image_grid_thw = staged.cpu_grid
+                # The event and both CPU/GPU source lifetimes extend through the
+                # existing prefill-completion token read, as in experiment 09.
+                host_staging = staged.sources + (staged.ready_event,)
+            elif vision_grid_device == "cpu":
+                cpu_image_grid_thw = inputs.pop("image_grid_thw", None)
             if input_transfer == "pinned-nonblocking":
                 from host_input_staging import move_pinned_inputs
                 inputs, position_ids, rope_deltas, host_staging = move_pinned_inputs(
-                    inputs, position_ids, rope_deltas, device=model.device, dtype=model.dtype)
-            else:
+                    inputs, position_ids, rope_deltas, device=model.device, dtype=model.dtype, compact_codec=self.compact_codec)
+            elif input_transfer == "blocking":
                 inputs = inputs.to(device=model.device, dtype=model.dtype)
             # "cpu" keeps the small grid on host, as experiments 05/09 do, so vision
             # position preparation reads its shape without device scalar syncs.

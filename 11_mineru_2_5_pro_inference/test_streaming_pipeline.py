@@ -1,6 +1,8 @@
 from concurrent.futures import Future
 from types import SimpleNamespace
 import unittest
+import threading
+import time
 
 from streaming_pipeline import BoundedWriter, MinerUPageSource, PageInbox
 
@@ -50,6 +52,39 @@ def client():
 
 
 class PipelineTests(unittest.TestCase):
+    def test_h2d_executor_preserves_admission_and_propagates_failure(self):
+        main_thread=threading.get_ident();observed=[];staged_threads=[]
+        adapter=Adapter();adapter.input_transfer='pinned-thread'
+        def stage(*args):
+            staged_threads.append(threading.get_ident())
+            time.sleep(.001)
+            return SimpleNamespace(submit_s=.001)
+        adapter._stage_generation_inputs=stage
+        def finish(*args,staged=None):
+            self.assertEqual(threading.get_ident(),main_thread)
+            self.assertIsNotNone(staged)
+            return SimpleNamespace(max_new_tokens=5)
+        adapter._finish_generation=finish
+        c=client();c.client=adapter
+        source=MinerUPageSource(c,[(str(i),lambda:2) for i in range(4)],on_page=lambda *a:None,page_window=1)
+        try:
+            while not source.closed:
+                item=source.pull(block=True)
+                if item:
+                    observed.append(source.inflight[item[0]]['request_id'])
+                    source.complete(item[0],[7,9])
+            self.assertEqual(observed,[v for i in range(4) for v in [f'{i}:layout',f'{i}:recognition:0',f'{i}:recognition:1']])
+            self.assertEqual(len(set(staged_threads)),1)
+            self.assertNotEqual(staged_threads[0],main_thread)
+            self.assertAlmostEqual(source.request_h2d_worker_submit_s,.012)
+        finally:source.close()
+        def fail(*a):raise ValueError('H2D worker failed')
+        adapter._stage_generation_inputs=fail
+        source=MinerUPageSource(c,[('failure',lambda:0)],on_page=lambda *a:None)
+        try:
+            with self.assertRaisesRegex(ValueError,'H2D worker failed'):source.pull(block=True)
+        finally:source.close()
+
     def test_live_input_survives_idle_and_drains_on_close(self):
         inbox = PageInbox(capacity=2)
         completed = []

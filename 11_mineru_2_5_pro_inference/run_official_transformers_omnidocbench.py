@@ -232,8 +232,11 @@ def parse_args(argv=None) -> argparse.Namespace:
             "positions with every real production graph call."
         ),
     )
+    parser.add_argument("--local-compact-uint8", action="store_true")
+    parser.add_argument("--prepare-workers", type=int, default=1)
+    parser.add_argument("--frontend-workers", type=int, default=2)
     parser.add_argument(
-        "--local-input-transfer", choices=("blocking", "pinned-nonblocking"), default="blocking",
+        "--local-input-transfer", choices=("blocking", "pinned-nonblocking", "pinned-thread"), default="blocking",
         help="Opt-in pinned CPU processor outputs and non-blocking H2D; preserves FP32 inputs and FP16 cast.",
     )
     parser.add_argument(
@@ -673,6 +676,8 @@ def main(args=None) -> None:
         raise ValueError("batch-size must be non-negative and page-batch-size must be positive")
     if any(int(value) <= 0 for value in args.layout_image_size):
         raise ValueError("layout-image-size values must be positive")
+    if args.local_input_transfer == "pinned-thread" and (not args.streaming_pages or args.backend != "local-continuous-client"):
+        raise ValueError("pinned-thread input transfer requires the continuous streaming page source")
     if args.local_prepare_prefetch_depth < 0:
         raise ValueError("local-prepare-prefetch-depth must be non-negative")
     if args.global_request_stream and args.backend != "local-continuous-client":
@@ -973,6 +978,7 @@ def main(args=None) -> None:
                 ),
                 vision_grid_device=args.local_vision_grid_device,
                 input_transfer=args.local_input_transfer,
+            compact_uint8=args.local_compact_uint8,
                 system_prompt=client.client.system_prompt,
                 allow_truncated_content=client.client.allow_truncated_content,
             )
@@ -1267,6 +1273,8 @@ def main(args=None) -> None:
             else None
         ),
         "local_input_transfer": args.local_input_transfer,
+        "local_compact_uint8": args.local_compact_uint8,
+        "prepare_workers": args.prepare_workers, "frontend_workers": args.frontend_workers,
         "local_vision_grid_device": (
             args.local_vision_grid_device
             if args.backend == "local-continuous-client"
@@ -1470,7 +1478,8 @@ def main(args=None) -> None:
             page_source = source_class(
                 client, ((name, lambda path=page_path(name): load_page(path)) for name in page_lookup),
                 on_page=writer.submit, page_window=args.streaming_page_window,
-                prepare_depth=max(1, args.local_prepare_prefetch_depth), trace=generation_trace, **source_kwargs)
+                prepare_depth=max(1, args.local_prepare_prefetch_depth), trace=generation_trace,
+                prepare_workers=args.prepare_workers, frontend_workers=args.frontend_workers, **source_kwargs)
             streaming_metrics = run_decode_stream(engine, page_source)
             streaming_report = {**page_source.metadata(), "decode": streaming_metrics}
             if paddle_frontend is not None:

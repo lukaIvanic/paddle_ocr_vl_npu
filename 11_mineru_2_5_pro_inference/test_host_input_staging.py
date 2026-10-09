@@ -1,9 +1,12 @@
 """CPU semantic tests; actual NPU pinning and encoder parity are Level 2 checks."""
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
+from contextlib import nullcontext
+from types import SimpleNamespace
+import sys
 import torch
 from transformers.feature_extraction_utils import BatchFeature
-from host_input_staging import pin_processor_outputs,move_pinned_inputs
+from host_input_staging import pin_processor_outputs,move_pinned_inputs,stage_pinned_inputs
 
 
 class StagingTests(unittest.TestCase):
@@ -28,6 +31,24 @@ class StagingTests(unittest.TestCase):
             self.assertTrue(torch.equal(keep[0],source['pixel_values']))
             self.assertEqual(len(keep),len(source)+2)
             self.assertIs(keep[-2],pos);self.assertIs(keep[-1],delta)
+    def test_staging_preserves_cpu_mapping_grid_and_sources(self):
+        source=BatchFeature({'pixel_values':torch.arange(24,dtype=torch.float32).reshape(2,12),
+                             'input_ids':torch.tensor([[1,2]]),'image_grid_thw':torch.tensor([[1,2,2]])})
+        pos=torch.arange(6).reshape(3,1,2);delta=torch.tensor([[0]])
+        originals=dict(source);event=object();stream=Mock();stream.record_event.return_value=event
+        fake=SimpleNamespace(npu=SimpleNamespace(stream=lambda s:nullcontext()))
+        with patch.dict(sys.modules,{'torch_npu':fake}),patch.object(torch.Tensor,'is_pinned',return_value=True):
+            staged=stage_pinned_inputs(source,pos,delta,stream=stream,device='cpu',dtype=torch.float16,keep_grid_on_cpu=True)
+        self.assertEqual(set(source),set(originals))
+        for key,value in originals.items():self.assertIs(source[key],value)
+        self.assertIs(staged.cpu_grid,originals['image_grid_thw'])
+        self.assertNotIn('image_grid_thw',staged.inputs)
+        self.assertIs(staged.ready_event,event)
+        self.assertTrue(torch.equal(staged.inputs.pixel_values,originals['pixel_values'].half()))
+        self.assertIs(staged.sources[0],originals['pixel_values'])
+        self.assertEqual(staged.sources[0].dtype,torch.float32)
+        stream.record_event.assert_called_once_with()
+
     def test_no_silent_unpinned_fallback(self):
         with self.assertRaisesRegex(RuntimeError,'unpinned'):
             move_pinned_inputs(BatchFeature({'pixel_values':torch.zeros(1,2)}),torch.zeros(1),torch.zeros(1),device='cpu',dtype=torch.float16)

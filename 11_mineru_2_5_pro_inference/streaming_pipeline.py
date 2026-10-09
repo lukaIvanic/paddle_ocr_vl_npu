@@ -1,7 +1,8 @@
 """Bounded page frontend and completion routing for one persistent MinerU model.
 
-Only CPU work runs in executors. The caller owns all NPU operations. Pages are
-collection boundaries, never barriers between independent model requests.
+CPU preparation runs in executors; an opt-in H2D executor owns a dedicated
+transfer stream. The caller owns model/layout operations. Pages are collection
+boundaries, never barriers between independent model requests.
 """
 from __future__ import annotations
 
@@ -114,7 +115,10 @@ class MinerUPageSource:
     """
     def __init__(self, client, pages: Iterable[tuple[str, Callable]], *,
                  on_page: Callable, page_window: int = 32, prepare_depth: int = 64,
-                 trace=None):
+                 trace=None, prepare_workers=1, frontend_workers=2):
+        if min(prepare_workers,frontend_workers)<1:
+            raise ValueError("worker counts must be positive")
+        self.prepare_workers,self.frontend_workers=prepare_workers,frontend_workers
         if page_window < 1 or prepare_depth < 1:
             raise ValueError("page window and preparation depth must be positive")
         if client.helper.enable_cross_page_table_merge:
@@ -130,8 +134,10 @@ class MinerUPageSource:
         self.pages: dict[str, PageState] = {}
         self.seen_pages: set[str] = set()
         self.input_exhausted = False
-        self.frontend = ThreadPoolExecutor(max_workers=2, thread_name_prefix="mineru-pages")
-        self.prepare = ThreadPoolExecutor(max_workers=1, thread_name_prefix="mineru-prepare")
+        self.frontend = ThreadPoolExecutor(max_workers=frontend_workers, thread_name_prefix="mineru-pages")
+        self.prepare = ThreadPoolExecutor(max_workers=prepare_workers, thread_name_prefix="mineru-prepare")
+        self.h2d = (ThreadPoolExecutor(max_workers=1, thread_name_prefix="mineru-h2d")
+                    if getattr(self.adapter, "input_transfer", "blocking") == "pinned-thread" else None)
         self.front_jobs = deque()
         self.raw = deque()
         self.cpu_jobs = deque()
@@ -144,6 +150,8 @@ class MinerUPageSource:
         self.cpu_prepare_worker_s = 0.0
         self.cpu_mrope_prepare_s = 0.0
         self.request_h2d_submit_s = 0.0
+        self.request_h2d_worker_submit_s = 0.0
+        self.request_h2d_future_wait_s = 0.0
         self.phase_admitted = Counter()
         self.phase_completed = Counter()
         self.phase_started = set()
@@ -242,7 +250,9 @@ class MinerUPageSource:
         if self.trace is not None:
             record.update(image_sha256=image_fingerprint(image),
                           prompt_token_ids=cpu[0].input_ids[0].tolist())
-        return record, params, cpu
+        staged_future = (self.h2d.submit(self.adapter._stage_generation_inputs, cpu[0], cpu[1], cpu[2])
+                         if self.h2d is not None else None)
+        return record, params, cpu, staged_future
 
     def _pump(self, *, block: bool):
         self._fill_pages()
@@ -275,14 +285,20 @@ class MinerUPageSource:
         if not block and not future.done():
             return None
         started = time.perf_counter()
-        record, params, cpu = future.result()
+        record, params, cpu, staged_future = future.result()
         self.cpu_wait_s += time.perf_counter() - started
         self.cpu_jobs.popleft()
         inputs, position_ids, rope_deltas, worker_s, mrope_s = cpu
         self.cpu_prepare_worker_s += worker_s
         self.cpu_mrope_prepare_s += mrope_s
         started = time.perf_counter()
-        request = self.adapter._finish_generation(inputs, params, position_ids, rope_deltas)
+        if staged_future is None:
+            request = self.adapter._finish_generation(inputs, params, position_ids, rope_deltas)
+        else:
+            staged = staged_future.result()
+            self.request_h2d_future_wait_s += time.perf_counter() - started
+            self.request_h2d_worker_submit_s += staged.submit_s
+            request = self.adapter._finish_generation(inputs, params, position_ids, rope_deltas, staged=staged)
         self.request_h2d_submit_s += time.perf_counter() - started
         record["max_new_tokens"] = request.max_new_tokens
         index = self.next_id
@@ -355,6 +371,8 @@ class MinerUPageSource:
             self.inbox.fail(RuntimeError("page stream stopped before input drained"))
         self.frontend.shutdown(wait=True, cancel_futures=True)
         self.prepare.shutdown(wait=True, cancel_futures=True)
+        if self.h2d is not None:
+            self.h2d.shutdown(wait=True, cancel_futures=True)
 
     def wait_for_work(self):
         if self.inbox is not None and not self.input_exhausted:
@@ -371,4 +389,9 @@ class MinerUPageSource:
                 "cpu_prepare_worker_s": self.cpu_prepare_worker_s,
                 "cpu_mrope_prepare_s": self.cpu_mrope_prepare_s,
                 "request_h2d_submit_s": self.request_h2d_submit_s,
+                "request_h2d_worker_submit_s": self.request_h2d_worker_submit_s,
+                "request_h2d_future_wait_s": self.request_h2d_future_wait_s,
+                "request_h2d_counter_scope": ("main-thread future wait and handoff; actual submission is request_h2d_worker_submit_s"
+                                              if self.h2d is not None else "main-thread request finalization"),
+                "prepare_workers": self.prepare_workers, "frontend_workers": self.frontend_workers,
                 "remaining_inflight": len(self.inflight), "source_closed": self.closed}
