@@ -1405,6 +1405,9 @@ class MinerUVisionTransformer(nn.Module):
         pos_ids_tensor = torch.cat(pos_ids, dim=0)
         max_grid_size = grid_thw[:, 1:].max()
         rotary_pos_emb_full = self.rotary_pos_emb(max_grid_size)
+        # A CPU grid builds the integer ids without device scalar syncs; only the
+        # final ids cross to the rotary table's device for the same gather.
+        pos_ids_tensor = pos_ids_tensor.to(rotary_pos_emb_full.device, non_blocking=True)
         return rotary_pos_emb_full[pos_ids_tensor].flatten(1)
 
     def forward(

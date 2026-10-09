@@ -233,6 +233,15 @@ def parse_args(argv=None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--local-vision-grid-device",
+        choices=("npu", "cpu"),
+        default="npu",
+        help=(
+            "Continuous local lane only: device holding image_grid_thw. cpu builds "
+            "vision positions without device scalar syncs; outputs are unchanged."
+        ),
+    )
+    parser.add_argument(
         "--local-prepare-prefetch-depth",
         type=int,
         default=64,
@@ -957,6 +966,7 @@ def main(args=None) -> None:
                     if args.backend == "local-continuous-client"
                     else 0
                 ),
+                vision_grid_device=args.local_vision_grid_device,
                 system_prompt=client.client.system_prompt,
                 allow_truncated_content=client.client.allow_truncated_content,
             )
@@ -1247,6 +1257,11 @@ def main(args=None) -> None:
         "local_decode_setup": local_decode_setup,
         "local_prepare_prefetch_depth": (
             args.local_prepare_prefetch_depth
+            if args.backend == "local-continuous-client"
+            else None
+        ),
+        "local_vision_grid_device": (
+            args.local_vision_grid_device
             if args.backend == "local-continuous-client"
             else None
         ),

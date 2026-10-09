@@ -226,10 +226,14 @@ def make_local_fixed_batch_vlm_client(
     batch_size: int,
     continuous_refill: bool = False,
     prepare_prefetch_depth: int = 0,
+    vision_grid_device: str = "npu",
     system_prompt: str,
     allow_truncated_content: bool,
 ):
     """Build the compatibility wrapper around the request-owned KV engine."""
+
+    if vision_grid_device not in ("npu", "cpu"):
+        raise ValueError(f"unsupported vision grid device {vision_grid_device!r}")
 
     from fixed_batch_engine import PreparedGeneration
     from mineru_vl_utils.vlm_client.base_client import SingleImageType, UnsupportedError
@@ -280,7 +284,15 @@ def make_local_fixed_batch_vlm_client(
             trace_prompt_ids = (
                 inputs.input_ids[0].tolist() if self.generation_trace is not None else None
             )
+            cpu_image_grid_thw = getattr(inputs, "image_grid_thw", None)
             inputs = inputs.to(device=model.device, dtype=model.dtype)
+            # "cpu" keeps the small grid on host, as experiments 05/09 do, so vision
+            # position preparation reads its shape without device scalar syncs.
+            image_grid_thw = (
+                cpu_image_grid_thw
+                if vision_grid_device == "cpu"
+                else getattr(inputs, "image_grid_thw", None)
+            )
             position_ids = position_ids.to(device=model.device)
             rope_deltas = rope_deltas.to(device=model.device)
             max_new_tokens = params.max_new_tokens
@@ -301,7 +313,7 @@ def make_local_fixed_batch_vlm_client(
                 input_ids=inputs.input_ids,
                 attention_mask=inputs.attention_mask,
                 pixel_values=getattr(inputs, "pixel_values", None),
-                image_grid_thw=getattr(inputs, "image_grid_thw", None),
+                image_grid_thw=image_grid_thw,
                 max_new_tokens=max_new_tokens,
                 position_ids=position_ids,
                 rope_deltas=rope_deltas,
