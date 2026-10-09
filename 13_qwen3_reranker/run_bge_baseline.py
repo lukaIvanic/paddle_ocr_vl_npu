@@ -130,6 +130,20 @@ def main():
             assert reference['lengths'] == canonical_lengths
             assert reference['teacher_sha256'] == digest(args.teacher)
             result['query_first_baseline'] = reference['evaluations']['0']
+        elif data.get('derivation', {}).get('kind') == 'instruction_ablation':
+            from bge_instruction_ablation import validate_derivation, benchmark_reference
+            derivation = data['derivation']
+            control_path = Path(derivation['control_dataset'])
+            manifest_path = Path(derivation['instruction_manifest'])
+            assert digest(control_path) == derivation['control_dataset_sha256']
+            assert digest(manifest_path) == derivation['instruction_manifest_sha256']
+            changes = validate_derivation(data, read(control_path), read(manifest_path))
+            assert changes == teacher['instruction_changes']
+            assert args.query_first_reference_dataset
+            assert digest(args.query_first_reference_dataset) == reference['dataset_sha256']
+            result['query_first_baseline'] = benchmark_reference(
+                data, read(args.query_first_reference_dataset), reference, canonical_lengths)
+            result['reference_comparison_scope'] = 'Identical benchmark inputs; old validation scores are not reused after instruction changes.'
         elif data.get('derivation', {}).get('kind') in ('expanded_bge_length_filter', 'family_exclusion'):
             assert args.query_first_reference_dataset
             assert digest(args.query_first_reference_dataset) == reference['dataset_sha256'] == data['derivation']['reference_dataset_sha256']
@@ -166,7 +180,7 @@ def main():
     windows = update_windows(data['train'], args.steps, args.queries_per_update, args.batch_schedule)
     result['training_group_counts_per_update'] = [len(w) for w in windows]
     if args.batch_schedule == 'retained_original_slots':
-        assert data['derivation']['kind'] in ('whole_group_length_filter','expanded_bge_length_filter','family_exclusion')
+        assert data['derivation']['kind'] in ('whole_group_length_filter','expanded_bge_length_filter','family_exclusion','instruction_ablation')
     assert all(len(g['documents']) == 8 for g in data['train'])
     start_step = 0
     if args.resume_checkpoint:
