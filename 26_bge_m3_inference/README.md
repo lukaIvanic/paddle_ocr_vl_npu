@@ -392,3 +392,48 @@ Evidence: [256x1024 result](../tmp/26_bge_m3_inference/v2_f7214189/shape256x1024
 [raw kernel rows](../tmp/26_bge_m3_inference/v2_f7214189/shape256x1024_kernels.csv),
 [commands](../tmp/26_bge_m3_inference/v2_f7214189/command.txt),
 [build/source provenance](../tmp/26_bge_m3_inference/v2_f7214189/build_provenance.txt).
+
+## Full-W8A8 V2 integration experiment
+
+`fused_norm_v2.py` adds a PyTorch custom-op identity and a TorchAir converter for
+unchanged upstream `AddLayerNormQuantV2`. `FusedBGEM3` shares the regular model's
+weights and calibrated scales. Its 48 fused boundaries are the embedding norm,
+24 attention-output norms, and 23 FFN-output norms. The last FFN norm has no
+quantized consumer. Each fusion preserves the FP16 normalized residual and feeds
+INT8 directly into the next projection, removing its redundant quantizer.
+Projection bias enters V2, matching the baseline GE bias/AddLayerNorm fusion.
+The 24 post-GELU and 24 attention-context quantizers remain.
+
+The baseline's division scale and all matmul dequantization scales are retained.
+V2 receives the reciprocal rounded to FP16, as its static multiplication mode
+requires. This and fused arithmetic can change rounding; numerical comparisons
+must distinguish isolated same-input behavior from accumulated model drift.
+
+Two graph-integration details matter on the test host's CANN 9.0.1:
+
+* The release package registers dependency operators too. A private copy keeps
+  only V2 kernel dispatch enabled, so baseline AddLayerNorm remains stock.
+* The release lacks a V2 graph shape/datatype callback. `v2_graph_infer.cpp`
+  supplies metadata for this static, single-scale experiment only. It does not
+  modify the kernel, tiler or ACLNN API, and rejects dynamic/second-scale use.
+
+Build the private package once, preserving the vendor basename:
+
+```bash
+source npu-setup
+python3 26_bge_m3_inference/prepare_v2_graph_package.py \
+  --vendor /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn \
+  --output /workspace/operators/bge-v2-graph-UNIQUE/vendors/bge_v2_nn
+export ASCEND_CUSTOM_OPP_PATH=/workspace/operators/bge-v2-graph-UNIQUE/vendors/bge_v2_nn
+export LD_LIBRARY_PATH=$ASCEND_CUSTOM_OPP_PATH/op_api/lib:$LD_LIBRARY_PATH
+python3 26_bge_m3_inference/benchmark_norm_v2.py \
+  --op-api "$ASCEND_CUSTOM_OPP_PATH/op_api/lib/libcust_opapi.so" \
+  --output /workspace/results/bge_norm_v2_UNIQUE
+```
+
+The harness verifies checkpoint hashes, calibrates once, captures real early,
+middle and final attention-norm inputs, checks isolated eager/compiled outputs,
+then compares full-model embeddings and two semantic examples. Profiles cover
+B2/S128, B1/S512 and B4/S512, with 10 forwards per capture and two captures per
+lane in opposite order. `summarize_norm_v2.py` audits every kernel against actual
+profiler-step intervals before aggregating counts, shapes and durations.

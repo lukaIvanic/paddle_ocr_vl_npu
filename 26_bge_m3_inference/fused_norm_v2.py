@@ -65,7 +65,7 @@ class FusedBGEM3(nn.Module):
         shape = x.shape
         y, q = norm_quant(x.reshape(-1, shape[-1]), residual.reshape(-1, shape[-1]),
                           norm.weight.reshape(1, -1), norm.bias.reshape(1, -1), scale,
-                          bias, norm.eps)
+                          None if bias is None else bias.reshape(1, -1), norm.eps)
         return y.reshape(shape), q
 
     @staticmethod

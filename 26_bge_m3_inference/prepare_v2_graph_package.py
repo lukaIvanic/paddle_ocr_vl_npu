@@ -11,6 +11,8 @@ p.add_argument("--vendor", type=Path, required=True)
 p.add_argument("--output", type=Path, required=True)
 p.add_argument("--cann", type=Path, default=Path("/usr/local/Ascend/cann"))
 a = p.parse_args()
+if a.output.name != a.vendor.name:
+    p.error("Keep the original vendor basename (for example .../vendors/bge_v2_nn); GE uses it for Python dispatch")
 shutil.copytree(a.vendor, a.output, symlinks=True)  # Fails if destination exists.
 registrations = {}
 for config in (a.output / "op_impl/ai_core/tbe/config").glob("*/*.json"):

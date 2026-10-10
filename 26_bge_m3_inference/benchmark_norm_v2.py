@@ -106,9 +106,11 @@ def main():
                "compiled_vs_eager": {}, "profiles": {}}
         result["isolated"].append(row)
         log("ISOLATED_EAGER", row)
+        compiled_outputs = {}
         for name, block in blocks.items():
             fn = compiled_entrypoint(block, f"block_{i}_{name}", args.output / "cache")
             cy, cq = fn(*inputs)
+            compiled_outputs[name] = (cy.cpu(), cq.cpu())
             # Isolated V2 GE must reproduce the direct ACLNN call on identical inputs.
             row["compiled_vs_eager"][name] = {"norm": errors(cy, eager[name][0]), "quant": errors(cq, eager[name][1])}
             if name == "v2":
@@ -116,6 +118,8 @@ def main():
                 assert row["compiled_vs_eager"][name]["quant"]["max_abs"] <= 1
             if i == 0:
                 row["profiles"][name] = capture(lambda: fn(*inputs), args.output / "profiles" / f"block_{name}", f"block_{name}", steps=10)
+        row["compiled_v2_vs_original"] = {"norm": errors(compiled_outputs["v2"][0], compiled_outputs["original"][0]),
+                                           "quant": errors(compiled_outputs["v2"][1], compiled_outputs["original"][1])}
         log("ISOLATED", row)
 
     eager_base, eager_fused = baseline(**held_out).cpu(), fused(**held_out).cpu()
