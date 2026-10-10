@@ -46,6 +46,9 @@ def layout_comparison(production, candidate):
     total_blocks = 0
     for name in sorted(previous.keys() & current.keys()):
         old, new = read(previous[name]), read(current[name])
+        # Wall-clock timing is not layout identity; keep every geometric/crop field.
+        old.pop('layout_timing_s', None)
+        new.pop('layout_timing_s', None)
         total_blocks += len(new['blocks'])
         for digest, value in zip(hashes, (old, new)):
             digest.update(name.encode())
@@ -56,10 +59,10 @@ def layout_comparison(production, candidate):
                 old_block_count=len(old['blocks']), new_block_count=len(new['blocks'])))
     return dict(reference_pages=len(previous), candidate_pages=len(current), missing=missing, added=added,
                 identical=not (missing or added or differences), differences=differences,
-                candidate_blocks=total_blocks, canonical_sha256=[h.hexdigest() for h in hashes])
+                candidate_blocks=total_blocks, excluded_fields=['layout_timing_s'], canonical_sha256=[h.hexdigest() for h in hashes])
 
 
-def trace_lengths(run):
+def trace_lengths(run, cache_length=8192):
     stops = Counter()
     length_stops = []
     over4096 = []
@@ -77,7 +80,7 @@ def trace_lengths(run):
             length_stops.append(value)
         if prompt + generated > 4096:
             over4096.append(value)
-        if row['max_new_tokens'] != 8192 - prompt:
+        if row['max_new_tokens'] != cache_length - prompt:
             invalid_allowances.append(dict(value, max_new_tokens=row['max_new_tokens']))
     return dict(request_count=request_count, stop_counts=dict(stops), length_stops=length_stops,
                 over4096=over4096, unexpected_output_allowances=invalid_allowances)
@@ -127,7 +130,8 @@ def main():
         accuracy_reference=old_accuracy, accuracy_candidate=new_accuracy,
         accuracy_delta={key: new_accuracy[key] - old_accuracy[key] for key in old_accuracy},
         page_changes=changes, layout=layout_comparison(args.production_run, args.candidate_run),
-        lengths=trace_lengths(args.candidate_run), evaluation=cdm_timing(args.candidate_run, evaluation))
+        lengths=trace_lengths(args.candidate_run),
+        lengths_reference=trace_lengths(args.production_run, cache_length=4096), evaluation=cdm_timing(args.candidate_run, evaluation))
     with args.output.open('x') as handle:
         json.dump(result, handle, indent=2, ensure_ascii=False)
         handle.write('\n')
