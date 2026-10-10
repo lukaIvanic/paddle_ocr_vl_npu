@@ -1,0 +1,2 @@
+{'quantization': {'mode': 'full_w8a8', 'quantized_linears': 144, 'activation_quantizations_per_layer': 4, 'weight_quantization': 'symmetric_per_output_channel', 'activation_quantization': 'static_per_tensor', 'bias': 'original_fp16_after_dequantization', 'weight_format': 'FRACTAL_NZ', 'dense_nz_linears': 0}}
+{'shape': [2, 1024], 'norms': [0.9997451305389404, 1.0000137090682983], 'similarities': [[0.9994908571243286, 0.7182712554931641], [0.7182712554931641, 1.0000276565551758]]}

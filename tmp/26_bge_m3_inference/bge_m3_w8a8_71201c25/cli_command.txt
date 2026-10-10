@@ -1,0 +1,4 @@
+71201c25cdbb0e955d94096b54980a1fe4e60ccb
+liteserver-c001-4
+Physical NPU: 3
+python3 -u 26_bge_m3_inference/run_embedder.py --model-dir /workspace/model_downloads/bge-m3 --weight-mode full_w8a8

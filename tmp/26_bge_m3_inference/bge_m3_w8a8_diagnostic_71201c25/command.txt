@@ -1,0 +1,7 @@
+Source: 71201c25cdbb0e955d94096b54980a1fe4e60ccb
+Container: research_vllm_ascend_023_external_workspace
+Working directory: /workspace/repos/bgem3-5bb942ae
+Physical NPU: 3 (selected by source npu-setup)
+TORCH_DEVICE_BACKEND_AUTOLOAD=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 TOKENIZERS_PARALLELISM=false OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 PYTHONDONTWRITEBYTECODE=1
+python3 -u 26_bge_m3_inference/diagnose_w8a8.py --output /workspace/results/bge_m3_w8a8_diagnostic_71201c25/result.json
+Run through bash with pipefail, piped into tee run.log. The subsequent benchmark was connected with && and ran successfully, establishing diagnostic exit status 0.

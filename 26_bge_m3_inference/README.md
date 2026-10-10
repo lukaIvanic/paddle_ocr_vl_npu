@@ -181,3 +181,56 @@ and compiler-versus-interpreter explanations. The report records their 2x2
 similarity matrices and expected top documents. These simple sanity checks and
 eight held-out embedding comparisons are not retrieval-quality evaluation.
 A `passed` execution result does not mean retrieval quality has been preserved.
+
+## Verified ordinary W8A8 on 910B2 — 2026-10-10
+
+Source `71201c25`, physical NPU 3, the same pinned checkpoint and runtime versions
+as above (compiler logs identify CANN 9.0.1). All nine static graphs compiled and
+passed finite/unit-norm checks; the three dense graphs also passed strict parity.
+The following are synchronized forward-only medians from 20 paired repetitions:
+
+| Input | FP16 NZ | FFN W8A8 | Full W8A8 | Full speedup |
+|---|---:|---:|---:|---:|
+| B2 / padded S128 (9, 25 valid tokens) | 3.981 ms | 4.432 ms | 5.092 ms | 0.782x |
+| B1 / full S512 | 5.601 ms | 6.341 ms | 6.749 ms | 0.830x |
+| B4 / full S512 | 12.860 ms | 12.950 ms | 13.041 ms | 0.986x |
+
+Ordinary W8A8 did not improve latency in this small shape sweep. Its overhead is
+more visible on the smaller inputs; B4/S512 is approximately tied. Determining
+which kernels dominate needs profiling. Compiler logs show ordinary AddLayerNorm
+fusion, so this is already a compiler-optimized FP16 control.
+
+The eight held-out eager embeddings have mean/minimum cosine to dense FP16 of
+0.9597/0.9440 for FFN W8A8 and 0.9560/0.9401 for full W8A8. Across the three
+compiled cases, full W8A8 mean cosine to dense ranges from 0.9436 to 0.9537.
+These are measurable changes, with only 12 short calibration paragraphs.
+
+Both compiled quantized modes chose the expected document for both fresh queries.
+For full W8A8, the query/document cosine scores were:
+
+| Query | Bird migration document | Compiler/interpreter document |
+|---|---:|---:|
+| How do migrating birds navigate over long distances? | **0.6709** | 0.3796 |
+| What are the main differences between a compiler and an interpreter? | 0.3016 | **0.7898** |
+
+This meets the experiment's basic semantic sanity criterion, not a retrieval
+quality target. Norms, embeddings and attention remain floating point.
+
+On identical captured inputs to the first FFN layer, the isolated quantizer and
+biased W8A8 linear each match eager versus compiled **bit-for-bit**. The separate
+integer-matmul reference check passes with maximum absolute error 0.001953125.
+Full-network compiled/eager quantized mean cosine nevertheless ranges from
+0.9756 to 0.9870 across the measured modes/shapes. Accumulated upstream
+floating-point differences and INT8 threshold crossings are a plausible
+explanation; these probes do not locate every source of divergence.
+
+Evidence: [benchmark result](../tmp/26_bge_m3_inference/bge_m3_w8a8_71201c25/result.json),
+[command/environment](../tmp/26_bge_m3_inference/bge_m3_w8a8_71201c25/command.txt),
+[exit code](../tmp/26_bge_m3_inference/bge_m3_w8a8_71201c25/exit_code.txt),
+[isolated operator diagnostic](../tmp/26_bge_m3_inference/bge_m3_w8a8_diagnostic_71201c25/result.json).
+No 310P execution was performed.
+
+The standalone `run_embedder.py --weight-mode full_w8a8` eager CLI also passed in
+a fresh process, returning `[2, 1024]` embeddings with norms 0.999745 and
+1.000014. See [CLI command](../tmp/26_bge_m3_inference/bge_m3_w8a8_71201c25/cli_command.txt)
+and [output](../tmp/26_bge_m3_inference/bge_m3_w8a8_71201c25/cli.log).

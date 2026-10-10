@@ -1,0 +1,705 @@
+{
+  "device": "Ascend910B2",
+  "physical_npu": "3",
+  "git_commit": "71201c25cdbb0e955d94096b54980a1fe4e60ccb",
+  "versions": {
+    "torch": "2.10.0+cpu",
+    "torch-npu": "2.10.0.post2",
+    "transformers": "5.5.4"
+  },
+  "checkpoint_revision": "5617a9f61b028005a4858fdac845db406aefb181",
+  "checkpoint_hashes_verified": true,
+  "texts_sha256": "78db1c4eff2617f47bc29d6a5e728ab869312183308d159580441c37fbdc448e",
+  "warmups": 3,
+  "paired_repeats": 20,
+  "passed": true,
+  "cases": [
+    {
+      "name": "mixed_multilingual",
+      "batch_size": 2,
+      "sequence_length": 128,
+      "valid_tokens": [
+        9,
+        25
+      ],
+      "modes": {
+        "dense": {
+          "first_call_ms": 16047.306069987826,
+          "compiled_vs_eager": {
+            "finite": true,
+            "max_abs": 0.000244140625,
+            "mean_cosine": 0.9999980926513672,
+            "min_cosine": 0.9999980330467224,
+            "similarity_matrix_max_abs": 0.00018042325973510742
+          },
+          "vs_dense": {
+            "finite": true,
+            "max_abs": 0.000244140625,
+            "mean_cosine": 0.9999980926513672,
+            "min_cosine": 0.9999980330467224,
+            "similarity_matrix_max_abs": 0.00018042325973510742
+          },
+          "samples_ms": [
+            3.991669975221157,
+            4.005120019428432,
+            3.972150036133826,
+            3.9860199904069304,
+            4.033090022858232,
+            3.959770023357123,
+            3.955040010623634,
+            3.998319967649877,
+            3.980170004069805,
+            3.9734700112603605,
+            3.9961599977687,
+            3.946240001823753,
+            3.9632099797017872,
+            4.007069976069033,
+            3.9804900297895074,
+            3.9816300268284976,
+            3.9979799767024815,
+            3.9534299867227674,
+            3.966399992350489,
+            4.00431000161916
+          ],
+          "median_ms": 3.9810600283090025,
+          "physical_tokens_per_second": 64304.48126368462,
+          "speedup_vs_dense": 1.0
+        },
+        "ffn_w8a8": {
+          "first_call_ms": 17558.479269966483,
+          "compiled_vs_eager": {
+            "finite": true,
+            "max_abs": 0.02229022979736328,
+            "mean_cosine": 0.980843722820282,
+            "min_cosine": 0.9804030060768127,
+            "similarity_matrix_max_abs": 0.0011236071586608887
+          },
+          "vs_dense": {
+            "finite": true,
+            "max_abs": 0.031707763671875,
+            "mean_cosine": 0.957931637763977,
+            "min_cosine": 0.9496681690216064,
+            "similarity_matrix_max_abs": 0.010915815830230713
+          },
+          "samples_ms": [
+            4.491630010306835,
+            4.4316399726085365,
+            4.473439999856055,
+            4.42195002688095,
+            4.42260003183037,
+            4.444659978616983,
+            4.427660023793578,
+            4.437750030774623,
+            4.453260044101626,
+            4.432179965078831,
+            4.428490006830543,
+            4.446549981366843,
+            4.420809971634299,
+            4.433989990502596,
+            4.486230027396232,
+            4.423260048497468,
+            4.419810022227466,
+            4.44604002404958,
+            4.423449980095029,
+            4.422470054123551
+          ],
+          "median_ms": 4.431909968843684,
+          "physical_tokens_per_second": 57762.90624125476,
+          "speedup_vs_dense": 0.8982718638907029
+        },
+        "full_w8a8": {
+          "first_call_ms": 29862.632239994127,
+          "compiled_vs_eager": {
+            "finite": true,
+            "max_abs": 0.0233001708984375,
+            "mean_cosine": 0.9755745530128479,
+            "min_cosine": 0.9738671183586121,
+            "similarity_matrix_max_abs": 0.02704143524169922
+          },
+          "vs_dense": {
+            "finite": true,
+            "max_abs": 0.0377197265625,
+            "mean_cosine": 0.9537153244018555,
+            "min_cosine": 0.9438941478729248,
+            "similarity_matrix_max_abs": 0.006683707237243652
+          },
+          "samples_ms": [
+            5.134470004122704,
+            5.086210032459348,
+            5.087509984150529,
+            5.130590056069195,
+            5.074470012914389,
+            5.0792599795386195,
+            5.1480900146998465,
+            5.117569991853088,
+            5.091769970022142,
+            5.105240037664771,
+            5.066949990577996,
+            5.083720025140792,
+            5.122860020492226,
+            5.079350026790053,
+            5.093040002975613,
+            5.1013799966312945,
+            5.063219985459,
+            5.082210002001375,
+            5.104170006234199,
+            5.098249996080995
+          ],
+          "median_ms": 5.092404986498877,
+          "physical_tokens_per_second": 50270.94284109653,
+          "speedup_vs_dense": 0.7817642231644375
+        }
+      }
+    },
+    {
+      "name": "long_truncated",
+      "batch_size": 1,
+      "sequence_length": 512,
+      "valid_tokens": [
+        512
+      ],
+      "modes": {
+        "dense": {
+          "first_call_ms": 18966.361229948234,
+          "compiled_vs_eager": {
+            "finite": true,
+            "max_abs": 0.00030517578125,
+            "mean_cosine": 0.999995768070221,
+            "min_cosine": 0.999995768070221,
+            "similarity_matrix_max_abs": 0.00011217594146728516
+          },
+          "vs_dense": {
+            "finite": true,
+            "max_abs": 0.00030517578125,
+            "mean_cosine": 0.999995768070221,
+            "min_cosine": 0.999995768070221,
+            "similarity_matrix_max_abs": 0.00011217594146728516
+          },
+          "samples_ms": [
+            5.610639986116439,
+            5.659669986926019,
+            5.590090004261583,
+            5.587819963693619,
+            5.641889991238713,
+            5.6016300222836435,
+            5.598880001343787,
+            5.661750037688762,
+            5.600920005235821,
+            5.591080000158399,
+            5.635950015857816,
+            5.603279976639897,
+            5.587220017332584,
+            5.642469972372055,
+            5.58207998983562,
+            5.592280009295791,
+            5.633410008158535,
+            5.599430005531758,
+            5.590829998254776,
+            5.6330899824388325
+          ],
+          "median_ms": 5.601275013759732,
+          "physical_tokens_per_second": 91407.75961584706,
+          "speedup_vs_dense": 1.0
+        },
+        "ffn_w8a8": {
+          "first_call_ms": 30764.0461899573,
+          "compiled_vs_eager": {
+            "finite": true,
+            "max_abs": 0.015106201171875,
+            "mean_cosine": 0.985562264919281,
+            "min_cosine": 0.985562264919281,
+            "similarity_matrix_max_abs": 0.0008872747421264648
+          },
+          "vs_dense": {
+            "finite": true,
+            "max_abs": 0.036224365234375,
+            "mean_cosine": 0.9486541152000427,
+            "min_cosine": 0.9486541152000427,
+            "similarity_matrix_max_abs": 0.0004887580871582031
+          },
+          "samples_ms": [
+            6.440959987230599,
+            6.329750001896173,
+            6.372200034093112,
+            6.34104001801461,
+            6.321830034721643,
+            6.381420011166483,
+            6.345329980831593,
+            6.3292799750342965,
+            6.363380001857877,
+            6.354030047077686,
+            6.331890006549656,
+            6.375940050929785,
+            6.326190021354705,
+            6.328940042294562,
+            6.376419973094016,
+            6.340990017633885,
+            6.329419964458793,
+            6.3666499918326735,
+            6.336860009469092,
+            6.3228799845092
+          ],
+          "median_ms": 6.3410150178242475,
+          "physical_tokens_per_second": 80744.17085605316,
+          "speedup_vs_dense": 0.8833404428178854
+        },
+        "full_w8a8": {
+          "first_call_ms": 29429.47351001203,
+          "compiled_vs_eager": {
+            "finite": true,
+            "max_abs": 0.02541351318359375,
+            "mean_cosine": 0.9775000810623169,
+            "min_cosine": 0.9775000810623169,
+            "similarity_matrix_max_abs": 0.000461578369140625
+          },
+          "vs_dense": {
+            "finite": true,
+            "max_abs": 0.03566741943359375,
+            "mean_cosine": 0.9467125535011292,
+            "min_cosine": 0.9467125535011292,
+            "similarity_matrix_max_abs": 0.000583648681640625
+          },
+          "samples_ms": [
+            6.740589975379407,
+            6.736710027325898,
+            6.751969980541617,
+            6.773039989639074,
+            6.721670040860772,
+            6.757390045095235,
+            6.793949985876679,
+            6.735989998560399,
+            6.741449993569404,
+            6.764849997125566,
+            6.731400033459067,
+            6.76000997191295,
+            6.787439982872456,
+            6.730159977450967,
+            6.745169986970723,
+            6.768200022634119,
+            6.727110012434423,
+            6.758810020983219,
+            6.767450016923249,
+            6.738800031598657
+          ],
+          "median_ms": 6.74856998375617,
+          "physical_tokens_per_second": 75867.92479479144,
+          "speedup_vs_dense": 0.8299943583962262
+        }
+      }
+    },
+    {
+      "name": "batch4_full512",
+      "batch_size": 4,
+      "sequence_length": 512,
+      "valid_tokens": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "modes": {
+        "dense": {
+          "first_call_ms": 41948.95303004887,
+          "compiled_vs_eager": {
+            "finite": true,
+            "max_abs": 0.00048828125,
+            "mean_cosine": 0.999995768070221,
+            "min_cosine": 0.9999916553497314,
+            "similarity_matrix_max_abs": 0.0004436373710632324
+          },
+          "vs_dense": {
+            "finite": true,
+            "max_abs": 0.00048828125,
+            "mean_cosine": 0.999995768070221,
+            "min_cosine": 0.9999916553497314,
+            "similarity_matrix_max_abs": 0.0004436373710632324
+          },
+          "samples_ms": [
+            13.00498005002737,
+            12.908949982374907,
+            12.8482700092718,
+            12.84671004395932,
+            12.90278002852574,
+            12.873720028437674,
+            12.862970004789531,
+            12.88022001972422,
+            12.855609995312989,
+            12.857499998062849,
+            12.930210039485246,
+            12.843050004448742,
+            12.855579960159957,
+            12.892080005258322,
+            12.840920011512935,
+            12.82394997542724,
+            12.874370033387095,
+            12.842900003306568,
+            12.847740028519183,
+            12.874980049673468
+          ],
+          "median_ms": 12.86023500142619,
+          "physical_tokens_per_second": 159250.58910454423,
+          "speedup_vs_dense": 1.0
+        },
+        "ffn_w8a8": {
+          "first_call_ms": 33674.86480996013,
+          "compiled_vs_eager": {
+            "finite": true,
+            "max_abs": 0.020030498504638672,
+            "mean_cosine": 0.9869768023490906,
+            "min_cosine": 0.9828370213508606,
+            "similarity_matrix_max_abs": 0.019892990589141846
+          },
+          "vs_dense": {
+            "finite": true,
+            "max_abs": 0.04229736328125,
+            "mean_cosine": 0.9507713317871094,
+            "min_cosine": 0.9401533603668213,
+            "similarity_matrix_max_abs": 0.028536617755889893
+          },
+          "samples_ms": [
+            12.983900029212236,
+            12.968579947482795,
+            12.989189999643713,
+            12.896380038000643,
+            12.974769982974976,
+            12.94268004130572,
+            12.895719963125885,
+            12.968660041224211,
+            12.934029975440353,
+            12.910099991131574,
+            12.977149977814406,
+            12.96977000311017,
+            12.893499981146306,
+            12.9629599978216,
+            12.934960017446429,
+            12.879520014394075,
+            12.981879990547895,
+            12.93701003305614,
+            12.891190010122955,
+            12.956749997101724
+          ],
+          "median_ms": 12.949715019203722,
+          "physical_tokens_per_second": 158150.19843779787,
+          "speedup_vs_dense": 0.9930901940587235
+        },
+        "full_w8a8": {
+          "first_call_ms": 30571.063320036046,
+          "compiled_vs_eager": {
+            "finite": true,
+            "max_abs": 0.03076171875,
+            "mean_cosine": 0.9787981510162354,
+            "min_cosine": 0.9750831723213196,
+            "similarity_matrix_max_abs": 0.020720481872558594
+          },
+          "vs_dense": {
+            "finite": true,
+            "max_abs": 0.0399169921875,
+            "mean_cosine": 0.9435826539993286,
+            "min_cosine": 0.9382013082504272,
+            "similarity_matrix_max_abs": 0.02850419282913208
+          },
+          "samples_ms": [
+            13.211310026235878,
+            13.08862998848781,
+            13.03018000908196,
+            13.081190001685172,
+            13.02560995100066,
+            13.041739992331713,
+            13.10226001078263,
+            13.027090055402368,
+            13.059599965345114,
+            13.080359960440546,
+            13.030409987550229,
+            13.017670018598437,
+            13.05968000087887,
+            13.03949998691678,
+            13.041209953371435,
+            13.054459996055812,
+            13.013930001761764,
+            13.030590023845434,
+            13.079669966828078,
+            13.026710017584264
+          ],
+          "median_ms": 13.041474972851574,
+          "physical_tokens_per_second": 157037.45199552347,
+          "speedup_vs_dense": 0.9861028011170001
+        }
+      }
+    }
+  ],
+  "modes": {
+    "dense": {
+      "mode": "dense",
+      "quantized_linears": 0,
+      "dense_nz_linears": 144,
+      "setup_seconds": 0.3451925400295295
+    },
+    "ffn_w8a8": {
+      "mode": "ffn_w8a8",
+      "quantized_linears": 48,
+      "activation_quantizations_per_layer": 2,
+      "weight_quantization": "symmetric_per_output_channel",
+      "activation_quantization": "static_per_tensor",
+      "bias": "original_fp16_after_dequantization",
+      "weight_format": "FRACTAL_NZ",
+      "dense_nz_linears": 96,
+      "setup_seconds": 2.358336169971153
+    },
+    "full_w8a8": {
+      "mode": "full_w8a8",
+      "quantized_linears": 144,
+      "activation_quantizations_per_layer": 4,
+      "weight_quantization": "symmetric_per_output_channel",
+      "activation_quantization": "static_per_tensor",
+      "bias": "original_fp16_after_dequantization",
+      "weight_format": "FRACTAL_NZ",
+      "dense_nz_linears": 0,
+      "setup_seconds": 2.417722860001959
+    }
+  },
+  "biased_linear_probe": {
+    "max_abs_vs_integer_reference": 0.001953125,
+    "passed": true
+  },
+  "calibration": {
+    "texts": 12,
+    "batch_size": 4,
+    "padded_length": 256,
+    "seconds": 0.31588787003420293,
+    "scales": {
+      "encoder.layer.0.attention.self.query": 0.055056594488188976,
+      "encoder.layer.0.attention.self.key": 0.055056594488188976,
+      "encoder.layer.0.attention.self.value": 0.055056594488188976,
+      "encoder.layer.0.attention.output.dense": 0.06446850393700787,
+      "encoder.layer.0.intermediate.dense": 0.22600885826771652,
+      "encoder.layer.0.output.dense": 0.07105068897637795,
+      "encoder.layer.1.attention.self.query": 0.17458169291338582,
+      "encoder.layer.1.attention.self.key": 0.17458169291338582,
+      "encoder.layer.1.attention.self.value": 0.17458169291338582,
+      "encoder.layer.1.attention.output.dense": 0.031188484251968504,
+      "encoder.layer.1.intermediate.dense": 0.24138779527559054,
+      "encoder.layer.1.output.dense": 0.07215797244094488,
+      "encoder.layer.2.attention.self.query": 0.19475885826771652,
+      "encoder.layer.2.attention.self.key": 0.19475885826771652,
+      "encoder.layer.2.attention.self.value": 0.19475885826771652,
+      "encoder.layer.2.attention.output.dense": 0.023545152559055118,
+      "encoder.layer.2.intermediate.dense": 0.25369094488188976,
+      "encoder.layer.2.output.dense": 0.04915108267716536,
+      "encoder.layer.3.attention.self.query": 0.19082185039370078,
+      "encoder.layer.3.attention.self.key": 0.19082185039370078,
+      "encoder.layer.3.attention.self.value": 0.19082185039370078,
+      "encoder.layer.3.attention.output.dense": 0.02515994094488189,
+      "encoder.layer.3.intermediate.dense": 0.250615157480315,
+      "encoder.layer.3.output.dense": 0.06526820866141732,
+      "encoder.layer.4.attention.self.query": 0.22514763779527558,
+      "encoder.layer.4.attention.self.key": 0.22514763779527558,
+      "encoder.layer.4.attention.self.value": 0.22514763779527558,
+      "encoder.layer.4.attention.output.dense": 0.01945435531496063,
+      "encoder.layer.4.intermediate.dense": 0.26697834645669294,
+      "encoder.layer.4.output.dense": 0.04715182086614173,
+      "encoder.layer.5.attention.self.query": 0.22281003937007873,
+      "encoder.layer.5.attention.self.key": 0.22281003937007873,
+      "encoder.layer.5.attention.self.value": 0.22281003937007873,
+      "encoder.layer.5.attention.output.dense": 0.018331692913385825,
+      "encoder.layer.5.intermediate.dense": 0.265994094488189,
+      "encoder.layer.5.output.dense": 0.04936638779527559,
+      "encoder.layer.6.attention.self.query": 0.2231791338582677,
+      "encoder.layer.6.attention.self.key": 0.2231791338582677,
+      "encoder.layer.6.attention.self.value": 0.2231791338582677,
+      "encoder.layer.6.attention.output.dense": 0.021668922244094488,
+      "encoder.layer.6.intermediate.dense": 0.26968503937007876,
+      "encoder.layer.6.output.dense": 0.05604084645669291,
+      "encoder.layer.7.attention.self.query": 0.2311761811023622,
+      "encoder.layer.7.attention.self.key": 0.2311761811023622,
+      "encoder.layer.7.attention.self.value": 0.2311761811023622,
+      "encoder.layer.7.attention.output.dense": 0.022422490157480313,
+      "encoder.layer.7.intermediate.dense": 0.2694389763779528,
+      "encoder.layer.7.output.dense": 0.051304133858267716,
+      "encoder.layer.8.attention.self.query": 0.23056102362204725,
+      "encoder.layer.8.attention.self.key": 0.23056102362204725,
+      "encoder.layer.8.attention.self.value": 0.23056102362204725,
+      "encoder.layer.8.attention.output.dense": 0.026067298228346455,
+      "encoder.layer.8.intermediate.dense": 0.2709153543307087,
+      "encoder.layer.8.output.dense": 0.06828248031496063,
+      "encoder.layer.9.attention.self.query": 0.23375984251968504,
+      "encoder.layer.9.attention.self.key": 0.23375984251968504,
+      "encoder.layer.9.attention.self.value": 0.23375984251968504,
+      "encoder.layer.9.attention.output.dense": 0.017516609251968504,
+      "encoder.layer.9.intermediate.dense": 0.2795275590551181,
+      "encoder.layer.9.output.dense": 0.07744832677165354,
+      "encoder.layer.10.attention.self.query": 0.23031496062992127,
+      "encoder.layer.10.attention.self.key": 0.23031496062992127,
+      "encoder.layer.10.attention.self.value": 0.23031496062992127,
+      "encoder.layer.10.attention.output.dense": 0.05065821850393701,
+      "encoder.layer.10.intermediate.dense": 0.27411417322834647,
+      "encoder.layer.10.output.dense": 0.08323080708661418,
+      "encoder.layer.11.attention.self.query": 0.2358513779527559,
+      "encoder.layer.11.attention.self.key": 0.2358513779527559,
+      "encoder.layer.11.attention.self.value": 0.2358513779527559,
+      "encoder.layer.11.attention.output.dense": 0.02749753937007874,
+      "encoder.layer.11.intermediate.dense": 0.27436023622047245,
+      "encoder.layer.11.output.dense": 0.11380413385826772,
+      "encoder.layer.12.attention.self.query": 0.23240649606299213,
+      "encoder.layer.12.attention.self.key": 0.23240649606299213,
+      "encoder.layer.12.attention.self.value": 0.23240649606299213,
+      "encoder.layer.12.attention.output.dense": 0.024006520669291338,
+      "encoder.layer.12.intermediate.dense": 0.25812007874015747,
+      "encoder.layer.12.output.dense": 0.08845964566929133,
+      "encoder.layer.13.attention.self.query": 0.1812253937007874,
+      "encoder.layer.13.attention.self.key": 0.1812253937007874,
+      "encoder.layer.13.attention.self.value": 0.1812253937007874,
+      "encoder.layer.13.attention.output.dense": 0.017593503937007874,
+      "encoder.layer.13.intermediate.dense": 0.26156496062992124,
+      "encoder.layer.13.output.dense": 0.06822096456692914,
+      "encoder.layer.14.attention.self.query": 0.18663877952755906,
+      "encoder.layer.14.attention.self.key": 0.18663877952755906,
+      "encoder.layer.14.attention.self.value": 0.18663877952755906,
+      "encoder.layer.14.attention.output.dense": 0.017316683070866142,
+      "encoder.layer.14.intermediate.dense": 0.2721456692913386,
+      "encoder.layer.14.output.dense": 0.05656373031496063,
+      "encoder.layer.15.attention.self.query": 0.2312992125984252,
+      "encoder.layer.15.attention.self.key": 0.2312992125984252,
+      "encoder.layer.15.attention.self.value": 0.2312992125984252,
+      "encoder.layer.15.attention.output.dense": 0.021361343503937008,
+      "encoder.layer.15.intermediate.dense": 0.2541830708661417,
+      "encoder.layer.15.output.dense": 0.0829847440944882,
+      "encoder.layer.16.attention.self.query": 0.18663877952755906,
+      "encoder.layer.16.attention.self.key": 0.18663877952755906,
+      "encoder.layer.16.attention.self.value": 0.18663877952755906,
+      "encoder.layer.16.attention.output.dense": 0.017747293307086614,
+      "encoder.layer.16.intermediate.dense": 0.265009842519685,
+      "encoder.layer.16.output.dense": 0.03887795275590551,
+      "encoder.layer.17.attention.self.query": 0.18528543307086615,
+      "encoder.layer.17.attention.self.key": 0.18528543307086615,
+      "encoder.layer.17.attention.self.value": 0.18528543307086615,
+      "encoder.layer.17.attention.output.dense": 0.043061023622047244,
+      "encoder.layer.17.intermediate.dense": 0.265255905511811,
+      "encoder.layer.17.output.dense": 0.12684547244094488,
+      "encoder.layer.18.attention.self.query": 0.1861466535433071,
+      "encoder.layer.18.attention.self.key": 0.1861466535433071,
+      "encoder.layer.18.attention.self.value": 0.1861466535433071,
+      "encoder.layer.18.attention.output.dense": 0.020607775590551183,
+      "encoder.layer.18.intermediate.dense": 0.24470964566929135,
+      "encoder.layer.18.output.dense": 0.25541338582677164,
+      "encoder.layer.19.attention.self.query": 0.18934547244094488,
+      "encoder.layer.19.attention.self.key": 0.18934547244094488,
+      "encoder.layer.19.attention.self.value": 0.18934547244094488,
+      "encoder.layer.19.attention.output.dense": 0.024867741141732284,
+      "encoder.layer.19.intermediate.dense": 0.27116141732283466,
+      "encoder.layer.19.output.dense": 0.35482283464566927,
+      "encoder.layer.20.attention.self.query": 0.1920521653543307,
+      "encoder.layer.20.attention.self.key": 0.1920521653543307,
+      "encoder.layer.20.attention.self.value": 0.1920521653543307,
+      "encoder.layer.20.attention.output.dense": 0.021146038385826772,
+      "encoder.layer.20.intermediate.dense": 0.2541830708661417,
+      "encoder.layer.20.output.dense": 0.20497047244094488,
+      "encoder.layer.21.attention.self.query": 0.18651574803149606,
+      "encoder.layer.21.attention.self.key": 0.18651574803149606,
+      "encoder.layer.21.attention.self.value": 0.18651574803149606,
+      "encoder.layer.21.attention.output.dense": 0.02328371062992126,
+      "encoder.layer.21.intermediate.dense": 0.24876968503937008,
+      "encoder.layer.21.output.dense": 0.08101624015748031,
+      "encoder.layer.22.attention.self.query": 0.171751968503937,
+      "encoder.layer.22.attention.self.key": 0.171751968503937,
+      "encoder.layer.22.attention.self.value": 0.171751968503937,
+      "encoder.layer.22.attention.output.dense": 0.023391363188976378,
+      "encoder.layer.22.intermediate.dense": 0.24766240157480315,
+      "encoder.layer.22.output.dense": 0.03684793307086614,
+      "encoder.layer.23.attention.self.query": 0.1905757874015748,
+      "encoder.layer.23.attention.self.key": 0.1905757874015748,
+      "encoder.layer.23.attention.self.value": 0.1905757874015748,
+      "encoder.layer.23.attention.output.dense": 0.019131397637795276,
+      "encoder.layer.23.intermediate.dense": 0.24913877952755906,
+      "encoder.layer.23.output.dense": 0.09984005905511811
+    },
+    "method": "FP16 input absmax over three disjoint calibration batches"
+  },
+  "held_out_quality": {
+    "dense": {
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_cosine": 0.9999998807907104,
+      "min_cosine": 0.9999995231628418,
+      "similarity_matrix_max_abs": 0.0
+    },
+    "ffn_w8a8": {
+      "finite": true,
+      "max_abs": 0.0501708984375,
+      "mean_cosine": 0.9597268104553223,
+      "min_cosine": 0.9440246820449829,
+      "similarity_matrix_max_abs": 0.08975517749786377
+    },
+    "full_w8a8": {
+      "finite": true,
+      "max_abs": 0.039306640625,
+      "mean_cosine": 0.9560000896453857,
+      "min_cosine": 0.9400600790977478,
+      "similarity_matrix_max_abs": 0.07205688953399658
+    }
+  },
+  "semantic_sanity": {
+    "dense": {
+      "scores": [
+        [
+          0.6580436825752258,
+          0.374408483505249
+        ],
+        [
+          0.27504920959472656,
+          0.8243252635002136
+        ]
+      ],
+      "top_document": [
+        0,
+        1
+      ],
+      "expected_top_document": [
+        0,
+        1
+      ],
+      "both_sensible": true
+    },
+    "ffn_w8a8": {
+      "scores": [
+        [
+          0.6589914560317993,
+          0.3947397768497467
+        ],
+        [
+          0.3289440870285034,
+          0.8089154958724976
+        ]
+      ],
+      "top_document": [
+        0,
+        1
+      ],
+      "expected_top_document": [
+        0,
+        1
+      ],
+      "both_sensible": true
+    },
+    "full_w8a8": {
+      "scores": [
+        [
+          0.6709076762199402,
+          0.37956446409225464
+        ],
+        [
+          0.301630437374115,
+          0.7898125648498535
+        ]
+      ],
+      "top_document": [
+        0,
+        1
+      ],
+      "expected_top_document": [
+        0,
+        1
+      ],
+      "both_sensible": true
+    }
+  }
+}
