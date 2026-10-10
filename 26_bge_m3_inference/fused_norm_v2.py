@@ -18,6 +18,9 @@ def initialize(library):
     if es.exists():
         C.CDLL("libes_nn.so", mode=C.RTLD_GLOBAL)
         C.CDLL(str(es), mode=C.RTLD_GLOBAL)
+    metadata = library.resolve().parents[2] / "libbge_v2_graph_infer.so"
+    if metadata.exists():
+        C.CDLL(str(metadata), mode=C.RTLD_GLOBAL)
     import torch_npu
     from test_add_layer_norm_quant_v2 import V2
     _API = V2(library)

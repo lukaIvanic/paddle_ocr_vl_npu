@@ -104,6 +104,8 @@ def main():
                "int8_scale_only": errors(reciprocal_q, q),
                "int8_v2_vs_reciprocal_control": errors(eager["v2"][1], reciprocal_q),
                "compiled_vs_eager": {}, "profiles": {}}
+        result["isolated"].append(row)
+        log("ISOLATED_EAGER", row)
         for name, block in blocks.items():
             fn = compiled_entrypoint(block, f"block_{i}_{name}", args.output / "cache")
             cy, cq = fn(*inputs)
@@ -114,7 +116,6 @@ def main():
                 assert row["compiled_vs_eager"][name]["quant"]["max_abs"] <= 1
             if i == 0:
                 row["profiles"][name] = capture(lambda: fn(*inputs), args.output / "profiles" / f"block_{name}", f"block_{name}", steps=10)
-        result["isolated"].append(row)
         log("ISOLATED", row)
 
     eager_base, eager_fused = baseline(**held_out).cpu(), fused(**held_out).cpu()
