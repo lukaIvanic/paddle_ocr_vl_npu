@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Run after build succeeds. Each selected package gets a fresh Python process.
-set -euo pipefail
+set -eo pipefail
 OUT=${1:?new output root}
 CANDIDATE=${2:?candidate graph vendor}
 BASELINE=${3:-/workspace/operators/bge-v2-graph-fixed/vendors/bge_v2_nn}
 source npu-setup
+set -u
 export PATH=/usr/local/python3.12.13/bin:$PATH
 export PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 TOKENIZERS_PARALLELISM=false
