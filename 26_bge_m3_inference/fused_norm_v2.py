@@ -72,7 +72,8 @@ class FusedBGEM3(nn.Module):
     def project(linear, x):
         # Feed bias to V2, as GE already fuses this bias into baseline AddLayerNorm.
         import torch_npu
-        return torch_npu.npu_quant_matmul(linear.quantize(x), linear.weight_q,
+        weight = linear.weight_q.T if linear.graph_transpose else linear.weight_q
+        return torch_npu.npu_quant_matmul(linear.quantize(x), weight,
                                           scale=linear.deq_scale, bias=None,
                                           output_dtype=torch.float16).reshape(*x.shape[:-1], linear.out_features)
 

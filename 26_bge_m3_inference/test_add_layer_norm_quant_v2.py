@@ -78,6 +78,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--op-api", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--expected-chip", choices=("910B", "310P"), default="910B")
     parser.add_argument("--rows", type=int, default=256)
     parser.add_argument("--width", type=int, default=1024)
     args = parser.parse_args()
@@ -91,8 +92,10 @@ def main():
     import torch_npu  # Register the NPU backend after loading package dependencies.
     torch.npu.set_device(0)
     chip = torch.npu.get_device_name(0)
-    if "910B" not in chip.upper():
-        raise RuntimeError(f"Expected 910B, got {chip}")
+    if args.expected_chip not in chip.upper():
+        raise RuntimeError(f"Expected {args.expected_chip}, got {chip}")
+    if args.expected_chip == "310P":
+        torch.npu.set_compile_mode(jit_compile=False)
     op = V2(args.op_api)
     torch.manual_seed(17)
     shape = (args.rows, args.width)
@@ -126,7 +129,8 @@ def main():
                       schedule=prof.schedule(wait=0, warmup=1, active=3, repeat=1),
                       on_trace_ready=prof.tensorboard_trace_handler(str(args.output / "profile")),
                       record_shapes=True,
-                      experimental_config=prof._ExperimentalConfig(profiler_level=prof.ProfilerLevel.Level1)) as trace:
+                      experimental_config=prof._ExperimentalConfig(profiler_level=prof.ProfilerLevel.Level1,
+                          aic_metrics=prof.AiCMetrics.PipeUtilization)) as trace:
         for _ in range(4):
             op(x1, x2, gamma, beta, scale, bias)
             trace.step()

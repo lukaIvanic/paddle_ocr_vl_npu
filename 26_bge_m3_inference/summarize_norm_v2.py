@@ -4,6 +4,7 @@ from collections import defaultdict
 import csv
 from decimal import Decimal
 import json
+import math
 from pathlib import Path
 import statistics
 
@@ -62,11 +63,31 @@ def main():
                          for k, v in grouped.items()},
                "shapes": [{"type": k[0], "shapes": k[1], "formats": k[2], "dtypes": k[3],
                            "count": v[0]/len(steps), "mean_us": v[1]/len(steps)} for k, v in shapes.items()]}
-        fields = ("aiv_time(us)", "aiv_vec_ratio", "aiv_scalar_ratio", "aiv_mte2_ratio", "aiv_mte3_ratio")
+        # 310P may expose combined AI-Core fields instead of separate AIV fields.
+        # Keep the native names; absent/N/A counters are unavailable, never zero.
+        fields = ["aicore_time(us)", "aiv_time(us)", "cube_utilization(%)"]
+        fields += [f"{prefix}{pipe}_{suffix}" for prefix in ("aiv_", "aic_", "")
+                   for pipe in ("vec", "scalar", "mte1", "mte2", "mte3", "mac", "fixpipe")
+                   for suffix in ("time(us)", "ratio")]
+        def counter_stats(values):
+            stats = {}
+            for field in fields:
+                samples = []
+                for k in values:
+                    try:
+                        value = float(k.get(field, ""))
+                    except (TypeError, ValueError):
+                        continue
+                    if math.isfinite(value):
+                        samples.append(value)
+                stats[field] = {"mean": statistics.mean(samples) if samples else None,
+                                "valid_samples": len(samples), "total_samples": len(values)}
+            return stats
         row["norm_quant_hardware"] = [{"type": key[0], "input_shapes": key[1],
             "block_counts": sorted({int(k["Block Num"]) for k in values}),
             "accelerator_cores": sorted({k["Accelerator Core"] for k in values}),
-            "mean_counters": {field: statistics.mean(float(k[field]) for k in values) for field in fields}}
+            "mean_counters": {field: stat["mean"] for field, stat in counter_stats(values).items()},
+            "counter_samples": counter_stats(values)}
             for key, values in hardware.items()]
         report["profiles"].append(row)
     args.output.write_text(json.dumps(report, indent=2) + "\n")

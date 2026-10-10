@@ -41,6 +41,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--op-api", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--expected-chip", choices=("910B", "310P"), default="910B")
     p.add_argument("--model-dir", default="/workspace/model_downloads/bge-m3")
     args = p.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
@@ -54,7 +55,11 @@ def main():
     from w8a8 import calibrate, convert
     torch.npu.set_device(0)
     torch.npu.config.allow_internal_format = True
-    assert "910B" in torch.npu.get_device_name(0).upper()
+    chip = torch.npu.get_device_name(0)
+    if args.expected_chip not in chip.upper():
+        raise RuntimeError(f"Expected {args.expected_chip}, got {chip}")
+    if args.expected_chip == "310P":
+        torch.npu.set_compile_mode(jit_compile=False)
     root = Path(__file__).parent
     release = json.loads((root / "release.json").read_text())
     assert all(verify(Path(args.model_dir) / n, v) for n, v in release["files"].items())
