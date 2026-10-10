@@ -1,4 +1,4 @@
-"""Production vision event statistics; also explains existing run summaries."""
+"""Production vision/text-prefill event statistics; also explains run summaries."""
 from __future__ import annotations
 
 import argparse
@@ -20,7 +20,7 @@ def percentile(values, q):
 def group_stats(rows):
     times = [r["device_s"] for r in rows]
     if any(not math.isfinite(t) or t <= 0 for t in times):
-        raise ValueError("vision samples must have finite positive device duration")
+        raise ValueError("timing samples must have finite positive device duration")
     total = sum(times)
     real = sum(r["real_tokens"] for r in rows)
     physical = sum(r["physical_tokens"] for r in rows)
@@ -38,7 +38,13 @@ def group_stats(rows):
     }
 
 
-def summarize_vision_samples(rows):
+VISION_SCOPE = "vision_transformer_blocks_device_event_region"
+VISION_NOTES = "Production event regions include launch gaps; direct routes include padding preparation. Packed mask construction is outside the region. Not pure kernel time."
+TEXT_PREFILL_SCOPE = "text_transformer_prefill_device_event_region"
+TEXT_PREFILL_NOTES = "Production event regions include launch gaps. bucket_<N> is one packed static-graph call at N physical tokens; eager_overflow is one unpadded eager call. KV redistribution and the LM head are outside the region. Not pure kernel time."
+
+
+def summarize_timing_samples(rows, *, scope, notes):
     routes = defaultdict(list)
     shapes = defaultdict(list)
     for row in rows:
@@ -46,15 +52,31 @@ def summarize_vision_samples(rows):
         shapes[f'{row["route"]}:S{row["physical_tokens"]}'].append(row)
     return {
         "schema_version": 1,
-        "scope": "vision_transformer_blocks_device_event_region",
+        "scope": scope,
         "percentile_method": "linear interpolation at (n-1)*q; per-call unweighted",
         "rate_method": "sum(tokens)/sum(device_s); never mean of per-call rates",
-        "notes": "Production event regions include launch gaps; direct routes include padding preparation. Packed mask construction is outside the region. Not pure kernel time.",
+        "notes": notes,
         "all": group_stats(rows),
         "by_route": {k: group_stats(v) for k, v in sorted(routes.items())},
         "by_exact_shape": {k: group_stats(v) for k, v in sorted(shapes.items())},
         "slowest_calls": sorted(rows, key=lambda r: r["device_s"], reverse=True)[:20],
     }
+
+
+def summarize_vision_samples(rows):
+    return summarize_timing_samples(rows, scope=VISION_SCOPE, notes=VISION_NOTES)
+
+
+def summarize_text_prefill_samples(rows):
+    return summarize_timing_samples(rows, scope=TEXT_PREFILL_SCOPE, notes=TEXT_PREFILL_NOTES)
+
+
+def print_route_table(timing):
+    print('route | calls | device s | real tok/s | physical tok/s | mean/p50/p90/p95/p99/max ms')
+    for route, stats in timing["by_route"].items():
+        latency = stats["latency_ms"]
+        values = '/'.join(f'{latency[k]:.3f}' for k in ('mean','p50','p90','p95','p99','max'))
+        print(f'{route} | {stats["calls"]} | {stats["device_s"]:.3f} | {stats["real_tok_s"]:.1f} | {stats["physical_tok_s"]:.1f} | {values}')
 
 
 def explain(summary):
@@ -73,16 +95,17 @@ def explain(summary):
         print(f'{label}: tokens={tokens} device_s={seconds:.3f} tok/s={tokens/seconds:.3f}')
     print(f'decode mean graph ms={1000*decode["decode_s"]/decode["graph_calls"]:.3f}; active-slot occupancy={100*decode["active_slot_fraction"]:.3f}% (not NPU utilization)')
     print(f'production effective decode tokens/hot wall s={decode["decode_calls"]/wall:.3f} (prefill-sampled first tokens excluded)')
+    text_timing = summary.get("text_prefill_timing")
+    if text_timing:
+        print('Text prefill (text_transformer_prefill):')
+        print_route_table(text_timing)
     timing = summary.get("vision_timing")
     if not timing:
         print('Per-route latency samples were not collected in this run; route counts and aggregate times remain available.')
         print(json.dumps(summary["local_compiled_vision"]["route_counts"], sort_keys=True))
         return
-    print('route | calls | device s | real tok/s | physical tok/s | mean/p50/p90/p95/p99/max ms')
-    for route, stats in timing["by_route"].items():
-        latency = stats["latency_ms"]
-        values = '/'.join(f'{latency[k]:.3f}' for k in ('mean','p50','p90','p95','p99','max'))
-        print(f'{route} | {stats["calls"]} | {stats["device_s"]:.3f} | {stats["real_tok_s"]:.1f} | {stats["physical_tok_s"]:.1f} | {values}')
+    print('Vision (vision_transformer_blocks):')
+    print_route_table(timing)
     print('Exact shapes, including eager overflow:')
     print(json.dumps(timing["by_exact_shape"], indent=2))
     print('Slowest calls:')

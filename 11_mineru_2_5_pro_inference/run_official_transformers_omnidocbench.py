@@ -659,6 +659,7 @@ def main(args=None) -> None:
     if args.saved_layout_manifest is not None and (not args.streaming_pages or args.warmup_pages != 0):
         raise ValueError("saved-layout-manifest requires streaming-pages and warmup-pages=0")
     vision_timing_samples: list[dict[str, Any]] = []
+    text_prefill_timing_samples: list[dict[str, Any]] = []
     if args.processor_max_pixels is not None and args.backend not in (
         "transformers", "local-correctness", "local-eager-client",
         "local-compiled-client", "local-fixed-batch-client", "local-continuous-client",
@@ -964,6 +965,9 @@ def main(args=None) -> None:
                 ),
                 decode_filler_control=args.local_decode_filler_control,
                 vision_timing_samples=vision_timing_samples if args.local_prefill_metrics else None,
+                text_prefill_timing_samples=(
+                    text_prefill_timing_samples if args.local_prefill_metrics else None
+                ),
             )
             client.client = make_local_fixed_batch_vlm_client(
                 local_model,
@@ -1161,6 +1165,7 @@ def main(args=None) -> None:
             warmup_report["text_runtime"] = local_text_runtime.metadata()
         reset_measurement_counters(client, local_vision_runtime, local_text_runtime)
         vision_timing_samples.clear()
+        text_prefill_timing_samples.clear()
         warmup_report["measurement_counters_reset"] = True
         print(
             f"[warmup] DONE pages={warmup_count} "
@@ -1805,18 +1810,29 @@ def main(args=None) -> None:
                 }
                 for call_index, item in enumerate(generation_metrics)
             ]
-    if vision_timing_samples:
-        from vision_timing_report import summarize_vision_samples
+    if vision_timing_samples or text_prefill_timing_samples:
+        from vision_timing_report import (
+            summarize_text_prefill_samples,
+            summarize_vision_samples,
+        )
 
-        sample_name = f"vision_timing_shard_{args.shard_index:02d}.jsonl"
-        atomic_write_text(output_dir / sample_name, "".join(
-            json.dumps({"call_index": i, **row}) + "\n"
-            for i, row in enumerate(vision_timing_samples)
-        ))
-        summary["vision_timing"] = {
-            "raw_samples_file": sample_name,
-            **summarize_vision_samples(vision_timing_samples),
-        }
+        for key, file_prefix, samples, summarize in (
+            ("vision_timing", "vision_timing", vision_timing_samples,
+             summarize_vision_samples),
+            ("text_prefill_timing", "text_prefill_timing", text_prefill_timing_samples,
+             summarize_text_prefill_samples),
+        ):
+            if not samples:
+                continue
+            sample_name = f"{file_prefix}_shard_{args.shard_index:02d}.jsonl"
+            atomic_write_text(output_dir / sample_name, "".join(
+                json.dumps({"call_index": i, **row}) + "\n"
+                for i, row in enumerate(samples)
+            ))
+            summary[key] = {
+                "raw_samples_file": sample_name,
+                **summarize(samples),
+            }
     summary_path = output_dir / f"run_summary_shard_{args.shard_index:02d}.json"
     atomic_write_text(summary_path, json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
     print(f"[summary] {json.dumps(summary, ensure_ascii=False)}", flush=True)

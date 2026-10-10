@@ -60,6 +60,25 @@ class PrefilledGeneration:
     release: Callable[[], None]
 
 
+def text_prefill_tags(
+    indices: Sequence[int],
+    lengths: Sequence[int],
+    entries: Sequence[tuple[int, int, Any]],
+    real_tokens: int,
+    physical_tokens: int,
+    route: str,
+) -> dict[str, Any]:
+    """Per-call tags for one text_transformer_prefill event region."""
+    return {
+        "route": route,
+        "real_tokens": int(real_tokens),
+        "physical_tokens": int(physical_tokens),
+        "members": len(indices),
+        "member_lengths": [int(lengths[i]) for i in indices],
+        "request_ids": [int(entries[i][1]) for i in indices],
+    }
+
+
 class FixedBatchDecodeEngine:
     """B1 prefill into request slots followed by lockstep compiled decode."""
 
@@ -81,6 +100,7 @@ class FixedBatchDecodeEngine:
         decode_diagnostic_boundary_period: int = 1408,
         decode_filler_control: str = "retain",
         vision_timing_samples: list[dict[str, Any]] | None = None,
+        text_prefill_timing_samples: list[dict[str, Any]] | None = None,
     ) -> None:
         if int(batch_size) <= 1:
             raise ValueError("fixed batch engine requires batch_size > 1")
@@ -92,6 +112,7 @@ class FixedBatchDecodeEngine:
         self.pad_token_id = int(pad_token_id)
         self.collect_prefill_metrics = bool(collect_prefill_metrics)
         self.vision_timing_samples = vision_timing_samples
+        self.text_prefill_timing_samples = text_prefill_timing_samples
         self.packed_text_prefill_runtime = packed_text_prefill_runtime
         self.vision_pack_target = int(vision_pack_target)
         if self.vision_pack_target <= 0:
@@ -908,7 +929,15 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         from text_prefill_compile import PreparedTextMember
 
         runtime = self.packed_text_prefill_runtime
-        timeline = PrefillDeviceTimeline(self.model.device, enabled=self.collect_prefill_metrics)
+        # Per-call text tags exist only when samples are requested and metrics
+        # are on; otherwise this path builds no tags and records no extra rows.
+        tagged_samples: list[dict[str, Any]] | None = (
+            []
+            if self.collect_prefill_metrics and self.text_prefill_timing_samples is not None
+            else None
+        )
+        timeline = PrefillDeviceTimeline(
+            self.model.device, tagged_samples, enabled=self.collect_prefill_metrics)
         precomputed = [request.inputs_embeds for _slot, _index, request in entries]
         if all(inputs_embeds is not None for inputs_embeds in precomputed):
             inputs_embeds_list = [
@@ -964,6 +993,14 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             last_hidden_states = timeline.measure(
                 "text_transformer_prefill",
                 lambda prepared=prepared: runtime.run_prepared(prepared),
+                tags=None if tagged_samples is None else text_prefill_tags(
+                    pack_indices,
+                    lengths,
+                    entries,
+                    int(prepared.real_tokens),
+                    int(prepared.physical_tokens),
+                    f"bucket_{int(prepared.physical_tokens)}",
+                ),
             )
             destinations = [
                 self._slot_view(arena, entries[index][0]) for index in pack_indices
@@ -1013,6 +1050,14 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                     position_ids=member.position_ids,
                     cache=cache,
                 ),
+                tags=None if tagged_samples is None else text_prefill_tags(
+                    [entry_index],
+                    lengths,
+                    entries,
+                    member.sequence_length,
+                    member.sequence_length,
+                    "eager_overflow",
+                ),
             )
             logits = timeline.measure(
                 "prefill_lm_head",
@@ -1038,6 +1083,12 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             physical_tokens += member.sequence_length
 
         stage_metrics = timeline.resolve()
+        if tagged_samples:
+            # Inline vision (no precomputed window) shares this timeline; keep
+            # only text-prefill rows in the text sample stream.
+            self.text_prefill_timing_samples.extend(
+                row for row in tagged_samples if row["stage"] == "text_transformer_prefill"
+            )
         for state in states.values():
             if state["token_id"] is None:
                 state["token_id"] = int(state["token"][0, 0].item())
