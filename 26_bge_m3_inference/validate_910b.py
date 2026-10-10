@@ -81,7 +81,7 @@ def main():
     result["checkpoint_hashes_verified"] = True
     print("ENVIRONMENT " + json.dumps(result), flush=True)
     reference = AutoModel.from_pretrained(args.model_dir, local_files_only=True,
-                                         torch_dtype=torch.float16, attn_implementation="eager",
+                                         dtype=torch.float16, attn_implementation="eager",
                                          add_pooling_layer=False).to("npu:0").eval()
     runner = Runner(args.model_dir, max_length=128)
     with torch.inference_mode():
@@ -94,6 +94,11 @@ def main():
             mask = tokens["attention_mask"].bool()
             hidden_error = float((local_hidden[mask].float() - reference_hidden[mask].float()).abs().max().cpu())
             eager, eager_timing = benchmark(lambda: runner.model(**tokens))
+            eager_parity = compare(eager.cpu(), reference_embedding)
+            print("EAGER " + json.dumps({"case": case["name"], "parity": eager_parity,
+                  "valid_hidden_max_abs": hidden_error, "timing": eager_timing}), flush=True)
+            if not eager_parity["passed"] or hidden_error > 0.05:
+                raise RuntimeError("Eager reference parity failed before compilation")
             from torchair.configs.compiler_config import CompilerConfig
             from torchair.inference import cache_compile
             compiled = cache_compile(runner.model.forward, config=CompilerConfig(), dynamic=False,

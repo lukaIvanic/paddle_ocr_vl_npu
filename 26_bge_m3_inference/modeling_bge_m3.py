@@ -76,8 +76,14 @@ class SelfAttention(nn.Module):
         q = self.query(hidden).view(b, s, self.heads, self.head_dim).transpose(1, 2)
         k = self.key(hidden).view(b, s, self.heads, self.head_dim).transpose(1, 2)
         v = self.value(hidden).view(b, s, self.heads, self.head_dim).transpose(1, 2)
-        scores = (q @ k.transpose(-1, -2)) * (self.head_dim ** -0.5)
-        context = torch.softmax(scores + bias, dim=-1) @ v
+        # Explicit head batches avoid GE's broadcast-matmul shape inference.
+        q = q.reshape(b * self.heads, s, self.head_dim)
+        k = k.reshape(b * self.heads, s, self.head_dim)
+        v = v.reshape(b * self.heads, s, self.head_dim)
+        scores = torch.bmm(q, k.transpose(1, 2)) * (self.head_dim ** -0.5)
+        scores = scores.view(b, self.heads, s, s) + bias
+        probs = torch.softmax(scores, dim=-1).view(b * self.heads, s, s)
+        context = torch.bmm(probs, v).view(b, self.heads, s, self.head_dim)
         return context.transpose(1, 2).contiguous().view(b, s, h)
 
 

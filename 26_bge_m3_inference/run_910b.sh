@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 : "${RUN_ROOT:?Set RUN_ROOT to a fresh absolute output directory}"
 : "${ASCEND_RT_VISIBLE_DEVICES:?No idle NPU selected}"
-MODEL_DIR="${MODEL_DIR:-/workspace/models/bge-m3}"
+MODEL_DIR="${MODEL_DIR:-/workspace/model_downloads/bge-m3}"
 PYTHON_BIN="${PYTHON_BIN:-$(command -v python3)}"
 [[ "$RUN_ROOT" = /* ]] || { echo 'RUN_ROOT must be absolute' >&2; exit 2; }
 test ! -e "$RUN_ROOT"

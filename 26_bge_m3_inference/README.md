@@ -37,13 +37,17 @@ position range is not a claim of efficient 8192-token inference.
 
 ## Run
 
-Use the existing Ascend environment, with one idle device selected. Download
+Use the existing Ascend environment, with one idle device selected. On the
+current host, run through the persistent host SSH connection and
+`docker exec research_vllm_ascend_023_external_workspace`; the old container SSH
+forward is stale. Its shared `/workspace/models` mount is read-only, so use
+`/workspace/model_downloads`. Download
 weights once (about 2.3 GB), outside Git:
 
 ```bash
-python 26_bge_m3_inference/download_model.py --output /workspace/models/bge-m3
+python 26_bge_m3_inference/download_model.py --output /workspace/model_downloads/bge-m3
 python 26_bge_m3_inference/run_embedder.py \
-  --model-dir /workspace/models/bge-m3 --max-length 128 \
+  --model-dir /workspace/model_downloads/bge-m3 --max-length 128 \
   --texts 'What is BGE M3?' 'BGE M3 is a multilingual embedding model.'
 ```
 
@@ -53,10 +57,19 @@ Batch or sequence-shape changes need their own compiled graph.
 
 ## Validation
 
+Reproducible accelerator launcher (selects an idle device and records command,
+versions, timings, parity results and exit code):
+
+```bash
+RUN_ROOT=/workspace/results/bge_m3_UNIQUE_RUN bash 26_bge_m3_inference/run_910b.sh
+```
+
+Individual checks:
+
 ```bash
 python -m unittest discover -s 26_bge_m3_inference -p test_reference.py -v
 python 26_bge_m3_inference/validate_910b.py \
-  --model-dir /workspace/models/bge-m3 \
+  --model-dir /workspace/model_downloads/bge-m3 \
   --compile-cache /absolute/path/to/run/cache --output /absolute/path/to/run/result.json
 ```
 
