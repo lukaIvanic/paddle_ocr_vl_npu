@@ -101,6 +101,8 @@ def main():
                 raise RuntimeError("Eager reference parity failed before compilation")
             from torchair.configs.compiler_config import CompilerConfig
             from torchair.inference import cache_compile
+            # Each case owns a static graph; discard the previous shape's Dynamo guards.
+            torch._dynamo.reset()
             compiled = cache_compile(runner.model.forward, config=CompilerConfig(), dynamic=False,
                                      fullgraph=True, ge_cache=True,
                                      cache_dir=str(Path(args.compile_cache).resolve() / case["name"]))
