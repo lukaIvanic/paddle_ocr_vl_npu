@@ -1,6 +1,14 @@
 # Experiment 11: MinerU2.5-Pro Local Inference
 
-**Current execution task (2026-10-10): opt-in prefill buckets and window scheduling.**
+**Current execution task (2026-10-10): model-default pixel accuracy on 910B.**
+`run_model_default_pixels_validation.py` reproduces the saved production command
+with only min/max pixels 50176/1605632, no text-only cap, extended vision/text
+buckets, and KV8192. It runs warmup64, full1651, then frozen evaluation with
+`CDM_WORKERS=96`. Results are pending. No 310P work is part of this task.
+`analyze_model_default_pixels.py` checks exact saved layouts, output lengths,
+per-page accuracy changes and logged CDM throughput against production.
+
+**Previous execution task: opt-in prefill buckets and window scheduling.**
 The implementation is based on `2ef68bdd`. 910B validation completed at
 `0d6cef73`: the defaults match all 1,020 parent requests exactly; the production
 set completed all 1,651 pages and the 96-worker OmniDocBench evaluation.
