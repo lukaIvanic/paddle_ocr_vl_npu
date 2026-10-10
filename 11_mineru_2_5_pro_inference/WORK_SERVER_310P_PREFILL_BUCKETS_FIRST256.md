@@ -1,6 +1,9 @@
+> **Completed.** The active 310P handoff is
+> [WORK_SERVER_310P_MODEL_DEFAULT_PIXELS_FULL1651.md](WORK_SERVER_310P_MODEL_DEFAULT_PIXELS_FULL1651.md).
+
 # 310P: candidate first 256 pages with text-only cap and window prefill
 
-Updated 2026-10-10. **Single active handoff for this task.** Run only candidate
+Updated 2026-10-10. Run only candidate
 warmup64 followed by candidate256 (offset 0), with approximate vision precision
 and prefill metrics on. No baseline lane, no full1651, no accuracy evaluation.
 Compare with the existing `prefill_timing_first256_310p_20261010T092230Z` run:

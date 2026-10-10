@@ -46,7 +46,7 @@ def route_tables(output):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--chip', choices=('910b', '310p'), required=True)
-    p.add_argument('--phase', choices=('regression', 'smoke', 'full', 'pair', 'candidate256'), required=True)
+    p.add_argument('--phase', choices=('regression', 'smoke', 'full', 'pair', 'candidate256', 'model_defaults'), required=True)
     p.add_argument('--root', type=Path, required=True)
     p.add_argument('--parent-repo', type=Path)
     for name in ('model', 'layout-model', 'dataset-json', 'images-dir',
@@ -55,13 +55,17 @@ def main():
     a = p.parse_args()
     a.root = a.root.resolve()
     a.root.mkdir(parents=True, exist_ok=True)
-    allowed = ('pair', 'candidate256') if a.chip == '310p' else ('regression', 'smoke', 'full')
+    allowed = ('pair', 'candidate256', 'model_defaults') if a.chip == '310p' else ('regression', 'smoke', 'full')
     if a.phase not in allowed:
         p.error(f'{a.chip} supports phases: {", ".join(allowed)}')
     assert not subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=no'], text=True).strip()
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
 
-    def command(label, count, stage, *, candidate=False, parent=False, warm=False):
+    def metrics_on(warm):
+        # The model-default full run matches the 310P production full run (C5: metrics off).
+        return a.phase != 'regression' and (a.phase != 'model_defaults' or warm)
+
+    def command(label, count, stage, *, candidate=False, parent=False, warm=False, model_defaults=False):
         source_repo = a.parent_repo.resolve() if parent else REPO
         cache = {}
         for key in ('decode', 'vision', 'text'):
@@ -82,9 +86,16 @@ def main():
         cmd += ['--processor-max-pixels', '602112', '--offset', '0', '--limit', str(count),
                 '--output-dir', str(stage / 'output'), '--local-vision-grid-device', 'cpu',
                 '--local-input-transfer', 'pinned-nonblocking',
-                '--no-local-prefill-metrics' if a.phase == 'regression' else '--local-prefill-metrics']
+                '--local-prefill-metrics' if metrics_on(warm) else '--no-local-prefill-metrics']
         if candidate:
             cmd += PRODUCTION_PREFILL_OPTIONS
+        if model_defaults:
+            # Imported here: that module imports route_tables from this one.
+            from run_model_default_pixels_validation import MODEL_DEFAULT_OPTIONS, replace_option
+            # Only pixels, buckets and KV8192 differ from the production candidate.
+            replace_option(cmd, '--processor-text-max-pixels', None)
+            for flag, value in MODEL_DEFAULT_OPTIONS.items():
+                replace_option(cmd, flag, value)
         if warm:
             if not candidate:
                 # Cache-population only: larger baseline vision buckets cannot
@@ -94,10 +105,11 @@ def main():
             cmd += ['--local-warm-all-prefill-buckets']
         return cmd, source_repo
 
-    def run(name, count, label, *, candidate=False, parent=False, warm=False, audit=False):
+    def run(name, count, label, *, candidate=False, parent=False, warm=False, audit=False, model_defaults=False):
         stage = a.root / name
         stage.mkdir(exist_ok=False)
-        cmd, source_repo = command(label, count, stage, candidate=candidate, parent=parent, warm=warm)
+        cmd, source_repo = command(label, count, stage, candidate=candidate, parent=parent, warm=warm,
+                                   model_defaults=model_defaults)
         expected_commit = subprocess.check_output(['git', '-C', str(source_repo), 'rev-parse', 'HEAD'], text=True).strip()
         before = cache_artifacts(cmd) if audit else None
         if before is not None:
@@ -119,13 +131,17 @@ def main():
         s = json.loads((stage / 'output/run_summary_shard_00.json').read_text())
         assert s['git_commit'] == expected_commit
         assert (s['completed'], s['failed'], s['skipped']) == (count, 0, 0)
-        assert s['processor_max_pixels'] == 602112 and s['processor_min_pixels'] == 25088
+        if model_defaults:
+            assert s['processor_max_pixels'] == 1605632 and s['processor_min_pixels'] == 50176
+            assert s['local_compiled_cache_length'] == 8192
+        else:
+            assert s['processor_max_pixels'] == 602112 and s['processor_min_pixels'] == 25088
         assert s['layout_backend'] == 'pp-doclayout-v3' and s['streaming']['layout_calls'] == count
         assert not s['saved_layout_manifest'] and not s['crop_replay_manifest']
         assert s['local_vision_grid_device'] == 'cpu' and s['local_input_transfer'] == 'pinned-nonblocking'
-        assert s['local_prefill_metrics'] == (a.phase != 'regression')
+        assert s['local_prefill_metrics'] == metrics_on(warm)
         if candidate:
-            assert s['processor_text_max_pixels'] == 401408
+            assert s['processor_text_max_pixels'] == (None if model_defaults else 401408)
             assert s['local_text_pack_target'] == 384 and s['local_text_prefill_schedule'] == 'window'
         if warm:
             assert s['warmup_only']
@@ -184,6 +200,28 @@ def main():
                 reduction_percent=100 * (baseline - seconds) / baseline)
         write_new(a.root / 'reference_comparison.json', comparison)
         print('PREFILL_REFERENCE_COMPARISON ' + json.dumps(comparison), flush=True)
+    elif a.phase == 'model_defaults':
+        run('model_defaults_warmup64', 64, 'model_defaults', candidate=True, model_defaults=True, warm=True)
+        output = run('model_defaults_full1651', 1651, 'model_defaults', candidate=True, model_defaults=True, audit=True)
+        s = json.loads((output / 'run_summary_shard_00.json').read_text())
+        stops, lengths = defaultdict(int), []
+        for line in (output / 'generation_trace.jsonl').read_text().splitlines():
+            row = json.loads(line)
+            stops[row['stop_reason']] += 1
+            lengths.append((len(row['prompt_token_ids']) + len(row['generated_token_ids']), row['stop_reason']))
+        checks = dict(
+            vision_eager_overflow=s['local_compiled_vision']['route_counts'].get('eager_overflow', 0),
+            text_prefill_overflow=s['local_compiled_generation']['prefill_metrics'].get('text_prefill_overflow_count', 'unavailable'),
+            vision_route_counts=s['local_compiled_vision']['route_counts'],
+            text_route_counts=s['local_compiled_text_prefill']['route_counts'],
+            raw_vision_tokens=s['local_compiled_vision']['real_tokens'],
+            request_count=len(lengths), stop_counts=dict(stops),
+            over4096=sum(total > 4096 for total, _ in lengths),
+            max_total_length=max(total for total, _ in lengths),
+            # Every length stop must reach the full 8192 cache; anything shorter is anomalous.
+            length_stops_below_8192=sorted(total for total, reason in lengths if reason == 'length' and total != 8192))
+        write_new(a.root / 'model_defaults_checks.json', checks)
+        print('MODEL_DEFAULTS_CHECKS ' + json.dumps(checks), flush=True)
     else:
         for label, candidate in (('baseline', False), ('candidate', True)):
             run(label + '_warmup64', 64, label, candidate=candidate, warm=True)

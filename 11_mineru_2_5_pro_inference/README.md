@@ -1,6 +1,11 @@
 # Experiment 11: MinerU2.5-Pro Local Inference
 
-**Current execution task (2026-10-10): model-default pixel accuracy on 910B.**
+**Current execution task (2026-10-10): model-default pixel pg/s on 310P.**
+[The handoff](WORK_SERVER_310P_MODEL_DEFAULT_PIXELS_FULL1651.md) runs warmup64
+and full1651 of the same setup through the `model_defaults` phase of
+`run_prefill_bucket_validation.py`, then stops for approval before evaluation.
+
+**Previous execution task: model-default pixel accuracy on 910B.**
 `run_model_default_pixels_validation.py` reproduces the saved production command
 with only min/max pixels 50176/1605632, no text-only cap, extended vision/text
 buckets, and KV8192. It runs warmup64, full1651, then frozen evaluation with
