@@ -105,6 +105,11 @@ a different chip with different operator constraints than 910B — do not carry 
 
 ## Evidence conventions
 
+- For W8A8, quantization and similar optimization experiments, Luka prioritizes
+  device profiling and bottleneck analysis. Compare kernel times/counts, shapes,
+  fusion, memory movement and hardware utilization. End-to-end timing is
+  secondary context, not the primary success criterion; a slower total can
+  still be useful evidence about the bottleneck. Include profiling in the work.
 - Runs are recorded under `tmp/<experiment>/<run_name>_<commit>/`, force-added
   past `.gitignore` on purpose: each keeps `command.txt` (git commit, hostname,
   `ASCEND_RT_VISIBLE_DEVICES`, exact command), `exit_code.txt`, `run.log`, and
