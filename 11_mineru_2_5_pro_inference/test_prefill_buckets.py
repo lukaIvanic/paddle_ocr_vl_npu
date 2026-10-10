@@ -147,19 +147,35 @@ class WindowTests(unittest.TestCase):
         engine.model.allocate_static_cache = allocate
         requests = [(index, request) for _, index, request in make_entries()]
         events = FakeEvents()
+        cpu_reads = []
+        tensor_cpu = torch.Tensor.cpu
+        def read_cpu(tensor, *args, **kwargs):
+            cpu_reads.append(tensor.numel())
+            return tensor_cpu(tensor, *args, **kwargs)
         with patch.object(PrefillDeviceTimeline, '_event', events), \
+             patch.object(torch.Tensor, 'cpu', read_cpu), \
              patch.object(torch.Tensor, 'item', side_effect=AssertionError('per-request token read')):
             leases, _, metrics = engine._prefill_vision_window(requests)
         self.assertEqual(allocations, LENGTHS)
+        self.assertEqual(cpu_reads, [len(LENGTHS)])
         self.assertEqual(metrics['text_prefill_first_token_read_count'], 1)
         self.assertEqual(events.synchronize_calls, 0)  # The batched CPU read is the fence.
         self.assertEqual(len(engine.text_prefill_timing_samples), 3)
         destination = LocalMinerUStaticCache((torch.zeros(4, 1, 2048, 2),),
                                             (torch.zeros(4, 1, 2048, 2),), 2048)
+        with torch.inference_mode():
+            for row, (_, lease) in enumerate(leases):
+                lease.cache.key_caches[0].fill_(row + 1)
+                lease.cache.value_caches[0].fill_(-row - 1)
         entries = [(row, index, lease) for row, (index, lease) in enumerate(leases)]
         with patch('fixed_batch_engine.maybe_sync_device', side_effect=AssertionError('extra admission fence')):
             states, _, _ = engine.admit_prefilled_slots(destination, entries)
         self.assertEqual(len(states), 4)
+        for row, length in enumerate(LENGTHS):
+            self.assertTrue(torch.all(destination.key_caches[0][row, :, :length] == row + 1))
+            self.assertTrue(torch.all(destination.value_caches[0][row, :, :length] == -row - 1))
+            self.assertTrue(torch.all(destination.key_caches[0][row, :, length:] == 0))
+            self.assertEqual(states[row]['cache_position'].item(), length)
         self.assertTrue(all(lease.cache is None for _, lease in leases))
         self.assertTrue(all(not request.host_staging for _, request in requests))
 

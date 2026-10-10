@@ -78,6 +78,11 @@ def main():
         if candidate:
             cmd += PRODUCTION_PREFILL_OPTIONS
         if warm:
+            if not candidate:
+                # Cache-population only: larger baseline vision buckets cannot
+                # occur under 602112 pixels. The measured baseline keeps its
+                # original full bucket list, with no eager route changes.
+                cmd += ['--local-vision-buckets', '384,512,768,1024,1536,2048,3072']
             cmd += ['--local-warm-all-prefill-buckets']
         return cmd, source_repo
 
@@ -143,7 +148,9 @@ def main():
         candidate = run('candidate_smoke64', 64, 'candidate', candidate=True, warm=True)
         result = compare(a.root / 'defaults64/output', candidate)
         write_new(a.root / 'smoke_compare.json', result)
-        print('SMOKE_OUTPUT_DIFFERENCES ' + str(len(result['differences'])), flush=True)
+        print('SMOKE_OUTPUT_DIFFERENCES ' + json.dumps(dict(
+            token_sequences=sum(row['first_token_difference'] is not None for row in result['differences']),
+            inputs_or_tokens=len(result['differences']), markdown_pages=len(result['changed_pages']))), flush=True)
     elif a.phase == 'full':
         assert (a.root / 'smoke_compare.json').is_file(), 'Run the smoke first'
         run('candidate_full1651', 1651, 'candidate', candidate=True, audit=True)
