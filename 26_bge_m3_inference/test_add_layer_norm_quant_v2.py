@@ -47,7 +47,7 @@ class V2:
 
     def __call__(self, x1, x2, gamma, beta, scale, bias=None, eps=1e-5):
         # Static, one quantized output, no pre-normalization sum output.
-        quant = torch.empty_like(x1, dtype=torch.int8)
+        quant = torch.empty(x1.shape, device=x1.device, dtype=torch.int8)
         norm = torch.empty_like(x1)
         unused = [torch.empty(1, device=x1.device, dtype=torch.int8), torch.empty_like(x1),
                   torch.empty(1, device=x1.device), torch.empty(1, device=x1.device)]
@@ -116,11 +116,13 @@ def main():
 
     import torch_npu.profiler as prof
     with prof.profile(activities=[prof.ProfilerActivity.CPU, prof.ProfilerActivity.NPU],
+                      schedule=prof.schedule(wait=0, warmup=1, active=3, repeat=1),
                       on_trace_ready=prof.tensorboard_trace_handler(str(args.output / "profile")),
                       record_shapes=True,
-                      experimental_config=prof._ExperimentalConfig(profiler_level=prof.ProfilerLevel.Level1)):
-        for _ in range(3):
+                      experimental_config=prof._ExperimentalConfig(profiler_level=prof.ProfilerLevel.Level1)) as trace:
+        for _ in range(4):
             op(x1, x2, gamma, beta, scale, bias)
+            trace.step()
     kernels = list((args.output / "profile").glob("**/kernel_details.csv"))
     if not kernels:
         raise RuntimeError("Profiler did not produce device kernel evidence")
