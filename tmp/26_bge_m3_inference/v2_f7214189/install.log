@@ -1,0 +1,20 @@
+[ops_custom] [2026-10-10 16:07:24] [INFO] create /workspace/operators/bge-v2-9.1/vendors.
+[ops_custom] [2026-10-10 16:07:24] [INFO] create /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn.
+[ops_custom] [2026-10-10 16:07:24] [INFO] upgrade framework
+[ops_custom] [2026-10-10 16:07:24] [INFO] no need to upgrade ops framework files
+[ops_custom] [2026-10-10 16:07:24] [INFO] upgrade op proto
+[ops_custom] [2026-10-10 16:07:24] [INFO] create /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn/op_proto.
+[ops_custom] [2026-10-10 16:07:24] [INFO] copy new ops op_proto files ......
+[ops_custom] [2026-10-10 16:07:24] [INFO] upgrade op impl
+[ops_custom] [2026-10-10 16:07:24] [INFO] create /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn/op_impl.
+[ops_custom] [2026-10-10 16:07:24] [INFO] copy new ops op_impl files ......
+[ops_custom] [2026-10-10 16:07:24] [INFO] upgrade op api
+[ops_custom] [2026-10-10 16:07:24] [INFO] create /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn/op_api.
+[ops_custom] [2026-10-10 16:07:24] [INFO] copy new ops op_api files ......
+[ops_custom] [2026-10-10 16:07:24] [INFO] upgrade uninstall
+[ops_custom] [2026-10-10 16:07:24] [INFO] copy new uninstall.sh files ......
+[ops_custom] [2026-10-10 16:07:24] [INFO] upgrade version.info
+[ops_custom] [2026-10-10 16:07:24] [INFO] copy new version.info files ......
+[ops_custom] [2026-10-10 16:07:24] [INFO] no need to upgrade custom.proto files
+[ops_custom] [2026-10-10 16:07:24] [INFO] using requirements: when custom module install finished or before you run the custom module, execute the command [ source /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn/bin/set_env.bash ] to set the environment path
+SUCCESS

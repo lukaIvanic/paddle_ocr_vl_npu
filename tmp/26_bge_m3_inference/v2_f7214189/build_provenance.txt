@@ -1,0 +1,8 @@
+Upstream: https://gitcode.com/cann/ops-nn.git, tag v9.1.0
+ceb4536a2bd6fc99b85aec9d0fdcc0f470376292
+0948d98e07368b74a1dc608dc87e3d5eebb2528687905fadab86d7a39ab70d5c  norm/add_layer_norm_quant_v2/op_kernel/add_layer_norm_quant_v2.cpp
+92394219f9911f421c76402c2c64d15d69b00ab1c9b0b5ea210859a652f13309  norm/add_layer_norm_quant/op_kernel/add_layer_norm_static_quant_normal_kernel.h
+14f43fb2a5add8fc30ad6e3ee92fa8192870a41e69f33edad69d8bcf0a59ba4a  /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn/op_api/lib/libcust_opapi.so
+a98d4e368bbf13be87155eca467c01d0ba80f8b7dd3e724cedf2f6fa23e0f42d  build_out/cann-ops-nn-bge_v2_linux-aarch64.run
+Successful build: bash build.sh --pkg --soc=ascend910b --ops=add_layer_norm_quant_v2 --no_force --vendor_name=bge_v2 -j8
+Install: bash build_out/cann-ops-nn-bge_v2_linux-aarch64.run --quiet --install-path=/workspace/operators/bge-v2-9.1

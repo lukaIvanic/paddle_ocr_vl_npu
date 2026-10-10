@@ -1,0 +1,45 @@
+{
+  "device": "Ascend910B2",
+  "physical_npu": "3",
+  "library": "/workspace/operators/bge-v2-9.1/vendors/bge_v2_nn/op_api/lib/libcust_opapi.so",
+  "library_sha256": "14f43fb2a5add8fc30ad6e3ee92fa8192870a41e69f33edad69d8bcf0a59ba4a",
+  "shape": [
+    7,
+    768
+  ],
+  "cases": [
+    {
+      "bias": false,
+      "norm_max_abs": 0.0014247894287109375,
+      "int8_max_abs": 0,
+      "int8_exact_fraction": 1.0
+    },
+    {
+      "bias": true,
+      "norm_max_abs": 0.0015301704406738281,
+      "int8_max_abs": 0,
+      "int8_exact_fraction": 1.0
+    }
+  ],
+  "passed": true,
+  "kernels": [
+    {
+      "Name": "aclnnAddLayerNormQuantV2_AddLayerNormQuantV2_AddLayerNormQuantV2",
+      "Type": "AddLayerNormQuantV2",
+      "Duration(us)": "7.261",
+      "Input Shapes": "\"7,768;7,768;1,768;1,768;1,768;1\""
+    },
+    {
+      "Name": "aclnnAddLayerNormQuantV2_AddLayerNormQuantV2_AddLayerNormQuantV2",
+      "Type": "AddLayerNormQuantV2",
+      "Duration(us)": "6.940",
+      "Input Shapes": "\"7,768;7,768;1,768;1,768;1,768;1\""
+    },
+    {
+      "Name": "aclnnAddLayerNormQuantV2_AddLayerNormQuantV2_AddLayerNormQuantV2",
+      "Type": "AddLayerNormQuantV2",
+      "Duration(us)": "5.880",
+      "Input Shapes": "\"7,768;7,768;1,768;1,768;1,768;1\""
+    }
+  ]
+}

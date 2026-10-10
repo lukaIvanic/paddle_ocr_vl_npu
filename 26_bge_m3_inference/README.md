@@ -323,3 +323,72 @@ Reproduce the compact comparison from the extracted archive:
 python 26_bge_m3_inference/summarize_w8a8_profiles.py \
   --run-root /path/to/bge_m3_profile_1ceb71db --output-dir /path/to/summary
 ```
+
+## Standalone upstream AddLayerNormQuantV2
+
+`test_add_layer_norm_quant_v2.py` is the single Python entry point for calling
+and checking V2. It uses `ctypes` to pass PyTorch-owned NPU buffers to the
+upstream ACLNN API. It does not build a PyTorch extension, register a TorchAir
+converter, or change the model/linear implementation.
+
+The operator is built unchanged from upstream `cann/ops-nn` tag `v9.1.0`, commit
+`ceb4536a2bd6fc99b85aec9d0fdcc0f470376292`. Its kernels, tiler and API retain their
+upstream names and implementations. The custom package is installed under
+`/workspace/operators/bge-v2-9.1`, separate from CANN 9.0.1.
+
+Build once in a clean upstream checkout after installing its build prerequisites:
+
+```bash
+source npu-setup
+git clone --depth 1 --branch v9.1.0 https://gitcode.com/cann/ops-nn.git
+cd ops-nn
+bash build.sh --pkg --soc=ascend910b --ops=add_layer_norm_quant_v2 \
+  --no_force --vendor_name=bge_v2 -j8
+bash build_out/cann-ops-nn-bge_v2_linux-aarch64.run \
+  --quiet --install-path=/workspace/operators/bge-v2-9.1
+```
+
+`--no_force` skips recompiling dependency kernels already supplied by CANN; it
+does not specialize or modify the V2 source. The upstream build retains V2's
+FP16, BF16 and FP32 variants. This test exercises FP16 static quantization only.
+
+From this research repository, run:
+
+```bash
+source npu-setup
+source /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn/bin/set_env.bash
+python3 26_bge_m3_inference/test_add_layer_norm_quant_v2.py \
+  --op-api /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn/op_api/lib/libcust_opapi.so \
+  --output /workspace/results/bge_v2_UNIQUE
+```
+
+The output directory must be fresh. Optional `--rows` and `--width` change the
+input shape. The script checks FP16 normalized and INT8 quantized outputs with
+and without bias, then captures three warmed calls using the NPU profiler.
+It uses multiplication by an FP16 scale, matching V2's documented static mode.
+The reference adds and normalizes in FP32; FP16 outputs use atol=0.004,
+rtol=0.002, and quantized values may differ by at most one INT8 level.
+
+For this newer package on CANN 9.0.1, the script loads both stock and package
+`libes_nn.so` before initializing the NPU backend. This supplies the package's
+additional ES symbols while keeping the stock library loaded. No kernel or
+installed CANN files are patched.
+
+Validated on physical **910B2 NPU 3**, script commit `f7214189`, using the
+unchanged released V2 package. Both shapes passed with and without bias:
+
+| FP16 input shape | Maximum norm error vs FP32 reference (both cases) | INT8 exact agreement | Profiled V2 kernel median |
+|---|---:|---:|---:|
+| 256 x 1024 | 0.00191832 | 100% | 13.520 us |
+| 7 x 768 | 0.00153017 | 100% | 6.940 us |
+
+Profiles use bias and contain exactly three V2 kernels for three calls: one
+fused kernel per call, including the FP16 normalized and INT8 quantized outputs.
+These three-sample device timings are smoke observations, not a stable
+performance comparison. No model or TorchAir integration was performed.
+
+Evidence: [256x1024 result](../tmp/26_bge_m3_inference/v2_f7214189/shape256x1024.json),
+[7x768 result](../tmp/26_bge_m3_inference/v2_f7214189/shape7x768.json),
+[raw kernel rows](../tmp/26_bge_m3_inference/v2_f7214189/shape256x1024_kernels.csv),
+[commands](../tmp/26_bge_m3_inference/v2_f7214189/command.txt),
+[build/source provenance](../tmp/26_bge_m3_inference/v2_f7214189/build_provenance.txt).

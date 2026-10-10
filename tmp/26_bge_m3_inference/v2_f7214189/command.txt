@@ -1,0 +1,8 @@
+f7214189ec63961257f0f8539a5d0fd459574d83
+liteserver-c001-4
+Physical NPU: 3
+source npu-setup
+source /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn/bin/set_env.bash
+OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 PYTHONDONTWRITEBYTECODE=1
+python3 -u 26_bge_m3_inference/test_add_layer_norm_quant_v2.py --op-api /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn/op_api/lib/libcust_opapi.so --output /workspace/results/bge_v2_f7214189/test
+python3 -u 26_bge_m3_inference/test_add_layer_norm_quant_v2.py --op-api /workspace/operators/bge-v2-9.1/vendors/bge_v2_nn/op_api/lib/libcust_opapi.so --output /workspace/results/bge_v2_f7214189/shape7x768 --rows 7 --width 768

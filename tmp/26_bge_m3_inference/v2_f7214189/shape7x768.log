@@ -1,0 +1,6 @@
+{"bias": false, "norm_max_abs": 0.0014247894287109375, "int8_max_abs": 0, "int8_exact_fraction": 1.0}
+{"bias": true, "norm_max_abs": 0.0015301704406738281, "int8_max_abs": 0, "int8_exact_fraction": 1.0}
+[2026-10-10 16:12:59] [INFO] [453465] profiler.py: Start parsing profiling data in sync mode at: /workspace/results/bge_v2_f7214189/shape7x768/profile/liteserver-c001-4_453384_20261010161258964_ascend_pt
+|/-[2026-10-10 16:13:01] [INFO] [453474] profiler.py: CANN profiling data parsed in a total time of 0:00:02.027510
+\[2026-10-10 16:13:02] [INFO] [453465] profiler.py: All profiling data parsed in a total time of 0:00:03.198147
+{"passed": true, "kernel_rows": 3}

@@ -1,0 +1,6 @@
+{
+  "archive": "bge-v2-910b-smoke.tar.gz",
+  "bytes": 99384,
+  "sha256": "2febd90afd3e4f40b48486c9a35f130e39882afa8ffac535c965ed42c8fcd36b",
+  "contents": "Both successful Python smoke runs and raw CPU/NPU profiles, full successful build log, source provenance, and installation log."
+}
