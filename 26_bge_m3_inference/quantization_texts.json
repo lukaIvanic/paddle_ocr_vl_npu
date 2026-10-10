@@ -1,0 +1,26 @@
+{
+  "calibration": [
+    "Neural retrieval systems map queries and documents into a common vector space. A search engine compares their representations to find relevant information, and a reranker can refine the ordering of the candidates.",
+    "A database index speeds up queries by maintaining an additional data structure. Applications balance read latency, storage requirements, update costs, and consistency when choosing an index.",
+    "Solar panels convert sunlight into electricity. Energy storage and transmission networks help balance renewable generation with changes in demand over the course of a day.",
+    "The experiment measures temperature, pressure, and humidity at regular intervals. Researchers calibrate the sensors before collecting observations and retain the original measurements for later analysis.",
+    "A computer program should handle empty inputs and unexpected errors explicitly. Unit tests check individual functions, while integration tests exercise interactions between components.",
+    "Les bibliothèques publiques donnent accès aux livres, aux archives et aux ressources numériques. Elles organisent aussi des activités éducatives pour les habitants de leur quartier.",
+    "Die Eisenbahn verbindet Städte und Regionen. Ein zuverlässiger Fahrplan und regelmäßige Wartung sind wichtig für einen sicheren und effizienten Betrieb.",
+    "机器学习模型需要具有代表性的数据。训练、验证和测试数据应当分开，以便评估模型对新样本的泛化能力。",
+    "研究者は複数の言語で書かれた文書を検索する方法を調べています。文章の意味を数値ベクトルとして表現します。",
+    "La recuperación de información permite encontrar documentos relevantes para una consulta. La evaluación debe incluir ejemplos que no se utilizaron durante el desarrollo.",
+    "Dane pomiarowe należy zapisywać razem z jednostkami, datą i opisem metody. Ułatwia to porównywanie wyników oraz odtwarzanie eksperymentów.",
+    "A recipe lists ingredients and preparation steps. Adjusting the number of servings changes ingredient quantities, but cooking times may not scale proportionally."
+  ],
+  "held_out": [
+    "How do migrating birds navigate over long distances?",
+    "Bird migration depends on several navigation cues, including the sun, stars, landmarks, and the Earth's magnetic field.",
+    "What are the main differences between a compiler and an interpreter?",
+    "A compiler translates a program before execution, whereas an interpreter executes its instructions during runtime.",
+    "如何减少城市交通拥堵并改善公共交通？",
+    "Pour comparer deux modèles, il faut utiliser les mêmes données et les mêmes critères d'évaluation.",
+    "Jak działa wyszukiwanie semantyczne w wielojęzycznej bazie dokumentów?",
+    "A coastal wetland supports wildlife, stores carbon, and helps protect nearby communities from flooding."
+  ]
+}

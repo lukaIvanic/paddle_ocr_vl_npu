@@ -70,12 +70,15 @@ class SelfAttention(nn.Module):
         self.query = nn.Linear(c.hidden_size, c.hidden_size)
         self.key = nn.Linear(c.hidden_size, c.hidden_size)
         self.value = nn.Linear(c.hidden_size, c.hidden_size)
+        self.qkv = None
 
     def forward(self, hidden: torch.Tensor, bias: torch.Tensor) -> torch.Tensor:
         b, s, h = hidden.shape
-        q = self.query(hidden).view(b, s, self.heads, self.head_dim).transpose(1, 2)
-        k = self.key(hidden).view(b, s, self.heads, self.head_dim).transpose(1, 2)
-        v = self.value(hidden).view(b, s, self.heads, self.head_dim).transpose(1, 2)
+        q, k, v = ((self.query(hidden), self.key(hidden), self.value(hidden))
+                   if self.qkv is None else self.qkv(hidden))
+        q = q.view(b, s, self.heads, self.head_dim).transpose(1, 2)
+        k = k.view(b, s, self.heads, self.head_dim).transpose(1, 2)
+        v = v.view(b, s, self.heads, self.head_dim).transpose(1, 2)
         # Explicit head batches avoid GE's broadcast-matmul shape inference.
         q = q.reshape(b * self.heads, s, self.head_dim)
         k = k.reshape(b * self.heads, s, self.head_dim)
