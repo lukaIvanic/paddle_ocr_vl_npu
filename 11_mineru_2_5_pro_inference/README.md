@@ -1,10 +1,48 @@
 # Experiment 11: MinerU2.5-Pro Local Inference
 
-**Current execution task (2026-10-10): per-route prefill timing.** The single active
-[310P handoff](WORK_SERVER_310P_LIVE_PADDLE_CAP3072_FIRST256_PREFILL_TIMING.md) runs
-the former baseline lane on the first 256 pages with per-call vision and packed
-text-prefill device timing (`text_prefill_timing_shard_XX.jsonl` and the run
-summary's `text_prefill_timing`). Production text buckets are unchanged.
+**Current execution task (2026-10-10): opt-in prefill buckets and window scheduling.**
+The implementation is based on `2ef68bdd`; accelerator validation is pending.
+The first-256 timing task is superseded; its measurements motivated this work.
+
+Add this complete candidate flag set to the existing C1+C2+C5 invocation:
+
+```sh
+--processor-max-pixels 602112 --processor-text-max-pixels 401408 \
+--local-vision-buckets 384,512,768,896,1024,1280,1536,1792,1920,2048,2560,3072 \
+--local-text-buckets 128,256,384,512,576,832,1024 \
+--local-text-pack-target 384 --local-text-prefill-schedule window
+```
+
+`prefill_buckets_config.PRODUCTION_PREFILL_OPTIONS` contains the candidate
+additions. Keep min pixels 25088, vision packing 768, lookahead 32, and text
+max-members 32. C1+C2 uses CPU grids and pinned nonblocking copies; C5 disables
+metrics in ordinary production. For the requested measured pair explicitly
+turn `--local-prefill-metrics` on in **both** lanes.
+
+All new defaults retain admission prefill, packing to the largest text bucket,
+and the global crop cap. `run_page_pipeline.py` defaults are unchanged. The
+text-only cap requires continuous streaming so that actual layout labels reach
+the processor; titles, headers and every label other than exactly `text` keep
+the global limit. An independent copy of the image processor uses the same
+pixel-limit setter and the same minimum as the all-crop ablation.
+
+Window mode runs existing packed text prefill after each encoded vision window,
+stages exact prompt-length KV prefixes, and uses the experiment-20 ready lease
+admission path. Packing is unchanged best-fit decreasing, with a separate
+target; prompts over that target run alone in their smallest fitting bucket.
+The first token, cache position and RoPE delta travel with each lease. One
+batched first-token CPU read fences each window, also resolving its text timing
+events. Window-owned KV tensors are allocated, copied and released on the same
+owner stream, so admission needs no additional host fence. Experiment-20 shared
+arenas retain their existing fence before rows can be reused. Staging is bounded
+by one lookahead window and stores only real prompt lengths (12288 bytes/token
+at model FP16). Decode KV-length handling and vision packing are unchanged.
+
+Use `--local-warm-all-prefill-buckets` only in a separate cache-population run.
+It captures real-page graph inputs and uses the existing resize/replay warmup
+machinery for every configured prefill bucket, including routes absent from the
+prefix. Its summary is marked `warmup_only`; its timing is not throughput.
+Run the measured lane without that flag and audit cache artifacts before/after.
 
 **Previous task (2026-10-09): host overhead only.** The retired
 [full-page pair handoff](WORK_SERVER_310P_LIVE_PADDLE_CAP3072_FULL1651.md) compared

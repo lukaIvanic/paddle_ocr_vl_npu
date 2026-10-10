@@ -229,6 +229,7 @@ def make_local_fixed_batch_vlm_client(
     vision_grid_device: str = "npu",
     input_transfer: str = "blocking",
     compact_uint8: bool = False,
+    text_crop_max_pixels: int | None = None,
     system_prompt: str,
     allow_truncated_content: bool,
 ):
@@ -257,6 +258,8 @@ def make_local_fixed_batch_vlm_client(
                 from compact_vision_inputs import CompactVisionInputs
                 self.compact_codec = CompactVisionInputs(self.processor, model.device)
                 self.processor = self.compact_codec.processor
+            from text_crop_processor import make_text_crop_processor
+            self.text_crop_processor = make_text_crop_processor(self.processor, text_crop_max_pixels)
             self.input_transfer = input_transfer
             self._host_transfer_stream = None
             if input_transfer == "pinned-thread":
@@ -279,9 +282,12 @@ def make_local_fixed_batch_vlm_client(
             self,
             image,
             chat_prompt,
+            *, block_type=None,
         ):
+            from text_crop_processor import select_crop_processor
+            processor = select_crop_processor(self.processor, self.text_crop_processor, block_type)
             started = time.perf_counter()
-            inputs = self.processor(
+            inputs = processor(
                 text=[chat_prompt],
                 images=[image] if image is not None else None,
                 padding=True,

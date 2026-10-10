@@ -39,10 +39,11 @@ class PrefillDeviceTimeline:
         self._events.append((name, start, end, tags))
         return result
 
-    def resolve(self) -> dict[str, float]:
+    def resolve(self, *, already_synchronized=False) -> dict[str, float]:
         if not self._events:
             return {}
-        self._events[-1][2].synchronize()
+        if not already_synchronized:
+            self._events[-1][2].synchronize()
         totals: dict[str, float] = {}
         for name, start, end, tags in self._events:
             elapsed_s = float(start.elapsed_time(end)) / 1000.0

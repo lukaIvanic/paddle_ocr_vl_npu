@@ -252,6 +252,7 @@ class MinerUPackedTextPrefillRuntime:
         *,
         buckets: str | Iterable[int] = DEFAULT_TEXT_PREFILL_BUCKETS,
         max_members: int = 32,
+        pack_target: int | None = None,
         cache_root: Path,
         model_dir: Path,
         device: torch.device,
@@ -262,6 +263,9 @@ class MinerUPackedTextPrefillRuntime:
         self.model = model
         self.buckets = parse_text_prefill_buckets(buckets)
         self.max_members = int(max_members)
+        self.pack_target = self.buckets[-1] if pack_target is None else int(pack_target)
+        if not 0 < self.pack_target <= self.buckets[-1]:
+            raise ValueError("text pack target must be positive and no larger than the largest bucket")
         self.cache_root = cache_root.expanduser().resolve()
         self.model_dir = model_dir.expanduser().resolve()
         self.device = device
@@ -357,8 +361,9 @@ class MinerUPackedTextPrefillRuntime:
         return compiled
 
     def pack_indices(self, lengths: Sequence[int]) -> tuple[list[list[int]], list[int]]:
-        """Best-fit decreasing into the largest supported physical bucket."""
+        """Best-fit decreasing up to target; longer supported prompts run alone."""
         maximum = self.buckets[-1]
+        target_limit = getattr(self, "pack_target", maximum)
         overflow = [index for index, length in enumerate(lengths) if length > maximum]
         eligible = sorted(
             (index for index, length in enumerate(lengths) if length <= maximum),
@@ -371,7 +376,7 @@ class MinerUPackedTextPrefillRuntime:
             candidates = [
                 pack_index
                 for pack_index, total in enumerate(totals)
-                if len(packs[pack_index]) < self.max_members and total + length <= maximum
+                if len(packs[pack_index]) < self.max_members and total + length <= target_limit
             ]
             if candidates:
                 target = min(candidates, key=lambda pack_index: maximum - totals[pack_index] - length)
@@ -514,6 +519,7 @@ class MinerUPackedTextPrefillRuntime:
             "boundary": "packed_block_diagonal_text_transformer",
             "buckets": list(self.buckets),
             "max_members": self.max_members,
+            "pack_target": self.pack_target,
             "packed_qkv": False,
             "packed_gate_up": False,
             "attention": "manual_block_diagonal_causal",

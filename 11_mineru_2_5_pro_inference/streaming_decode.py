@@ -91,6 +91,8 @@ def iter_decode_stream(engine, source, *, cooperative=False):
     tokens = {}
     limits = {}
     vision_ready = deque()
+    window_prefill = (getattr(engine, "text_prefill_schedule", "admission") == "window"
+                      and not getattr(source, "prefilled", False))
     next_token = cache_position = rope_delta = None
     graph_calls = active_slots_total = completed = effective_tokens = 0
     immediate = refill_count = 0
@@ -153,6 +155,10 @@ def iter_decode_stream(engine, source, *, cooperative=False):
             elapsed, metrics = engine._prepare_vision_window(window)
             prefill_s += elapsed
             prefill_metrics.update(metrics)
+        if window and window_prefill:
+            window, elapsed, metrics = engine._prefill_vision_window(window)
+            prefill_s += elapsed
+            prefill_metrics.update(metrics)
         vision_ready.extend(window)
         max_live_requests = max(max_live_requests, len(limits))
 
@@ -177,7 +183,7 @@ def iter_decode_stream(engine, source, *, cooperative=False):
                 slot = available.pop(0)
                 index, request = vision_ready.popleft()
                 entries.append((slot, index, request))
-            if getattr(source, "prefilled", False):
+            if getattr(source, "prefilled", False) or window_prefill:
                 states, elapsed, metrics = engine.admit_prefilled_slots(arena, entries)
             else:
                 states, elapsed, metrics = engine._prefill_slots(arena, entries)

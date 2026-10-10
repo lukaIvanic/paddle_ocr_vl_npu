@@ -275,7 +275,15 @@ def parse_args(argv=None) -> argparse.Namespace:
         default=DEFAULT_LOCAL_TEXT_BUCKETS,
         help="Comma-separated physical token lengths for packed text-prefill graphs.",
     )
+    parser.add_argument("--local-warm-all-prefill-buckets", action="store_true",
+                        help="Warmup-only run: capture real page graph inputs and replay all prefill buckets after pages finish; do not use its timing as throughput.")
     parser.add_argument("--local-text-max-members", type=int, default=32)
+    parser.add_argument("--local-text-pack-target", type=int, default=None,
+                        help="Pack prompts up to this target; default is the largest text bucket.")
+    parser.add_argument("--local-text-prefill-schedule", choices=("admission", "window"),
+                        default="admission")
+    parser.add_argument("--processor-text-max-pixels", type=int, default=None,
+                        help="Override max pixels only for recognition blocks labeled text.")
     parser.add_argument(
         "--local-text-torchair-cache-dir",
         type=Path,
@@ -658,6 +666,12 @@ def main(args=None) -> None:
             raise ValueError("live Paddle layout requires streaming, warmup-pages=0 and no saved layout manifest")
     if args.saved_layout_manifest is not None and (not args.streaming_pages or args.warmup_pages != 0):
         raise ValueError("saved-layout-manifest requires streaming-pages and warmup-pages=0")
+    if args.processor_text_max_pixels is not None or args.local_text_prefill_schedule == "window":
+        if args.backend != "local-continuous-client" or not args.streaming_pages:
+            raise ValueError("text crop cap and window prefill require continuous streaming pages")
+    if args.local_text_prefill_schedule == "window" or args.local_text_pack_target is not None:
+        if args.local_text_backend != "torchair-packed":
+            raise ValueError("window prefill and text pack target require torchair-packed text")
     vision_timing_samples: list[dict[str, Any]] = []
     text_prefill_timing_samples: list[dict[str, Any]] = []
     if args.processor_max_pixels is not None and args.backend not in (
@@ -937,6 +951,7 @@ def main(args=None) -> None:
                     local_model,
                     buckets=args.local_text_buckets,
                     max_members=args.local_text_max_members,
+                    pack_target=args.local_text_pack_target,
                     cache_root=args.local_text_torchair_cache_dir,
                     model_dir=model_dir,
                     device=local_model.device,
@@ -958,6 +973,7 @@ def main(args=None) -> None:
                 packed_text_prefill_runtime=local_text_runtime,
                 vision_pack_target=args.local_vision_pack_target,
                 vision_lookahead=args.local_vision_lookahead,
+                text_prefill_schedule=args.local_text_prefill_schedule,
                 decode_diagnostic_steps=args.local_decode_diagnostic_steps,
                 decode_diagnostic_sync=args.local_decode_diagnostic_sync,
                 decode_diagnostic_boundary_period=(
@@ -982,7 +998,8 @@ def main(args=None) -> None:
                 ),
                 vision_grid_device=args.local_vision_grid_device,
                 input_transfer=args.local_input_transfer,
-            compact_uint8=args.local_compact_uint8,
+                compact_uint8=args.local_compact_uint8,
+                text_crop_max_pixels=args.processor_text_max_pixels,
                 system_prompt=client.client.system_prompt,
                 allow_truncated_content=client.client.allow_truncated_content,
             )
@@ -1174,6 +1191,16 @@ def main(args=None) -> None:
             flush=True,
         )
 
+    # Explicit cache-population lane, including live Paddle layouts. Reuse the
+    # established real-page capture/replay helpers; production runs skip this.
+    all_bucket_recorders = []
+    if args.local_warm_all_prefill_buckets:
+        if local_vision_runtime is None or local_text_runtime is None:
+            raise ValueError("all-bucket warmup requires compiled vision and packed text")
+        for runtime in (local_vision_runtime, local_text_runtime):
+            original, state = install_bucket_input_recorder(runtime, 4, synchronize)
+            all_bucket_recorders.append((runtime, original, state))
+
     model_hashes = {
         "config.json": sha256(model_dir / "config.json"),
     }
@@ -1210,6 +1237,9 @@ def main(args=None) -> None:
             if processor_fast else None
         ),
         "processor_max_pixels_override": args.processor_max_pixels,
+        "processor_text_max_pixels": args.processor_text_max_pixels,
+        "local_text_pack_target": args.local_text_pack_target,
+        "local_text_prefill_schedule": args.local_text_prefill_schedule,
         "npu_jit_compile": False,
         "image_analysis": False,
         "layout_backend": args.layout_backend,
@@ -1624,9 +1654,18 @@ def main(args=None) -> None:
                 raise
 
     wall_s = time.perf_counter() - shard_started
+    all_bucket_warmup = None
+    if all_bucket_recorders:
+        for runtime, original, _state in all_bucket_recorders:
+            runtime._compiled_for_bucket = original
+        with torch.inference_mode():
+            all_bucket_warmup = warm_all_static_buckets(
+                torch, synchronize, *all_bucket_recorders[0], *all_bucket_recorders[1])
     summary = {
         **manifest,
         "pipeline_wall_s": wall_s,
+        "warmup_only": bool(args.local_warm_all_prefill_buckets),
+        "all_prefill_bucket_warmup": all_bucket_warmup,
         "completed": completed,
         "skipped": skipped,
         "failed": failed,

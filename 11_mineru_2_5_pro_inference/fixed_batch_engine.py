@@ -58,6 +58,9 @@ class PrefilledGeneration:
     prompt_length: int
     max_new_tokens: int
     release: Callable[[], None]
+    # Shared/recycled arenas (experiment 20) must fence before returning a row.
+    # Window-owned caches are used and freed only on the owning device stream.
+    release_requires_sync: bool = True
 
 
 def text_prefill_tags(
@@ -95,6 +98,7 @@ class FixedBatchDecodeEngine:
         packed_text_prefill_runtime: Any | None = None,
         vision_pack_target: int = 768,
         vision_lookahead: int = 32,
+        text_prefill_schedule: str = "admission",
         decode_diagnostic_steps: int = 0,
         decode_diagnostic_sync: bool = False,
         decode_diagnostic_boundary_period: int = 1408,
@@ -111,6 +115,11 @@ class FixedBatchDecodeEngine:
         self.eos_token_id = int(eos_token_id)
         self.pad_token_id = int(pad_token_id)
         self.collect_prefill_metrics = bool(collect_prefill_metrics)
+        if text_prefill_schedule not in ("admission", "window"):
+            raise ValueError("unsupported text prefill schedule")
+        if text_prefill_schedule == "window" and packed_text_prefill_runtime is None:
+            raise ValueError("window prefill requires packed text runtime")
+        self.text_prefill_schedule = text_prefill_schedule
         self.vision_timing_samples = vision_timing_samples
         self.text_prefill_timing_samples = text_prefill_timing_samples
         self.packed_text_prefill_runtime = packed_text_prefill_runtime
@@ -815,10 +824,40 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                 copied_bytes += value.numel() * value.element_size()
             states[slot] = dict(request.state, request_index=index)
         torch._foreach_copy_(destinations, sources)
-        maybe_sync_device(self.model.device)
+        if any(request.release_requires_sync for _slot, _index, request in entries):
+            maybe_sync_device(self.model.device)
         for _slot, _index, request in entries:
             request.release()
         return states, time.perf_counter() - started, {"ready_kv_admission_bytes": copied_bytes}
+
+    @torch.inference_mode()
+    def _prefill_vision_window(self, requests):
+        """Stage one window of exact-length KV leases on the owner stream."""
+        started = time.perf_counter()
+        caches = {}
+        entries = []
+        for row, (index, request) in enumerate(requests):
+            self._validate_request(request)
+            caches[row] = self.model.allocate_static_cache(
+                batch_size=1, cache_length=int(request.input_ids.shape[1]),
+                device=self.model.device, dtype=self.model.dtype, init_mode="zeros")
+            entries.append((row, index, request))
+        states, _, metrics = self._prefill_slots(
+            None, entries, cache_views=caches, batch_token_read=True)
+        leases = []
+        for row, index, request in entries:
+            lease = PrefilledGeneration(
+                cache=caches.pop(row), state=states[row],
+                prompt_length=int(request.input_ids.shape[1]),
+                max_new_tokens=request.max_new_tokens, release=lambda: None,
+                release_requires_sync=False)
+            # Clear the owning reference after the copy is queued. Device
+            # allocator reuse is ordered on this same stream, with no producer
+            # permitted to recycle these tensors on another stream.
+            lease.release = lambda lease=lease: setattr(lease, "cache", None)
+            leases.append((index, lease))
+        metrics["text_prefill_window_count"] = 1
+        return leases, time.perf_counter() - started, metrics
 
     def _validate_request(self, request: PreparedGeneration) -> None:
         if request.input_ids.shape[0] != 1:
@@ -912,6 +951,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         self,
         arena: LocalMinerUStaticCache,
         entries: Sequence[tuple[int, int, PreparedGeneration]],
+        *, cache_views=None, batch_token_read=False,
     ) -> tuple[dict[int, dict[str, Any]], float, dict[str, float | int]]:
         """Prefill free slots, using packed static text graphs when enabled."""
         started = time.perf_counter()
@@ -929,6 +969,8 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         from text_prefill_compile import PreparedTextMember
 
         runtime = self.packed_text_prefill_runtime
+        cache_for_slot = lambda slot: (cache_views[slot] if cache_views is not None
+                                       else self._slot_view(arena, slot))
         # Per-call text tags exist only when samples are requested and metrics
         # are on; otherwise this path builds no tags and records no extra rows.
         tagged_samples: list[dict[str, Any]] | None = (
@@ -1003,7 +1045,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                 ),
             )
             destinations = [
-                self._slot_view(arena, entries[index][0]) for index in pack_indices
+                cache_for_slot(entries[index][0]) for index in pack_indices
             ]
             copied_bytes += timeline.measure(
                 "text_kv_redistribute",
@@ -1041,7 +1083,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         for entry_index in overflow:
             slot, request_index, request = entries[entry_index]
             member = members[entry_index]
-            cache = self._slot_view(arena, slot)
+            cache = cache_for_slot(slot)
             hidden_states = timeline.measure(
                 "text_transformer_prefill",
                 lambda member=member, request=request, cache=cache: self.model.model.forward_prefill_static(
@@ -1082,7 +1124,12 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             }
             physical_tokens += member.sequence_length
 
-        stage_metrics = timeline.resolve()
+        if batch_token_read and states:
+            ordered = list(states.values())
+            token_ids = torch.cat([state["token"].reshape(-1) for state in ordered]).cpu().tolist()
+            for state, token_id in zip(ordered, token_ids, strict=True):
+                state["token_id"] = int(token_id)
+        stage_metrics = timeline.resolve(already_synchronized=batch_token_read)
         if tagged_samples:
             # Inline vision (no precomputed window) shares this timeline; keep
             # only text-prefill rows in the text sample stream.
@@ -1101,6 +1148,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             "text_prefill_tokens": sum(lengths),
             "physical_text_prefill_tokens": physical_tokens,
             "text_prefill_pack_count": len(packs),
+            "text_prefill_first_token_read_count": 1 if batch_token_read and states else len(states),
             "text_prefill_overflow_count": len(overflow),
             "text_kv_redistribute_bytes": copied_bytes,
             **stage_metrics,

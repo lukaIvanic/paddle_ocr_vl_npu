@@ -245,7 +245,9 @@ class MinerUPageSource:
         chat = self.adapter.processor.apply_chat_template(
             self.adapter.build_messages(prompt, has_image=True), tokenize=False,
             add_generation_prompt=True)
-        cpu = self.adapter._prepare_cpu_inputs(image, chat)
+        crop_options = ({"block_type": context.get("block_type")}
+                        if getattr(self.adapter, "text_crop_processor", None) is not None else {})
+        cpu = self.adapter._prepare_cpu_inputs(image, chat, **crop_options)
         record = dict(context, schema_version=1, chat_prompt=chat)
         if self.trace is not None:
             record.update(image_sha256=image_fingerprint(image),
