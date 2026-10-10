@@ -1,0 +1,4393 @@
+{
+  "source_commit": "1ceb71db8002e5bb47196dbe892506df34dd69f0",
+  "device": "Ascend910B2",
+  "note": "Device durations are profiled; wall medians are measured without profiling.",
+  "profiles": [
+    {
+      "label": "mixed_multilingual_dense",
+      "mode": "dense",
+      "case": "mixed_multilingual",
+      "active_forwards": 3,
+      "wall_median_ms": 4.096240008948371,
+      "kernel_csv": "profiles/mixed_multilingual_dense/liteserver-c001-4_423074_20261010152134500_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_count_per_forward": 524.0,
+      "steps": [
+        {
+          "step": "ProfilerStep#1",
+          "kernel_count": 524,
+          "kernel_span_us": 3829.3759999999993,
+          "kernel_union_us": 3816.834999999997,
+          "internal_gap_us": 12.541000000002441,
+          "cpu_step_us": 4468.56
+        },
+        {
+          "step": "ProfilerStep#2",
+          "kernel_count": 524,
+          "kernel_span_us": 3815.9570000000003,
+          "kernel_union_us": 3803.237000000001,
+          "internal_gap_us": 12.719999999999345,
+          "cpu_step_us": 4361.38
+        },
+        {
+          "step": "ProfilerStep#3",
+          "kernel_count": 524,
+          "kernel_span_us": 3818.995999999999,
+          "kernel_union_us": 3806.4560000000074,
+          "internal_gap_us": 12.539999999991778,
+          "cpu_step_us": 4356.52
+        }
+      ],
+      "kernel_sum_us_per_forward": 3808.8426666666674,
+      "median_kernel_span_us": 3818.995999999999,
+      "median_internal_gap_us": 12.541000000002441,
+      "types": [
+        {
+          "type": "MatMulV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 144.0,
+          "us_per_forward": 1292.5793333333338
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 623.2126666666668
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 422.461
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 306.433
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 72.0,
+          "us_per_forward": 284.03833333333336
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 236.3316666666666
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 221.5969999999999
+        },
+        {
+          "type": "Add",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 25.0,
+          "us_per_forward": 204.34433333333337
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 125.73700000000002
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 35.080666666666666
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 4.0,
+          "us_per_forward": 29.933999999999997
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 5.0,
+          "us_per_forward": 10.333333333333334
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.333666666666666
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.0933333333333333
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4799999999999998
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4266666666666665
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4000000000000001
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3933333333333333
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.36
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2733333333333334
+        }
+      ],
+      "shapes": [
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"256,1024;64,64,16,16;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 96.0,
+          "us_per_forward": 601.9250000000002
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"2,128,1024;2,128,1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 48.0,
+          "us_per_forward": 406.834
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"2,128,16,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 72.0,
+          "us_per_forward": 393.427666666667
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"256,4096;256,64,16,16;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 378.8213333333333
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"256,1024;64,256,16,16;4096\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 311.833
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "\"2,128,4096\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 306.433
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "\"32,128,64\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 72.0,
+          "us_per_forward": 284.03833333333336
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "\"2,16,128,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 236.3316666666666
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"2,16,128,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 229.78499999999997
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "\"32,128,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 221.5969999999999
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"2,16,128,128;2,1,1,128\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 202.43100000000007
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"32,128,128;32,4,8,16,16\"",
+          "input_formats": "ND;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 69.30133333333335
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"32,4,8,16,16;32,4,8,16,16\"",
+          "input_formats": "FRACTAL_NZ;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 56.43566666666664
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "\"2,128;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 35.080666666666666
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"2,128,1024;2,128,1024;1024;1024;2,128,1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 15.627
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"8194,1024;2,128;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 10.413666666666666
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"250002,1024;2,128;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 9.993333333333334
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,1024;2,128;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 8.093666666666666
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "\"2,1;2\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.333666666666666
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,1,1,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 5.04
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "BOOL",
+          "count_per_forward": 2.0,
+          "us_per_forward": 2.6266666666666665
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "\"2,128;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.0933333333333333
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"2,128;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9133333333333333
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "\"2,1024\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4799999999999998
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"2,128,1024;;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4333333333333333
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "\"2,1024;2,1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4266666666666665
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4133333333333333
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4000000000000001
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "\"2,1;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3933333333333333
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"2,1,1,128;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.36
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"2,128;2,128\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT32;INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2733333333333334
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2533333333333332
+        }
+      ]
+    },
+    {
+      "label": "mixed_multilingual_ffn_w8a8",
+      "mode": "ffn_w8a8",
+      "case": "mixed_multilingual",
+      "active_forwards": 3,
+      "wall_median_ms": 4.708695021690801,
+      "kernel_csv": "profiles/mixed_multilingual_ffn_w8a8/liteserver-c001-4_423074_20261010152140734_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_count_per_forward": 596.0,
+      "steps": [
+        {
+          "step": "ProfilerStep#1",
+          "kernel_count": 596,
+          "kernel_span_us": 4448.2080000000005,
+          "kernel_union_us": 4434.047999999995,
+          "internal_gap_us": 14.160000000005311,
+          "cpu_step_us": 5010.27
+        },
+        {
+          "step": "ProfilerStep#2",
+          "kernel_count": 596,
+          "kernel_span_us": 4441.767999999999,
+          "kernel_union_us": 4427.647999999988,
+          "internal_gap_us": 14.120000000010805,
+          "cpu_step_us": 4922.29
+        },
+        {
+          "step": "ProfilerStep#3",
+          "kernel_count": 596,
+          "kernel_span_us": 4438.648999999999,
+          "kernel_union_us": 4424.488999999996,
+          "internal_gap_us": 14.160000000003492,
+          "cpu_step_us": 4930.75
+        }
+      ],
+      "kernel_sum_us_per_forward": 4428.728333333328,
+      "median_kernel_span_us": 4441.767999999999,
+      "median_internal_gap_us": 14.160000000003492,
+      "types": [
+        {
+          "type": "MatMulV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 608.0716666666669
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 607.4800000000001
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 529.2646666666668
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 500.6023333333333
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 472.4626666666668
+        },
+        {
+          "type": "Add",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 421.3016666666668
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 305.399
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 72.0,
+          "us_per_forward": 289.30500000000035
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 239.57199999999997
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 221.91099999999994
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 140.01033333333334
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 36.841
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 4.0,
+          "us_per_forward": 29.907
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 5.0,
+          "us_per_forward": 10.086666666666668
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.406666666666666
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.866666666666667
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5066666666666666
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.46
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4266666666666665
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3399999999999999
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2733333333333334
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2333333333333334
+        }
+      ],
+      "shapes": [
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"256,1024;64,64,16,16;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 96.0,
+          "us_per_forward": 608.0716666666669
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"2,128,16,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 72.0,
+          "us_per_forward": 382.70833333333326
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "\"2,128,4096\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 305.399
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "\"32,128,64\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 72.0,
+          "us_per_forward": 289.30500000000035
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"2,128,1024;2,128,1024;1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 262.0650000000001
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"256,1024;128,64,16,32;4096\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 255.73833333333332
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"2,128,1024;2,128,1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 251.51266666666675
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"256,4096;32,256,16,32;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 244.86399999999995
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "\"2,16,128,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 239.57199999999997
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"256,4096;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 24.0,
+          "us_per_forward": 237.639
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"256,1024;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 24.0,
+          "us_per_forward": 234.8236666666667
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"2,16,128,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 224.77166666666665
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "\"32,128,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 221.91099999999994
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"256,4096;4096\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 221.39166666666654
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"2,16,128,128;2,1,1,128\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 197.85666666666668
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"32,128,128;32,4,8,16,16\"",
+          "input_formats": "ND;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 71.855
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"32,4,8,16,16;32,4,8,16,16\"",
+          "input_formats": "FRACTAL_NZ;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 68.15533333333335
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "\"2,128;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 36.841
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"2,128,1024;2,128,1024;1024;1024;2,128,1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 15.687
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"250002,1024;2,128;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 10.333666666666668
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"8194,1024;2,128;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 10.04
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,1024;2,128;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 8.0
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "\"2,1;2\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.406666666666666
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,1,1,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 5.006666666666667
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "BOOL",
+          "count_per_forward": 2.0,
+          "us_per_forward": 2.433333333333333
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"2,128;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.0533333333333332
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "\"2,128;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.866666666666667
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"2,128,1024;;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5333333333333332
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "\"2,1024\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5066666666666666
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "\"2,1024;2,1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.46
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "\"2,1;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4266666666666665
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"2,128;2,128\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT32;INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3399999999999999
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3333333333333333
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3133333333333335
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"2,1,1,128;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2733333333333334
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2333333333333334
+        }
+      ]
+    },
+    {
+      "label": "mixed_multilingual_full_w8a8",
+      "mode": "full_w8a8",
+      "case": "mixed_multilingual",
+      "active_forwards": 3,
+      "wall_median_ms": 5.369154998334125,
+      "kernel_csv": "profiles/mixed_multilingual_full_w8a8/liteserver-c001-4_423074_20261010152146875_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_count_per_forward": 716.0,
+      "steps": [
+        {
+          "step": "ProfilerStep#1",
+          "kernel_count": 716,
+          "kernel_span_us": 4957.539,
+          "kernel_union_us": 4940.6759999999995,
+          "internal_gap_us": 16.863000000000284,
+          "cpu_step_us": 5733.75
+        },
+        {
+          "step": "ProfilerStep#2",
+          "kernel_count": 716,
+          "kernel_span_us": 4951.678999999998,
+          "kernel_union_us": 4934.698000000005,
+          "internal_gap_us": 16.9809999999934,
+          "cpu_step_us": 5579.12
+        },
+        {
+          "step": "ProfilerStep#3",
+          "kernel_count": 716,
+          "kernel_span_us": 4953.9789999999975,
+          "kernel_union_us": 4936.598999999969,
+          "internal_gap_us": 17.380000000028303,
+          "cpu_step_us": 5595.46
+        }
+      ],
+      "kernel_sum_us_per_forward": 4937.324333333319,
+      "median_kernel_span_us": 4953.9789999999975,
+      "median_internal_gap_us": 16.9809999999934,
+      "types": [
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 144.0,
+          "us_per_forward": 1031.2800000000022
+        },
+        {
+          "type": "Add",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 121.0,
+          "us_per_forward": 757.6439999999994
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 750.244666666667
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 599.023333333334
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 508.18299999999954
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 305.651
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 72.0,
+          "us_per_forward": 283.4843333333333
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 239.18766666666662
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 222.17466666666664
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 145.69000000000003
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 38.327333333333335
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 4.0,
+          "us_per_forward": 30.100333333333328
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 5.0,
+          "us_per_forward": 9.847
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.359999999999999
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.88
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.42
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4066666666666665
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.327
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3133333333333335
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.28
+        }
+      ],
+      "shapes": [
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"256,1024;32,64,16,32;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 96.0,
+          "us_per_forward": 539.3939999999998
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"256,1024;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 72.0,
+          "us_per_forward": 510.7150000000001
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"2,128,1024;2,128,1024;1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 48.0,
+          "us_per_forward": 492.4226666666663
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"2,128,16,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 72.0,
+          "us_per_forward": 376.1776666666667
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"256,1024;1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 72.0,
+          "us_per_forward": 335.1606666666667
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "\"2,128,4096\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 305.651
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "\"32,128,64\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 72.0,
+          "us_per_forward": 283.4843333333333
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"256,1024;128,64,16,32;4096\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 247.689
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"256,4096;32,256,16,32;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 244.1970000000001
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"256,4096;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 24.0,
+          "us_per_forward": 239.52966666666666
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "\"2,16,128,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 239.18766666666662
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"2,16,128,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 222.84566666666663
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "\"32,128,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 222.17466666666664
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"256,4096;4096\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 218.7246666666666
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"2,16,128,128;2,1,1,128\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 201.7983333333333
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"32,4,8,16,16;32,4,8,16,16\"",
+          "input_formats": "FRACTAL_NZ;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 77.00166666666662
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"32,128,128;32,4,8,16,16\"",
+          "input_formats": "ND;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 68.68833333333332
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "\"2,128;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 38.327333333333335
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"2,128,1024;2,128,1024;1024;1024;2,128,1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 15.760333333333334
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"8194,1024;2,128;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 10.38
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"250002,1024;2,128;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 10.226666666666667
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,1024;2,128;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 8.093666666666667
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "\"2,1;2\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.359999999999999
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,1,1,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 5.007000000000001
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "BOOL",
+          "count_per_forward": 2.0,
+          "us_per_forward": 2.4133333333333336
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"2,128;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9603333333333335
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "\"2,128;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.88
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "\"2,1024\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "\"2,1024;2,1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.42
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "\"2,1;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4066666666666665
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"2,128,1024;;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4000000000000001
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.327
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3133333333333335
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"2,1,1,128;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3133333333333335
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"2,128;2,128\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT32;INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.28
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"2,128\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.1133333333333335
+        }
+      ]
+    },
+    {
+      "label": "long_truncated_dense",
+      "mode": "dense",
+      "case": "long_truncated",
+      "active_forwards": 3,
+      "wall_median_ms": 5.720539978938177,
+      "kernel_csv": "profiles/long_truncated_dense/liteserver-c001-4_423074_20261010152245694_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_count_per_forward": 500.0,
+      "steps": [
+        {
+          "step": "ProfilerStep#1",
+          "kernel_count": 500,
+          "kernel_span_us": 5475.129,
+          "kernel_union_us": 5463.248999999992,
+          "internal_gap_us": 11.880000000008295,
+          "cpu_step_us": 6076.44
+        },
+        {
+          "step": "ProfilerStep#2",
+          "kernel_count": 500,
+          "kernel_span_us": 5481.808999999998,
+          "kernel_union_us": 5470.247999999981,
+          "internal_gap_us": 11.561000000016975,
+          "cpu_step_us": 6032.01
+        },
+        {
+          "step": "ProfilerStep#3",
+          "kernel_count": 500,
+          "kernel_span_us": 5485.5700000000015,
+          "kernel_union_us": 5473.610000000021,
+          "internal_gap_us": 11.959999999980937,
+          "cpu_step_us": 6019.88
+        }
+      ],
+      "kernel_sum_us_per_forward": 5469.035666666662,
+      "median_kernel_span_us": 5481.808999999998,
+      "median_internal_gap_us": 11.880000000008295,
+      "types": [
+        {
+          "type": "MatMulV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 144.0,
+          "us_per_forward": 1868.4843333333329
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 779.2886666666669
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 655.0999999999998
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 651.1866666666668
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 366.5133333333334
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 281.3643333333335
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 280.299
+        },
+        {
+          "type": "Add",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 25.0,
+          "us_per_forward": 275.3056666666666
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 219.97833333333327
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 4.0,
+          "us_per_forward": 35.70033333333333
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 34.521
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 5.0,
+          "us_per_forward": 10.166999999999998
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9133333333333333
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4333333333333333
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4000000000000001
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.327
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3066666666666666
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2866666666666668
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2533333333333332
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2066666666666668
+        }
+      ],
+      "shapes": [
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,1024;64,64,16,16;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 96.0,
+          "us_per_forward": 883.4703333333337
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "\"1,16,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 651.1866666666668
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"1,512,1024;1,512,1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 48.0,
+          "us_per_forward": 632.6459999999998
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"512,16,64;3\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 72.0,
+          "us_per_forward": 578.6380000000003
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,4096;256,64,16,16;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 542.3853333333335
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,1024;64,256,16,16;4096\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 442.6286666666667
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "\"1,512,4096\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 366.5133333333334
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "\"16,512,64\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 48.0,
+          "us_per_forward": 280.299
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,16,512,512;1,1,1,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 273.07899999999995
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "\"16,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 219.97833333333327
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"16,512,64;3\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 200.6506666666667
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"16,512,512;16,4,32,16,16\"",
+          "input_formats": "ND;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 153.136
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"16,4,32,16,16;16,64,512\"",
+          "input_formats": "FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 128.22833333333332
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "\"1,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 34.521
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"1,512,1024;1,512,1024;1024;1024;1,512,1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 22.453999999999997
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,1024;1,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 10.833333333333334
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,512,1024;;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 8.92
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"8194,1024;1,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 8.006666666666668
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"250002,1024;1,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 7.940333333333334
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,1,1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 5.173666666666667
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "BOOL",
+          "count_per_forward": 2.0,
+          "us_per_forward": 2.36
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.2266666666666666
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "\"1,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9133333333333333
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4400000000000002
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4333333333333333
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "\"1,1;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4000000000000001
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "\"1,1024\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.327
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,1,1,512;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3066666666666666
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "\"1,1024;1,1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2866666666666668
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"1,512;1,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT32;INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2533333333333332
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "\"1,1;2\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2066666666666668
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.1933333333333334
+        }
+      ]
+    },
+    {
+      "label": "long_truncated_ffn_w8a8",
+      "mode": "ffn_w8a8",
+      "case": "long_truncated",
+      "active_forwards": 3,
+      "wall_median_ms": 6.560525012901053,
+      "kernel_csv": "profiles/long_truncated_ffn_w8a8/liteserver-c001-4_423074_20261010152251906_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_count_per_forward": 572.0,
+      "steps": [
+        {
+          "step": "ProfilerStep#1",
+          "kernel_count": 572,
+          "kernel_span_us": 6287.106,
+          "kernel_union_us": 6273.486000000001,
+          "internal_gap_us": 13.619999999998981,
+          "cpu_step_us": 6851.26
+        },
+        {
+          "step": "ProfilerStep#2",
+          "kernel_count": 572,
+          "kernel_span_us": 6294.8460000000005,
+          "kernel_union_us": 6281.286000000009,
+          "internal_gap_us": 13.559999999991305,
+          "cpu_step_us": 6777.03
+        },
+        {
+          "step": "ProfilerStep#3",
+          "kernel_count": 572,
+          "kernel_span_us": 6280.984999999999,
+          "kernel_union_us": 6266.965,
+          "internal_gap_us": 14.019999999998618,
+          "cpu_step_us": 6743.58
+        }
+      ],
+      "kernel_sum_us_per_forward": 6273.912333333338,
+      "median_kernel_span_us": 6287.106,
+      "median_internal_gap_us": 13.619999999998981,
+      "types": [
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 913.5849999999995
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 860.997666666667
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 766.9820000000001
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 722.9546666666669
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 716.4150000000001
+        },
+        {
+          "type": "Add",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 515.1496666666667
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 514.5563333333332
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 370.1136666666668
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 289.05200000000013
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 269.7803333333333
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 238.18433333333346
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 41.12733333333333
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 4.0,
+          "us_per_forward": 33.46066666666667
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 5.0,
+          "us_per_forward": 10.367
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9333333333333333
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5333333333333332
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3533333333333333
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3399999999999999
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3266666666666669
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3066666666666666
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.24
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.1533333333333333
+        }
+      ],
+      "shapes": [
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"512,1024;64,64,16,16;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 96.0,
+          "us_per_forward": 860.997666666667
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "\"1,16,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 722.9546666666669
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"512,16,64;3\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 72.0,
+          "us_per_forward": 556.6043333333331
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"1,512,1024;1,512,1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 446.78933333333345
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"1,512,1024;1,512,1024;1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 446.22200000000004
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"512,4096;32,256,16,32;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 424.28866666666664
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "\"1,512,4096\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 370.1136666666668
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"512,4096;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 24.0,
+          "us_per_forward": 303.39966666666663
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"512,1024;128,64,16,32;4096\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 292.1263333333334
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "\"16,512,64\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 48.0,
+          "us_per_forward": 289.05200000000013
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,16,512,512;1,1,1,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 273.48500000000007
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"512,4096;4096\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 239.41133333333335
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "\"16,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 238.18433333333346
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"512,1024;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 24.0,
+          "us_per_forward": 211.15666666666672
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"16,512,64;3\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 210.37766666666673
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"16,512,512;16,4,32,16,16\"",
+          "input_formats": "ND;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 147.6433333333333
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"16,4,32,16,16;16,64,512\"",
+          "input_formats": "FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 122.137
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "\"1,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 41.12733333333333
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"1,512,1024;1,512,1024;1024;1024;1,512,1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 20.573666666666668
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,512,1024;;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 9.659999999999998
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"8194,1024;1,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 8.046999999999999
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"250002,1024;1,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 8.046666666666667
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,1024;1,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 7.707
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,1,1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 5.16
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "BOOL",
+          "count_per_forward": 2.0,
+          "us_per_forward": 2.447
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.2533333333333334
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "\"1,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9333333333333333
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5333333333333332
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4666666666666668
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "\"1,1;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3533333333333333
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"1,512;1,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT32;INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3399999999999999
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "\"1,1024\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3266666666666669
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,1,1,512;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3066666666666666
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2933333333333332
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "\"1,1024;1,1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.24
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "\"1,1;2\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.1533333333333333
+        }
+      ]
+    },
+    {
+      "label": "long_truncated_full_w8a8",
+      "mode": "full_w8a8",
+      "case": "long_truncated",
+      "active_forwards": 3,
+      "wall_median_ms": 7.005114981438965,
+      "kernel_csv": "profiles/long_truncated_full_w8a8/liteserver-c001-4_423074_20261010152258038_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_count_per_forward": 692.0,
+      "steps": [
+        {
+          "step": "ProfilerStep#1",
+          "kernel_count": 692,
+          "kernel_span_us": 6622.973,
+          "kernel_union_us": 6606.392999999996,
+          "internal_gap_us": 16.580000000003565,
+          "cpu_step_us": 7481.07
+        },
+        {
+          "step": "ProfilerStep#2",
+          "kernel_count": 692,
+          "kernel_span_us": 6626.292000000001,
+          "kernel_union_us": 6609.611000000006,
+          "internal_gap_us": 16.680999999995038,
+          "cpu_step_us": 7285.47
+        },
+        {
+          "step": "ProfilerStep#3",
+          "kernel_count": 692,
+          "kernel_span_us": 6616.293,
+          "kernel_union_us": 6599.832999999988,
+          "internal_gap_us": 16.46000000001186,
+          "cpu_step_us": 7260.91
+        }
+      ],
+      "kernel_sum_us_per_forward": 6605.279000000005,
+      "median_kernel_span_us": 6622.973,
+      "median_internal_gap_us": 16.580000000003565,
+      "types": [
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 144.0,
+          "us_per_forward": 1379.7080000000014
+        },
+        {
+          "type": "Add",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 121.0,
+          "us_per_forward": 903.2106666666664
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 845.5966666666667
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 813.3086666666668
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 754.3816666666667
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 647.6466666666665
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 369.815
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 289.2516666666666
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 270.00000000000006
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 238.19100000000006
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 39.834
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 4.0,
+          "us_per_forward": 32.55433333333334
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 5.0,
+          "us_per_forward": 10.433666666666666
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9533333333333331
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5666666666666664
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4133333333333333
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3999999999999997
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3336666666666668
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2666666666666666
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2533333333333332
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.1600000000000001
+        }
+      ],
+      "shapes": [
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"1,512,1024;1,512,1024;1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 48.0,
+          "us_per_forward": 825.1429999999997
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"512,1024;32,64,16,32;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 96.0,
+          "us_per_forward": 658.1603333333331
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "\"1,16,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 647.6466666666665
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"512,16,64;3\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 72.0,
+          "us_per_forward": 545.2383333333331
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"512,1024;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 72.0,
+          "us_per_forward": 509.6756666666669
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"512,4096;32,256,16,32;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 427.04900000000015
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"512,1024;1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 72.0,
+          "us_per_forward": 389.6679999999999
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "\"1,512,4096\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 369.815
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"512,4096;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 24.0,
+          "us_per_forward": 303.633
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"512,1024;128,64,16,32;4096\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 294.4986666666666
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "\"16,512,64\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 48.0,
+          "us_per_forward": 289.2516666666666
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,16,512,512;1,1,1,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 273.4783333333333
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "\"16,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 238.19100000000006
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"512,4096;4096\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 237.81066666666666
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"16,512,64;3\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 209.1433333333333
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"16,512,512;16,4,32,16,16\"",
+          "input_formats": "ND;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 147.57033333333337
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"16,4,32,16,16;16,64,512\"",
+          "input_formats": "FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 122.42966666666665
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "\"1,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 39.834
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"1,512,1024;1,512,1024;1024;1024;1,512,1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 20.453666666666667
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,512,1024;;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 8.860333333333335
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"8194,1024;1,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 7.986666666666667
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"250002,1024;1,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 7.866666666666667
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,1024;1,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 7.8406666666666665
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,1,1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 5.0936666666666675
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "BOOL",
+          "count_per_forward": 2.0,
+          "us_per_forward": 2.5066666666666664
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"1,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.2536666666666663
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "\"1,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9533333333333331
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5666666666666664
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5133333333333334
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"1,1,1,512;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4133333333333333
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"1,512;1,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT32;INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3999999999999997
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "\"1,1024\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3336666666666668
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.32
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "\"1,1024;1,1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2666666666666666
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "\"1,1;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2533333333333332
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "\"1,1;2\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.1600000000000001
+        }
+      ]
+    },
+    {
+      "label": "batch4_full512_dense",
+      "mode": "dense",
+      "case": "batch4_full512",
+      "active_forwards": 3,
+      "wall_median_ms": 12.885545002063736,
+      "kernel_csv": "profiles/batch4_full512_dense/liteserver-c001-4_423074_20261010152400613_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_count_per_forward": 524.0,
+      "steps": [
+        {
+          "step": "ProfilerStep#1",
+          "kernel_count": 524,
+          "kernel_span_us": 12664.473,
+          "kernel_union_us": 12651.932999999992,
+          "internal_gap_us": 12.540000000008149,
+          "cpu_step_us": 13299.15
+        },
+        {
+          "step": "ProfilerStep#2",
+          "kernel_count": 524,
+          "kernel_span_us": 12654.892999999998,
+          "kernel_union_us": 12642.712999999982,
+          "internal_gap_us": 12.180000000016662,
+          "cpu_step_us": 13210.22
+        },
+        {
+          "step": "ProfilerStep#3",
+          "kernel_count": 524,
+          "kernel_span_us": 12648.892,
+          "kernel_union_us": 12636.431,
+          "internal_gap_us": 12.46099999999933,
+          "cpu_step_us": 14121.49
+        }
+      ],
+      "kernel_sum_us_per_forward": 12643.692333333316,
+      "median_kernel_span_us": 12654.892999999998,
+      "median_internal_gap_us": 12.46099999999933,
+      "types": [
+        {
+          "type": "MatMulV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 144.0,
+          "us_per_forward": 5262.946000000003
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 2005.2536666666674
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 1262.0846666666664
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 924.8773333333329
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 894.1713333333336
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 672.2453333333334
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 562.0313333333335
+        },
+        {
+          "type": "Add",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 25.0,
+          "us_per_forward": 499.5633333333333
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 72.0,
+          "us_per_forward": 435.13000000000005
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 49.501000000000005
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 4.0,
+          "us_per_forward": 44.661
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 5.0,
+          "us_per_forward": 12.447000000000001
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.106999999999999
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.373333333333333
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.0533333333333332
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9799999999999998
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9133333333333333
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.6066666666666667
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4933333333333334
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2533333333333332
+        }
+      ],
+      "shapes": [
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "\"4,16,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 2005.2536666666674
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"2048,1024;64,256,16,16;4096\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 1958.732666666667
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"2048,1024;64,64,16,16;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 96.0,
+          "us_per_forward": 1895.7719999999981
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"2048,4096;256,64,16,16;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 1408.441333333334
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"4,512,1024;4,512,1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 48.0,
+          "us_per_forward": 1223.764
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "\"4,512,4096\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 894.1713333333336
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,512,16,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 72.0,
+          "us_per_forward": 586.897
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "\"64,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 562.0313333333335
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"4,16,512,512;4,1,1,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 496.7966666666666
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "\"64,512,64\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 72.0,
+          "us_per_forward": 435.13000000000005
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"64,512,512;64,4,32,16,16\"",
+          "input_formats": "ND;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 340.7196666666666
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,16,512,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 337.98033333333336
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"64,4,32,16,16;64,4,32,16,16\"",
+          "input_formats": "FRACTAL_NZ;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 331.5256666666666
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "\"4,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 49.501000000000005
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"4,512,1024;4,512,1024;1024;1024;4,512,1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 38.32066666666666
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"250002,1024;4,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 17.953999999999997
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"8194,1024;4,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 14.333666666666668
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,1024;4,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 10.78
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "\"4,1;2\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.106999999999999
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,1,1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 5.500333333333334
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "BOOL",
+          "count_per_forward": 2.0,
+          "us_per_forward": 3.213333333333333
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"4,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.766666666666666
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "\"4,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.373333333333333
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.0533333333333332
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "\"4,1024\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9799999999999998
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "\"4,1024;4,1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9133333333333333
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.88
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.8533333333333333
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,512;4,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT32;INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.6066666666666667
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"4,512,1024;;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5933333333333335
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "\"4,1;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4933333333333334
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"4,1,1,512;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.2533333333333332
+        }
+      ]
+    },
+    {
+      "label": "batch4_full512_ffn_w8a8",
+      "mode": "ffn_w8a8",
+      "case": "batch4_full512",
+      "active_forwards": 3,
+      "wall_median_ms": 12.832995038479567,
+      "kernel_csv": "profiles/batch4_full512_ffn_w8a8/liteserver-c001-4_423074_20261010152408366_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_count_per_forward": 596.0,
+      "steps": [
+        {
+          "step": "ProfilerStep#1",
+          "kernel_count": 596,
+          "kernel_span_us": 12599.952,
+          "kernel_union_us": 12585.392,
+          "internal_gap_us": 14.55999999999949,
+          "cpu_step_us": 13461.94
+        },
+        {
+          "step": "ProfilerStep#2",
+          "kernel_count": 596,
+          "kernel_span_us": 12597.651,
+          "kernel_union_us": 12583.490999999987,
+          "internal_gap_us": 14.160000000012587,
+          "cpu_step_us": 13151.14
+        },
+        {
+          "step": "ProfilerStep#3",
+          "kernel_count": 596,
+          "kernel_span_us": 12593.330999999998,
+          "kernel_union_us": 12578.851000000057,
+          "internal_gap_us": 14.479999999941356,
+          "cpu_step_us": 13129.63
+        }
+      ],
+      "kernel_sum_us_per_forward": 12582.578000000007,
+      "median_kernel_span_us": 12597.651,
+      "median_internal_gap_us": 14.479999999941356,
+      "types": [
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 2081.714333333333
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 1899.4766666666676
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 1765.5093333333336
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 1551.631333333333
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 914.3649999999997
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 892.9436666666669
+        },
+        {
+          "type": "Add",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 871.837666666666
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 854.6383333333334
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 671.3526666666667
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 521.2636666666667
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 72.0,
+          "us_per_forward": 433.5896666666666
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 49.05433333333334
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 4.0,
+          "us_per_forward": 43.681000000000004
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 5.0,
+          "us_per_forward": 12.787
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.133333333333333
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.4133333333333336
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.066666666666667
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9466666666666665
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.8533333333333335
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.6066666666666667
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4333333333333333
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.28
+        }
+      ],
+      "shapes": [
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "\"4,16,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 2081.714333333333
+        },
+        {
+          "type": "MatMulV2",
+          "input_shapes": "\"2048,1024;64,64,16,16;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 96.0,
+          "us_per_forward": 1899.4766666666676
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"4,512,1024;4,512,1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 920.1046666666667
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "\"4,512,4096\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 892.9436666666669
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"4,512,1024;4,512,1024;1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 806.5703333333331
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"2048,4096;32,256,16,32;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 804.015
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"2048,1024;128,64,16,32;4096\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 747.6163333333333
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,512,16,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 72.0,
+          "us_per_forward": 585.9246666666669
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"2048,4096;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 24.0,
+          "us_per_forward": 553.652
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "\"64,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 521.2636666666667
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"4,16,512,512;4,1,1,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 511.4973333333332
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "\"64,512,64\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 72.0,
+          "us_per_forward": 433.5896666666666
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"2048,4096;4096\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 357.56033333333335
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"64,512,512;64,4,32,16,16\"",
+          "input_formats": "ND;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 340.2406666666666
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"64,4,32,16,16;64,4,32,16,16\"",
+          "input_formats": "FRACTAL_NZ;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 331.112
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,16,512,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 328.4403333333333
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"2048,1024;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 24.0,
+          "us_per_forward": 300.98633333333333
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "\"4,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 49.05433333333334
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"4,512,1024;4,512,1024;1024;1024;4,512,1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 38.834333333333326
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"250002,1024;4,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 17.727
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"8194,1024;4,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 13.280333333333333
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,1024;4,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 11.120333333333335
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "\"4,1;2\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.133333333333333
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,1,1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 5.533666666666666
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "BOOL",
+          "count_per_forward": 2.0,
+          "us_per_forward": 3.32
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"4,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.78
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "\"4,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.4133333333333336
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.066666666666667
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9866666666666666
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9466666666666665
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "\"4,1024\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9466666666666665
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "\"4,1024;4,1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.8533333333333335
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,512;4,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT32;INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.6066666666666667
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"4,512,1024;;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5533333333333335
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "\"4,1;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.4333333333333333
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"4,1,1,512;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.28
+        }
+      ]
+    },
+    {
+      "label": "batch4_full512_full_w8a8",
+      "mode": "full_w8a8",
+      "case": "batch4_full512",
+      "active_forwards": 3,
+      "wall_median_ms": 13.103479985147715,
+      "kernel_csv": "profiles/batch4_full512_full_w8a8/liteserver-c001-4_423074_20261010152416067_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_count_per_forward": 716.0,
+      "steps": [
+        {
+          "step": "ProfilerStep#1",
+          "kernel_count": 716,
+          "kernel_span_us": 12727.914,
+          "kernel_union_us": 12710.973999999995,
+          "internal_gap_us": 16.940000000005966,
+          "cpu_step_us": 13928.51
+        },
+        {
+          "step": "ProfilerStep#2",
+          "kernel_count": 716,
+          "kernel_span_us": 12710.014000000003,
+          "kernel_union_us": 12693.014000000012,
+          "internal_gap_us": 16.999999999990905,
+          "cpu_step_us": 13474.09
+        },
+        {
+          "step": "ProfilerStep#3",
+          "kernel_count": 716,
+          "kernel_span_us": 12715.953999999998,
+          "kernel_union_us": 12699.273999999998,
+          "internal_gap_us": 16.68000000000029,
+          "cpu_step_us": 13483.77
+        }
+      ],
+      "kernel_sum_us_per_forward": 12701.087333333344,
+      "median_kernel_span_us": 12715.953999999998,
+      "median_internal_gap_us": 16.940000000005966,
+      "types": [
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 144.0,
+          "us_per_forward": 2621.152666666668
+        },
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 2087.928
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 49.0,
+          "us_per_forward": 1613.5333333333338
+        },
+        {
+          "type": "Add",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 121.0,
+          "us_per_forward": 1457.8176666666666
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 1358.3259999999998
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 96.0,
+          "us_per_forward": 915.6519999999997
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 893.151
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 48.0,
+          "us_per_forward": 671.2806666666665
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 24.0,
+          "us_per_forward": 521.5633333333335
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 72.0,
+          "us_per_forward": 434.3209999999999
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 53.64133333333333
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 4.0,
+          "us_per_forward": 41.14033333333334
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 5.0,
+          "us_per_forward": 12.820000000000002
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.133333333333333
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.4666666666666663
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.0733333333333337
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9466666666666665
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.84
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.6866666666666665
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3733333333333333
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "",
+          "input_formats": "",
+          "input_dtypes": "",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.24
+        }
+      ],
+      "shapes": [
+        {
+          "type": "SoftmaxV2",
+          "input_shapes": "\"4,16,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 2087.928
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"4,512,1024;4,512,1024;1024;1024;1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 48.0,
+          "us_per_forward": 1575.705666666667
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"2048,1024;32,64,16,32;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 96.0,
+          "us_per_forward": 1068.3883333333335
+        },
+        {
+          "type": "Gelu",
+          "input_shapes": "\"4,512,4096\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 893.151
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"2048,4096;32,256,16,32;1024\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 802.8023333333335
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"2048,1024;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 72.0,
+          "us_per_forward": 798.6146666666659
+        },
+        {
+          "type": "QuantBatchMatmulV3",
+          "input_shapes": "\"2048,1024;128,64,16,32;4096\"",
+          "input_formats": "ND;FRACTAL_NZ;ND",
+          "input_dtypes": "INT8;INT8;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 749.9620000000001
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,512,16,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 72.0,
+          "us_per_forward": 586.4256666666666
+        },
+        {
+          "type": "Quantize",
+          "input_shapes": "\"2048,4096;1,1\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT",
+          "count_per_forward": 24.0,
+          "us_per_forward": 559.7113333333335
+        },
+        {
+          "type": "Muls",
+          "input_shapes": "\"64,512,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 521.5633333333335
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"4,16,512,512;4,1,1,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 511.0779999999999
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"2048,4096;4096\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 501.0233333333335
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"2048,1024;1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 72.0,
+          "us_per_forward": 442.9493333333332
+        },
+        {
+          "type": "TransData",
+          "input_shapes": "\"64,512,64\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 72.0,
+          "us_per_forward": 434.3209999999999
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"64,512,512;64,4,32,16,16\"",
+          "input_formats": "ND;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 339.9070000000001
+        },
+        {
+          "type": "BatchMatMul",
+          "input_shapes": "\"64,4,32,16,16;64,4,32,16,16\"",
+          "input_formats": "FRACTAL_NZ;FRACTAL_NZ",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 24.0,
+          "us_per_forward": 331.3736666666668
+        },
+        {
+          "type": "Transpose",
+          "input_shapes": "\"4,16,512,64;4\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 24.0,
+          "us_per_forward": 329.22633333333346
+        },
+        {
+          "type": "Cumsum",
+          "input_shapes": "\"4,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 53.64133333333333
+        },
+        {
+          "type": "AddLayerNorm",
+          "input_shapes": "\"4,512,1024;4,512,1024;1024;1024;4,512,1024\"",
+          "input_formats": "ND;ND;ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 37.827666666666666
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"250002,1024;4,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 15.4
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"8194,1024;4,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 13.193666666666667
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"1,1024;4,512;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 11.026666666666666
+        },
+        {
+          "type": "BroadcastTo",
+          "input_shapes": "\"4,1;2\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 6.133333333333333
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,1,1,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 5.68
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "BOOL",
+          "count_per_forward": 2.0,
+          "us_per_forward": 3.3066666666666666
+        },
+        {
+          "type": "Add",
+          "input_shapes": "\"4,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.767
+        },
+        {
+          "type": "NotEqual",
+          "input_shapes": "\"4,512;\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.4666666666666663
+        },
+        {
+          "type": "ZerosLike",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.0733333333333337
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 2.0
+        },
+        {
+          "type": "LpNormV2",
+          "input_shapes": "\"4,1024\"",
+          "input_formats": "ND",
+          "input_dtypes": "FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.9466666666666665
+        },
+        {
+          "type": "RealDiv",
+          "input_shapes": "\"4,1024;4,1024\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.84
+        },
+        {
+          "type": "Cast",
+          "input_shapes": "\"4,512\"",
+          "input_formats": "ND",
+          "input_dtypes": "INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.8333333333333333
+        },
+        {
+          "type": "Mul",
+          "input_shapes": "\"4,512;4,512\"",
+          "input_formats": "ND;ND",
+          "input_dtypes": "INT32;INT32",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.6866666666666665
+        },
+        {
+          "type": "GatherV2",
+          "input_shapes": "\"4,512,1024;;1\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;INT64;INT64",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.5200000000000002
+        },
+        {
+          "type": "ClipByValueV2",
+          "input_shapes": "\"4,1;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.3733333333333333
+        },
+        {
+          "type": "AutomaticBufferFusionOp",
+          "input_shapes": "\"4,1,1,512;;\"",
+          "input_formats": "ND;ND;ND",
+          "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+          "count_per_forward": 1.0,
+          "us_per_forward": 1.24
+        }
+      ]
+    }
+  ]
+}

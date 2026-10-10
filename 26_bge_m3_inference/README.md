@@ -234,3 +234,92 @@ The standalone `run_embedder.py --weight-mode full_w8a8` eager CLI also passed i
 a fresh process, returning `[2, 1024]` embeddings with norms 0.999745 and
 1.000014. See [CLI command](../tmp/26_bge_m3_inference/bge_m3_w8a8_71201c25/cli_command.txt)
 and [output](../tmp/26_bge_m3_inference/bge_m3_w8a8_71201c25/cli.log).
+
+## Device kernel profiling
+
+```bash
+PROFILE_KERNELS=1 RUN_ROOT=/workspace/results/bge_profile_UNIQUE \
+  bash 26_bge_m3_inference/run_w8a8_910b.sh
+```
+
+This uses `torch_npu.profiler` (the Ascend PyTorch profiler) with CPU and NPU
+activities, Level1 detail, shapes and PipeUtilization metrics. Each mode/shape
+gets its own capture: three active synchronized forwards after graph compilation,
+three ordinary warmups and one profiler warmup. Calibration, loading and
+compilation are outside the capture. Unprofiled paired timings are recorded
+before profiling each shape; profiler timings are diagnostic measurements.
+
+`profiles/<case>_<mode>/` contains the original CANN kernel CSVs, Chrome trace,
+profiler metadata and `summary.json`. Summaries reuse experiment 05's existing
+model-agnostic parser. Counts and duration sums in the main result are normalized
+by the three active forwards. Summed kernel durations can overlap and should not
+be interpreted as end-to-end latency; the trace retains their timestamps.
+
+### Captured 910B2 kernel results
+
+Source `1ceb71db`, physical NPU 3. All nine captures completed with exit 0.
+The timestamp audit assigns every kernel to exactly one of the three active
+`ProfilerStep` ranges in each capture. Values below are mean summed device
+kernel durations per forward in milliseconds, not profiler wall-clock latency.
+
+| Kernel work | B2/S128 FP16 | B2/S128 full W8A8 | B1/S512 FP16 | B1/S512 full W8A8 | B4/S512 FP16 | B4/S512 full W8A8 |
+|---|---:|---:|---:|---:|---:|---:|
+| Projection MatMulV2 / QuantBatchMatmulV3 | 1.293 | 1.031 | 1.868 | 1.380 | 5.263 | 2.621 |
+| Quantize | 0 | 0.750 | 0 | 0.813 | 0 | 1.358 |
+| Separate projection-bias Add kernels | 0 | 0.554 | 0 | 0.627 | 0 | 0.944 |
+| AddLayerNorm | 0.422 | 0.508 | 0.655 | 0.846 | 1.262 | 1.614 |
+| TransData | 0.284 | 0.283 | 0.280 | 0.289 | 0.435 | 0.434 |
+| All kernels | 3.809 | 4.937 | 5.469 | 6.605 | 12.644 | 12.701 |
+| Kernel count | 524 | 716 | 500 | 692 | 524 | 716 |
+
+Direct observations:
+
+- The 144 dense projection kernels take bias as their third input. INT8
+  QuantBatchMatmulV3 takes dequantization scales there; 72 Q/K/V biases and
+  24 intermediate-FFN biases become separate FP16 Add kernels. Their input
+  signatures are `[B*S,1024] + [1024]` and `[B*S,4096] + [4096]`.
+- The other 48 projection biases are fused into the existing residual
+  AddLayerNorm kernels. Their signatures gain a fifth `[1024]` input. These
+  kernels take longer in W8A8; the extra bias work is consistent with this,
+  although it was not isolated from possible kernel-tiling differences.
+- Full W8A8 retains exactly 96 Quantize kernels: 72 on width-1024 inputs and
+  24 on width-4096 inputs. Q/K/V already share one quantization per layer.
+  No norm+quant fusion is present in these captured graphs.
+- FFN-only W8A8 has 48 Quantize and 24 additional separate bias Add kernels,
+  increasing the kernel count by 72. Full W8A8 increases it by 192.
+- TransData counts and time are nearly unchanged. Median gaps between kernels
+  inside each forward span are only about 12–17 microseconds, including both
+  dense and quantized modes. Device work accounts for almost the entire span;
+  large gaps between launches are not the observed explanation for the slowdown.
+
+At B4/S512, INT8 saves 2.642 ms of projection matmul time, offset by 1.358 ms
+quantization, 0.944 ms separate bias additions, 0.351 ms more AddLayerNorm time,
+and other small differences. At B2/S128 the matmul saving is only 0.261 ms.
+This explains why W8A8 loses on small shapes and approaches a tie at B4.
+The fresh unprofiled medians are 4.096/4.709/5.369 ms at B2/S128,
+5.721/6.561/7.005 ms at B1/S512, and 12.886/12.833/13.103 ms at B4/S512
+(dense / FFN W8A8 / full W8A8).
+
+The next optimization targets supported by these profiles are the explicit
+quantization passes and the newly separate bias additions. Norm+quant fusion
+addresses only part of that work; the 24 width-4096 quantizers follow GELU,
+and Q/K/V and intermediate-FFN bias additions also need attention. Existing
+softmax/attention/layout work remains substantial at B4 but affects both modes.
+No fusion implementation was changed during profiling.
+
+Compact evidence: [kernel comparison JSON](../tmp/26_bge_m3_inference/bge_m3_profile_1ceb71db/kernel_comparison.json),
+[all types CSV](../tmp/26_bge_m3_inference/bge_m3_profile_1ceb71db/kernel_types.csv),
+[all shapes CSV](../tmp/26_bge_m3_inference/bge_m3_profile_1ceb71db/kernel_shapes.csv),
+[full run result](../tmp/26_bge_m3_inference/bge_m3_profile_1ceb71db/result.json),
+[command/environment](../tmp/26_bge_m3_inference/bge_m3_profile_1ceb71db/command.txt).
+The original traces/CSVs/CANN data are retained in the 11 MB archive
+`bge-m3-910b-torch-profiler.tar.gz`, whose hash is recorded in
+[artifacts.json](../tmp/26_bge_m3_inference/bge_m3_profile_1ceb71db/artifacts.json).
+Each `trace_view.json` opens in a Chrome-trace-compatible viewer.
+
+Reproduce the compact comparison from the extracted archive:
+
+```bash
+python 26_bge_m3_inference/summarize_w8a8_profiles.py \
+  --run-root /path/to/bge_m3_profile_1ceb71db --output-dir /path/to/summary
+```

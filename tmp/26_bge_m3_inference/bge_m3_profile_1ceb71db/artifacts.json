@@ -1,0 +1,6 @@
+{
+  "archive": "bge-m3-910b-torch-profiler.tar.gz",
+  "size_bytes": 11504792,
+  "sha256": "f2066acab73c77b390c1e244863f622a134dafdee50afae257d109875d29da34",
+  "contents": "Original run with all nine CPU/NPU traces, raw kernel CSVs, metadata, CANN data, command/log/result; compiled graph caches excluded."
+}
