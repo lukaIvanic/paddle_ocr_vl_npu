@@ -134,11 +134,27 @@ def main():
             compiled[mode] = compiled_entrypoint(models[mode], key, args.cache)
             output, first = timed(lambda: compiled[mode](**tokens))
             parity = metrics(output, eager)
-            if not parity["finite"] or parity["max_abs"] > 0.002 or parity["min_cosine"] < 0.9999:
-                raise RuntimeError(f"Compiled/eager mismatch for {key}: {parity}")
+            norm_error = float((output.float().norm(dim=-1) - 1).abs().max().cpu())
+            if not parity["finite"] or norm_error > 0.005:
+                raise RuntimeError(f"Nonfinite or unnormalized embeddings for {key}: {parity}")
+            if mode == "dense" and (parity["max_abs"] > 0.002 or parity["min_cosine"] < 0.9999):
+                raise RuntimeError(f"Dense compiled/eager mismatch for {key}: {parity}")
             row["modes"][mode] = {"first_call_ms": first, "compiled_vs_eager": parity,
                                    "vs_dense": metrics(output, dense_reference), "samples_ms": []}
             print("COMPILED " + json.dumps({"case": case["name"], "mode": mode, **row["modes"][mode]}), flush=True)
+        if case["name"] == "mixed_multilingual":
+            queries = runner.tokenize([texts["held_out"][0], texts["held_out"][2]])
+            documents = runner.tokenize([texts["held_out"][1], texts["held_out"][3]])
+            result["semantic_sanity"] = {}
+            for mode in MODES:
+                query_vectors = compiled[mode](**queries).float().cpu()
+                document_vectors = compiled[mode](**documents).float().cpu()
+                scores = query_vectors @ document_vectors.T
+                result["semantic_sanity"][mode] = {
+                    "scores": scores.tolist(), "top_document": scores.argmax(dim=1).tolist(),
+                    "expected_top_document": [0, 1],
+                    "both_sensible": scores.argmax(dim=1).tolist() == [0, 1]}
+            print("SEMANTIC_SANITY " + json.dumps(result["semantic_sanity"]), flush=True)
         for _ in range(3):
             for mode in MODES:
                 compiled[mode](**tokens)
@@ -156,7 +172,7 @@ def main():
         result["cases"].append(row)
         save()
         print("CASE " + json.dumps(row), flush=True)
-    result["passed"] = True  # Execution and compiled/eager parity, NOT retrieval quality.
+    result["passed"] = True  # Finite normalized execution and dense parity, NOT retrieval quality.
     save()
     print("RESULT " + json.dumps({"passed": True, "output": str(args.output)}), flush=True)
 

@@ -18,8 +18,9 @@ Dense inference only: sparse and ColBERT retrieval heads are outside this
 experiment. The tanh pooler in the checkpoint is unused and explicitly dropped;
 all remaining weight keys must match strictly.
 
-This is the correctness baseline for later norm+quant experiments. It uses
-explicit matmul/softmax attention and has no W8A8 or custom fused kernels yet.
+The FP16 path is the correctness baseline for quantization experiments. It uses
+explicit matmul/softmax attention. Optional ordinary static W8A8 lives in
+`w8a8.py`; there is no custom norm+quant kernel.
 Its attention memory grows quadratically with sequence length; supporting the
 position range is not a claim of efficient 8192-token inference.
 
@@ -116,3 +117,67 @@ Evidence: [result.json](../tmp/26_bge_m3_inference/910b_e1a5752f/result.json),
 The standalone `run_embedder.py --compile-cache ...` command also passed in a
 fresh process, reusing the saved B2/S128 graph with different text inputs;
 see [CLI output](../tmp/26_bge_m3_inference/910b_e1a5752f/cli.log).
+
+## Ordinary static W8A8
+
+The projection path follows experiment 13's Qwen W8A8 implementation:
+`npu_quantize(div_mode=True)` -> `npu_quant_matmul` -> FP16 output.
+Weights use symmetric per-output-channel INT8 scales; activation scales are
+fixed per input tensor after an FP16 calibration pass. Dequantization scales
+are packed once before compilation. There are no calibration hooks, absmax
+reductions or weight quantization in timed inference.
+
+BGE's original FP16 linear biases are added after dequantization. Q/K/V share
+one activation quantization and retain three separate INT8 matmuls. LayerNorm,
+GELU, attention scores/softmax, residuals and embedding tables remain floating
+point. This code does not explicitly request norm+quant fusion; ordinary GE
+compiler optimizations remain enabled in every lane.
+
+| Mode | INT8 linears | FP16 linears | Activation quantizations per layer |
+|---|---:|---:|---:|
+| `dense` | 0 | 144 | 0 |
+| `ffn_w8a8` | 48 | 96 | 2 |
+| `full_w8a8` | 144 | 0 | 4 |
+
+Run one mode (use a separate compiled-cache directory for every mode and
+calibration dataset):
+
+```bash
+python 26_bge_m3_inference/run_embedder.py \
+  --model-dir /workspace/model_downloads/bge-m3 --weight-mode full_w8a8 \
+  --compile-cache /workspace/results/bge_full_w8a8_UNIQUE/cache
+```
+
+`quantization_texts.json` contains 12 calibration paragraphs and eight disjoint
+held-out texts. Calibration runs three batches of four padded to 256 tokens.
+This is a deliberately small smoke dataset, not production calibration or a
+retrieval benchmark. `--calibration-file` accepts another file with a
+`calibration` string list.
+
+Paired compiled comparison:
+
+```bash
+RUN_ROOT=/workspace/results/bge_w8a8_UNIQUE bash 26_bge_m3_inference/run_w8a8_910b.sh
+```
+
+All three lanes use FRACTAL_NZ for their remaining FP16 and INT8 linear weights,
+with internal formats enabled. Compare to this freshly timed dense control,
+not to the earlier native-format FP16 measurements above. The benchmark runs
+B2/S128, B1/S512 and B4/S512; the latter two fill the sequence. It measures 20
+paired repetitions after three warmups, rotating lane order. Setup and compile
+costs are excluded. Separate code objects and directories isolate static caches.
+
+The script first checks an INT8 linear with nonzero FP16 bias against a CPU
+integer-matmul/dequantization reference. It reports compiled
+versus quantized-eager drift for every model/shape, and gates finite normalized
+outputs. The dense lane retains its strict reference-parity gate (max abs <=
+0.002, cosine >= 0.9999). INT8 threshold crossings can amplify small upstream
+floating-point differences, so quantized end-to-end agreement is measured, not
+assumed to meet the dense tolerance. The isolated quantizer/linear diagnostic
+checks identical-input operator semantics separately.
+
+Two fresh query/document pairs also exercise the compiled graphs: bird migration
+and compiler-versus-interpreter explanations. The report records their 2x2
+similarity matrices and expected top documents. These simple sanity checks and
+eight held-out embedding comparisons are not retrieval-quality evaluation.
+A `passed` execution result does not mean retrieval quality has been preserved.

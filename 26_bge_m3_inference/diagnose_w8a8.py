@@ -45,7 +45,6 @@ def main():
     x = captured["x"].reshape(-1, layer.in_features)
     report = {}
     for key, module in [("divide_quantizer", Quantizer(quant.input_scale, True)),
-                        ("multiply_quantizer", Quantizer(quant.input_scale, False)),
                         ("biased_linear", quant)]:
         torch._dynamo.reset()
         eager = module(x)
