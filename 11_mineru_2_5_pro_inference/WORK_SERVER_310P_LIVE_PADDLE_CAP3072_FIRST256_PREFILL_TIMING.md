@@ -1,7 +1,7 @@
 # Retired: follow the full prefill-buckets pair
 
 The single active handoff for this task is
-[the 1,651-page prefill-buckets pair](WORK_SERVER_310P_PREFILL_BUCKETS_FULL1651.md).
+[the candidate first-256 prefill run](WORK_SERVER_310P_PREFILL_BUCKETS_FIRST256.md).
 It compares current host production against the new text cap, buckets and window
 prefill, with approximate precision and metrics on in both lanes.
 

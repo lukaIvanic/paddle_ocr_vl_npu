@@ -7,9 +7,10 @@ set completed all 1,651 pages and the 96-worker OmniDocBench evaluation.
 Machine-readable receipts, summaries, comparisons and timing samples are in
 [the validation evidence](references/prefill_buckets_910b_20261010/).
 Later Python changes affect tests and validation reporting/warmup only.
-310P performance remains unmeasured; run the handoff below for that result.
-The single active [310P handoff](WORK_SERVER_310P_PREFILL_BUCKETS_FULL1651.md)
-contains the full pair and all environment-discovery instructions.
+310P performance remains unmeasured; run the candidate first-256 handoff below for that result.
+The single active [310P handoff](WORK_SERVER_310P_PREFILL_BUCKETS_FIRST256.md)
+runs candidate warmup64 then candidate256 and compares against the existing
+`prefill_timing_first256_310p_20261010T092230Z`; it includes environment discovery.
 The first-256 timing task is superseded; its measurements motivated this work.
 
 Add this complete candidate flag set to the existing C1+C2+C5 invocation:
@@ -24,8 +25,8 @@ Add this complete candidate flag set to the existing C1+C2+C5 invocation:
 `prefill_buckets_config.PRODUCTION_PREFILL_OPTIONS` contains the candidate
 additions. Keep min pixels 25088, vision packing 768, lookahead 32, and text
 max-members 32. C1+C2 uses CPU grids and pinned nonblocking copies; C5 disables
-metrics in ordinary production. For the requested measured pair explicitly
-turn `--local-prefill-metrics` on in **both** lanes.
+metrics in ordinary production. For the requested candidate256 measurement explicitly
+turn `--local-prefill-metrics` on. The historical baseline is not rerun.
 
 All new defaults retain admission prefill, packing to the largest text bucket,
 and the global crop cap. `run_page_pipeline.py` defaults are unchanged. The
