@@ -1,0 +1,132 @@
+{
+  "device": "Ascend910B2",
+  "host": "liteserver-c001-4",
+  "physical_npu": "3",
+  "git_commit": "e1a5752f5b2bce59804cb47a0cb5ec29536a6c10",
+  "model_dir": "/workspace/model_downloads/bge-m3",
+  "checkpoint_revision": "5617a9f61b028005a4858fdac845db406aefb181",
+  "model_source_sha256": "12eac3758eef8e54e62f3fdb249104fd61c3b2c4159c46a946ff17a02a9b4a02",
+  "versions": {
+    "torch": "2.10.0+cpu",
+    "torch-npu": "2.10.0.post2",
+    "transformers": "5.5.4"
+  },
+  "dtype": "float16",
+  "warmups": 2,
+  "repeats": 5,
+  "cases": [
+    {
+      "name": "mixed_multilingual",
+      "batch_size": 2,
+      "sequence_length": 128,
+      "valid_tokens": [
+        9,
+        25
+      ],
+      "eager_vs_reference": {
+        "max_abs": 0.0,
+        "min_cosine": 0.9999998211860657,
+        "finite": true,
+        "passed": true
+      },
+      "compiled_vs_reference": {
+        "max_abs": 0.000244140625,
+        "min_cosine": 0.999998152256012,
+        "finite": true,
+        "passed": true
+      },
+      "compiled_vs_eager": {
+        "max_abs": 0.000244140625,
+        "min_cosine": 0.999998152256012,
+        "finite": true,
+        "passed": true
+      },
+      "valid_hidden_max_abs_eager_vs_reference": 0.0,
+      "eager": {
+        "first_call_ms": 19.58526996895671,
+        "median_ms": 18.551580025814474,
+        "samples_ms": [
+          18.600899958983064,
+          18.51771998917684,
+          18.481520004570484,
+          18.574460002128035,
+          18.551580025814474
+        ]
+      },
+      "compiled": {
+        "first_call_ms": 23448.804209998343,
+        "median_ms": 4.3099100003018975,
+        "samples_ms": [
+          4.35315998038277,
+          4.317330021876842,
+          4.3061000178568065,
+          4.3099100003018975,
+          4.3002699967473745
+        ]
+      },
+      "embedding_shape": [
+        2,
+        1024
+      ],
+      "compiled_norm_max_error": 0.00030112266540527344,
+      "passed": true
+    },
+    {
+      "name": "long_truncated",
+      "batch_size": 1,
+      "sequence_length": 512,
+      "valid_tokens": [
+        512
+      ],
+      "eager_vs_reference": {
+        "max_abs": 0.0,
+        "min_cosine": 1.0000001192092896,
+        "finite": true,
+        "passed": true
+      },
+      "compiled_vs_reference": {
+        "max_abs": 0.00030517578125,
+        "min_cosine": 0.9999964237213135,
+        "finite": true,
+        "passed": true
+      },
+      "compiled_vs_eager": {
+        "max_abs": 0.00030517578125,
+        "min_cosine": 0.9999964237213135,
+        "finite": true,
+        "passed": true
+      },
+      "valid_hidden_max_abs_eager_vs_reference": 0.0,
+      "eager": {
+        "first_call_ms": 19.197079993318766,
+        "median_ms": 19.028160022571683,
+        "samples_ms": [
+          19.083409977611154,
+          19.027560018002987,
+          19.028160022571683,
+          19.085499981883913,
+          18.844910024199635
+        ]
+      },
+      "compiled": {
+        "first_call_ms": 15811.238349997438,
+        "median_ms": 5.819230049382895,
+        "samples_ms": [
+          5.867630010470748,
+          5.819230049382895,
+          5.830999987665564,
+          5.81604999024421,
+          5.811329989228398
+        ]
+      },
+      "embedding_shape": [
+        1,
+        1024
+      ],
+      "compiled_norm_max_error": 0.00012767314910888672,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "checkpoint_hashes_verified": true
+}

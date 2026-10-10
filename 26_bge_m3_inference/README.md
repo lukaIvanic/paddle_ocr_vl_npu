@@ -86,4 +86,33 @@ nonzero on failure and saves partial results. Two warmups and five repetitions
 provide smoke timings, excluding loading and compilation. This is numerical
 parity, not a retrieval-quality benchmark.
 
-910B results: pending the real-checkpoint run.
+## Verified 910B2 smoke — 2026-10-10
+
+Validated source commit `e1a5752f`, physical NPU 3, FP16, PyTorch 2.10.0,
+torch-npu 2.10.0.post2 and Transformers 5.5.4. The pinned real checkpoint passed
+all file hashes. Both local eager and static full-graph TorchAir runs passed.
+
+| Input | Valid tokens | Eager median | Compiled median | Compiled/reference max abs | Minimum cosine |
+|---|---|---:|---:|---:|---:|
+| B2 / padded S128, multilingual | 9, 25 | 18.55 ms | 4.31 ms | 0.00024414 | 0.99999815 |
+| B1 / S512, truncated long text | 512 | 19.03 ms | 5.82 ms | 0.00030518 | 0.99999642 |
+
+Eager hidden states and dense embeddings matched the FP16 Transformers reference
+exactly in both cases. Timings are synchronized forward-only medians of five
+repetitions after two warmups; tokenization, checkpoint loading and first-call
+compilation are excluded. These are small smoke measurements, not a throughput
+sweep or retrieval-quality evaluation. 310P has not been tested.
+
+The attention uses explicit three-dimensional `bmm` head batches: the original
+four-dimensional broadcast matmul failed GE shape inference on this runtime.
+This preserves the Transformers math (covered by CPU and real-NPU reference
+checks). The validation harness resets Dynamo between distinct static shapes to
+keep their saved graph caches independent.
+
+Evidence: [result.json](../tmp/26_bge_m3_inference/910b_e1a5752f/result.json),
+[exact command/environment](../tmp/26_bge_m3_inference/910b_e1a5752f/command.txt),
+[exit code](../tmp/26_bge_m3_inference/910b_e1a5752f/exit_code.txt).
+
+The standalone `run_embedder.py --compile-cache ...` command also passed in a
+fresh process, reusing the saved B2/S128 graph with different text inputs;
+see [CLI output](../tmp/26_bge_m3_inference/910b_e1a5752f/cli.log).

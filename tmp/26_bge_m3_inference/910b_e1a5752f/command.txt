@@ -1,0 +1,85 @@
+e1a5752f5b2bce59804cb47a0cb5ec29536a6c10
+liteserver-c001-4
+Physical NPU: 3
+Command: RUN_ROOT=/workspace/results/bge_m3_e1a5752f_20261010 MODEL_DIR=/workspace/model_downloads/bge-m3 PYTHON_BIN=/usr/local/python3.12.13/bin/python3 bash 26_bge_m3_inference/run_910b.sh
+Name: torch
+Version: 2.10.0+cpu
+Summary: Tensors and Dynamic neural networks in Python with strong GPU acceleration
+Home-page: https://pytorch.org
+Author: 
+Author-email: PyTorch Team <packages@pytorch.org>
+License: BSD-3-Clause
+Location: /usr/local/python3.12.13/lib/python3.12/site-packages
+Requires: filelock, fsspec, jinja2, networkx, setuptools, sympy, typing-extensions
+Required-by: compressed-tensors, torch_npu, torchaudio, torchvision, vllm_ascend, xgrammar
+---
+Name: torch_npu
+Version: 2.10.0.post2
+Summary: NPU bridge for PyTorch
+Home-page: https://gitcode.com/ascend/pytorch
+Author: 
+Author-email: 
+License: BSD License
+Location: /usr/local/python3.12.13/lib/python3.12/site-packages
+Requires: torch
+Required-by: vllm_ascend
+---
+Name: transformers
+Version: 5.5.4
+Summary: Transformers: the model-definition framework for state-of-the-art machine learning models in text, vision, audio, and multimodal models, for both inference and training.
+Home-page: https://github.com/huggingface/transformers
+Author: The Hugging Face team (past and future) with the help of all our contributors (https://github.com/huggingface/transformers/graphs/contributors)
+Author-email: transformers@huggingface.co
+License: Apache 2.0 License
+Location: /usr/local/python3.12.13/lib/python3.12/site-packages
+Requires: huggingface-hub, numpy, packaging, pyyaml, regex, safetensors, tokenizers, tqdm, typer
+Required-by: compressed-tensors, vllm, vllm_ascend, xgrammar
++------------------------------------------------------------------------------------------------+
+| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |
++---------------------------+---------------+----------------------------------------------------+
+| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|
+| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |
++===========================+===============+====================================================+
+| 0     910B2               | OK            | 116.9       49                0    / 0             |
+| 0                         | 0000:C1:00.0  | 0           0    / 0          24103/ 65536         |
++===========================+===============+====================================================+
+| 1     910B2               | OK            | 111.4       49                0    / 0             |
+| 0                         | 0000:01:00.0  | 0           0    / 0          3414 / 65536         |
++===========================+===============+====================================================+
+| 2     910B2               | OK            | 112.8       49                0    / 0             |
+| 0                         | 0000:C2:00.0  | 0           0    / 0          59552/ 65536         |
++===========================+===============+====================================================+
+| 3     910B2               | OK            | 110.4       48                0    / 0             |
+| 0                         | 0000:02:00.0  | 0           0    / 0          3418 / 65536         |
++===========================+===============+====================================================+
+| 4     910B2               | OK            | 117.1       49                0    / 0             |
+| 0                         | 0000:81:00.0  | 3           0    / 0          57092/ 65536         |
++===========================+===============+====================================================+
+| 5     910B2               | OK            | 116.5       48                0    / 0             |
+| 0                         | 0000:41:00.0  | 3           0    / 0          57081/ 65536         |
++===========================+===============+====================================================+
+| 6     910B2               | OK            | 117.0       49                0    / 0             |
+| 0                         | 0000:82:00.0  | 0           0    / 0          57082/ 65536         |
++===========================+===============+====================================================+
+| 7     910B2               | OK            | 116.6       50                0    / 0             |
+| 0                         | 0000:42:00.0  | 4           0    / 0          57092/ 65536         |
++===========================+===============+====================================================+
++---------------------------+---------------+----------------------------------------------------+
+| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |
++===========================+===============+====================================================+
+| 0       0                 | 1502584       |                          | 20587                   |
++===========================+===============+====================================================+
+| No running processes found in NPU 1                                                            |
++===========================+===============+====================================================+
+| 2       0                 | 1506377       |                          | 56183                   |
++===========================+===============+====================================================+
+| No running processes found in NPU 3                                                            |
++===========================+===============+====================================================+
+| 4       0                 | 2713642       |                          | 53731                   |
++===========================+===============+====================================================+
+| 5       0                 | 2713997       |                          | 53731                   |
++===========================+===============+====================================================+
+| 6       0                 | 2714351       |                          | 53731                   |
++===========================+===============+====================================================+
+| 7       0                 | 2714554       |                          | 53731                   |
++===========================+===============+====================================================+
