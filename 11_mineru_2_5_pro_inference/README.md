@@ -2,6 +2,8 @@
 
 **Current execution task (2026-10-10): opt-in prefill buckets and window scheduling.**
 The implementation is based on `2ef68bdd`; accelerator validation is pending.
+The single active [310P handoff](WORK_SERVER_310P_PREFILL_BUCKETS_FULL1651.md)
+contains the full pair and all environment-discovery instructions.
 The first-256 timing task is superseded; its measurements motivated this work.
 
 Add this complete candidate flag set to the existing C1+C2+C5 invocation:
