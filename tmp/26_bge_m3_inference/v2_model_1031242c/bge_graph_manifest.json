@@ -1,0 +1,44 @@
+{
+  "upstream_vendor": "/workspace/operators/bge-v2-9.1/vendors/bge_v2_nn",
+  "original_dispatch_registrations": {
+    "op_impl/ai_core/tbe/config/ascend910b/aic-ascend910b-ops-info.json": [
+      "AddLayerNorm",
+      "AddLayerNormQuant",
+      "AddLayerNormQuantV2",
+      "LayerNormV4"
+    ],
+    "op_impl/ai_core/tbe/config/ascend950/aic-ascend950-ops-info.json": [
+      "AddLayerNorm",
+      "AddLayerNormQuant",
+      "LayerNorm",
+      "LayerNormV3",
+      "LayerNormV4"
+    ],
+    "op_impl/ai_core/tbe/config/ascend310p/aic-ascend310p-ops-info.json": [
+      "AddLayerNorm",
+      "AddLayerNormQuantV2",
+      "LayerNormV4"
+    ],
+    "op_impl/ai_core/tbe/config/kirin9030/aic-kirin9030-ops-info.json": [
+      "AddLayerNorm",
+      "AddLayerNormQuant",
+      "LayerNormV4"
+    ],
+    "op_impl/ai_core/tbe/config/kirinx90/aic-kirinx90-ops-info.json": [
+      "AddLayerNorm",
+      "AddLayerNormQuant",
+      "LayerNormV4"
+    ],
+    "op_impl/ai_core/tbe/config/ascend910_93/aic-ascend910_93-ops-info.json": [
+      "AddLayerNorm",
+      "AddLayerNormQuant",
+      "AddLayerNormQuantV2",
+      "LayerNormV4"
+    ]
+  },
+  "enabled_dispatch": [
+    "AddLayerNormQuantV2"
+  ],
+  "metadata_source_sha256": "8c897de1d596c7a4a42f34718059bb56c02d4c4f6ff76395736fa5f5b7175e6f",
+  "op_api_sha256": "14f43fb2a5add8fc30ad6e3ee92fa8192870a41e69f33edad69d8bcf0a59ba4a"
+}

@@ -44,9 +44,12 @@ def main():
                              "internal_gap_us": end-selected[0][0]-union})
         assert sum(s["kernel_count"] for s in per_step) == len(kernels)
         counts = defaultdict(int)
+        hardware = defaultdict(list)
         shapes = defaultdict(lambda: [0, 0.])
         for k in kernels:
             counts[k["Type"]] += 1
+            if k["Type"] in {"AddLayerNorm", "AddLayerNormQuantV2", "Quantize"}:
+                hardware[(k["Type"], k["Input Shapes"])].append(k)
             key = (k["Type"], k["Input Shapes"], k["Input Formats"], k["Input Data Types"])
             shapes[key][0] += 1
             shapes[key][1] += float(k["Duration(us)"])
@@ -59,6 +62,12 @@ def main():
                          for k, v in grouped.items()},
                "shapes": [{"type": k[0], "shapes": k[1], "formats": k[2], "dtypes": k[3],
                            "count": v[0]/len(steps), "mean_us": v[1]/len(steps)} for k, v in shapes.items()]}
+        fields = ("aiv_time(us)", "aiv_vec_ratio", "aiv_scalar_ratio", "aiv_mte2_ratio", "aiv_mte3_ratio")
+        row["norm_quant_hardware"] = [{"type": key[0], "input_shapes": key[1],
+            "block_counts": sorted({int(k["Block Num"]) for k in values}),
+            "accelerator_cores": sorted({k["Accelerator Core"] for k in values}),
+            "mean_counters": {field: statistics.mean(float(k[field]) for k in values) for field in fields}}
+            for key, values in hardware.items()]
         report["profiles"].append(row)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps({"profiles": len(report["profiles"]), "coverage_audit": "passed"}))

@@ -1,0 +1,10 @@
+# Source: 1031242c; 910B2 physical NPU 3, CANN 9.0.1.
+# First create a private V2-only package with prepare_v2_graph_package.py.
+# Preserve basename bge_v2_nn. Metadata shim is static/single-scale only.
+source npu-setup
+export OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 PYTHONDONTWRITEBYTECODE=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+export ASCEND_CUSTOM_OPP_PATH=/workspace/operators/bge-v2-graph-fixed/vendors/bge_v2_nn
+export LD_LIBRARY_PATH=$ASCEND_CUSTOM_OPP_PATH/op_api/lib:$LD_LIBRARY_PATH
+/usr/local/python3.12.13/bin/python3 -u 26_bge_m3_inference/benchmark_norm_v2.py --op-api "$ASCEND_CUSTOM_OPP_PATH/op_api/lib/libcust_opapi.so" --output /workspace/results/bge_norm_v2_1031242c
+# Reproduce local audited summary after extracting raw archive:
+python3 26_bge_m3_inference/summarize_norm_v2.py --run-root /path/to/bge_norm_v2_1031242c --output /path/to/kernel_comparison.json

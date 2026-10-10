@@ -1,0 +1,1958 @@
+{
+  "git_commit": "1031242c78cd24a53d91deb008467f599cf3642d",
+  "device": "Ascend910B2",
+  "physical_npu": "3",
+  "library_sha256": "14f43fb2a5add8fc30ad6e3ee92fa8192870a41e69f33edad69d8bcf0a59ba4a",
+  "checkpoint_revision": "5617a9f61b028005a4858fdac845db406aefb181",
+  "checkpoint_hashes_verified": true,
+  "scales": {
+    "encoder.layer.0.attention.self.query": 0.055056594488188976,
+    "encoder.layer.0.attention.self.key": 0.055056594488188976,
+    "encoder.layer.0.attention.self.value": 0.055056594488188976,
+    "encoder.layer.0.attention.output.dense": 0.06446850393700787,
+    "encoder.layer.0.intermediate.dense": 0.22600885826771652,
+    "encoder.layer.0.output.dense": 0.07105068897637795,
+    "encoder.layer.1.attention.self.query": 0.17458169291338582,
+    "encoder.layer.1.attention.self.key": 0.17458169291338582,
+    "encoder.layer.1.attention.self.value": 0.17458169291338582,
+    "encoder.layer.1.attention.output.dense": 0.031188484251968504,
+    "encoder.layer.1.intermediate.dense": 0.24138779527559054,
+    "encoder.layer.1.output.dense": 0.07215797244094488,
+    "encoder.layer.2.attention.self.query": 0.19475885826771652,
+    "encoder.layer.2.attention.self.key": 0.19475885826771652,
+    "encoder.layer.2.attention.self.value": 0.19475885826771652,
+    "encoder.layer.2.attention.output.dense": 0.023545152559055118,
+    "encoder.layer.2.intermediate.dense": 0.25369094488188976,
+    "encoder.layer.2.output.dense": 0.04915108267716536,
+    "encoder.layer.3.attention.self.query": 0.19082185039370078,
+    "encoder.layer.3.attention.self.key": 0.19082185039370078,
+    "encoder.layer.3.attention.self.value": 0.19082185039370078,
+    "encoder.layer.3.attention.output.dense": 0.02515994094488189,
+    "encoder.layer.3.intermediate.dense": 0.250615157480315,
+    "encoder.layer.3.output.dense": 0.06526820866141732,
+    "encoder.layer.4.attention.self.query": 0.22514763779527558,
+    "encoder.layer.4.attention.self.key": 0.22514763779527558,
+    "encoder.layer.4.attention.self.value": 0.22514763779527558,
+    "encoder.layer.4.attention.output.dense": 0.01945435531496063,
+    "encoder.layer.4.intermediate.dense": 0.26697834645669294,
+    "encoder.layer.4.output.dense": 0.04715182086614173,
+    "encoder.layer.5.attention.self.query": 0.22281003937007873,
+    "encoder.layer.5.attention.self.key": 0.22281003937007873,
+    "encoder.layer.5.attention.self.value": 0.22281003937007873,
+    "encoder.layer.5.attention.output.dense": 0.018331692913385825,
+    "encoder.layer.5.intermediate.dense": 0.265994094488189,
+    "encoder.layer.5.output.dense": 0.04936638779527559,
+    "encoder.layer.6.attention.self.query": 0.2231791338582677,
+    "encoder.layer.6.attention.self.key": 0.2231791338582677,
+    "encoder.layer.6.attention.self.value": 0.2231791338582677,
+    "encoder.layer.6.attention.output.dense": 0.021668922244094488,
+    "encoder.layer.6.intermediate.dense": 0.26968503937007876,
+    "encoder.layer.6.output.dense": 0.05604084645669291,
+    "encoder.layer.7.attention.self.query": 0.2311761811023622,
+    "encoder.layer.7.attention.self.key": 0.2311761811023622,
+    "encoder.layer.7.attention.self.value": 0.2311761811023622,
+    "encoder.layer.7.attention.output.dense": 0.022422490157480313,
+    "encoder.layer.7.intermediate.dense": 0.2694389763779528,
+    "encoder.layer.7.output.dense": 0.051304133858267716,
+    "encoder.layer.8.attention.self.query": 0.23056102362204725,
+    "encoder.layer.8.attention.self.key": 0.23056102362204725,
+    "encoder.layer.8.attention.self.value": 0.23056102362204725,
+    "encoder.layer.8.attention.output.dense": 0.026067298228346455,
+    "encoder.layer.8.intermediate.dense": 0.2709153543307087,
+    "encoder.layer.8.output.dense": 0.06828248031496063,
+    "encoder.layer.9.attention.self.query": 0.23375984251968504,
+    "encoder.layer.9.attention.self.key": 0.23375984251968504,
+    "encoder.layer.9.attention.self.value": 0.23375984251968504,
+    "encoder.layer.9.attention.output.dense": 0.017516609251968504,
+    "encoder.layer.9.intermediate.dense": 0.2795275590551181,
+    "encoder.layer.9.output.dense": 0.07744832677165354,
+    "encoder.layer.10.attention.self.query": 0.23031496062992127,
+    "encoder.layer.10.attention.self.key": 0.23031496062992127,
+    "encoder.layer.10.attention.self.value": 0.23031496062992127,
+    "encoder.layer.10.attention.output.dense": 0.05065821850393701,
+    "encoder.layer.10.intermediate.dense": 0.27411417322834647,
+    "encoder.layer.10.output.dense": 0.08323080708661418,
+    "encoder.layer.11.attention.self.query": 0.2358513779527559,
+    "encoder.layer.11.attention.self.key": 0.2358513779527559,
+    "encoder.layer.11.attention.self.value": 0.2358513779527559,
+    "encoder.layer.11.attention.output.dense": 0.02749753937007874,
+    "encoder.layer.11.intermediate.dense": 0.27436023622047245,
+    "encoder.layer.11.output.dense": 0.11380413385826772,
+    "encoder.layer.12.attention.self.query": 0.23240649606299213,
+    "encoder.layer.12.attention.self.key": 0.23240649606299213,
+    "encoder.layer.12.attention.self.value": 0.23240649606299213,
+    "encoder.layer.12.attention.output.dense": 0.024006520669291338,
+    "encoder.layer.12.intermediate.dense": 0.25812007874015747,
+    "encoder.layer.12.output.dense": 0.08845964566929133,
+    "encoder.layer.13.attention.self.query": 0.1812253937007874,
+    "encoder.layer.13.attention.self.key": 0.1812253937007874,
+    "encoder.layer.13.attention.self.value": 0.1812253937007874,
+    "encoder.layer.13.attention.output.dense": 0.017593503937007874,
+    "encoder.layer.13.intermediate.dense": 0.26156496062992124,
+    "encoder.layer.13.output.dense": 0.06822096456692914,
+    "encoder.layer.14.attention.self.query": 0.18663877952755906,
+    "encoder.layer.14.attention.self.key": 0.18663877952755906,
+    "encoder.layer.14.attention.self.value": 0.18663877952755906,
+    "encoder.layer.14.attention.output.dense": 0.017316683070866142,
+    "encoder.layer.14.intermediate.dense": 0.2721456692913386,
+    "encoder.layer.14.output.dense": 0.05656373031496063,
+    "encoder.layer.15.attention.self.query": 0.2312992125984252,
+    "encoder.layer.15.attention.self.key": 0.2312992125984252,
+    "encoder.layer.15.attention.self.value": 0.2312992125984252,
+    "encoder.layer.15.attention.output.dense": 0.021361343503937008,
+    "encoder.layer.15.intermediate.dense": 0.2541830708661417,
+    "encoder.layer.15.output.dense": 0.0829847440944882,
+    "encoder.layer.16.attention.self.query": 0.18663877952755906,
+    "encoder.layer.16.attention.self.key": 0.18663877952755906,
+    "encoder.layer.16.attention.self.value": 0.18663877952755906,
+    "encoder.layer.16.attention.output.dense": 0.017747293307086614,
+    "encoder.layer.16.intermediate.dense": 0.265009842519685,
+    "encoder.layer.16.output.dense": 0.03887795275590551,
+    "encoder.layer.17.attention.self.query": 0.18528543307086615,
+    "encoder.layer.17.attention.self.key": 0.18528543307086615,
+    "encoder.layer.17.attention.self.value": 0.18528543307086615,
+    "encoder.layer.17.attention.output.dense": 0.043061023622047244,
+    "encoder.layer.17.intermediate.dense": 0.265255905511811,
+    "encoder.layer.17.output.dense": 0.12684547244094488,
+    "encoder.layer.18.attention.self.query": 0.1861466535433071,
+    "encoder.layer.18.attention.self.key": 0.1861466535433071,
+    "encoder.layer.18.attention.self.value": 0.1861466535433071,
+    "encoder.layer.18.attention.output.dense": 0.020607775590551183,
+    "encoder.layer.18.intermediate.dense": 0.24470964566929135,
+    "encoder.layer.18.output.dense": 0.25541338582677164,
+    "encoder.layer.19.attention.self.query": 0.18934547244094488,
+    "encoder.layer.19.attention.self.key": 0.18934547244094488,
+    "encoder.layer.19.attention.self.value": 0.18934547244094488,
+    "encoder.layer.19.attention.output.dense": 0.024867741141732284,
+    "encoder.layer.19.intermediate.dense": 0.27116141732283466,
+    "encoder.layer.19.output.dense": 0.35482283464566927,
+    "encoder.layer.20.attention.self.query": 0.1920521653543307,
+    "encoder.layer.20.attention.self.key": 0.1920521653543307,
+    "encoder.layer.20.attention.self.value": 0.1920521653543307,
+    "encoder.layer.20.attention.output.dense": 0.021146038385826772,
+    "encoder.layer.20.intermediate.dense": 0.2541830708661417,
+    "encoder.layer.20.output.dense": 0.20497047244094488,
+    "encoder.layer.21.attention.self.query": 0.18651574803149606,
+    "encoder.layer.21.attention.self.key": 0.18651574803149606,
+    "encoder.layer.21.attention.self.value": 0.18651574803149606,
+    "encoder.layer.21.attention.output.dense": 0.02328371062992126,
+    "encoder.layer.21.intermediate.dense": 0.24876968503937008,
+    "encoder.layer.21.output.dense": 0.08101624015748031,
+    "encoder.layer.22.attention.self.query": 0.171751968503937,
+    "encoder.layer.22.attention.self.key": 0.171751968503937,
+    "encoder.layer.22.attention.self.value": 0.171751968503937,
+    "encoder.layer.22.attention.output.dense": 0.023391363188976378,
+    "encoder.layer.22.intermediate.dense": 0.24766240157480315,
+    "encoder.layer.22.output.dense": 0.03684793307086614,
+    "encoder.layer.23.attention.self.query": 0.1905757874015748,
+    "encoder.layer.23.attention.self.key": 0.1905757874015748,
+    "encoder.layer.23.attention.self.value": 0.1905757874015748,
+    "encoder.layer.23.attention.output.dense": 0.019131397637795276,
+    "encoder.layer.23.intermediate.dense": 0.24913877952755906,
+    "encoder.layer.23.output.dense": 0.09984005905511811
+  },
+  "isolated": [
+    {
+      "layer": 0,
+      "shape": [
+        256,
+        1024
+      ],
+      "norm_v2_vs_original": {
+        "max_abs": 0.0078125,
+        "mean_abs": 0.0001065903197741136,
+        "exact_fraction": 0.7305793762207031,
+        "min_cosine": 0.9999994039535522
+      },
+      "int8_v2_vs_original": {
+        "max_abs": 1.0,
+        "mean_abs": 0.0018157958984375,
+        "exact_fraction": 0.9981842041015625,
+        "min_cosine": 0.9998944401741028
+      },
+      "int8_scale_only": {
+        "max_abs": 1.0,
+        "mean_abs": 0.00226593017578125,
+        "exact_fraction": 0.9977340698242188,
+        "min_cosine": 0.9998940825462341
+      },
+      "int8_v2_vs_reciprocal_control": {
+        "max_abs": 1.0,
+        "mean_abs": 0.0013427734375,
+        "exact_fraction": 0.9986572265625,
+        "min_cosine": 0.9998936653137207
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "norm": {
+            "max_abs": 0.0078125,
+            "mean_abs": 0.00010658997052814811,
+            "exact_fraction": 0.7305793762207031,
+            "min_cosine": 0.9999994039535522
+          },
+          "quant": {
+            "max_abs": 1.0,
+            "mean_abs": 6.866455078125e-05,
+            "exact_fraction": 0.9999313354492188,
+            "min_cosine": 0.9999294281005859
+          }
+        },
+        "v2": {
+          "norm": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999992847442627
+          },
+          "quant": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999998807907104
+          }
+        }
+      },
+      "profiles": {
+        "original": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/block_original",
+          "active_forwards": 10,
+          "kernel_rows": 20,
+          "kernel_duration_us_per_forward": 22.0665,
+          "top_types": [
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 1.0,
+              "us_per_forward": 14.618300000000001
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 1.0,
+              "us_per_forward": 7.4482
+            }
+          ]
+        },
+        "v2": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/block_v2",
+          "active_forwards": 10,
+          "kernel_rows": 10,
+          "kernel_duration_us_per_forward": 15.9843,
+          "top_types": [
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 15.9843
+            }
+          ]
+        }
+      },
+      "compiled_v2_vs_original": {
+        "norm": {
+          "max_abs": 0.0001220703125,
+          "mean_abs": 8.155893738148734e-10,
+          "exact_fraction": 0.9999732971191406,
+          "min_cosine": 0.9999992847442627
+        },
+        "quant": {
+          "max_abs": 1.0,
+          "mean_abs": 0.0018310546875,
+          "exact_fraction": 0.9981689453125,
+          "min_cosine": 0.9998944401741028
+        }
+      }
+    },
+    {
+      "layer": 11,
+      "shape": [
+        256,
+        1024
+      ],
+      "norm_v2_vs_original": {
+        "max_abs": 0.015625,
+        "mean_abs": 0.00011731461563613266,
+        "exact_fraction": 0.6699333190917969,
+        "min_cosine": 0.9999993443489075
+      },
+      "int8_v2_vs_original": {
+        "max_abs": 1.0,
+        "mean_abs": 4.57763671875e-05,
+        "exact_fraction": 0.9999542236328125,
+        "min_cosine": 0.9999319911003113
+      },
+      "int8_scale_only": {
+        "max_abs": 1.0,
+        "mean_abs": 3.814697265625e-06,
+        "exact_fraction": 0.9999961853027344,
+        "min_cosine": 0.9999665021896362
+      },
+      "int8_v2_vs_reciprocal_control": {
+        "max_abs": 1.0,
+        "mean_abs": 4.1961669921875e-05,
+        "exact_fraction": 0.9999580383300781,
+        "min_cosine": 0.9999319911003113
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "norm": {
+            "max_abs": 0.015625,
+            "mean_abs": 0.00011731647828128189,
+            "exact_fraction": 0.6699295043945312,
+            "min_cosine": 0.9999993443489075
+          },
+          "quant": {
+            "max_abs": 1.0,
+            "mean_abs": 3.4332275390625e-05,
+            "exact_fraction": 0.9999656677246094,
+            "min_cosine": 0.9999650716781616
+          }
+        },
+        "v2": {
+          "norm": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999994039535522
+          },
+          "quant": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999998211860657
+          }
+        }
+      },
+      "profiles": {},
+      "compiled_v2_vs_original": {
+        "norm": {
+          "max_abs": 0.00048828125,
+          "mean_abs": 1.8628725229064003e-09,
+          "exact_fraction": 0.9999923706054688,
+          "min_cosine": 0.9999994039535522
+        },
+        "quant": {
+          "max_abs": 1.0,
+          "mean_abs": 4.1961669921875e-05,
+          "exact_fraction": 0.9999580383300781,
+          "min_cosine": 0.9999650716781616
+        }
+      }
+    },
+    {
+      "layer": 23,
+      "shape": [
+        256,
+        1024
+      ],
+      "norm_v2_vs_original": {
+        "max_abs": 0.015625,
+        "mean_abs": 0.00010114209726452827,
+        "exact_fraction": 0.702728271484375,
+        "min_cosine": 0.9999994039535522
+      },
+      "int8_v2_vs_original": {
+        "max_abs": 1.0,
+        "mean_abs": 0.0005645751953125,
+        "exact_fraction": 0.9994354248046875,
+        "min_cosine": 0.9998891949653625
+      },
+      "int8_scale_only": {
+        "max_abs": 1.0,
+        "mean_abs": 0.00051116943359375,
+        "exact_fraction": 0.9994888305664062,
+        "min_cosine": 0.9999168515205383
+      },
+      "int8_v2_vs_reciprocal_control": {
+        "max_abs": 1.0,
+        "mean_abs": 7.62939453125e-05,
+        "exact_fraction": 0.9999237060546875,
+        "min_cosine": 0.9999130368232727
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "norm": {
+            "max_abs": 0.015625,
+            "mean_abs": 0.00010114011820405722,
+            "exact_fraction": 0.7027359008789062,
+            "min_cosine": 0.9999994039535522
+          },
+          "quant": {
+            "max_abs": 1.0,
+            "mean_abs": 0.00087738037109375,
+            "exact_fraction": 0.9991226196289062,
+            "min_cosine": 0.9999421834945679
+          }
+        },
+        "v2": {
+          "norm": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999992251396179
+          },
+          "quant": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999997019767761
+          }
+        }
+      },
+      "profiles": {},
+      "compiled_v2_vs_original": {
+        "norm": {
+          "max_abs": 0.00048828125,
+          "mean_abs": 1.979060471057892e-09,
+          "exact_fraction": 0.9999923706054688,
+          "min_cosine": 0.9999992251396179
+        },
+        "quant": {
+          "max_abs": 1.0,
+          "mean_abs": 0.00141143798828125,
+          "exact_fraction": 0.9985885620117188,
+          "min_cosine": 0.9999136924743652
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "name": "mixed_multilingual",
+      "shape": [
+        2,
+        128
+      ],
+      "profiles": {
+        "mixed_multilingual_original_0": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/mixed_multilingual_original_0",
+          "active_forwards": 10,
+          "kernel_rows": 7160,
+          "kernel_duration_us_per_forward": 4870.957600000005,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 1031.8783999999969
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 121.0,
+              "us_per_forward": 748.5142000000005
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 96.0,
+              "us_per_forward": 729.6882999999987
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 585.5776999999994
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 49.0,
+              "us_per_forward": 502.0648000000002
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 72.0,
+              "us_per_forward": 283.6437000000012
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 272.0021000000002
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 241.3786
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 227.28199999999993
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 158.47769999999986
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 34.2488
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 30.8029
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 9.898099999999998
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 5.3882
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.8059999999999998
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.5060000000000002
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.4601
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.43
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.342
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.2999999999999998
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.2679999999999998
+            }
+          ]
+        },
+        "mixed_multilingual_v2_0": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/mixed_multilingual_v2_0",
+          "active_forwards": 10,
+          "kernel_rows": 6700,
+          "kernel_duration_us_per_forward": 4867.63470000001,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 1030.4577999999983
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 123.0,
+              "us_per_forward": 754.7466000000002
+            },
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 48.0,
+              "us_per_forward": 728.0084999999988
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 597.6727999999999
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 48.0,
+              "us_per_forward": 471.04839999999984
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 72.0,
+              "us_per_forward": 280.285300000001
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 271.3859999999999
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 241.49790000000002
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 229.17270000000002
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 158.4363999999998
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 33.040699999999994
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 30.9329
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 1.0,
+              "us_per_forward": 15.4863
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 10.014100000000001
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 5.4021
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.802
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.5100000000000002
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.4760000000000002
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.4021000000000001
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.348
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.2941
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.214
+            }
+          ]
+        },
+        "mixed_multilingual_v2_1": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/mixed_multilingual_v2_1",
+          "active_forwards": 10,
+          "kernel_rows": 6700,
+          "kernel_duration_us_per_forward": 4870.033300000008,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 1031.1799
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 123.0,
+              "us_per_forward": 754.8695000000007
+            },
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 48.0,
+              "us_per_forward": 727.7782999999997
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 598.2206999999995
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 48.0,
+              "us_per_forward": 471.2335000000001
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 72.0,
+              "us_per_forward": 280.4181000000012
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 271.5329000000003
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 241.2633000000003
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 228.92379999999997
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 158.53499999999963
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 34.4103
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 30.824800000000003
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 1.0,
+              "us_per_forward": 15.4923
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 9.968600000000002
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 5.382099999999999
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.8020999999999998
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.4899999999999998
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.4680999999999997
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.408
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.31
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.306
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.2159999999999997
+            }
+          ]
+        },
+        "mixed_multilingual_original_1": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/mixed_multilingual_original_1",
+          "active_forwards": 10,
+          "kernel_rows": 7160,
+          "kernel_duration_us_per_forward": 4885.001499999994,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 1032.5250999999985
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 121.0,
+              "us_per_forward": 747.5161000000019
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 96.0,
+              "us_per_forward": 729.5885999999987
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 600.9137000000003
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 49.0,
+              "us_per_forward": 502.0109000000002
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 72.0,
+              "us_per_forward": 285.11590000000126
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 271.29609999999997
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 239.65770000000037
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 227.27440000000018
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 158.40309999999977
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 34.530699999999996
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 30.670499999999997
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 9.8903
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 5.4184
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.8880000000000003
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.5
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.456
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.414
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.3459999999999999
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.294
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.292
+            }
+          ]
+        }
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "finite": true,
+          "max_abs": 0.0233001708984375,
+          "mean_cosine": 0.9755745530128479,
+          "min_cosine": 0.9738671183586121,
+          "similarity_matrix_max_abs": 0.02704143524169922
+        },
+        "v2": {
+          "finite": true,
+          "max_abs": 0.0001220703125,
+          "mean_cosine": 0.9999997019767761,
+          "min_cosine": 0.9999996423721313,
+          "similarity_matrix_max_abs": 1.2934207916259766e-05
+        }
+      },
+      "v2_vs_original": {
+        "finite": true,
+        "max_abs": 0.028167724609375,
+        "mean_cosine": 0.9710870981216431,
+        "min_cosine": 0.9694542288780212,
+        "similarity_matrix_max_abs": 0.0011669397354125977
+      },
+      "semantic": {
+        "original": {
+          "scores": [
+            [
+              0.6709076762199402,
+              0.37956446409225464
+            ],
+            [
+              0.301630437374115,
+              0.7898125648498535
+            ]
+          ],
+          "top_document": [
+            0,
+            1
+          ]
+        },
+        "v2": {
+          "scores": [
+            [
+              0.6563103199005127,
+              0.39720800518989563
+            ],
+            [
+              0.3014357388019562,
+              0.8010167479515076
+            ]
+          ],
+          "top_document": [
+            0,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "name": "long_truncated",
+      "shape": [
+        1,
+        512
+      ],
+      "profiles": {
+        "long_truncated_original_0": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/long_truncated_original_0",
+          "active_forwards": 10,
+          "kernel_rows": 6920,
+          "kernel_duration_us_per_forward": 6425.756700000009,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 1368.145100000001
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 121.0,
+              "us_per_forward": 848.2215000000006
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 96.0,
+              "us_per_forward": 818.2357
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 760.0317999999996
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 49.0,
+              "us_per_forward": 757.7234999999994
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 654.9488
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 358.74120000000045
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 273.14759999999995
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 48.0,
+              "us_per_forward": 262.63899999999984
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 234.00050000000016
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 36.8008
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 31.678800000000003
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 10.216199999999997
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 2.0119999999999996
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.552
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.3541
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.3259999999999998
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.31
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.266
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.248
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.1581
+            }
+          ]
+        },
+        "long_truncated_v2_0": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/long_truncated_v2_0",
+          "active_forwards": 10,
+          "kernel_rows": 6460,
+          "kernel_duration_us_per_forward": 6270.971600000004,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 1366.1289000000004
+            },
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 48.0,
+              "us_per_forward": 860.1672000000002
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 123.0,
+              "us_per_forward": 853.3448999999998
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 783.624700000001
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 682.0861999999996
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 48.0,
+              "us_per_forward": 503.054
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 358.70110000000057
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 279.6666999999999
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 48.0,
+              "us_per_forward": 251.6572999999997
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 224.3822
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 36.580799999999996
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 32.4124
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 1.0,
+              "us_per_forward": 17.6705
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 10.374300000000002
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.902
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.4801999999999997
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.3900000000000001
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.348
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.31
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.2639999999999998
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.2580000000000002
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.1682
+            }
+          ]
+        },
+        "long_truncated_v2_1": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/long_truncated_v2_1",
+          "active_forwards": 10,
+          "kernel_rows": 6460,
+          "kernel_duration_us_per_forward": 6271.411600000007,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 1366.895899999999
+            },
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 48.0,
+              "us_per_forward": 859.9866
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 123.0,
+              "us_per_forward": 853.3023000000001
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 783.3713000000008
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 681.9588999999993
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 48.0,
+              "us_per_forward": 503.09780000000035
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 358.82480000000066
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 279.80599999999987
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 48.0,
+              "us_per_forward": 251.6869999999998
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 224.49910000000017
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 36.3326
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 32.426700000000004
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 1.0,
+              "us_per_forward": 17.7443
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 10.392000000000005
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.884
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.4739999999999998
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.3700999999999999
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.336
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.3339999999999999
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.2602
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.2559999999999998
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.1720000000000002
+            }
+          ]
+        },
+        "long_truncated_original_1": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/long_truncated_original_1",
+          "active_forwards": 10,
+          "kernel_rows": 6920,
+          "kernel_duration_us_per_forward": 6427.482500000022,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 1367.741399999999
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 121.0,
+              "us_per_forward": 848.6049999999998
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 96.0,
+              "us_per_forward": 818.3233999999991
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 760.4793000000005
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 49.0,
+              "us_per_forward": 758.1675999999995
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 654.8897999999997
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 358.77320000000066
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 273.1830999999997
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 48.0,
+              "us_per_forward": 262.45159999999987
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 234.03220000000002
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 37.6528
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 31.85680000000001
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 10.2481
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.936
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.512
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.358
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.3300000000000003
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.298
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.2559999999999998
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.2341
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.1541000000000001
+            }
+          ]
+        }
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "finite": true,
+          "max_abs": 0.02541351318359375,
+          "mean_cosine": 0.9775000810623169,
+          "min_cosine": 0.9775000810623169,
+          "similarity_matrix_max_abs": 0.000461578369140625
+        },
+        "v2": {
+          "finite": true,
+          "max_abs": 0.0001220703125,
+          "mean_cosine": 1.0,
+          "min_cosine": 1.0,
+          "similarity_matrix_max_abs": 9.310245513916016e-05
+        }
+      },
+      "v2_vs_original": {
+        "finite": true,
+        "max_abs": 0.0214691162109375,
+        "mean_cosine": 0.9759528636932373,
+        "min_cosine": 0.9759528636932373,
+        "similarity_matrix_max_abs": 0.0004926919937133789
+      }
+    },
+    {
+      "name": "batch4_full512",
+      "shape": [
+        4,
+        512
+      ],
+      "profiles": {
+        "batch4_full512_original_0": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/batch4_full512_original_0",
+          "active_forwards": 10,
+          "kernel_rows": 7160,
+          "kernel_duration_us_per_forward": 12683.947499999971,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 2620.5445000000045
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 2169.423799999999
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 49.0,
+              "us_per_forward": 1494.292799999999
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 121.0,
+              "us_per_forward": 1459.0014000000015
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 96.0,
+              "us_per_forward": 1340.4666999999995
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 906.8227000000013
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 892.7053999999989
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 676.7012000000002
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 580.9181000000001
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 72.0,
+              "us_per_forward": 423.3903999999999
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 46.984899999999996
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 40.9348
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 12.856099999999998
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 6.092300000000001
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 2.3739999999999997
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 2.0103
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.984
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.9099999999999997
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.6300000000000001
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.4560000000000002
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.4480999999999997
+            }
+          ]
+        },
+        "batch4_full512_v2_0": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/batch4_full512_v2_0",
+          "active_forwards": 10,
+          "kernel_rows": 6700,
+          "kernel_duration_us_per_forward": 12225.340499999935,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 2627.455800000004
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 2129.453100000001
+            },
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 48.0,
+              "us_per_forward": 1648.5311000000013
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 123.0,
+              "us_per_forward": 1376.3996000000022
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 912.9913000000003
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 893.1177000000004
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 48.0,
+              "us_per_forward": 851.9348999999995
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 670.1832000000002
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 536.4564
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 72.0,
+              "us_per_forward": 419.1358999999995
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 48.5089
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 1.0,
+              "us_per_forward": 40.721000000000004
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 39.0947
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 12.764499999999998
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 6.1
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 2.1961
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 2.0122
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.8599999999999999
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.8579999999999999
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.7100000000000002
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.5000000000000004
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.3561
+            }
+          ]
+        },
+        "batch4_full512_v2_1": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/batch4_full512_v2_1",
+          "active_forwards": 10,
+          "kernel_rows": 6700,
+          "kernel_duration_us_per_forward": 12221.038799999971,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 2627.5937999999996
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 2129.5004
+            },
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 48.0,
+              "us_per_forward": 1649.2747000000013
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 123.0,
+              "us_per_forward": 1375.066699999998
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 911.4970999999985
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 892.9631000000002
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 48.0,
+              "us_per_forward": 851.6939999999997
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 670.1505
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 536.3531999999998
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 72.0,
+              "us_per_forward": 418.9936999999991
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 47.487
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 1.0,
+              "us_per_forward": 40.2587
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 38.735
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 12.780200000000002
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 6.1203
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 2.258
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 2.0321999999999996
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.9001000000000001
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.8981
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.668
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.5
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.314
+            }
+          ]
+        },
+        "batch4_full512_original_1": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/batch4_full512_original_1",
+          "active_forwards": 10,
+          "kernel_rows": 7160,
+          "kernel_duration_us_per_forward": 12688.145599999974,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 144.0,
+              "us_per_forward": 2621.2637
+            },
+            {
+              "name": "SoftmaxV2",
+              "count_per_forward": 24.0,
+              "us_per_forward": 2173.0577999999978
+            },
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 49.0,
+              "us_per_forward": 1494.705499999999
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 121.0,
+              "us_per_forward": 1458.340300000002
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 96.0,
+              "us_per_forward": 1340.4297000000026
+            },
+            {
+              "name": "Transpose",
+              "count_per_forward": 96.0,
+              "us_per_forward": 905.8083999999992
+            },
+            {
+              "name": "Gelu",
+              "count_per_forward": 24.0,
+              "us_per_forward": 893.0700999999992
+            },
+            {
+              "name": "BatchMatMul",
+              "count_per_forward": 48.0,
+              "us_per_forward": 676.7998
+            },
+            {
+              "name": "Muls",
+              "count_per_forward": 24.0,
+              "us_per_forward": 581.6212999999999
+            },
+            {
+              "name": "TransData",
+              "count_per_forward": 72.0,
+              "us_per_forward": 423.9606999999999
+            },
+            {
+              "name": "Cumsum",
+              "count_per_forward": 1.0,
+              "us_per_forward": 46.6447
+            },
+            {
+              "name": "GatherV2",
+              "count_per_forward": 4.0,
+              "us_per_forward": 40.97079999999999
+            },
+            {
+              "name": "Cast",
+              "count_per_forward": 5.0,
+              "us_per_forward": 12.546399999999998
+            },
+            {
+              "name": "BroadcastTo",
+              "count_per_forward": 1.0,
+              "us_per_forward": 6.158
+            },
+            {
+              "name": "NotEqual",
+              "count_per_forward": 1.0,
+              "us_per_forward": 2.4539999999999997
+            },
+            {
+              "name": "ZerosLike",
+              "count_per_forward": 1.0,
+              "us_per_forward": 2.0340999999999996
+            },
+            {
+              "name": "LpNormV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.8560000000000003
+            },
+            {
+              "name": "RealDiv",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.8460999999999999
+            },
+            {
+              "name": "Mul",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.7541999999999998
+            },
+            {
+              "name": "ClipByValueV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.4980000000000002
+            },
+            {
+              "name": "AutomaticBufferFusionOp",
+              "count_per_forward": 1.0,
+              "us_per_forward": 1.326
+            }
+          ]
+        }
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "finite": true,
+          "max_abs": 0.03076171875,
+          "mean_cosine": 0.9787981510162354,
+          "min_cosine": 0.9750831723213196,
+          "similarity_matrix_max_abs": 0.020720481872558594
+        },
+        "v2": {
+          "finite": true,
+          "max_abs": 0.000244140625,
+          "mean_cosine": 0.9999997615814209,
+          "min_cosine": 0.9999997019767761,
+          "similarity_matrix_max_abs": 0.00011444091796875
+        }
+      },
+      "v2_vs_original": {
+        "finite": true,
+        "max_abs": 0.02754974365234375,
+        "mean_cosine": 0.9779952764511108,
+        "min_cosine": 0.976412832736969,
+        "similarity_matrix_max_abs": 0.016158342361450195
+      }
+    }
+  ],
+  "passed": true,
+  "held_out": {
+    "v2_vs_original": {
+      "finite": true,
+      "max_abs": 0.02690887451171875,
+      "mean_cosine": 0.9755135774612427,
+      "min_cosine": 0.9694644212722778,
+      "similarity_matrix_max_abs": 0.02444210648536682
+    },
+    "original_vs_dense": {
+      "finite": true,
+      "max_abs": 0.039306640625,
+      "mean_cosine": 0.9560000896453857,
+      "min_cosine": 0.9400600790977478,
+      "similarity_matrix_max_abs": 0.07205688953399658
+    },
+    "v2_vs_dense": {
+      "finite": true,
+      "max_abs": 0.041259765625,
+      "mean_cosine": 0.9552854299545288,
+      "min_cosine": 0.9396992921829224,
+      "similarity_matrix_max_abs": 0.0565204918384552
+    }
+  }
+}

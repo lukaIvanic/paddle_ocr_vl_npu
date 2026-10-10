@@ -437,3 +437,69 @@ then compares full-model embeddings and two semantic examples. Profiles cover
 B2/S128, B1/S512 and B4/S512, with 10 forwards per capture and two captures per
 lane in opposite order. `summarize_norm_v2.py` audits every kernel against actual
 profiler-step intervals before aggregating counts, shapes and durations.
+
+### Measured 910B2 result
+
+Source `1031242c`, physical NPU 3, CANN 9.0.1; identical INT8 weights and original
+calibration/dequantization scales in both lanes. All three compiled cases ran
+with finite, normalized outputs. Every device kernel in all 14 profiles was
+accounted for by a CPU profiler-step interval. Means below pool two captures
+of 10 warmed forwards per lane, in opposite execution order.
+
+| Input | Regular W8A8 kernel sum | V2 kernel sum | Reduction | All norm + quant work, regular → V2 |
+|---|---:|---:|---:|---:|
+| B2/S128 | 4.878 ms | 4.869 ms | 0.2% (essentially equal) | 1.232 → 1.215 ms |
+| B1/S512 | 6.427 ms | 6.271 ms | 2.4% | 1.576 → 1.381 ms |
+| B4/S512 | 12.686 ms | 12.223 ms | 3.6% | 2.835 → 2.541 ms |
+
+These are **summed device-kernel durations**, not end-to-end latency. The
+norm/quant column includes the remaining standalone quantizers and final norm.
+Other operator durations also change, so the whole-model reduction should not
+all be attributed to the norm/quant subtotal.
+
+The graph contains exactly 48 `AddLayerNormQuantV2`, one `AddLayerNorm`, and 48
+`Quantize` calls, versus 49 `AddLayerNorm` and 96 `Quantize` originally. INT8
+projection matmul count stays 144. Total kernels fall 716 → 670 at B2/S128 and
+B4/S512, and 692 → 646 at B1/S512. The net decrease is 46 because two additions
+become explicit: embedding word/type addition and the last FFN projection bias.
+The remaining quantizers follow attention context (24) and GELU (24).
+
+At B2/S128, V2 spends 0.728 ms on the 48 fused calls; the remaining quantizers
+cost 0.471 ms. Thus removing half the quantizer launches gives almost no total
+kernel reduction at this shape: much of the removed work is absorbed by the
+heavier fused kernels. At B4/S512, INT8 projections still take 2.628 ms,
+softmax 2.129 ms, all additions 1.376 ms, and transpose/TransData 1.331 ms.
+Internal device gaps remain only about 15–17 us per forward.
+
+Hardware counters confirm V2 runs on vector cores, with 43/47/48 blocks for
+256/512/2048 rows. For the 47 biased V2 calls, average vector-pipeline ratios
+are approximately 20%/31%/52% in the first capture of each shape; corresponding
+MTE2 ratios are 36%/19%/15%. This is consistent with better amortization of
+small-kernel overhead at larger row counts. Pipeline ratios can overlap and do
+not by themselves establish HBM bandwidth saturation.
+
+Numerically, isolated captured inputs from attention norms 0/11/23 produce
+99.817%/99.996%/99.859% exact INT8 agreement against the compiled regular block;
+all other INT8 elements differ by one level. FP16 normalized outputs differ by
+at most 0.0004883. Compiled V2 matches direct ACLNN outputs bit-for-bit for all
+three isolated inputs. The isolated 256x1024 profile measures 22.07 us regular
+versus 15.98 us V2, but the full graph above is the relevant performance result.
+
+Rounding differences accumulate through the network. Eight held-out eager
+embeddings have V2-versus-regular cosine mean/min 0.97551/0.96946. Against the
+FP16 model, regular and V2 mean cosine are 0.95600 and 0.95529 respectively
+(minima 0.94006 and 0.93970). Compiled V2 versus compiled regular mean cosine
+is 0.97109/0.97595/0.97800 across the three shapes. This is comparable static
+W8A8 behavior, not numerical identity or a retrieval-quality evaluation.
+
+Both compiled lanes choose the expected document for the bird-navigation and
+compiler/interpreter queries. V2 scores are 0.6563 versus 0.3972 for the bird
+query and 0.8010 versus 0.3014 for the compiler query. V2 compiled-versus-eager
+mean cosine is at least 0.9999997 across the tested shapes, much tighter than
+the original W8A8 graph's approximately 0.9756–0.9788 agreement.
+
+Evidence: [comparison](../tmp/26_bge_m3_inference/v2_model_1031242c/comparison.json),
+[audited kernel shapes and hardware counters](../tmp/26_bge_m3_inference/v2_model_1031242c/kernel_comparison.json),
+[full numerical results](../tmp/26_bge_m3_inference/v2_model_1031242c/result.json),
+[command](../tmp/26_bge_m3_inference/v2_model_1031242c/command.txt),
+[raw archive hash](../tmp/26_bge_m3_inference/v2_model_1031242c/artifacts.json).

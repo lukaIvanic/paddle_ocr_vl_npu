@@ -1,0 +1,605 @@
+{
+  "source_commit": "1031242c78cd24a53d91deb008467f599cf3642d",
+  "device": "Ascend910B2",
+  "physical_npu": "3",
+  "profiled_forwards_per_model_case_and_lane": 20,
+  "held_out_eager": {
+    "v2_vs_original": {
+      "finite": true,
+      "max_abs": 0.02690887451171875,
+      "mean_cosine": 0.9755135774612427,
+      "min_cosine": 0.9694644212722778,
+      "similarity_matrix_max_abs": 0.02444210648536682
+    },
+    "original_vs_dense": {
+      "finite": true,
+      "max_abs": 0.039306640625,
+      "mean_cosine": 0.9560000896453857,
+      "min_cosine": 0.9400600790977478,
+      "similarity_matrix_max_abs": 0.07205688953399658
+    },
+    "v2_vs_dense": {
+      "finite": true,
+      "max_abs": 0.041259765625,
+      "mean_cosine": 0.9552854299545288,
+      "min_cosine": 0.9396992921829224,
+      "similarity_matrix_max_abs": 0.0565204918384552
+    }
+  },
+  "isolated": [
+    {
+      "layer": 0,
+      "shape": [
+        256,
+        1024
+      ],
+      "norm_v2_vs_original": {
+        "max_abs": 0.0078125,
+        "mean_abs": 0.0001065903197741136,
+        "exact_fraction": 0.7305793762207031,
+        "min_cosine": 0.9999994039535522
+      },
+      "int8_v2_vs_original": {
+        "max_abs": 1.0,
+        "mean_abs": 0.0018157958984375,
+        "exact_fraction": 0.9981842041015625,
+        "min_cosine": 0.9998944401741028
+      },
+      "int8_scale_only": {
+        "max_abs": 1.0,
+        "mean_abs": 0.00226593017578125,
+        "exact_fraction": 0.9977340698242188,
+        "min_cosine": 0.9998940825462341
+      },
+      "int8_v2_vs_reciprocal_control": {
+        "max_abs": 1.0,
+        "mean_abs": 0.0013427734375,
+        "exact_fraction": 0.9986572265625,
+        "min_cosine": 0.9998936653137207
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "norm": {
+            "max_abs": 0.0078125,
+            "mean_abs": 0.00010658997052814811,
+            "exact_fraction": 0.7305793762207031,
+            "min_cosine": 0.9999994039535522
+          },
+          "quant": {
+            "max_abs": 1.0,
+            "mean_abs": 6.866455078125e-05,
+            "exact_fraction": 0.9999313354492188,
+            "min_cosine": 0.9999294281005859
+          }
+        },
+        "v2": {
+          "norm": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999992847442627
+          },
+          "quant": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999998807907104
+          }
+        }
+      },
+      "profiles": {
+        "original": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/block_original",
+          "active_forwards": 10,
+          "kernel_rows": 20,
+          "kernel_duration_us_per_forward": 22.0665,
+          "top_types": [
+            {
+              "name": "AddLayerNorm",
+              "count_per_forward": 1.0,
+              "us_per_forward": 14.618300000000001
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 1.0,
+              "us_per_forward": 7.4482
+            }
+          ]
+        },
+        "v2": {
+          "directory": "/workspace/results/bge_norm_v2_1031242c/profiles/block_v2",
+          "active_forwards": 10,
+          "kernel_rows": 10,
+          "kernel_duration_us_per_forward": 15.9843,
+          "top_types": [
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 15.9843
+            }
+          ]
+        }
+      },
+      "compiled_v2_vs_original": {
+        "norm": {
+          "max_abs": 0.0001220703125,
+          "mean_abs": 8.155893738148734e-10,
+          "exact_fraction": 0.9999732971191406,
+          "min_cosine": 0.9999992847442627
+        },
+        "quant": {
+          "max_abs": 1.0,
+          "mean_abs": 0.0018310546875,
+          "exact_fraction": 0.9981689453125,
+          "min_cosine": 0.9998944401741028
+        }
+      }
+    },
+    {
+      "layer": 11,
+      "shape": [
+        256,
+        1024
+      ],
+      "norm_v2_vs_original": {
+        "max_abs": 0.015625,
+        "mean_abs": 0.00011731461563613266,
+        "exact_fraction": 0.6699333190917969,
+        "min_cosine": 0.9999993443489075
+      },
+      "int8_v2_vs_original": {
+        "max_abs": 1.0,
+        "mean_abs": 4.57763671875e-05,
+        "exact_fraction": 0.9999542236328125,
+        "min_cosine": 0.9999319911003113
+      },
+      "int8_scale_only": {
+        "max_abs": 1.0,
+        "mean_abs": 3.814697265625e-06,
+        "exact_fraction": 0.9999961853027344,
+        "min_cosine": 0.9999665021896362
+      },
+      "int8_v2_vs_reciprocal_control": {
+        "max_abs": 1.0,
+        "mean_abs": 4.1961669921875e-05,
+        "exact_fraction": 0.9999580383300781,
+        "min_cosine": 0.9999319911003113
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "norm": {
+            "max_abs": 0.015625,
+            "mean_abs": 0.00011731647828128189,
+            "exact_fraction": 0.6699295043945312,
+            "min_cosine": 0.9999993443489075
+          },
+          "quant": {
+            "max_abs": 1.0,
+            "mean_abs": 3.4332275390625e-05,
+            "exact_fraction": 0.9999656677246094,
+            "min_cosine": 0.9999650716781616
+          }
+        },
+        "v2": {
+          "norm": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999994039535522
+          },
+          "quant": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999998211860657
+          }
+        }
+      },
+      "profiles": {},
+      "compiled_v2_vs_original": {
+        "norm": {
+          "max_abs": 0.00048828125,
+          "mean_abs": 1.8628725229064003e-09,
+          "exact_fraction": 0.9999923706054688,
+          "min_cosine": 0.9999994039535522
+        },
+        "quant": {
+          "max_abs": 1.0,
+          "mean_abs": 4.1961669921875e-05,
+          "exact_fraction": 0.9999580383300781,
+          "min_cosine": 0.9999650716781616
+        }
+      }
+    },
+    {
+      "layer": 23,
+      "shape": [
+        256,
+        1024
+      ],
+      "norm_v2_vs_original": {
+        "max_abs": 0.015625,
+        "mean_abs": 0.00010114209726452827,
+        "exact_fraction": 0.702728271484375,
+        "min_cosine": 0.9999994039535522
+      },
+      "int8_v2_vs_original": {
+        "max_abs": 1.0,
+        "mean_abs": 0.0005645751953125,
+        "exact_fraction": 0.9994354248046875,
+        "min_cosine": 0.9998891949653625
+      },
+      "int8_scale_only": {
+        "max_abs": 1.0,
+        "mean_abs": 0.00051116943359375,
+        "exact_fraction": 0.9994888305664062,
+        "min_cosine": 0.9999168515205383
+      },
+      "int8_v2_vs_reciprocal_control": {
+        "max_abs": 1.0,
+        "mean_abs": 7.62939453125e-05,
+        "exact_fraction": 0.9999237060546875,
+        "min_cosine": 0.9999130368232727
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "norm": {
+            "max_abs": 0.015625,
+            "mean_abs": 0.00010114011820405722,
+            "exact_fraction": 0.7027359008789062,
+            "min_cosine": 0.9999994039535522
+          },
+          "quant": {
+            "max_abs": 1.0,
+            "mean_abs": 0.00087738037109375,
+            "exact_fraction": 0.9991226196289062,
+            "min_cosine": 0.9999421834945679
+          }
+        },
+        "v2": {
+          "norm": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999992251396179
+          },
+          "quant": {
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "exact_fraction": 1.0,
+            "min_cosine": 0.9999997019767761
+          }
+        }
+      },
+      "profiles": {},
+      "compiled_v2_vs_original": {
+        "norm": {
+          "max_abs": 0.00048828125,
+          "mean_abs": 1.979060471057892e-09,
+          "exact_fraction": 0.9999923706054688,
+          "min_cosine": 0.9999992251396179
+        },
+        "quant": {
+          "max_abs": 1.0,
+          "mean_abs": 0.00141143798828125,
+          "exact_fraction": 0.9985885620117188,
+          "min_cosine": 0.9999136924743652
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "shape": [
+        2,
+        128
+      ],
+      "compiled_v2_vs_original": {
+        "finite": true,
+        "max_abs": 0.028167724609375,
+        "mean_cosine": 0.9710870981216431,
+        "min_cosine": 0.9694542288780212,
+        "similarity_matrix_max_abs": 0.0011669397354125977
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "finite": true,
+          "max_abs": 0.0233001708984375,
+          "mean_cosine": 0.9755745530128479,
+          "min_cosine": 0.9738671183586121,
+          "similarity_matrix_max_abs": 0.02704143524169922
+        },
+        "v2": {
+          "finite": true,
+          "max_abs": 0.0001220703125,
+          "mean_cosine": 0.9999997019767761,
+          "min_cosine": 0.9999996423721313,
+          "similarity_matrix_max_abs": 1.2934207916259766e-05
+        }
+      },
+      "semantic": {
+        "original": {
+          "scores": [
+            [
+              0.6709076762199402,
+              0.37956446409225464
+            ],
+            [
+              0.301630437374115,
+              0.7898125648498535
+            ]
+          ],
+          "top_document": [
+            0,
+            1
+          ]
+        },
+        "v2": {
+          "scores": [
+            [
+              0.6563103199005127,
+              0.39720800518989563
+            ],
+            [
+              0.3014357388019562,
+              0.8010167479515076
+            ]
+          ],
+          "top_document": [
+            0,
+            1
+          ]
+        }
+      },
+      "lanes": {
+        "original": {
+          "kernel_sum_ms": 4.87797955,
+          "kernel_count": 716.0,
+          "all_norm_and_quant_ms": 1.2316763000000002,
+          "per_type_us": {
+            "Cast": 9.8942,
+            "Mul": 1.2810000000000001,
+            "Cumsum": 34.38975000000001,
+            "Gelu": 271.64910000000003,
+            "GatherV2": 30.7367,
+            "AddLayerNorm": 502.03785000000005,
+            "QuantBatchMatmulV3": 1032.2017500000002,
+            "RealDiv": 1.422,
+            "TransData": 284.37979999999993,
+            "Add": 748.01515,
+            "AutomaticBufferFusionOp": 1.296,
+            "SoftmaxV2": 240.51815,
+            "LpNormV2": 1.5030000000000001,
+            "BatchMatMul": 158.4404,
+            "Quantize": 729.63845,
+            "NotEqual": 1.847,
+            "Muls": 227.2782,
+            "BroadcastTo": 5.4033,
+            "ClipByValueV2": 1.45805,
+            "ZerosLike": 1.344,
+            "Transpose": 593.2456999999999
+          },
+          "median_internal_gap_us": 16.935500000004595
+        },
+        "v2": {
+          "kernel_sum_ms": 4.868834,
+          "kernel_count": 670.0,
+          "all_norm_and_quant_ms": 1.21452365,
+          "per_type_us": {
+            "Cast": 9.99135,
+            "Mul": 1.3290000000000002,
+            "Cumsum": 33.7255,
+            "Gelu": 271.45945,
+            "GatherV2": 30.87885,
+            "QuantBatchMatmulV3": 1030.8188499999999,
+            "AddLayerNorm": 15.4893,
+            "RealDiv": 1.40505,
+            "TransData": 280.35169999999994,
+            "Add": 754.80805,
+            "AutomaticBufferFusionOp": 1.3000500000000001,
+            "SoftmaxV2": 241.38060000000002,
+            "LpNormV2": 1.5,
+            "BatchMatMul": 158.48569999999998,
+            "Quantize": 471.14095,
+            "NotEqual": 1.80205,
+            "Muls": 229.04825,
+            "BroadcastTo": 5.3921,
+            "ClipByValueV2": 1.4720499999999999,
+            "AddLayerNormQuantV2": 727.8934,
+            "ZerosLike": 1.2149999999999999,
+            "Transpose": 597.9467500000001
+          },
+          "median_internal_gap_us": 15.780499999985295
+        }
+      },
+      "kernel_reduction_percent": 0.1874864358543782,
+      "norm_quant_reduction_percent": 1.3926264555062184
+    },
+    {
+      "shape": [
+        1,
+        512
+      ],
+      "compiled_v2_vs_original": {
+        "finite": true,
+        "max_abs": 0.0214691162109375,
+        "mean_cosine": 0.9759528636932373,
+        "min_cosine": 0.9759528636932373,
+        "similarity_matrix_max_abs": 0.0004926919937133789
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "finite": true,
+          "max_abs": 0.02541351318359375,
+          "mean_cosine": 0.9775000810623169,
+          "min_cosine": 0.9775000810623169,
+          "similarity_matrix_max_abs": 0.000461578369140625
+        },
+        "v2": {
+          "finite": true,
+          "max_abs": 0.0001220703125,
+          "mean_cosine": 1.0,
+          "min_cosine": 1.0,
+          "similarity_matrix_max_abs": 9.310245513916016e-05
+        }
+      },
+      "semantic": null,
+      "lanes": {
+        "original": {
+          "kernel_sum_ms": 6.4266196,
+          "kernel_count": 692.0,
+          "all_norm_and_quant_ms": 1.5762251,
+          "per_type_us": {
+            "Cast": 10.23215,
+            "Mul": 1.3560500000000002,
+            "Cumsum": 37.2268,
+            "Gelu": 358.7572,
+            "GatherV2": 31.7678,
+            "AddLayerNorm": 757.94555,
+            "QuantBatchMatmulV3": 1367.9432500000003,
+            "RealDiv": 1.2610000000000001,
+            "TransData": 262.5453,
+            "Add": 848.4132500000001,
+            "AutomaticBufferFusionOp": 1.312,
+            "SoftmaxV2": 654.9193,
+            "LpNormV2": 1.32,
+            "BatchMatMul": 273.16535,
+            "Quantize": 818.2795500000001,
+            "NotEqual": 1.974,
+            "Muls": 234.01635,
+            "BroadcastTo": 1.1561000000000001,
+            "ClipByValueV2": 1.24105,
+            "ZerosLike": 1.532,
+            "Transpose": 760.2555499999999
+          },
+          "median_internal_gap_us": 16.385249999976622
+        },
+        "v2": {
+          "kernel_sum_ms": 6.2711916,
+          "kernel_count": 646.0,
+          "all_norm_and_quant_ms": 1.3808602,
+          "per_type_us": {
+            "Cast": 10.38315,
+            "Mul": 1.3800500000000002,
+            "Cumsum": 36.4567,
+            "Gelu": 358.76295,
+            "GatherV2": 32.41955,
+            "QuantBatchMatmulV3": 1366.5124000000003,
+            "AddLayerNorm": 17.7074,
+            "RealDiv": 1.2570000000000001,
+            "TransData": 251.67215,
+            "Add": 853.3236000000002,
+            "AutomaticBufferFusionOp": 1.322,
+            "SoftmaxV2": 682.0225499999999,
+            "LpNormV2": 1.342,
+            "BatchMatMul": 279.73635,
+            "Quantize": 503.0759,
+            "NotEqual": 1.893,
+            "Muls": 224.44065,
+            "BroadcastTo": 1.1701,
+            "ClipByValueV2": 1.2621,
+            "AddLayerNormQuantV2": 860.0769,
+            "ZerosLike": 1.4771,
+            "Transpose": 783.4979999999999
+          },
+          "median_internal_gap_us": 15.305000000015298
+        }
+      },
+      "kernel_reduction_percent": 2.4185031894528253,
+      "norm_quant_reduction_percent": 12.394479697094019
+    },
+    {
+      "shape": [
+        4,
+        512
+      ],
+      "compiled_v2_vs_original": {
+        "finite": true,
+        "max_abs": 0.02754974365234375,
+        "mean_cosine": 0.9779952764511108,
+        "min_cosine": 0.976412832736969,
+        "similarity_matrix_max_abs": 0.016158342361450195
+      },
+      "compiled_vs_eager": {
+        "original": {
+          "finite": true,
+          "max_abs": 0.03076171875,
+          "mean_cosine": 0.9787981510162354,
+          "min_cosine": 0.9750831723213196,
+          "similarity_matrix_max_abs": 0.020720481872558594
+        },
+        "v2": {
+          "finite": true,
+          "max_abs": 0.000244140625,
+          "mean_cosine": 0.9999997615814209,
+          "min_cosine": 0.9999997019767761,
+          "similarity_matrix_max_abs": 0.00011444091796875
+        }
+      },
+      "semantic": null,
+      "lanes": {
+        "original": {
+          "kernel_sum_ms": 12.686046549999999,
+          "kernel_count": 716.0,
+          "all_norm_and_quant_ms": 2.8349473499999998,
+          "per_type_us": {
+            "Cast": 12.70125,
+            "Mul": 1.6921,
+            "Cumsum": 46.8148,
+            "Gelu": 892.8877499999999,
+            "GatherV2": 40.9528,
+            "AddLayerNorm": 1494.49915,
+            "QuantBatchMatmulV3": 2620.9040999999997,
+            "RealDiv": 1.87805,
+            "TransData": 423.67555000000004,
+            "Add": 1458.6708500000004,
+            "AutomaticBufferFusionOp": 1.38705,
+            "SoftmaxV2": 2171.2408,
+            "LpNormV2": 1.92,
+            "BatchMatMul": 676.7505000000001,
+            "Quantize": 1340.4481999999998,
+            "NotEqual": 2.4139999999999997,
+            "Muls": 581.2697000000001,
+            "BroadcastTo": 6.12515,
+            "ClipByValueV2": 1.4769999999999999,
+            "ZerosLike": 2.0221999999999998,
+            "Transpose": 906.31555
+          },
+          "median_internal_gap_us": 17.095500000019456
+        },
+        "v2": {
+          "kernel_sum_ms": 12.22318965,
+          "kernel_count": 670.0,
+          "all_norm_and_quant_ms": 2.5412071999999997,
+          "per_type_us": {
+            "Cast": 12.77235,
+            "Mul": 1.689,
+            "Cumsum": 47.99795,
+            "Gelu": 893.0403999999999,
+            "GatherV2": 38.91485,
+            "QuantBatchMatmulV3": 2627.5248,
+            "AddLayerNorm": 40.48985,
+            "RealDiv": 1.8800499999999998,
+            "TransData": 419.0648,
+            "Add": 1375.73315,
+            "AutomaticBufferFusionOp": 1.33505,
+            "SoftmaxV2": 2129.47675,
+            "LpNormV2": 1.87805,
+            "BatchMatMul": 670.1668500000001,
+            "Quantize": 851.81445,
+            "NotEqual": 2.22705,
+            "Muls": 536.4048,
+            "BroadcastTo": 6.11015,
+            "ClipByValueV2": 1.5,
+            "AddLayerNormQuantV2": 1648.9029,
+            "ZerosLike": 2.0221999999999998,
+            "Transpose": 912.2441999999999
+          },
+          "median_internal_gap_us": 15.895000000133223
+        }
+      },
+      "kernel_reduction_percent": 3.6485511713655105,
+      "norm_quant_reduction_percent": 10.36139701148242
+    }
+  ]
+}

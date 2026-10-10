@@ -1,0 +1,8 @@
+{
+  "raw_profiles": {
+    "name": "bge-m3-v2-910b-profiles.tar.gz",
+    "sha256": "7b78cd3f3941eecde8332a651bd13f68e1f69eaf5647c350fd518ae6e3b9ef60",
+    "bytes": 33859351
+  },
+  "note": "Archive excludes compilation caches. kernel_comparison.json was enriched locally with hardware counters from the same raw CSVs."
+}
