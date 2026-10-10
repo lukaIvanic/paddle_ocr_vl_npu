@@ -1,0 +1,2696 @@
+{
+  "production_run": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/candidate_full1651",
+  "candidate_run": "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/full1651",
+  "accuracy_reference": {
+    "overall": 95.63425714513845,
+    "text": 96.3160217595815,
+    "table_TEDS": 93.54406641076004,
+    "formula_CDM": 97.0426832650738
+  },
+  "accuracy_candidate": {
+    "overall": 95.61538209306372,
+    "text": 96.25424112949355,
+    "table_TEDS": 93.34485910630501,
+    "formula_CDM": 97.24704604339259
+  },
+  "accuracy_delta": {
+    "overall": -0.01887505207473339,
+    "text": -0.061780630087952204,
+    "table_TEDS": -0.19920730445502954,
+    "formula_CDM": 0.20436277831878158
+  },
+  "page_changes": {
+    "text": {
+      "better": 90,
+      "worse": 70,
+      "unchanged": 1397,
+      "missing": [],
+      "added": [],
+      "changed_pages": [
+        {
+          "page": "PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png",
+          "reference": 0.9891891891891892,
+          "candidate": 0.9945945945945946,
+          "delta": 0.005405405405405461
+        },
+        {
+          "page": "PPT_ch7_page_030.png",
+          "reference": 0.9782608695652174,
+          "candidate": 0.9875776397515528,
+          "delta": 0.009316770186335366
+        },
+        {
+          "page": "PPT_ch7_page_136.png",
+          "reference": 0.9681528662420382,
+          "candidate": 0.9904458598726115,
+          "delta": 0.022292993630573243
+        },
+        {
+          "page": "PPT_lecture1_page_005.png",
+          "reference": 0.8733333333333333,
+          "candidate": 1.0,
+          "delta": 0.1266666666666667
+        },
+        {
+          "page": "book_en_40.Puzzles.and.Problems.in.Probability.and.Mathematical.Statistics,.Schwarz,.Springer,.2008_page_064.png",
+          "reference": 0.9985714285714286,
+          "candidate": 0.9971428571428571,
+          "delta": -0.0014285714285714457
+        },
+        {
+          "page": "book_en_[搬书匠#20][HTML5 Canvas].2011.英文版_page_208.png",
+          "reference": 0.9855699855699855,
+          "candidate": 0.987012987012987,
+          "delta": 0.0014430014430014682
+        },
+        {
+          "page": "book_en_国外数学教材-An Excursion through Elementary Mathematics（初等数学漫游）-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0596.png",
+          "reference": 0.9984748347737672,
+          "candidate": 0.9969543147208122,
+          "delta": -0.001520520052954999
+        },
+        {
+          "page": "book_zh_CNASGL0092018_extracted_page_69.png",
+          "reference": 0.986784140969163,
+          "candidate": 0.9911894273127754,
+          "delta": 0.004405286343612369
+        },
+        {
+          "page": "book_zh_CNASGL0092018_extracted_page_70.png",
+          "reference": 0.975929978118162,
+          "candidate": 0.9934354485776805,
+          "delta": 0.017505470459518557
+        },
+        {
+          "page": "book_zh_CNASGL082006_extracted_page_50.png",
+          "reference": 0.9733333333333334,
+          "candidate": 0.96,
+          "delta": -0.01333333333333342
+        },
+        {
+          "page": "book_zh_DLT10902008_extracted_page_8.png",
+          "reference": 0.9958333333333333,
+          "candidate": 1.0,
+          "delta": 0.004166666666666652
+        },
+        {
+          "page": "book_zh_GB115041989_extracted_page_9.png",
+          "reference": 0.9985486211901307,
+          "candidate": 1.0,
+          "delta": 0.0014513788098693414
+        },
+        {
+          "page": "book_zh_GB14536.11998_extracted_page_145.png",
+          "reference": 0.9979591836734694,
+          "candidate": 0.9918367346938776,
+          "delta": -0.006122448979591799
+        },
+        {
+          "page": "book_zh_GB14930.21994_extracted_page_4.png",
+          "reference": 0.9727272727272728,
+          "candidate": 0.9881818181818182,
+          "delta": 0.015454545454545388
+        },
+        {
+          "page": "book_zh_HGT51022016_extracted_page_12.png",
+          "reference": 0.9922330097087378,
+          "candidate": 0.9980582524271845,
+          "delta": 0.005825242718446644
+        },
+        {
+          "page": "book_zh_JJD10031991_extracted_page_6.png",
+          "reference": 0.924380704041721,
+          "candidate": 0.9947848761408083,
+          "delta": 0.07040417209908734
+        },
+        {
+          "page": "book_zh_SYT57941993_extracted_page_3.png",
+          "reference": 0.9540358744394619,
+          "candidate": 0.968609865470852,
+          "delta": 0.014573991031390121
+        },
+        {
+          "page": "book_zh_TB100782001_extracted_page_21.png",
+          "reference": 0.9752407152682255,
+          "candidate": 0.9779917469050894,
+          "delta": 0.0027510316368638543
+        },
+        {
+          "page": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语上册_课本_人教新起点英语5A电子课本_page_011.png",
+          "reference": 0.833976833976834,
+          "candidate": 0.8571428571428572,
+          "delta": 0.02316602316602323
+        },
+        {
+          "page": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点四年级英语下册_课本_人教新起点英语4B电子课本_page_048.png",
+          "reference": 0.8228228228228228,
+          "candidate": 0.8108108108108107,
+          "delta": -0.012012012012012074
+        },
+        {
+          "page": "color_textbook_教材全解1+1二年级上册英语上海牛津版_page_058.png",
+          "reference": 0.997275204359673,
+          "candidate": 1.0,
+          "delta": 0.0027247956403270157
+        },
+        {
+          "page": "docstructbench_enbook-zlib-o.O-17208435.pdf_105.jpg",
+          "reference": 0.9951620706337687,
+          "candidate": 0.9956437560503388,
+          "delta": 0.0004816854165701212
+        },
+        {
+          "page": "docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg",
+          "reference": 0.8457854406130269,
+          "candidate": 0.8455938697318007,
+          "delta": -0.00019157088122612187
+        },
+        {
+          "page": "docstructbench_enbook-zlib-o.O-19221575.pdf_1173.jpg",
+          "reference": 0.8620921627985201,
+          "candidate": 0.9976644608797197,
+          "delta": 0.13557229808119964
+        },
+        {
+          "page": "docstructbench_llm-raw-scihub-o.O-j.jcrimjus.2010.04.003.pdf_8.jpg",
+          "reference": 0.9994073722887282,
+          "candidate": 0.9992888467464739,
+          "delta": -0.00011852554225433298
+        },
+        {
+          "page": "exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png",
+          "reference": 0.9070455891059799,
+          "candidate": 0.941358024691358,
+          "delta": 0.03431243558537811
+        },
+        {
+          "page": "exam_paper_en-file-putnam-archive_1994_Problems_1994_page_001.png",
+          "reference": 0.9983098591549295,
+          "candidate": 0.9977464788732394,
+          "delta": -0.0005633802816901179
+        },
+        {
+          "page": "exam_paper_en-file-putnam-archive_2002_Solutions_2002s_page_004.png",
+          "reference": 1.0,
+          "candidate": 0.9980314960629921,
+          "delta": -0.0019685039370078705
+        },
+        {
+          "page": "exam_paper_en-file-putnam-archive_2006_Solutions_2006s_page_007.png",
+          "reference": 0.9968186638388123,
+          "candidate": 0.9978791092258749,
+          "delta": 0.0010604453870625141
+        },
+        {
+          "page": "exam_paper_en-file-putnam-archive_2010_Solutions_2010s_page_001.png",
+          "reference": 0.9742752143732135,
+          "candidate": 0.9718252347897101,
+          "delta": -0.002449979583503459
+        },
+        {
+          "page": "exam_paper_en-file-putnam-archive_2015_Solutions_2015s_page_005.png",
+          "reference": 0.8949804200783197,
+          "candidate": 0.8953364186543253,
+          "delta": 0.0003559985760056561
+        },
+        {
+          "page": "jiaocai_jiaocai_en_6.jpg",
+          "reference": 0.9803439803439803,
+          "candidate": 0.9778869778869779,
+          "delta": -0.002457002457002422
+        },
+        {
+          "page": "jiaocai_jiaocai_en_932.jpg",
+          "reference": 0.9203539823008849,
+          "candidate": 0.9218289085545722,
+          "delta": 0.001474926253687281
+        },
+        {
+          "page": "jiaocaineedrop_2017.pdf_0.jpg",
+          "reference": 0.9716814159292035,
+          "candidate": 0.9449225473321858,
+          "delta": -0.026758868597017704
+        },
+        {
+          "page": "jiaocaineedrop_Chapter9.pdf_46.jpg",
+          "reference": 0.9858442871587462,
+          "candidate": 0.9848331648129424,
+          "delta": -0.0010111223458038054
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_1198.jpg",
+          "reference": 0.8360215053763441,
+          "candidate": 0.6457746478873239,
+          "delta": -0.19024685748902026
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+          "reference": 0.9053148727110317,
+          "candidate": 0.9090094128193635,
+          "delta": 0.003694540108331812
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_1363.jpg",
+          "reference": 0.6948051948051948,
+          "candidate": 0.7546583850931677,
+          "delta": 0.05985319028797298
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_1408.jpg",
+          "reference": 0.964769647696477,
+          "candidate": 0.962059620596206,
+          "delta": -0.0027100271002710175
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_1473.jpg",
+          "reference": 0.8661879895561357,
+          "candidate": 0.8674934725848564,
+          "delta": 0.0013054830287206887
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_1972.jpg",
+          "reference": 0.8292682926829268,
+          "candidate": 0.8351498637602179,
+          "delta": 0.005881571077291148
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2211.jpg",
+          "reference": 0.9495515695067265,
+          "candidate": 0.9473094170403588,
+          "delta": -0.0022421524663677195
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2272.jpg",
+          "reference": 0.9754901960784313,
+          "candidate": 0.9852941176470589,
+          "delta": 0.009803921568627527
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2412.jpg",
+          "reference": 0.9323181049069373,
+          "candidate": 0.9306260575296108,
+          "delta": -0.0016920473773265332
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2509.jpg",
+          "reference": 0.88558352402746,
+          "candidate": 0.8881278538812786,
+          "delta": 0.0025443298538185832
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2680.jpg",
+          "reference": 0.9101899827288429,
+          "candidate": 0.9689119170984456,
+          "delta": 0.05872193436960271
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2732.jpg",
+          "reference": 0.8869625520110958,
+          "candidate": 0.9112343966712899,
+          "delta": 0.024271844660194164
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2839.jpg",
+          "reference": 1.0,
+          "candidate": 0.9899244332493703,
+          "delta": -0.010075566750629705
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2901.jpg",
+          "reference": 0.924613987284287,
+          "candidate": 0.9209809264305178,
+          "delta": -0.0036330608537692433
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_3063.jpg",
+          "reference": 0.7486033519553073,
+          "candidate": 0.7135306553911205,
+          "delta": -0.03507269656418677
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_3361.jpg",
+          "reference": 0.9384615384615385,
+          "candidate": 0.9692307692307692,
+          "delta": 0.03076923076923077
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_3428.jpg",
+          "reference": 0.9991749174917491,
+          "candidate": 0.9983498349834984,
+          "delta": -0.0008250825082507518
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_3458.jpg",
+          "reference": 0.5908141962421711,
+          "candidate": 0.6161290322580646,
+          "delta": 0.02531483601589346
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_349.jpg",
+          "reference": 0.5017806935332709,
+          "candidate": 0.48872604284103716,
+          "delta": -0.013054650692233771
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_3685.jpg",
+          "reference": 0.7931034482758621,
+          "candidate": 0.6620689655172414,
+          "delta": -0.13103448275862073
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_3713.jpg",
+          "reference": 0.8377926421404682,
+          "candidate": 0.8444816053511706,
+          "delta": 0.006688963210702337
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_3984.jpg",
+          "reference": 0.8861689106487148,
+          "candidate": 0.9164588528678305,
+          "delta": 0.03028994221911563
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_4065.jpg",
+          "reference": 0.9716629381058911,
+          "candidate": 0.9724086502609992,
+          "delta": 0.0007457121551081025
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_664.jpg",
+          "reference": 0.8771021992238034,
+          "candidate": 0.7978468899521531,
+          "delta": -0.07925530927165025
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_715.jpg",
+          "reference": 0.9769503546099291,
+          "candidate": 0.975177304964539,
+          "delta": -0.0017730496453900457
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_854.jpg",
+          "reference": 0.9875717017208413,
+          "candidate": 0.9904397705544933,
+          "delta": 0.002868068833651982
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_913.jpg",
+          "reference": 0.9307359307359307,
+          "candidate": 0.9264069264069263,
+          "delta": -0.0043290043290044045
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_980.jpg",
+          "reference": 0.9228395061728395,
+          "candidate": 0.06733852496564363,
+          "delta": -0.8555009812071959
+        },
+        {
+          "page": "magazine_TheEconomist.2023.11.18_page_082.png",
+          "reference": 0.9556595365418895,
+          "candidate": 0.9558823529411765,
+          "delta": 0.00022281639928700692
+        },
+        {
+          "page": "magazine_TheEconomist.2023.12.02_page_028.png",
+          "reference": 0.988914373088685,
+          "candidate": 0.9892966360856269,
+          "delta": 0.0003822629969418845
+        },
+        {
+          "page": "magazine_TheEconomist.2023.12.02_page_031.png",
+          "reference": 0.857623947614593,
+          "candidate": 0.8574368568755847,
+          "delta": -0.00018709073900835538
+        },
+        {
+          "page": "magazine_TheEconomist.2023.12.02_page_056.png",
+          "reference": 0.9485840530226953,
+          "candidate": 0.9483832094798152,
+          "delta": -0.00020084354288008033
+        },
+        {
+          "page": "magazine_TheEconomist.2023.12.02_page_062.png",
+          "reference": 0.9857591623036649,
+          "candidate": 0.9845026178010471,
+          "delta": -0.0012565445026178068
+        },
+        {
+          "page": "magazine_TheEconomist.2023.12.09_page_009.png",
+          "reference": 0.94088281660536,
+          "candidate": 0.9411455596426694,
+          "delta": 0.00026274303730944304
+        },
+        {
+          "page": "magazine_TheEconomist.2023.12.09_page_045.png",
+          "reference": 0.9969354529783566,
+          "candidate": 0.9977015897337674,
+          "delta": 0.0007661367554108178
+        },
+        {
+          "page": "magazine_TheEconomist.2023.12.16_page_026.png",
+          "reference": 0.9995971802618329,
+          "candidate": 0.9991946849204751,
+          "delta": -0.0004024953413577226
+        },
+        {
+          "page": "magazine_TheEconomist.2023.12.23_page_060.png",
+          "reference": 0.9322398939695162,
+          "candidate": 0.9315772034459907,
+          "delta": -0.000662690523525522
+        },
+        {
+          "page": "magazine_TheEconomist.2023.12.23_page_104.png",
+          "reference": 0.9973926995587645,
+          "candidate": 0.9993983152827918,
+          "delta": 0.002005615724027243
+        },
+        {
+          "page": "magazine_TheEconomist.2024.03.02_page_025.png",
+          "reference": 0.9993809327280231,
+          "candidate": 0.9993808049535604,
+          "delta": -1.2777446267708825e-07
+        },
+        {
+          "page": "magazine_TheEconomist.2024.03.02_page_028.png",
+          "reference": 0.9982468443197756,
+          "candidate": 0.9978962131837307,
+          "delta": -0.0003506311360449432
+        },
+        {
+          "page": "newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg",
+          "reference": 0.5770821367030442,
+          "candidate": 0.5770246984491672,
+          "delta": -5.743825387705126e-05
+        },
+        {
+          "page": "newspaper_35352f94db65d19e097395380498ec15_1.jpg",
+          "reference": 0.9702086765513455,
+          "candidate": 0.9703459637561779,
+          "delta": 0.00013728720483241474
+        },
+        {
+          "page": "newspaper_35bdaa11dec104ccbdc9e19ac8527d21_1.jpg",
+          "reference": 0.9607216988663579,
+          "candidate": 0.9608813667571452,
+          "delta": 0.00015966789078725174
+        },
+        {
+          "page": "newspaper_5d4b8e73eacbc6ecac0d7b1396fd01d7_1.jpg",
+          "reference": 0.8549957662997459,
+          "candidate": 0.855207451312447,
+          "delta": 0.00021168501270107942
+        },
+        {
+          "page": "newspaper_9eafddb83b0f7f99c42ff364b080e2c1_1.jpg",
+          "reference": 0.8855004158580537,
+          "candidate": 0.8853617965067924,
+          "delta": -0.00013861935126135982
+        },
+        {
+          "page": "newspaper_Daily Mirror 2025-1-8@magazinesclubnew_page_058.png",
+          "reference": 0.899073461283918,
+          "candidate": 0.899404367968233,
+          "delta": 0.00033090668431501324
+        },
+        {
+          "page": "newspaper_The Guardian UK_0801@magazinesclubnew_page_048.png",
+          "reference": 0.9884278859723399,
+          "candidate": 0.9881489841986456,
+          "delta": -0.0002789017736942734
+        },
+        {
+          "page": "newspaper_The Times UK_0801@magazinesclubnew_page_020.png",
+          "reference": 0.9895601054125279,
+          "candidate": 0.9894587472126495,
+          "delta": -0.00010135819987844297
+        },
+        {
+          "page": "newspaper_The Times UK_0801@magazinesclubnew_page_031.png",
+          "reference": 0.9998955286251567,
+          "candidate": 1.0,
+          "delta": 0.00010447137484326241
+        },
+        {
+          "page": "newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_004.png",
+          "reference": 0.937024445523717,
+          "candidate": 0.9371053909664886,
+          "delta": 8.09454427715961e-05
+        },
+        {
+          "page": "newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_018.png",
+          "reference": 0.988441252384693,
+          "candidate": 0.9885521885521885,
+          "delta": 0.00011093616749546786
+        },
+        {
+          "page": "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_025.png",
+          "reference": 0.5162703828747934,
+          "candidate": 0.5163422167947704,
+          "delta": 7.183391997700461e-05
+        },
+        {
+          "page": "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_033.png",
+          "reference": 0.9410992309135247,
+          "candidate": 0.9421309322828737,
+          "delta": 0.0010317013693490473
+        },
+        {
+          "page": "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_041.png",
+          "reference": 0.9727919059338256,
+          "candidate": 0.9726551818430408,
+          "delta": -0.00013672409078480108
+        },
+        {
+          "page": "newspaper_TheWashingtonPost-2025-01-08@magazinesclubnew_page_042.png",
+          "reference": 0.9403831845238095,
+          "candidate": 0.9403521825396826,
+          "delta": -3.100198412697708e-05
+        },
+        {
+          "page": "newspaper_b615618f3cdb0f2c13ffb5865dea799c_1.jpg",
+          "reference": 0.9804812384317685,
+          "candidate": 0.9803690616411465,
+          "delta": -0.00011217679062203167
+        },
+        {
+          "page": "newspaper_d84e38031cf03d3fd4649910cf0ecce1_1.jpg",
+          "reference": 0.9678852757018784,
+          "candidate": 0.967683296303777,
+          "delta": -0.00020197939810140397
+        },
+        {
+          "page": "newspaper_dd99f17cad0992a54fdf424b1c5e86ee_1.jpg",
+          "reference": 0.975810786597384,
+          "candidate": 0.9759899659559219,
+          "delta": 0.00017917935853795086
+        },
+        {
+          "page": "newspaper_e6ddb0246224fb8bd8788e6cc7839021_1.jpg",
+          "reference": 0.9652571185720357,
+          "candidate": 0.9658837283452014,
+          "delta": 0.0006266097731657538
+        },
+        {
+          "page": "newspaper_ef5c785d9cc21ccf6b73d143f231b5c5_1.jpg",
+          "reference": 0.738110072689512,
+          "candidate": 0.7386292834890966,
+          "delta": 0.0005192107995846129
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_100.jpg",
+          "reference": 0.9950738916256158,
+          "candidate": 0.9926108374384236,
+          "delta": -0.0024630541871921707
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_101.jpg",
+          "reference": 0.9434447300771208,
+          "candidate": 0.9384615384615385,
+          "delta": -0.004983191615582361
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_103.jpg",
+          "reference": 0.9658119658119658,
+          "candidate": 0.962962962962963,
+          "delta": -0.002849002849002802
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_119.jpg",
+          "reference": 0.9422492401215805,
+          "candidate": 0.939209726443769,
+          "delta": -0.003039513677811523
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_120.jpg",
+          "reference": 0.9545454545454546,
+          "candidate": 0.9659090909090909,
+          "delta": 0.011363636363636354
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_122.jpg",
+          "reference": 0.9112271540469974,
+          "candidate": 0.9138381201044387,
+          "delta": 0.0026109660574412663
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_123.jpg",
+          "reference": 0.995398773006135,
+          "candidate": 0.9984662576687117,
+          "delta": 0.0030674846625766694
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_124.jpg",
+          "reference": 0.9966777408637874,
+          "candidate": 0.9950083194675541,
+          "delta": -0.0016694213962332727
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_125.jpg",
+          "reference": 0.9939759036144579,
+          "candidate": 0.9924698795180723,
+          "delta": -0.001506024096385561
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_126.jpg",
+          "reference": 0.9971631205673759,
+          "candidate": 0.9985815602836879,
+          "delta": 0.0014184397163120588
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_38.jpg",
+          "reference": 0.9939024390243902,
+          "candidate": 0.9969512195121951,
+          "delta": 0.0030487804878048808
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_55.jpg",
+          "reference": 0.9764150943396226,
+          "candidate": 0.981042654028436,
+          "delta": 0.004627559688813454
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_56.jpg",
+          "reference": 0.9922480620155039,
+          "candidate": 0.9948320413436692,
+          "delta": 0.0025839793281653423
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_11.jpg",
+          "reference": 0.916030534351145,
+          "candidate": 0.9923664122137404,
+          "delta": 0.07633587786259544
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_12.jpg",
+          "reference": 0.013253527148354038,
+          "candidate": 0.3242574257425742,
+          "delta": 0.3110038985942202
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_14.jpg",
+          "reference": 0.8650306748466258,
+          "candidate": 0.967741935483871,
+          "delta": 0.10271126063724523
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_15.jpg",
+          "reference": 0.49112426035502954,
+          "candidate": 0.49411764705882355,
+          "delta": 0.00299338670379401
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_16.jpg",
+          "reference": 0.4376528117359413,
+          "candidate": 0.37317073170731707,
+          "delta": -0.06448208002862421
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_115.jpg",
+          "reference": 0.9761431411530815,
+          "candidate": 0.9751491053677932,
+          "delta": -0.0009940357852883386
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_116.jpg",
+          "reference": 0.9848648648648649,
+          "candidate": 0.985945945945946,
+          "delta": 0.00108108108108107
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_2.jpg",
+          "reference": 0.9925093632958801,
+          "candidate": 1.0,
+          "delta": 0.0074906367041198685
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_3.jpg",
+          "reference": 0.9900662251655629,
+          "candidate": 1.0,
+          "delta": 0.009933774834437137
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_4.jpg",
+          "reference": 0.9550561797752809,
+          "candidate": 0.9588014981273408,
+          "delta": 0.0037453183520599342
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_48.jpg",
+          "reference": 0.99302649930265,
+          "candidate": 0.9916317991631799,
+          "delta": -0.001394700139470073
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_67.jpg",
+          "reference": 0.9964580873671782,
+          "candidate": 0.9976387249114522,
+          "delta": 0.0011806375442739991
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_69.jpg",
+          "reference": 0.9847972972972973,
+          "candidate": 0.9881756756756757,
+          "delta": 0.0033783783783783994
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_7.jpg",
+          "reference": 0.997867803837953,
+          "candidate": 0.9957356076759062,
+          "delta": -0.002132196162046851
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_70.jpg",
+          "reference": 0.9730538922155688,
+          "candidate": 0.9805389221556886,
+          "delta": 0.007485029940119792
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_71.jpg",
+          "reference": 0.9710144927536232,
+          "candidate": 0.9742765273311897,
+          "delta": 0.003262034577566575
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_72.jpg",
+          "reference": 0.9691833590138675,
+          "candidate": 0.9722222222222222,
+          "delta": 0.0030388632083546696
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_73.jpg",
+          "reference": 0.9739837398373984,
+          "candidate": 0.9739413680781759,
+          "delta": -4.237175922250369e-05
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_74.jpg",
+          "reference": 0.9720930232558139,
+          "candidate": 0.9744186046511628,
+          "delta": 0.0023255813953488857
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_75.jpg",
+          "reference": 0.9144385026737968,
+          "candidate": 0.9251336898395722,
+          "delta": 0.010695187165775444
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_97.jpg",
+          "reference": 0.9856770833333334,
+          "candidate": 0.9869791666666666,
+          "delta": 0.0013020833333332593
+        },
+        {
+          "page": "page-07088b2f-f9d6-4c38-9c97-d7f98bc3d556.png",
+          "reference": 0.8387096774193549,
+          "candidate": 0.6480582524271845,
+          "delta": -0.19065142499217036
+        },
+        {
+          "page": "page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.png",
+          "reference": 0.9976331360946745,
+          "candidate": 0.9964497041420118,
+          "delta": -0.0011834319526626835
+        },
+        {
+          "page": "page-232d386f-6c9d-4b50-9463-89dedce995e5.png",
+          "reference": 1.0,
+          "candidate": 0.9996297667530544,
+          "delta": -0.0003702332469456282
+        },
+        {
+          "page": "page-374e9c4b-6fdb-4176-8ac7-519b86d97e40.png",
+          "reference": 0.674757281553398,
+          "candidate": 0.6723300970873787,
+          "delta": -0.0024271844660193054
+        },
+        {
+          "page": "page-4009495f-1a7c-46dc-9f52-7f80f5f0cc5c.png",
+          "reference": 1.0,
+          "candidate": 0.9955555555555555,
+          "delta": -0.004444444444444473
+        },
+        {
+          "page": "page-423cdc11-af52-4e41-8feb-a40741b15855.png",
+          "reference": 0.9709302325581395,
+          "candidate": 0.9670542635658914,
+          "delta": -0.003875968992248069
+        },
+        {
+          "page": "page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png",
+          "reference": 0.982089552238806,
+          "candidate": 0.9880597014925373,
+          "delta": 0.005970149253731294
+        },
+        {
+          "page": "page-51757cee-c153-4baf-8616-ac106b543885.png",
+          "reference": 0.993993993993994,
+          "candidate": 1.0,
+          "delta": 0.006006006006005982
+        },
+        {
+          "page": "page-56023e3d-ae9b-486d-b7bb-419624d18356.png",
+          "reference": 0.07035928143712578,
+          "candidate": 0.034797630799605184,
+          "delta": -0.03556165063752059
+        },
+        {
+          "page": "page-57d5842c-85c2-41c9-9d37-65aad59c1277.png",
+          "reference": 1.0,
+          "candidate": 0.9954954954954955,
+          "delta": -0.0045045045045044585
+        },
+        {
+          "page": "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png",
+          "reference": 0.995880535530381,
+          "candidate": 0.9948506694129763,
+          "delta": -0.001029866117404743
+        },
+        {
+          "page": "page-7050793e-109f-4066-be91-107f94b617b9.png",
+          "reference": 0.635997699827487,
+          "candidate": 0.6348476135710178,
+          "delta": -0.0011500862564691738
+        },
+        {
+          "page": "page-7dfc88d8-6d95-446c-b910-2410e8552f76.png",
+          "reference": 0.9918478260869565,
+          "candidate": 0.9945652173913043,
+          "delta": 0.0027173913043477826
+        },
+        {
+          "page": "page-8d57c3d2-8e50-4161-871f-bfa7b8c0fdb6.png",
+          "reference": 0.9984756097560976,
+          "candidate": 0.9992378048780488,
+          "delta": 0.0007621951219511924
+        },
+        {
+          "page": "page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+          "reference": 0.9292035398230089,
+          "candidate": 0.9319526627218935,
+          "delta": 0.002749122898884626
+        },
+        {
+          "page": "page-942ac90d-4704-43f3-9286-719c7be9e655.png",
+          "reference": 0.9741379310344828,
+          "candidate": 0.9762931034482759,
+          "delta": 0.0021551724137931494
+        },
+        {
+          "page": "page-9551c5d5-0786-4bf6-9a87-86b4f6c4111f.png",
+          "reference": 0.9966722129783694,
+          "candidate": 0.9933554817275747,
+          "delta": -0.00331673125079468
+        },
+        {
+          "page": "page-b4d4cf5b-0a0e-454b-8220-8c7f58402791.png",
+          "reference": 0.9920159680638723,
+          "candidate": 1.0,
+          "delta": 0.007984031936127733
+        },
+        {
+          "page": "page-c7a51204-5142-4c7a-bc9d-1faf1fe1be02.png",
+          "reference": 0.8216216216216217,
+          "candidate": 0.7688442211055276,
+          "delta": -0.05277740051609403
+        },
+        {
+          "page": "page-d5c82c0e-2a7d-4573-9dce-bff939504367.png",
+          "reference": 0.8753993610223643,
+          "candidate": 0.8746006389776357,
+          "delta": -0.0007987220447285281
+        },
+        {
+          "page": "page-dad0f4e5-290f-496f-bbdd-099ad75c6ff0.png",
+          "reference": 0.8887269193391643,
+          "candidate": 0.8882410106899903,
+          "delta": -0.0004859086491739717
+        },
+        {
+          "page": "page-dad79c54-8125-4927-9988-ee1d2a139d7b.png",
+          "reference": 0.912472647702407,
+          "candidate": 0.8997821350762527,
+          "delta": -0.012690512626154282
+        },
+        {
+          "page": "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png",
+          "reference": 0.9520514087988137,
+          "candidate": 0.9545229856648542,
+          "delta": 0.0024715768660404924
+        },
+        {
+          "page": "scihub_c2gc35284b.pdf_6.jpg",
+          "reference": 0.99695701787752,
+          "candidate": 0.99923925446938,
+          "delta": 0.0022822365918599985
+        },
+        {
+          "page": "scihub_j.physe.2007.10.027.pdf_0.jpg",
+          "reference": 0.9993247805536799,
+          "candidate": 0.9996625042186973,
+          "delta": 0.0003377236650173865
+        },
+        {
+          "page": "scihub_jb%2Fmvh022.pdf_1.jpg",
+          "reference": 0.9254154843940008,
+          "candidate": 0.9258208350222943,
+          "delta": 0.0004053506282934993
+        },
+        {
+          "page": "yanbaopptmerge_593a9a157e4d56a5a57eb14f1d1beec5.pdf_944.jpg",
+          "reference": 0.9766580214894406,
+          "candidate": 0.977399036680252,
+          "delta": 0.0007410151908113782
+        },
+        {
+          "page": "yanbaopptmerge_abef2a4978ae4d13e931f0392502bd40.pdf_1130.jpg",
+          "reference": 0.7695852534562212,
+          "candidate": 0.7948113207547169,
+          "delta": 0.025226067298495747
+        },
+        {
+          "page": "yanbaopptmerge_abef2a4978ae4d13e931f0392502bd40.pdf_1287.jpg",
+          "reference": 0.9705215419501134,
+          "candidate": 0.9682539682539683,
+          "delta": -0.0022675736961451642
+        },
+        {
+          "page": "yanbaopptmerge_yanbaoPPT_4570.jpg",
+          "reference": 0.611368909512761,
+          "candidate": 0.0488769092542678,
+          "delta": -0.5624920002584932
+        },
+        {
+          "page": "yanbaor2_yanbaoPPT_1332.jpg",
+          "reference": 0.9981024667931688,
+          "candidate": 1.0,
+          "delta": 0.00189753320683117
+        }
+      ]
+    },
+    "formula_CDM": {
+      "better": 26,
+      "worse": 15,
+      "unchanged": 272,
+      "missing": [],
+      "added": [],
+      "changed_pages": [
+        {
+          "page": "book_en_5.Advanced.Modern.Algebra.-.J.Rotman.2003_page_887.png",
+          "reference": 1.0,
+          "candidate": 0.9881428571428571,
+          "delta": -0.0118571428571429
+        },
+        {
+          "page": "book_en_A.Concise.Introduction.to.Linear.Algebra,.Geza.Schay,.Birkhauser,.2012_page_065.png",
+          "reference": 0.9090909090909091,
+          "candidate": 0.9039999999999999,
+          "delta": -0.005090909090909146
+        },
+        {
+          "page": "book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0035.png",
+          "reference": 0.9145,
+          "candidate": 0.9895,
+          "delta": 0.07500000000000007
+        },
+        {
+          "page": "book_zh_CNASGL0072018_extracted_page_48.png",
+          "reference": 0.9453333333333332,
+          "candidate": 0.9595833333333333,
+          "delta": 0.014250000000000096
+        },
+        {
+          "page": "book_zh_CNASGL0092018_extracted_page_69.png",
+          "reference": 0.8976,
+          "candidate": 0.8882,
+          "delta": -0.009399999999999964
+        },
+        {
+          "page": "book_zh_CNASGL0092018_extracted_page_70.png",
+          "reference": 0.980625,
+          "candidate": 0.9855,
+          "delta": 0.004875000000000074
+        },
+        {
+          "page": "book_zh_CNASGL0092018_extracted_page_73.png",
+          "reference": 0.9806666666666667,
+          "candidate": 0.9846666666666666,
+          "delta": 0.0039999999999998925
+        },
+        {
+          "page": "book_zh_CNASGL0262018_extracted_page_82.png",
+          "reference": 0.993375,
+          "candidate": 0.9944999999999999,
+          "delta": 0.0011249999999999316
+        },
+        {
+          "page": "book_zh_DLT10562007_extracted_page_17.png",
+          "reference": 1.0,
+          "candidate": 0.9978333333333333,
+          "delta": -0.00216666666666665
+        },
+        {
+          "page": "book_zh_GB14930.21994_extracted_page_4.png",
+          "reference": 0.606,
+          "candidate": 1.0,
+          "delta": 0.394
+        },
+        {
+          "page": "book_zh_JGJ1022003_extracted_page_27.png",
+          "reference": 0.9848333333333333,
+          "candidate": 1.0,
+          "delta": 0.015166666666666662
+        },
+        {
+          "page": "book_zh_JJD10031991_extracted_page_6.png",
+          "reference": 0.9552499999999999,
+          "candidate": 0.95175,
+          "delta": -0.0034999999999999476
+        },
+        {
+          "page": "book_zh_SYT57941993_extracted_page_3.png",
+          "reference": 0.9722500000000001,
+          "candidate": 1.0,
+          "delta": 0.02774999999999994
+        },
+        {
+          "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg",
+          "reference": 1.0,
+          "candidate": 0.969,
+          "delta": -0.031000000000000028
+        },
+        {
+          "page": "exam_paper_en-file-putnam-archive_1993_Problems_1993_page_001.png",
+          "reference": 0.8338888888888889,
+          "candidate": 0.9086666666666667,
+          "delta": 0.07477777777777783
+        },
+        {
+          "page": "exam_paper_en-file-putnam-archive_1997_Problems_1997_page_001.png",
+          "reference": 0.985625,
+          "candidate": 0.990125,
+          "delta": 0.0045000000000000595
+        },
+        {
+          "page": "exam_paper_en-file-putnam-archive_2006_Solutions_2006s_page_007.png",
+          "reference": 0.9368666666666667,
+          "candidate": 0.9556666666666668,
+          "delta": 0.01880000000000004
+        },
+        {
+          "page": "jiaocaineedrop_Evans_PDE_Solution_Chapter_6_Second-Order_Elliptic_Equations.pdf_5.jpg",
+          "reference": 0.9968999999999999,
+          "candidate": 0.9987,
+          "delta": 0.0018000000000001348
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_1198.jpg",
+          "reference": 0.61625,
+          "candidate": 0.62575,
+          "delta": 0.009500000000000064
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_1363.jpg",
+          "reference": 0.902375,
+          "candidate": 0.891,
+          "delta": -0.011375000000000024
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_3458.jpg",
+          "reference": 0.9793333333333333,
+          "candidate": 0.9740000000000001,
+          "delta": -0.00533333333333319
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_16.jpg",
+          "reference": 0.984,
+          "candidate": 0.992,
+          "delta": 0.008000000000000007
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_14.jpg",
+          "reference": 0.7015,
+          "candidate": 0.8875,
+          "delta": 0.18599999999999994
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_15.jpg",
+          "reference": 0.9145714285714286,
+          "candidate": 0.9294285714285715,
+          "delta": 0.014857142857142902
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_16.jpg",
+          "reference": 0.9736,
+          "candidate": 0.8028000000000001,
+          "delta": -0.17079999999999995
+        },
+        {
+          "page": "page-21ad32ba-fd62-43e5-964a-f5e95c0e0441.png",
+          "reference": 0.984111111111111,
+          "candidate": 1.0,
+          "delta": 0.015888888888888952
+        },
+        {
+          "page": "page-3ec8e45c-1c38-41d2-bb9d-c50745232f2a.png",
+          "reference": 0.9961428571428571,
+          "candidate": 0.9991428571428571,
+          "delta": 0.0030000000000000027
+        },
+        {
+          "page": "page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png",
+          "reference": 0.964875,
+          "candidate": 0.954,
+          "delta": -0.010875000000000079
+        },
+        {
+          "page": "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png",
+          "reference": 0.6001538461538461,
+          "candidate": 0.5995384615384615,
+          "delta": -0.0006153846153846843
+        },
+        {
+          "page": "page-7050793e-109f-4066-be91-107f94b617b9.png",
+          "reference": 0.7531538461538462,
+          "candidate": 0.7701538461538462,
+          "delta": 0.017000000000000015
+        },
+        {
+          "page": "page-74c7629d-b064-4b8f-8667-bf943f5ba367.png",
+          "reference": 0.9705333333333334,
+          "candidate": 0.9788666666666667,
+          "delta": 0.008333333333333304
+        },
+        {
+          "page": "page-80a540c8-88d4-4643-b40e-282489353fb8.png",
+          "reference": 0.997909090909091,
+          "candidate": 0.9958181818181818,
+          "delta": -0.0020909090909091432
+        },
+        {
+          "page": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+          "reference": 0.42827777777777776,
+          "candidate": 0.4446111111111111,
+          "delta": 0.016333333333333366
+        },
+        {
+          "page": "page-99c0fd2f-608e-479c-9af5-5b012de4f6af.png",
+          "reference": 0.9933333333333333,
+          "candidate": 0.9523333333333334,
+          "delta": -0.040999999999999925
+        },
+        {
+          "page": "page-b2cc5729-a6b2-49ba-af62-788bf069b617.png",
+          "reference": 0.99925,
+          "candidate": 1.0,
+          "delta": 0.0007500000000000284
+        },
+        {
+          "page": "page-ccd77e4e-4f94-45df-8e3d-e054a951f65f.png",
+          "reference": 0.9985454545454545,
+          "candidate": 0.9926363636363637,
+          "delta": -0.005909090909090864
+        },
+        {
+          "page": "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png",
+          "reference": 0.954,
+          "candidate": 0.957,
+          "delta": 0.0030000000000000027
+        },
+        {
+          "page": "page-d2816bbe-3c28-4905-ad6d-5f873b525de3.png",
+          "reference": 0.9883846153846154,
+          "candidate": 1.0,
+          "delta": 0.011615384615384583
+        },
+        {
+          "page": "page-e13fef95-c179-4a0f-94f9-1cc970aab788.png",
+          "reference": 0.999,
+          "candidate": 1.0,
+          "delta": 0.0010000000000000009
+        },
+        {
+          "page": "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png",
+          "reference": 0.7685882352941177,
+          "candidate": 0.7888235294117647,
+          "delta": 0.020235294117647018
+        },
+        {
+          "page": "yanbaopptmerge_9081a70ff98b3e7d640660a9412c447d.pdf_1287.jpg",
+          "reference": 0.8039027777777777,
+          "candidate": 0.8030138888888889,
+          "delta": -0.000888888888888828
+        }
+      ]
+    },
+    "table_TEDS": {
+      "better": 54,
+      "worse": 40,
+      "unchanged": 364,
+      "missing": [],
+      "added": [],
+      "changed_pages": [
+        {
+          "page": "PPT_Catalysis.ppt_page_016.png",
+          "reference": 0.46227607782429625,
+          "candidate": 0.4792479780210278,
+          "delta": 0.01697190019673156
+        },
+        {
+          "page": "PPT_LEP power point presentation-English-FINAL-10-31-07_page_010.png",
+          "reference": 0.973562204749773,
+          "candidate": 0.972064077408949,
+          "delta": -0.001498127340823996
+        },
+        {
+          "page": "book_zh_CNASGL082006_extracted_page_50.png",
+          "reference": 0.9018253968253969,
+          "candidate": 0.9184649122807018,
+          "delta": 0.016639515455304954
+        },
+        {
+          "page": "book_zh_GB115041989_extracted_page_9.png",
+          "reference": 0.9688920454545454,
+          "candidate": 0.9679450757575757,
+          "delta": -0.0009469696969697239
+        },
+        {
+          "page": "color_textbook_教材全解1+1二年级下册英语上海牛津版_page_006.png",
+          "reference": 0.9772799182177038,
+          "candidate": 0.9792754836279033,
+          "delta": 0.001995565410199518
+        },
+        {
+          "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-60368448.pdf_343.jpg",
+          "reference": 0.9952173913043478,
+          "candidate": 0.9966666666666666,
+          "delta": 0.0014492753623187582
+        },
+        {
+          "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-60403612.pdf_179.jpg",
+          "reference": 0.8998001970225914,
+          "candidate": 0.8703002987726931,
+          "delta": -0.029499898249898293
+        },
+        {
+          "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-61510621.pdf_161.jpg",
+          "reference": 0.9685314122641805,
+          "candidate": 0.9918692302757955,
+          "delta": 0.023337818011615052
+        },
+        {
+          "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-61520779.pdf_76.jpg",
+          "reference": 0.999558693733451,
+          "candidate": 0.9951456310679612,
+          "delta": -0.0044130626654897975
+        },
+        {
+          "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-61521384.pdf_750.jpg",
+          "reference": 0.9755194448176905,
+          "candidate": 0.9795828440565283,
+          "delta": 0.004063399238837806
+        },
+        {
+          "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-61521600.pdf_210.jpg",
+          "reference": 0.9896927496717413,
+          "candidate": 1.0,
+          "delta": 0.010307250328258744
+        },
+        {
+          "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-61522126.pdf_206.jpg",
+          "reference": 0.9994450610432852,
+          "candidate": 0.9988187219735499,
+          "delta": -0.0006263390697353044
+        },
+        {
+          "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-61570078.pdf_315.jpg",
+          "reference": 0.9927260773414619,
+          "candidate": 0.9948717948717949,
+          "delta": 0.002145717530332991
+        },
+        {
+          "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-63677793.pdf_332.jpg",
+          "reference": 1.0,
+          "candidate": 0.9972051597051597,
+          "delta": -0.0027948402948403395
+        },
+        {
+          "page": "docstructbench_enbook-zlib-o.O-17761417.pdf_894.jpg",
+          "reference": 0.8961912781807927,
+          "candidate": 0.8729420476145741,
+          "delta": -0.023249230566218637
+        },
+        {
+          "page": "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+          "reference": 0.9869702176403208,
+          "candidate": 0.9866084885753904,
+          "delta": -0.0003617290649303717
+        },
+        {
+          "page": "docstructbench_llm-raw-scihub-o.O-ijc.22994.pdf_3.jpg",
+          "reference": 0.45111869102694785,
+          "candidate": 0.4535991531404376,
+          "delta": 0.0024804621134897342
+        },
+        {
+          "page": "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.03.134.pdf_6.jpg",
+          "reference": 0.9993141289437586,
+          "candidate": 0.8310941660614863,
+          "delta": -0.16821996288227226
+        },
+        {
+          "page": "docstructbench_llm-raw-scihub-o.O-s001280000131.pdf_5.jpg",
+          "reference": 0.8787137823987047,
+          "candidate": 0.8778535281087136,
+          "delta": -0.0008602542899910359
+        },
+        {
+          "page": "docstructbench_llm-raw-scihub-o.O-s00374-006-0103-8.pdf_11.jpg",
+          "reference": 0.9966897499265004,
+          "candidate": 0.996809095910508,
+          "delta": 0.00011934598400764607
+        },
+        {
+          "page": "docstructbench_llm-raw-scihub-o.O-s10653-010-9369-8.pdf_11.jpg",
+          "reference": 0.9841910866910867,
+          "candidate": 0.9898321123321123,
+          "delta": 0.005641025641025643
+        },
+        {
+          "page": "eastmoney_7f55aa1223310144165074707803522240cf20120b15f5d78fdf61eb4dcefba3.pdf_2.jpg",
+          "reference": 0.9832910200095023,
+          "candidate": 0.9561838771523593,
+          "delta": -0.027107142857142996
+        },
+        {
+          "page": "exam_paper_2018年广西北海、钦州、南宁、来宾、崇左、防城港、北部湾经济区中考英语试题（空白卷）_page_003.png",
+          "reference": 0.9944548481917669,
+          "candidate": 0.9938493352508558,
+          "delta": -0.000605512940911046
+        },
+        {
+          "page": "jiaocaineedrop_ced6f3c05e1dfefa8455fa60aacdd2d76ffd79489b631c2dbde22a74e927544b.pdf_84.jpg",
+          "reference": 0.9743086723594424,
+          "candidate": 0.9746455995831621,
+          "delta": 0.0003369272237196963
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_1118.jpg",
+          "reference": 0.9741101953601954,
+          "candidate": 0.9815277777777778,
+          "delta": 0.007417582417582391
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2272.jpg",
+          "reference": 0.8922222222222222,
+          "candidate": 0.8383333333333334,
+          "delta": -0.053888888888888875
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2399.jpg",
+          "reference": 0.9681633423584592,
+          "candidate": 0.967346348894407,
+          "delta": -0.0008169934640522847
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2884.jpg",
+          "reference": 0.9589210233716808,
+          "candidate": 0.961827535905726,
+          "delta": 0.002906512534045169
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_952.jpg",
+          "reference": 0.8959508051396117,
+          "candidate": 0.918924083097221,
+          "delta": 0.022973277957609284
+        },
+        {
+          "page": "magazine_TheEconomist.2024.02.24_page_076.png",
+          "reference": 0.8458631811507263,
+          "candidate": 0.8254069648896067,
+          "delta": -0.020456216261119597
+        },
+        {
+          "page": "newspaper_Daily Star 2025-1-8@magazinesclubnew_page_060.png",
+          "reference": 0.3111111111111111,
+          "candidate": 0.3941176470588235,
+          "delta": 0.0830065359477124
+        },
+        {
+          "page": "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_025.png",
+          "reference": 0.8489752351992397,
+          "candidate": 0.8526520017838609,
+          "delta": 0.0036767665846212383
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_13.jpg",
+          "reference": 0.9747895005850942,
+          "candidate": 0.5555150174183221,
+          "delta": -0.41927448316677207
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_35.jpg",
+          "reference": 0.9817494068608246,
+          "candidate": 0.982350368399286,
+          "delta": 0.0006009615384614531
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_37.jpg",
+          "reference": 0.9907806943507043,
+          "candidate": 0.989836191314503,
+          "delta": -0.0009445030362013052
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_53.jpg",
+          "reference": 0.9923820141211446,
+          "candidate": 0.9912671869193608,
+          "delta": -0.0011148272017837968
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_60.jpg",
+          "reference": 0.9904306220095693,
+          "candidate": 0.9890101674641149,
+          "delta": -0.0014204545454544748
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_79.jpg",
+          "reference": 0.4572178015856506,
+          "candidate": 0.4572479948223656,
+          "delta": 3.0193236714992633e-05
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_81.jpg",
+          "reference": 0.9110164141414141,
+          "candidate": 0.996875,
+          "delta": 0.08585858585858586
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_96.jpg",
+          "reference": 0.9738593395752109,
+          "candidate": 0.9718815385243039,
+          "delta": -0.0019778010509069466
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_97.jpg",
+          "reference": 0.9935773499683274,
+          "candidate": 0.9907202071111846,
+          "delta": -0.0028571428571427804
+        },
+        {
+          "page": "page-00b6ac57-4466-4eb0-937d-bb29a44fa0d3.png",
+          "reference": 0.995146166574738,
+          "candidate": 0.9959183673469387,
+          "delta": 0.0007722007722007485
+        },
+        {
+          "page": "page-1955f827-fb35-4806-b3a4-463d9e0d6cc8.png",
+          "reference": 0.5255835219286873,
+          "candidate": 0.6944924738036234,
+          "delta": 0.16890895187493615
+        },
+        {
+          "page": "page-1cecd66d-3563-422a-a204-999bba0bb528.png",
+          "reference": 0.979249354368092,
+          "candidate": 0.9807492433563774,
+          "delta": 0.0014998889882853472
+        },
+        {
+          "page": "page-213e6a57-ba81-4afb-8184-2e1cf2a7664d.png",
+          "reference": 0.8810596649727085,
+          "candidate": 0.9818122510644143,
+          "delta": 0.10075258609170579
+        },
+        {
+          "page": "page-28c45f5f-7e0d-464a-89ec-8de3a4abb927.png",
+          "reference": 0.9900414447253029,
+          "candidate": 0.9832387236368676,
+          "delta": -0.006802721088435271
+        },
+        {
+          "page": "page-2abc2a95-d39a-48db-9b6d-f40410412694.png",
+          "reference": 0.9372298553924494,
+          "candidate": 0.8747536755621448,
+          "delta": -0.06247617983030462
+        },
+        {
+          "page": "page-2deb83b3-abe2-442c-a544-0b6a8db464f1.png",
+          "reference": 0.7349406554657929,
+          "candidate": 0.7157140156184623,
+          "delta": -0.01922663984733064
+        },
+        {
+          "page": "page-31fb2a53-5b32-40f6-9db1-52b357f3201f.png",
+          "reference": 0.9946928065548756,
+          "candidate": 0.9954114212734902,
+          "delta": 0.0007186147186146741
+        },
+        {
+          "page": "page-35ecd651-17dd-43e6-8a6f-8f55d6796d96.png",
+          "reference": 0.9963296629963296,
+          "candidate": 0.9962438629105296,
+          "delta": -8.580008580005849e-05
+        },
+        {
+          "page": "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png",
+          "reference": 0.864879321390556,
+          "candidate": 0.9866093057916449,
+          "delta": 0.12172998440108884
+        },
+        {
+          "page": "page-3c690b07-30d7-4e77-bf20-012f0080fb1d.png",
+          "reference": 0.9810799628139847,
+          "candidate": 0.9811231854972489,
+          "delta": 4.3222683264176887e-05
+        },
+        {
+          "page": "page-458ab820-615f-42fe-af33-3a8fb15ad691.png",
+          "reference": 0.9917227474194369,
+          "candidate": 0.9934562369570613,
+          "delta": 0.001733489537624422
+        },
+        {
+          "page": "page-472c26e2-6bc2-4c05-9889-05132c87a8a9.png",
+          "reference": 0.8610834539410059,
+          "candidate": 0.9469684427386161,
+          "delta": 0.0858849887976102
+        },
+        {
+          "page": "page-50ffe5d2-cd27-449a-a813-d4a8c44b12ea.png",
+          "reference": 0.9623698690595688,
+          "candidate": 0.9879385549503916,
+          "delta": 0.02556868589082284
+        },
+        {
+          "page": "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+          "reference": 0.79438769508092,
+          "candidate": 0.7922231929164179,
+          "delta": -0.0021645021645021467
+        },
+        {
+          "page": "page-5cb4b2fe-c14d-450e-9b97-4b6e7c99493b.png",
+          "reference": 0.9570492060177268,
+          "candidate": 0.9604235791294012,
+          "delta": 0.0033743731116744335
+        },
+        {
+          "page": "page-5d58cdf7-6d00-4ea5-97b2-358cbc0cab21.png",
+          "reference": 0.9889137500646872,
+          "candidate": 0.9893576234419337,
+          "delta": 0.00044387337724649534
+        },
+        {
+          "page": "page-66aa2b38-32c0-4222-839a-50df648218df.png",
+          "reference": 0.685754132638743,
+          "candidate": 0.6856785125540484,
+          "delta": -7.562008469452763e-05
+        },
+        {
+          "page": "page-68e347d8-6f34-431b-a2a2-549b3634dabc.png",
+          "reference": 0.9920087212058015,
+          "candidate": 0.9887848769235631,
+          "delta": -0.0032238442822384306
+        },
+        {
+          "page": "page-69c15957-4d6d-485c-a244-04a1a8d29d37.png",
+          "reference": 0.9519819239284888,
+          "candidate": 0.9326242997198879,
+          "delta": -0.019357624208600877
+        },
+        {
+          "page": "page-74961b9a-ef4c-42d8-a95f-406e6b84cf63.png",
+          "reference": 0.9937284453193351,
+          "candidate": 0.315062438148186,
+          "delta": -0.6786660071711491
+        },
+        {
+          "page": "page-91b20bf2-3ad5-41f4-b739-4cc4b18ab1eb.png",
+          "reference": 0.9577679638444392,
+          "candidate": 0.9550440979924621,
+          "delta": -0.0027238658519770365
+        },
+        {
+          "page": "page-ab4f331b-e8f3-41fb-ba6b-8da5ade54983.png",
+          "reference": 0.8542708224136796,
+          "candidate": 0.8557418256297807,
+          "delta": 0.0014710032161011632
+        },
+        {
+          "page": "page-c7771a62-5b6b-48f0-b591-6b657d26e125.png",
+          "reference": 0.9209542028868009,
+          "candidate": 0.9217074413134363,
+          "delta": 0.0007532384266354386
+        },
+        {
+          "page": "page-c7792da7-4167-4f5c-a7ca-ec0f8833f83b.png",
+          "reference": 0.8014487622082559,
+          "candidate": 0.8214721050164088,
+          "delta": 0.020023342808152877
+        },
+        {
+          "page": "page-cb30bac7-d4bd-47d0-ac84-e0b46d051fe9.png",
+          "reference": 0.9506349553224553,
+          "candidate": 0.9499475254683588,
+          "delta": -0.0006874298540965329
+        },
+        {
+          "page": "page-d0b2bb59-ce8e-4a1c-9ba1-a805606a477f.png",
+          "reference": 0.8869931908758484,
+          "candidate": 0.8336404336404336,
+          "delta": -0.05335275723541477
+        },
+        {
+          "page": "page-d29fe4d2-832a-4ad6-ac80-dc01cf8b0e16.png",
+          "reference": 0.7741604244694132,
+          "candidate": 0.9741604244694132,
+          "delta": 0.19999999999999996
+        },
+        {
+          "page": "page-d2cdac80-318c-4157-ac6e-bdab333f66bd.png",
+          "reference": 0.9912267342186534,
+          "candidate": 0.991354155217634,
+          "delta": 0.00012742099898066517
+        },
+        {
+          "page": "page-dbed9c07-e155-4ba1-92f9-a2962dc9a8f9.png",
+          "reference": 0.5309777954088583,
+          "candidate": 0.3833839293069665,
+          "delta": -0.14759386610189174
+        },
+        {
+          "page": "page-dd5b0a99-4cc6-4fa9-ab63-a277947735b1.png",
+          "reference": 0.7552484049634,
+          "candidate": 0.7156171139541463,
+          "delta": -0.039631291009253666
+        },
+        {
+          "page": "page-e7681b54-2c4a-40a2-9abe-caebba01cefb.png",
+          "reference": 0.8545949043317465,
+          "candidate": 0.9431981431981432,
+          "delta": 0.08860323886639676
+        },
+        {
+          "page": "page-eff3dc3a-8d44-4c68-9c3a-55df4aaf1e36.png",
+          "reference": 0.9763496671900124,
+          "candidate": 0.9809075731605711,
+          "delta": 0.004557905970558718
+        },
+        {
+          "page": "page-f222e5f3-8628-47cd-a0b6-40f62123228f.png",
+          "reference": 0.9226721942644523,
+          "candidate": 0.9224692721865302,
+          "delta": -0.000202922077922163
+        },
+        {
+          "page": "page-f3e750d8-8201-4a22-9419-9776798b7a32.png",
+          "reference": 0.7707106809917098,
+          "candidate": 0.9611824521558912,
+          "delta": 0.19047177116418135
+        },
+        {
+          "page": "page-f6b6cfb8-3bb5-4393-b3fb-70efef72aca5.png",
+          "reference": 1.0,
+          "candidate": 0.3067760189853215,
+          "delta": -0.6932239810146785
+        },
+        {
+          "page": "page-f8c08102-a96d-4533-b3a1-dac6020513b5.png",
+          "reference": 0.9740953979908061,
+          "candidate": 0.9914200707871594,
+          "delta": 0.017324672796353302
+        },
+        {
+          "page": "page-fd7003ba-9af2-4b60-8c45-1e2ac1c7f474.png",
+          "reference": 0.7782948532948533,
+          "candidate": 0.7470779220779221,
+          "delta": -0.031216931216931143
+        },
+        {
+          "page": "scihub_AEM.01420-09.pdf_3.jpg",
+          "reference": 0.8423169287459963,
+          "candidate": 0.8449922476575684,
+          "delta": 0.002675318911572133
+        },
+        {
+          "page": "scihub_j.jallcom.2003.09.015.pdf_1.jpg",
+          "reference": 0.8596483121367191,
+          "candidate": 0.8683548274266817,
+          "delta": 0.00870651528996258
+        },
+        {
+          "page": "scihub_jai.12343.pdf_3.jpg",
+          "reference": 0.9697183969392587,
+          "candidate": 0.97329976415039,
+          "delta": 0.0035813672111313366
+        },
+        {
+          "page": "scihub_jneurosci.16-15-04625.1996.pdf_2.jpg",
+          "reference": 0.8905099996468739,
+          "candidate": 0.44407387236419515,
+          "delta": -0.4464361272826788
+        },
+        {
+          "page": "scihub_mol.66.4.921.pdf_1.jpg",
+          "reference": 0.9604108309990663,
+          "candidate": 0.9606190072182719,
+          "delta": 0.00020817621920554696
+        },
+        {
+          "page": "scihub_s00381-021-05138-3.pdf_3.jpg",
+          "reference": 0.9852387187130051,
+          "candidate": 0.9943364909828097,
+          "delta": 0.009097772269804683
+        },
+        {
+          "page": "scihub_s12237-014-9873-7.pdf_4.jpg",
+          "reference": 0.5156599732547718,
+          "candidate": 0.6379187528174125,
+          "delta": 0.12225877956264075
+        },
+        {
+          "page": "yanbaopptmerge_2b8553b00244437fa3e502aa2d3d319ed74459a1e264a4fdd9ecc14ce46609d5.pdf_2.jpg",
+          "reference": 0.9445047666410229,
+          "candidate": 0.9643278263686427,
+          "delta": 0.019823059727619774
+        },
+        {
+          "page": "yanbaopptmerge_7c6e8be0695a66c716176c95257a76e940f7d08d8227b37e9ee47142eca6b448.pdf_5.jpg",
+          "reference": 0.9867934932451061,
+          "candidate": 0.9868830989798731,
+          "delta": 8.960573476701761e-05
+        },
+        {
+          "page": "yanbaopptmerge_e3b48594d5a2a6dc86b51244737f24867a0c1781e9f0e4fb52d96bbc6f9d95c7.pdf_3.jpg",
+          "reference": 1.0,
+          "candidate": 0.9500000000000001,
+          "delta": -0.04999999999999993
+        },
+        {
+          "page": "yanbaor2_0aa9545ccbc482a37e3b55c96897f0f24cee08bb80c7addfb0c219814af44a3b.pdf_27.jpg",
+          "reference": 0.8448522367598237,
+          "candidate": 0.9890749717454262,
+          "delta": 0.14422273498560256
+        },
+        {
+          "page": "yanbaor2_4862cd850679e945a98c54c8d4c37be0154b5790d2c32da35d0f5ca0be413693.pdf_9.jpg",
+          "reference": 0.9803229672762406,
+          "candidate": 0.9809764524537233,
+          "delta": 0.0006534851774827599
+        },
+        {
+          "page": "yanbaor2_6a016aa81b2fc8281a2a51bae6417769e4cae7fbe161cbc4351596b82e7002fa.pdf_8.jpg",
+          "reference": 0.9827984432764749,
+          "candidate": 0.9870986426904561,
+          "delta": 0.004300199413981187
+        },
+        {
+          "page": "yanbaor2_yanbaoPPT_2098.jpg",
+          "reference": 0.9927536231884058,
+          "candidate": 1.0,
+          "delta": 0.007246376811594235
+        },
+        {
+          "page": "yanbaor2_yanbaoPPT_5877.jpg",
+          "reference": 0.5414609053497943,
+          "candidate": 0.9995884773662551,
+          "delta": 0.4581275720164608
+        }
+      ]
+    }
+  },
+  "layout": {
+    "reference_pages": 1651,
+    "candidate_pages": 1651,
+    "missing": [],
+    "added": [],
+    "identical": true,
+    "differences": [],
+    "candidate_blocks": 34186,
+    "excluded_fields": [
+      "layout_timing_s"
+    ],
+    "canonical_sha256": [
+      "60b66c76d9a5851f5856adf4dc9ccd2642eeda9a37bd586f0ab2707a5e9e42a6",
+      "60b66c76d9a5851f5856adf4dc9ccd2642eeda9a37bd586f0ab2707a5e9e42a6"
+    ]
+  },
+  "lengths": {
+    "request_count": 32051,
+    "stop_counts": {
+      "eos": 32026,
+      "length": 25
+    },
+    "length_stops": [
+      {
+        "request_id": "page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.png:recognition:3",
+        "page": "page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 1555,
+        "generated_length": 6637,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png:recognition:11",
+        "page": "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 918,
+        "generated_length": 7274,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png:recognition:3",
+        "page": "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 163,
+        "generated_length": 8029,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-7050793e-109f-4066-be91-107f94b617b9.png:recognition:2",
+        "page": "page-7050793e-109f-4066-be91-107f94b617b9.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 358,
+        "generated_length": 7834,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-83a675ab-0021-4979-8293-8af0d36146a0.png:recognition:3",
+        "page": "page-83a675ab-0021-4979-8293-8af0d36146a0.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 289,
+        "generated_length": 7903,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-9b70f2f0-2a0e-4337-8750-84e79503e939.png:recognition:10",
+        "page": "page-9b70f2f0-2a0e-4337-8750-84e79503e939.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 275,
+        "generated_length": 7917,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-27a46d41-49b5-4562-a546-6cbbafd23a81.png:recognition:3",
+        "page": "page-27a46d41-49b5-4562-a546-6cbbafd23a81.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 361,
+        "generated_length": 7831,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png:recognition:8",
+        "page": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 625,
+        "generated_length": 7567,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.png:recognition:11",
+        "page": "page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 223,
+        "generated_length": 7969,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png:recognition:0",
+        "page": "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png",
+        "block_type": "table",
+        "stop_reason": "length",
+        "prompt_length": 1585,
+        "generated_length": 6607,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-2d8358c5-114a-4bda-92c3-e8480d9ab082.png:recognition:6",
+        "page": "page-2d8358c5-114a-4bda-92c3-e8480d9ab082.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 113,
+        "generated_length": 8079,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-56023e3d-ae9b-486d-b7bb-419624d18356.png:recognition:9",
+        "page": "page-56023e3d-ae9b-486d-b7bb-419624d18356.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 400,
+        "generated_length": 7792,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png:recognition:2",
+        "page": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 105,
+        "generated_length": 8087,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png:recognition:8",
+        "page": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 97,
+        "generated_length": 8095,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-00b6ac57-4466-4eb0-937d-bb29a44fa0d3.png:recognition:45",
+        "page": "page-00b6ac57-4466-4eb0-937d-bb29a44fa0d3.png",
+        "block_type": "footer",
+        "stop_reason": "length",
+        "prompt_length": 215,
+        "generated_length": 7977,
+        "total_length": 8192
+      },
+      {
+        "request_id": "yanbaopptmerge_yanbaoPPT_4570.jpg:recognition:11",
+        "page": "yanbaopptmerge_yanbaoPPT_4570.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 137,
+        "generated_length": 8055,
+        "total_length": 8192
+      },
+      {
+        "request_id": "yanbaopptmerge_yanbaoPPT_4570.jpg:recognition:16",
+        "page": "yanbaopptmerge_yanbaoPPT_4570.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 135,
+        "generated_length": 8057,
+        "total_length": 8192
+      },
+      {
+        "request_id": "docstructbench_dianzishu_zhongwenzaixian-o.O-61510863.pdf_73.jpg:recognition:8",
+        "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-61510863.pdf_73.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 103,
+        "generated_length": 8089,
+        "total_length": 8192
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_2652.jpg:recognition:11",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_2652.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 97,
+        "generated_length": 8095,
+        "total_length": 8192
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_349.jpg:recognition:5",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_349.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 133,
+        "generated_length": 8059,
+        "total_length": 8192
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_3713.jpg:recognition:33",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_3713.jpg",
+        "block_type": "title",
+        "stop_reason": "length",
+        "prompt_length": 103,
+        "generated_length": 8089,
+        "total_length": 8192
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_664.jpg:recognition:5",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_664.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 725,
+        "generated_length": 7467,
+        "total_length": 8192
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_980.jpg:recognition:25",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_980.jpg",
+        "block_type": "title",
+        "stop_reason": "length",
+        "prompt_length": 101,
+        "generated_length": 8091,
+        "total_length": 8192
+      },
+      {
+        "request_id": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png:recognition:12",
+        "page": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+        "block_type": "table",
+        "stop_reason": "length",
+        "prompt_length": 145,
+        "generated_length": 8047,
+        "total_length": 8192
+      },
+      {
+        "request_id": "exam_paper_en-file-putnam-archive_2006_Solutions_2006s_page_007.png:recognition:29",
+        "page": "exam_paper_en-file-putnam-archive_2006_Solutions_2006s_page_007.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 105,
+        "generated_length": 8087,
+        "total_length": 8192
+      }
+    ],
+    "over4096": [
+      {
+        "request_id": "page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.png:recognition:3",
+        "page": "page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 1555,
+        "generated_length": 6637,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png:recognition:11",
+        "page": "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 918,
+        "generated_length": 7274,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png:recognition:3",
+        "page": "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 163,
+        "generated_length": 8029,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-7050793e-109f-4066-be91-107f94b617b9.png:recognition:2",
+        "page": "page-7050793e-109f-4066-be91-107f94b617b9.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 358,
+        "generated_length": 7834,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-83a675ab-0021-4979-8293-8af0d36146a0.png:recognition:3",
+        "page": "page-83a675ab-0021-4979-8293-8af0d36146a0.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 289,
+        "generated_length": 7903,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-9b70f2f0-2a0e-4337-8750-84e79503e939.png:recognition:10",
+        "page": "page-9b70f2f0-2a0e-4337-8750-84e79503e939.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 275,
+        "generated_length": 7917,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-27a46d41-49b5-4562-a546-6cbbafd23a81.png:recognition:3",
+        "page": "page-27a46d41-49b5-4562-a546-6cbbafd23a81.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 361,
+        "generated_length": 7831,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png:recognition:8",
+        "page": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 625,
+        "generated_length": 7567,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-5d58cdf7-6d00-4ea5-97b2-358cbc0cab21.png:recognition:8",
+        "page": "page-5d58cdf7-6d00-4ea5-97b2-358cbc0cab21.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 1993,
+        "generated_length": 2437,
+        "total_length": 4430
+      },
+      {
+        "request_id": "page-3ce15378-6ffd-4f3c-9473-8b897451c770.png:recognition:5",
+        "page": "page-3ce15378-6ffd-4f3c-9473-8b897451c770.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 2053,
+        "generated_length": 2702,
+        "total_length": 4755
+      },
+      {
+        "request_id": "page-9390721f-e06c-47ea-8b21-0f27c72df7b7.png:recognition:1",
+        "page": "page-9390721f-e06c-47ea-8b21-0f27c72df7b7.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 1513,
+        "generated_length": 2876,
+        "total_length": 4389
+      },
+      {
+        "request_id": "page-be2ebf31-5f24-4d3e-97f0-4a8df7e773b4.png:recognition:3",
+        "page": "page-be2ebf31-5f24-4d3e-97f0-4a8df7e773b4.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 1300,
+        "generated_length": 3099,
+        "total_length": 4399
+      },
+      {
+        "request_id": "page-8d707810-de48-43ba-81a7-b976918e7be2.png:recognition:5",
+        "page": "page-8d707810-de48-43ba-81a7-b976918e7be2.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 2039,
+        "generated_length": 3055,
+        "total_length": 5094
+      },
+      {
+        "request_id": "page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.png:recognition:11",
+        "page": "page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 223,
+        "generated_length": 7969,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-9f6bc620-1983-4503-bb0f-f9c7949ccb77.png:recognition:5",
+        "page": "page-9f6bc620-1983-4503-bb0f-f9c7949ccb77.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 2049,
+        "generated_length": 2922,
+        "total_length": 4971
+      },
+      {
+        "request_id": "page-c7771a62-5b6b-48f0-b591-6b657d26e125.png:recognition:3",
+        "page": "page-c7771a62-5b6b-48f0-b591-6b657d26e125.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 1861,
+        "generated_length": 3071,
+        "total_length": 4932
+      },
+      {
+        "request_id": "page-458ab820-615f-42fe-af33-3a8fb15ad691.png:recognition:3",
+        "page": "page-458ab820-615f-42fe-af33-3a8fb15ad691.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 2041,
+        "generated_length": 2551,
+        "total_length": 4592
+      },
+      {
+        "request_id": "page-f222e5f3-8628-47cd-a0b6-40f62123228f.png:recognition:2",
+        "page": "page-f222e5f3-8628-47cd-a0b6-40f62123228f.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 2046,
+        "generated_length": 3301,
+        "total_length": 5347
+      },
+      {
+        "request_id": "page-213e6a57-ba81-4afb-8184-2e1cf2a7664d.png:recognition:3",
+        "page": "page-213e6a57-ba81-4afb-8184-2e1cf2a7664d.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 2034,
+        "generated_length": 2988,
+        "total_length": 5022
+      },
+      {
+        "request_id": "page-68e347d8-6f34-431b-a2a2-549b3634dabc.png:recognition:2",
+        "page": "page-68e347d8-6f34-431b-a2a2-549b3634dabc.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 1960,
+        "generated_length": 2560,
+        "total_length": 4520
+      },
+      {
+        "request_id": "page-f8c08102-a96d-4533-b3a1-dac6020513b5.png:recognition:6",
+        "page": "page-f8c08102-a96d-4533-b3a1-dac6020513b5.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 2049,
+        "generated_length": 2672,
+        "total_length": 4721
+      },
+      {
+        "request_id": "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png:recognition:0",
+        "page": "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png",
+        "block_type": "table",
+        "stop_reason": "length",
+        "prompt_length": 1585,
+        "generated_length": 6607,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-2d8358c5-114a-4bda-92c3-e8480d9ab082.png:recognition:6",
+        "page": "page-2d8358c5-114a-4bda-92c3-e8480d9ab082.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 113,
+        "generated_length": 8079,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-56023e3d-ae9b-486d-b7bb-419624d18356.png:recognition:9",
+        "page": "page-56023e3d-ae9b-486d-b7bb-419624d18356.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 400,
+        "generated_length": 7792,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png:recognition:2",
+        "page": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 105,
+        "generated_length": 8087,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png:recognition:8",
+        "page": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 97,
+        "generated_length": 8095,
+        "total_length": 8192
+      },
+      {
+        "request_id": "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png:recognition:3",
+        "page": "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 2014,
+        "generated_length": 3977,
+        "total_length": 5991
+      },
+      {
+        "request_id": "page-f5b824d0-be81-48a9-aae6-3060d11a6503.png:recognition:3",
+        "page": "page-f5b824d0-be81-48a9-aae6-3060d11a6503.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 1999,
+        "generated_length": 3161,
+        "total_length": 5160
+      },
+      {
+        "request_id": "page-f3e750d8-8201-4a22-9419-9776798b7a32.png:recognition:0",
+        "page": "page-f3e750d8-8201-4a22-9419-9776798b7a32.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 2060,
+        "generated_length": 4142,
+        "total_length": 6202
+      },
+      {
+        "request_id": "page-00b6ac57-4466-4eb0-937d-bb29a44fa0d3.png:recognition:45",
+        "page": "page-00b6ac57-4466-4eb0-937d-bb29a44fa0d3.png",
+        "block_type": "footer",
+        "stop_reason": "length",
+        "prompt_length": 215,
+        "generated_length": 7977,
+        "total_length": 8192
+      },
+      {
+        "request_id": "yanbaopptmerge_yanbaoPPT_4570.jpg:recognition:11",
+        "page": "yanbaopptmerge_yanbaoPPT_4570.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 137,
+        "generated_length": 8055,
+        "total_length": 8192
+      },
+      {
+        "request_id": "yanbaopptmerge_yanbaoPPT_4570.jpg:recognition:16",
+        "page": "yanbaopptmerge_yanbaoPPT_4570.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 135,
+        "generated_length": 8057,
+        "total_length": 8192
+      },
+      {
+        "request_id": "docstructbench_dianzishu_zhongwenzaixian-o.O-61510863.pdf_73.jpg:recognition:8",
+        "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-61510863.pdf_73.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 103,
+        "generated_length": 8089,
+        "total_length": 8192
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_2652.jpg:recognition:11",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_2652.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 97,
+        "generated_length": 8095,
+        "total_length": 8192
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_349.jpg:recognition:5",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_349.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 133,
+        "generated_length": 8059,
+        "total_length": 8192
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_3713.jpg:recognition:33",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_3713.jpg",
+        "block_type": "title",
+        "stop_reason": "length",
+        "prompt_length": 103,
+        "generated_length": 8089,
+        "total_length": 8192
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_664.jpg:recognition:5",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_664.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 725,
+        "generated_length": 7467,
+        "total_length": 8192
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_980.jpg:recognition:25",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_980.jpg",
+        "block_type": "title",
+        "stop_reason": "length",
+        "prompt_length": 101,
+        "generated_length": 8091,
+        "total_length": 8192
+      },
+      {
+        "request_id": "scihub_journal.pone.0166577.pdf_5.jpg:recognition:3",
+        "page": "scihub_journal.pone.0166577.pdf_5.jpg",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 2041,
+        "generated_length": 2380,
+        "total_length": 4421
+      },
+      {
+        "request_id": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png:recognition:12",
+        "page": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+        "block_type": "table",
+        "stop_reason": "length",
+        "prompt_length": 145,
+        "generated_length": 8047,
+        "total_length": 8192
+      },
+      {
+        "request_id": "magazine_TheEconomist.2024.02.24_page_076.png:recognition:4",
+        "page": "magazine_TheEconomist.2024.02.24_page_076.png",
+        "block_type": "table",
+        "stop_reason": "eos",
+        "prompt_length": 2014,
+        "generated_length": 2889,
+        "total_length": 4903
+      },
+      {
+        "request_id": "exam_paper_en-file-putnam-archive_2006_Solutions_2006s_page_007.png:recognition:29",
+        "page": "exam_paper_en-file-putnam-archive_2006_Solutions_2006s_page_007.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 105,
+        "generated_length": 8087,
+        "total_length": 8192
+      }
+    ],
+    "unexpected_output_allowances": []
+  },
+  "lengths_reference": {
+    "request_count": 32051,
+    "stop_counts": {
+      "eos": 32026,
+      "length": 25
+    },
+    "length_stops": [
+      {
+        "request_id": "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png:recognition:11",
+        "page": "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 756,
+        "generated_length": 3340,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.png:recognition:3",
+        "page": "page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 769,
+        "generated_length": 3327,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png:recognition:3",
+        "page": "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 163,
+        "generated_length": 3933,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-7050793e-109f-4066-be91-107f94b617b9.png:recognition:2",
+        "page": "page-7050793e-109f-4066-be91-107f94b617b9.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 358,
+        "generated_length": 3738,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-83a675ab-0021-4979-8293-8af0d36146a0.png:recognition:3",
+        "page": "page-83a675ab-0021-4979-8293-8af0d36146a0.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 289,
+        "generated_length": 3807,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-9b70f2f0-2a0e-4337-8750-84e79503e939.png:recognition:10",
+        "page": "page-9b70f2f0-2a0e-4337-8750-84e79503e939.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 275,
+        "generated_length": 3821,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-27a46d41-49b5-4562-a546-6cbbafd23a81.png:recognition:3",
+        "page": "page-27a46d41-49b5-4562-a546-6cbbafd23a81.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 361,
+        "generated_length": 3735,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png:recognition:8",
+        "page": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 625,
+        "generated_length": 3471,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.png:recognition:11",
+        "page": "page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 223,
+        "generated_length": 3873,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-2d8358c5-114a-4bda-92c3-e8480d9ab082.png:recognition:6",
+        "page": "page-2d8358c5-114a-4bda-92c3-e8480d9ab082.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 113,
+        "generated_length": 3983,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-56023e3d-ae9b-486d-b7bb-419624d18356.png:recognition:9",
+        "page": "page-56023e3d-ae9b-486d-b7bb-419624d18356.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 400,
+        "generated_length": 3696,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png:recognition:2",
+        "page": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 105,
+        "generated_length": 3991,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png:recognition:8",
+        "page": "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 97,
+        "generated_length": 3999,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png:recognition:0",
+        "page": "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png",
+        "block_type": "table",
+        "stop_reason": "length",
+        "prompt_length": 745,
+        "generated_length": 3351,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-00b6ac57-4466-4eb0-937d-bb29a44fa0d3.png:recognition:45",
+        "page": "page-00b6ac57-4466-4eb0-937d-bb29a44fa0d3.png",
+        "block_type": "footer",
+        "stop_reason": "length",
+        "prompt_length": 215,
+        "generated_length": 3881,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png:recognition:3",
+        "page": "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png",
+        "block_type": "table",
+        "stop_reason": "length",
+        "prompt_length": 769,
+        "generated_length": 3327,
+        "total_length": 4096
+      },
+      {
+        "request_id": "page-f3e750d8-8201-4a22-9419-9776798b7a32.png:recognition:0",
+        "page": "page-f3e750d8-8201-4a22-9419-9776798b7a32.png",
+        "block_type": "table",
+        "stop_reason": "length",
+        "prompt_length": 751,
+        "generated_length": 3345,
+        "total_length": 4096
+      },
+      {
+        "request_id": "docstructbench_dianzishu_zhongwenzaixian-o.O-61510863.pdf_73.jpg:recognition:8",
+        "page": "docstructbench_dianzishu_zhongwenzaixian-o.O-61510863.pdf_73.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 63,
+        "generated_length": 4033,
+        "total_length": 4096
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_1118.jpg:recognition:2",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_1118.jpg",
+        "block_type": "footer",
+        "stop_reason": "length",
+        "prompt_length": 67,
+        "generated_length": 4029,
+        "total_length": 4096
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_2652.jpg:recognition:11",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_2652.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 64,
+        "generated_length": 4032,
+        "total_length": 4096
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_349.jpg:recognition:5",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_349.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 133,
+        "generated_length": 3963,
+        "total_length": 4096
+      },
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_383.jpg:recognition:21",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_383.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 67,
+        "generated_length": 4029,
+        "total_length": 4096
+      },
+      {
+        "request_id": "notes_9e951846094758afac08c620144e3a76_12.jpg:recognition:2",
+        "page": "notes_9e951846094758afac08c620144e3a76_12.jpg",
+        "block_type": "text",
+        "stop_reason": "length",
+        "prompt_length": 529,
+        "generated_length": 3567,
+        "total_length": 4096
+      },
+      {
+        "request_id": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png:recognition:12",
+        "page": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+        "block_type": "table",
+        "stop_reason": "length",
+        "prompt_length": 145,
+        "generated_length": 3951,
+        "total_length": 4096
+      },
+      {
+        "request_id": "exam_paper_en-file-putnam-archive_2006_Solutions_2006s_page_007.png:recognition:29",
+        "page": "exam_paper_en-file-putnam-archive_2006_Solutions_2006s_page_007.png",
+        "block_type": "equation",
+        "stop_reason": "length",
+        "prompt_length": 105,
+        "generated_length": 3991,
+        "total_length": 4096
+      }
+    ],
+    "over4096": [],
+    "unexpected_output_allowances": []
+  },
+  "evaluation": {
+    "workers": 96,
+    "samples": 2352,
+    "cdm_elapsed_s": 116,
+    "cdm_samples_per_s": 20.275862068965516,
+    "timing_source": "Final completed CDM progress elapsed time (one-second resolution)",
+    "evaluation_wall_s": 355.33
+  }
+}

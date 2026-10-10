@@ -1,0 +1,7 @@
+{
+  "status": "completed",
+  "exit_code": 0,
+  "child_wall_s": 1947.2089795100037,
+  "log": "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/full1651/run.log",
+  "receipt_dir": "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/full1651/receipt"
+}

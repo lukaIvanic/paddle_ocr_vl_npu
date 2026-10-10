@@ -4,7 +4,11 @@
 `run_model_default_pixels_validation.py` reproduces the saved production command
 with only min/max pixels 50176/1605632, no text-only cap, extended vision/text
 buckets, and KV8192. It runs warmup64, full1651, then frozen evaluation with
-`CDM_WORKERS=96`. Results are pending. No 310P work is part of this task.
+`CDM_WORKERS=96`. Both runs and evaluation completed successfully at
+`a5aec262`; all layouts match production and both overflow counts are zero.
+[Machine-readable evidence](references/model_default_pixels_910b_20261010/)
+includes accuracy/page changes, every over-4096 request and the timing receipts.
+No 310P work is part of this task.
 `analyze_model_default_pixels.py` checks exact saved layouts, output lengths,
 per-page accuracy changes and logged CDM throughput against production.
 

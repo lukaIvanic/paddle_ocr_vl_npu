@@ -1,0 +1,834 @@
+{
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 1599977,
+    "sha256": "aa3f21a4dae4b7ee2bf7c7993b2a3a1a13cbf98073c6469204c118857391bc78"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "e87c6c539ac7b256c2a0096195825dcec527b10748afcd6fcfdec8f6a332067e"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260805203338.om": {
+    "size": 2356784,
+    "sha256": "c0d9ac55140fb9257cdbd45ebdef61ed6083839d4a5d0033007b0469003473f1"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_bs32_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 1654757,
+    "sha256": "5e450d87e6b5b8996ae82bfb3a7d855484c0965de93506e88f1b016e3f42104f"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_bs32_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "4346c69afde20deaaca8fba92ff31da449c9f3297da666b8a47f7566da9a68bc"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_bs32_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260805204521.om": {
+    "size": 2615374,
+    "sha256": "f50c4c9d54e8e46679901ca55c6c8292e2827b632b6c42842b95f92c864c4e87"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 1652023,
+    "sha256": "a345541f2359250a624073eeafb80b85cf8edc76e8abd7ca8111321cf2842763"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "4965a51645dabc12f9f04c2a8299386fe9c21a81a909a1ab45f336c28c37dce5"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260805203212.om": {
+    "size": 2421658,
+    "sha256": "57f41f7c1bb6f38962a044d53d4cf3c161b550f53cae40360ed5daa9c146b7af"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_length_pse_sentinel_310p_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 1625971,
+    "sha256": "aab0b1f914500d288eb0c4394234d1b1176567dffbf2b6df30c35c60d223e68a"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_length_pse_sentinel_310p_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "0198bcb5d86e1611ab583ead2269cd960758a5689581f13a136859b7ce54dbfe"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_length_pse_sentinel_310p_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260904192029.om": {
+    "size": 2537176,
+    "sha256": "95490759f785e901a1066307c4488c173154805e5dc4224501045a9071c120cd"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_length_pse_sentinel_310p_bs32_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 1680743,
+    "sha256": "261516eac5217408e182b5ae5e29362cb68afa295c1bd2ebae2944de65c2e130"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_length_pse_sentinel_310p_bs32_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "7b9dd41a1219eb17c9ece013926a082dd718247325d796f2c4280b0a7014f2ec"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_length_pse_sentinel_310p_bs32_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260904133855.om": {
+    "size": 6354540,
+    "sha256": "bbd386a64f3a1bb34b1bebad9391c371e096d1dd6fa077ad6f7e63e3609f018f"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_length_pse_sentinel_310p_bs32_cache8192/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 1698724,
+    "sha256": "5267206bff946f4364caec2e6e82069ddfb60b977143beab9be1ef0f3995ca0b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_length_pse_sentinel_310p_bs32_cache8192/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "c68f4e9737381294353f6251de7e0b017bfbe8b703cf95358c700ecc0413330b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_apply_length_pse_sentinel_310p_bs32_cache8192/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20261010145532.om": {
+    "size": 10289530,
+    "sha256": "6b2ada4d293f28e246534d9c18597584621703f938c4696774595dfa18cd2688"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_rotary_mul_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 1512770,
+    "sha256": "82c46a433d5dd51ee527244e0f371ea07a05a267b96fe9216c3ac94284dd820a"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_rotary_mul_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "6c8cb5045138e250563382250db64e3536a52f66637ebcc28a721f815378a6b2"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_rotary_mul_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260805194248.om": {
+    "size": 2432162,
+    "sha256": "09dcbfa1aadf0e7f4135f2693e8cc7844cb8ea600a5ea38a7f177ca9e476a1e8"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_rotary_mul_bs32_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 1575758,
+    "sha256": "a15ffb1c2af98091a8ea0da032fe4251aca35fb17655ba0eb664f23fe8b8522d"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_rotary_mul_bs32_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "abb7bba3967570a6a8a9f7ceda9f2f7084508cd2953eb55aaab92f031ce22274"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_rotary_mul_bs32_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260805191526.om": {
+    "size": 2694105,
+    "sha256": "6ec4253820eb2392151871d060c13c21e1bc5cd7e7a60189b9e3054743853967"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_rotary_mul_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 1573120,
+    "sha256": "0ca4551929e5a6deebf534319f227b7992fb1b523f4fdd100f5820abda5d48db"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_rotary_mul_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "b341803fb62967b627d1851b9c22e6f67d9935357c0843358eed4818f83d38b7"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_increfa_attention_decode_nz_rotary_npu_rotary_mul_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260805194802.om": {
+    "size": 2500353,
+    "sha256": "e281bb68505f0d0245306e39d02661221c798f1b19881c1aa5ca6d6a5691360d"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_decode_nz_rotary_manual_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 2548189,
+    "sha256": "5f8cab9446140adbdc87f75ecdb1e9bdaf627e45bcc6ca6d0f1b0f2b957a4303"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_decode_nz_rotary_manual_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "16f7f25ae1c677b0981366685380d4d5e614c46d2e34a6077e30270c02088c91"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_decode_nz_rotary_manual_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260805202650.om": {
+    "size": 4174932,
+    "sha256": "268ebe3bf7bbd150a189c4681516cde017eb4321e3d2339bc2e0563189bc8c71"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_decode_nz_rotary_npu_rotary_mul_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 2014389,
+    "sha256": "d06a7541f2535b4f38b1a24c60fc4ac2b757749e3b3a1631d020519d3066c9c6"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_decode_nz_rotary_npu_rotary_mul_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "f1f03698b62d80551eee93ac721f30758786fa2f676f499887ca7a764f8d5f9f"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_decode_nz_rotary_npu_rotary_mul_bs1_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260805202309.om": {
+    "size": 3209943,
+    "sha256": "9c8ea8a5885c538b58ed07fe328c316fc96c1aa404ce34318e15b9e35969926e"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_decode_nz_rotary_npu_rotary_mul_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 2075595,
+    "sha256": "e373a3e8c906bd57d5c8fdd3d3bfa70e7db474c8b30d42f78fbaa9fc9743d331"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_decode_nz_rotary_npu_rotary_mul_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "7c21306d798e491dfd9ee45544320105a4ce28338109f36972cdd2481b94bba3"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_decode_nz_rotary_npu_rotary_mul_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260805202818.om": {
+    "size": 3274530,
+    "sha256": "54a06942f3b43f5121c14531b58a7ef20a9d71b93c464ed96fe7ceb0e5614eee"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_none_rotary_manual_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/compiled_module": {
+    "size": 2547401,
+    "sha256": "465aaa5046af2b4e42298bbab44d2dc03540075d2b72695a853d8bf1a7e8ab85"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_none_rotary_manual_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1.idx": {
+    "size": 149,
+    "sha256": "1215fcebb324d599d068da672a5560370f1862820ac34a57d03b1e1a19e7a01a"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/decode/mineru_manual_attention_none_rotary_manual_bs8_cache4096/MinerUFlatStaticDecodeModule_static_gecache_b7c1596dd4cf160b129510b2c31b0623/forward/graph_1_20260805202510.om": {
+    "size": 4149606,
+    "sha256": "fa6728638d35ab70bd5d3d08d8b5660fda9136ce2640a7acf1d6b39042a027f5"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/attention_ablation/bucket_5632_pfa_d128_009342bf4c24eb68/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/attention_lab_bucket_5632_pfa_d128/compiled_module": {
+    "size": 4089644,
+    "sha256": "e07dd884802bda6be64f384bc38de6ba59b424c266dfdfc9b6908b5ff454c3c9"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/attention_ablation/bucket_5632_pfa_d128_009342bf4c24eb68/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/attention_lab_bucket_5632_pfa_d128/graph_1.idx": {
+    "size": 149,
+    "sha256": "fbdae6c07819715bdcd2bdcb0bdb817f50c82b520aaade95b67129b8dba46aaf"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/attention_ablation/bucket_5632_pfa_d128_009342bf4c24eb68/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/attention_lab_bucket_5632_pfa_d128/graph_1_20260905213939.om": {
+    "size": 13083758,
+    "sha256": "cccca52676d9712fe5d4a7d60cc86240e6a7df277e1c407b3b8f802ba5e39abd"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/attention_ablation/bucket_768_pfa_d128_009342bf4c24eb68/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/attention_lab_bucket_768_pfa_d128/compiled_module": {
+    "size": 4080430,
+    "sha256": "ab2358517bfdbcd0ec28dacb9202fc07bb7f8b17d37473b42349c9b508cd8228"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/attention_ablation/bucket_768_pfa_d128_009342bf4c24eb68/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/attention_lab_bucket_768_pfa_d128/graph_1.idx": {
+    "size": 149,
+    "sha256": "e7dcb07ccdd945be63925f21380872343211492cbb3abe161f3142b824a4ec88"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/attention_ablation/bucket_768_pfa_d128_009342bf4c24eb68/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/attention_lab_bucket_768_pfa_d128/graph_1_20260905213645.om": {
+    "size": 13024576,
+    "sha256": "bbd4d86104d733461413454509af00c6a30470d938cafbab99fcf9f93fe7f7bd"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/attention_ablation/packed_768_pfa_d128_009342bf4c24eb68/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/attention_lab_packed_768_pfa_d128/compiled_module": {
+    "size": 4080430,
+    "sha256": "e7eee3f235978c3c40d27a06c96c1f8af11b7f386c5c3cba57575066818d85d4"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/attention_ablation/packed_768_pfa_d128_009342bf4c24eb68/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/attention_lab_packed_768_pfa_d128/graph_1.idx": {
+    "size": 149,
+    "sha256": "d4d140d9672fba72f918cd3a5e31863104eb3b0816f332f864018b8274b801b4"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/attention_ablation/packed_768_pfa_d128_009342bf4c24eb68/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/attention_lab_packed_768_pfa_d128/graph_1_20260905213813.om": {
+    "size": 13024528,
+    "sha256": "d935df978fe5e3c0934003a787ecdd4d50fc2691d38c9de05702a61d971eca89"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1024_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1024/compiled_module": {
+    "size": 3754117,
+    "sha256": "a41eb416a0ed147a99dfe4260a22e98107f0234e84245f4a500b1d038b518e09"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1024_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1024/graph_5.idx": {
+    "size": 149,
+    "sha256": "f61e49f84fd407a3f768bf886fb0b2d4fde7721f7dd2841e9eeef3c6ebf5a7cb"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1024_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1024/graph_5_20260904191004.om": {
+    "size": 12347625,
+    "sha256": "040f1c82da24c3bb3f69a30d1df30dacb2aee8f0a1523b63d9e71afd995afb81"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1280_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1280/compiled_module": {
+    "size": 3773588,
+    "sha256": "3d382815aa7b934cdba5001c592547d33d55e4ed348004d1d71c79ab5d590e5f"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1280_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1280/graph_2.idx": {
+    "size": 149,
+    "sha256": "1ba6939d53e42d6c25814d43e9b731a21f07779085318f986e723b1d06d0e5ad"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1280_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1280/graph_2_20261010103257.om": {
+    "size": 12353120,
+    "sha256": "b01e4262588fc15cc721ae1389409b807d25a3b29c4f20ffffc07590a801312d"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1536_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1536/compiled_module": {
+    "size": 3754120,
+    "sha256": "08c22e406095c16b3e2da2037a8cdaa8182cf1906a23029075c05af4e5c0dfb2"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1536_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1536/graph_6.idx": {
+    "size": 149,
+    "sha256": "c42956d46fe568ab6593ab877eed72d722a7b376c3c82993b1d6b3ba9f9d6bd6"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1536_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1536/graph_6_20260904191037.om": {
+    "size": 12365757,
+    "sha256": "6fb6e8dd5a474437665b90db3235e730671b1fb8d625c4059498acf368837741"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1792_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1792/compiled_module": {
+    "size": 3773870,
+    "sha256": "e57ac29dc9eb363b9298f964ad83a46bdd6912634c1cbc48288369deedbd0358"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1792_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1792/graph_3.idx": {
+    "size": 149,
+    "sha256": "7f1517b795b7b2c9260d5cdadf01232a306736239ca84ec2186dcb466d28f9d8"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1792_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1792/graph_3_20261010103345.om": {
+    "size": 12373131,
+    "sha256": "40c180a0353f0dfe4889220bfc5258ccffbf6a1a80a2dad532354893c2fc8e20"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1920_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1920/compiled_module": {
+    "size": 3773871,
+    "sha256": "39d61e8691c7712adb98feecdc0e931f3b46ba923132143c38c1033d90b1fe2c"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1920_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1920/graph_8.idx": {
+    "size": 149,
+    "sha256": "7c8ecb595d11b70870890cd078aeec176b8b5f5722f90bd3e9ffecbda413bb1e"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq1920_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1920/graph_8_20261010103938.om": {
+    "size": 12384947,
+    "sha256": "6ab2657adf99210764314cf7fad8b62f83e07c338e550e9eb38e25d52ae577e0"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq2048_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_2048/compiled_module": {
+    "size": 3754119,
+    "sha256": "cc0ec43d36b91a7f4ca9641adcdada27bca602b178d682c6dbd17437a4544500"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq2048_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_2048/graph_1.idx": {
+    "size": 149,
+    "sha256": "a3e9aba4f68ed82fad2cd2385da05d9972e5dc1c8ae14e4773a370c3bb345926"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq2048_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_2048/graph_1_20260904191515.om": {
+    "size": 12379901,
+    "sha256": "943f9bbbd2915da444248ee92b9fb9de178a13403fc481f95b3c43cb6d00d849"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq2560_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_2560/compiled_module": {
+    "size": 3772847,
+    "sha256": "924b0b00197a3845e1b07c6a5c90e0287ef68df335e4a80a46595ee774a24fe3"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq2560_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_2560/graph_6.idx": {
+    "size": 149,
+    "sha256": "519824a3c13b7471367ddb0d1999868aafd57da900ed8da18243eae6111034b9"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq2560_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_2560/graph_6_20261010103714.om": {
+    "size": 12389646,
+    "sha256": "62398a3832d3ff48a55191f6900eef2af33fd24b8c762404fe1a13fdca869152"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq3072_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_3072/compiled_module": {
+    "size": 3754119,
+    "sha256": "268095b9c207dbcb84321cd2ee2f7ab5233d62c93a5d15cd206d6ba26e96e799"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq3072_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_3072/graph_1.idx": {
+    "size": 149,
+    "sha256": "b9cd17f49b1280b181ac43b3df78f4ae3b601ad3204a13082fb000e53bff21b5"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq3072_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_3072/graph_1_20260904191635.om": {
+    "size": 12376144,
+    "sha256": "8c82282369151835311fb4a6626ded3c5d5009c5c27de4fdaad4b8e93aee3d36"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq384_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_384/compiled_module": {
+    "size": 3744996,
+    "sha256": "28756de96ae9eaeac37a30bf25e0bbe56f54949f0686b51ce94d93f4eee65d6b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq384_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_384/graph_4.idx": {
+    "size": 149,
+    "sha256": "2bb924e3081a00ec456105c5693073e9cf0f07d3cd1f0947d6629ec003e97eab"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq384_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_384/graph_4_20260904190929.om": {
+    "size": 12333570,
+    "sha256": "001be71867e3e6bd18786c5d5058592d191b5ed9dae784f604cf91f783f192fb"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq4096_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_4096/compiled_module": {
+    "size": 3780494,
+    "sha256": "93c25765d529db9aeab2b652df967e8e32be30f8e0874f7023f2cb8da92c06a0"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq4096_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_4096/graph_2.idx": {
+    "size": 149,
+    "sha256": "a4714120fcdc39b3c209fba959b7fc158e0909bf1a2bc6ce5e586d482ac29a28"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq4096_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_4096/graph_2_20261010145701.om": {
+    "size": 12390778,
+    "sha256": "52c5b3e4a2a9724445fd64353bdbbdfef2f0c1d060b7fd7a8fe8eca9391a3df1"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq4224_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_4224/compiled_module": {
+    "size": 3753698,
+    "sha256": "b806adfcd35e7dd64f20905b59000e575e18f62eb90b3696eab1d056d378fc6a"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq4224_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_4224/graph_1.idx": {
+    "size": 149,
+    "sha256": "20a4bec5b4c3934a633be19cedfd3b8c2398b1c7a9f85b66533fb7d5a31fdb60"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq4224_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_4224/graph_1_20260904191756.om": {
+    "size": 12376148,
+    "sha256": "957e77db3bdcec771f47f424c0536db418bc1cfbc8c70c8d88ece82b7cc1c762"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq5120_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_5120/compiled_module": {
+    "size": 3780494,
+    "sha256": "d7d126f70f4a9eef32630a65a42c5edbdfb121daafdb899428b868940fba031d"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq5120_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_5120/graph_4.idx": {
+    "size": 149,
+    "sha256": "e6c71134c62ccbbf41c250df0928a597f1f797d8813dd644af691f32561e4af0"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq5120_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_5120/graph_4_20261010145927.om": {
+    "size": 12392606,
+    "sha256": "956ffcc50c993608cb83ad0093ca88772170d132a8fdafeb16204363419a7dfa"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq512_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_512/compiled_module": {
+    "size": 3744996,
+    "sha256": "9c06042ec90d2f11802afb9316709ce0e3efbad674fb023a91c52abf9d037f61"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq512_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_512/graph_3.idx": {
+    "size": 149,
+    "sha256": "7b920af4a7a826e95dc42fb934d071781329a7063a50fb8cc94e5c99cc452d44"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq512_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_512/graph_3_20260904190856.om": {
+    "size": 12337512,
+    "sha256": "b22032589cec1a86141157453eaa2db46c8597b27e7332f658752ea3c66bee9d"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq5632_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_5632/compiled_module": {
+    "size": 3753698,
+    "sha256": "2589f12b9f51cc840410b048e96d8b97327185c9bc9603c2b0de2effc8d1781a"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq5632_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_5632/graph_1.idx": {
+    "size": 149,
+    "sha256": "5f5d6f7d9406a4f2095f9e07b0fa7863bfe58be691e1c1ff32bdff35a163aa8b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq5632_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_5632/graph_1_20260904190739.om": {
+    "size": 12390778,
+    "sha256": "994c8f7a7bfc1009b65711b5cf929a5a55c47238f74ef9779562c5c76c733434"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq6144_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_6144/compiled_module": {
+    "size": 3780494,
+    "sha256": "6e6debdc3a00d33574c2bc87690d1be165854ed8b23591f078c16841da925f81"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq6144_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_6144/graph_5.idx": {
+    "size": 149,
+    "sha256": "a9aaddd85165f94923899083ae84972fe6af536179bcbbe5f7a92d5138701192"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq6144_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_6144/graph_5_20261010150029.om": {
+    "size": 12398386,
+    "sha256": "b0df60b5e960d9bb4c6efee9d88fe4f671028081f5942a72b84f67497a8bf4d5"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq7168_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_7168/compiled_module": {
+    "size": 3780495,
+    "sha256": "f9ded811351a1d729c746d62fd6fa5d854fb72291d7321e5332efe506278f1cb"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq7168_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_7168/graph_7.idx": {
+    "size": 149,
+    "sha256": "d63ff3161a5b2e0aba9a8254e3477a5ca17ff8d3aec9468ff2955c44d6fd594c"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq7168_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_7168/graph_7_20261010150233.om": {
+    "size": 12402274,
+    "sha256": "40b17870292afe2f31317f6792a03c5874786d083d4d470fce260159967d044f"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq768_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_768/compiled_module": {
+    "size": 3744996,
+    "sha256": "4ec1ff168ee8913ff6fc05816643e9f784edb74b4f5145228bbdee520fb5f5fb"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq768_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_768/graph_2.idx": {
+    "size": 149,
+    "sha256": "4117a19c88350482a4cd82c3aa2e665dcb04da73a3ae9f4f62f5862c1d2bbd50"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq768_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_768/graph_2_20260904190821.om": {
+    "size": 12337792,
+    "sha256": "07f3f47d4009d807701063048d4a6b932782344647986b04b85eccfc84173a89"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq8192_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_8192/compiled_module": {
+    "size": 3778960,
+    "sha256": "ba9eda1ef4757d04556adc5e378f2dacc0dedc984afb8abc809e503fae66e4cf"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq8192_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_8192/graph_8.idx": {
+    "size": 149,
+    "sha256": "25ab615aa89d779537d0fe35d05bfe212000a1975f8eba1d3d412540595cd0b6"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq8192_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_8192/graph_8_20261010150417.om": {
+    "size": 12362093,
+    "sha256": "d47fb259709e8053583fd2c77318201e5cb94c103350215b94109d383ce0a53b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq896_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_896/compiled_module": {
+    "size": 3764748,
+    "sha256": "2e9731f687a9e3c4803577a4a34b5a943c81d138a69a58b583aff22d1f04d26d"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq896_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_896/graph_1.idx": {
+    "size": 149,
+    "sha256": "4497a760125293e8da88e87f69711a5d941801b3e08351e45cf972d4b143087d"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq896_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_896/graph_1_20261010103208.om": {
+    "size": 12343781,
+    "sha256": "1e352203439a9e64273b86c9d349210b15b13b10217dad7abe072aeebeaa8793"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq1024_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1024/compiled_module": {
+    "size": 3068827,
+    "sha256": "3dfdc544b944143226d4e72eb883b52cc28bf26dded5f40be47f4203bfa64423"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq1024_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1024/graph_1.idx": {
+    "size": 149,
+    "sha256": "7427f176366edb7ff27758b9ecb3e03e36e8095d2e50bed1968695548b1417a0"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq1024_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1024/graph_1_20260805171548.om": {
+    "size": 10938101,
+    "sha256": "a8192f1b9e7d0400db53fe8552f81b6813b26408a505a863611cb8a2bdb6736c"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq1536_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1536/compiled_module": {
+    "size": 3068829,
+    "sha256": "b331d724b4247e556c26e7a23444eb60ab60aacc7ed8dc4c23996ba76ce3b88f"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq1536_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1536/graph_3.idx": {
+    "size": 149,
+    "sha256": "803b177e330e27b3d6419f794a5fd1c394ec42442a60f1deef56a14ce33a71f9"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq1536_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_1536/graph_3_20260805172756.om": {
+    "size": 10955595,
+    "sha256": "4a71209a56b697ad7ba6a53af97fe60ee27d74fcb81cfd25225dd4d4e878914d"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq2048_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_2048/compiled_module": {
+    "size": 3068829,
+    "sha256": "ec6cbd71ceed857eba93f29f3e41a9a6cc25a805cc5f301a92e2d1fcaad78605"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq2048_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_2048/graph_5.idx": {
+    "size": 149,
+    "sha256": "9c3fdc8ac0c88a39da31cc08934e462dde98955f863c1c320f82bff721853a48"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq2048_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_2048/graph_5_20260805172932.om": {
+    "size": 10971241,
+    "sha256": "3bf3e9352185133b8375d61ff963c30f23e79683fd910e500698c523db9f1067"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq3072_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_3072/compiled_module": {
+    "size": 3068829,
+    "sha256": "ebcd6d59e9ba1965e0d7588db27170887ad62ab0bf7395770e9fb31c5e639498"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq3072_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_3072/graph_2.idx": {
+    "size": 149,
+    "sha256": "4528fb483759ab3f4440db5c71cb7784749ea3e9a96472bab1aebf3d7c0a617a"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq3072_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_3072/graph_2_20260805174605.om": {
+    "size": 10967054,
+    "sha256": "371a92630763e018d0227515a2cacef22cb590ad578c9888b28b2d6baad3da71"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq384_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_384/compiled_module": {
+    "size": 3061530,
+    "sha256": "ff9a3594d8c6ec58ce73d1f0d35fa6aa1af347d85ea92979dd915d6bf1076b1b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq384_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_384/graph_1.idx": {
+    "size": 149,
+    "sha256": "34f43ae9ab95bfad7690d8b7b8ffce35a1ac610289297770eb0403c19663127f"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq384_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_384/graph_1_20260805172550.om": {
+    "size": 10920329,
+    "sha256": "e215beafc9d673d0de2cf976c749b3005614e063fad64282a56915368aa8334d"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq4224_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_4224/compiled_module": {
+    "size": 3068408,
+    "sha256": "0e76fac43bf9edb0ea7c5457913a56ab74d0baf526958d671121423cd7b15073"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq4224_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_4224/graph_1.idx": {
+    "size": 149,
+    "sha256": "7bf6d3babc060fa2db21342f00754c32af4647e95bd160b2400d03acfc9b370d"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq4224_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_4224/graph_1_20260805174450.om": {
+    "size": 10969314,
+    "sha256": "c01e5374b499705bd45967941fedffdb6168eb149da8a03c8c7a8769d8fed762"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq512_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_512/compiled_module": {
+    "size": 3061530,
+    "sha256": "d1bd55b5f3ffa278963b4ad08158f65ade2774a791d6739c549b722789ff135a"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq512_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_512/graph_2.idx": {
+    "size": 149,
+    "sha256": "331a0a99ca43f20b668102ca359b7347751c96c485e9ae7eade5912b6f0588b6"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq512_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_512/graph_2_20260805172716.om": {
+    "size": 10930799,
+    "sha256": "881f8bc63464412ed8bdf7b3c2d547ffa3cf0ff111d67cc13c6a28db02c847c5"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq5632_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_5632/compiled_module": {
+    "size": 3068408,
+    "sha256": "6907d7cf36f2558bd18229f2444aaeea69d0eb12a4b554073ee356d2c10d615d"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq5632_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_5632/graph_1.idx": {
+    "size": 149,
+    "sha256": "6dcfb7c12ea9c2cac015b2148b510f44a12e140a1446ba8e093245b5d1bb9527"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq5632_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_5632/graph_1_20260805171047.om": {
+    "size": 10982265,
+    "sha256": "5ec7ec77372058a5b0cc391d836ed8a71d3c169bbd4b6000d9b062af152633ac"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq768_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_768/compiled_module": {
+    "size": 3061530,
+    "sha256": "1458626b8074b013081a866a5a3a86fa9da14d8078a9ea18e218001442f13300"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq768_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_768/graph_4.idx": {
+    "size": 149,
+    "sha256": "ca551ec43a2992820d7538f5cf3ede36f5b18c9b60b981cdcd382b4a2b27f6ef"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq768_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_768/graph_4_20260805172838.om": {
+    "size": 10925179,
+    "sha256": "7e0377e4da6a0a037c527c65ecb095efe770b62851d0e4c64306b2c047b3f436"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/vision/vision_innerprecise4_58e268a06bcbdc35/mineru_vision_blocks_attnprompt_flash_attention_lnmanual_fp32_projlinear_pfadnative_mask_sparse1_bs1_seq768_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srcde4c64a45403/StaticMinerUVisionBlocks_static_gecache_6828b69dea64983fbd91f5856467896b/mineru_vision_blocks_bucket_768/compiled_module": {
+    "size": 3767578,
+    "sha256": "2fc8ddc55e45f7e2b411bc0e9edd4a345a9b5b362ae64065c96db014135d17d1"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/compiled_module": {
+    "size": 3965191,
+    "sha256": "a24547ecb823f6cd767c6384cce4a7f0d56b29f09719f27d385a77c45aa02ac5"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/graph_1.idx": {
+    "size": 149,
+    "sha256": "161d5d13e2794a02b411cb09c887a0ed02f0510bb778b99ef846039c3fdb10ce"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/graph_1_20260806131841.om": {
+    "size": 9072160,
+    "sha256": "c5f2f29c15cb2e329e521707f5ca4c222bc5caf0c75d7d4d36a6464c9a7c6c69"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/compiled_module": {
+    "size": 3954819,
+    "sha256": "24590599606041121feac87197994c1ab32dc057ff174e436c878965dc7d013a"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/graph_3.idx": {
+    "size": 149,
+    "sha256": "b12d9809270ada9f3440d7ad115d5e19d79eca45197dd1bda4b1cd5494cd188b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/graph_3_20260806132000.om": {
+    "size": 6973591,
+    "sha256": "f33922fb57bed8f44bbcfe42139ca34dd494c516203e0952b2bdd38ea0bee9b0"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/compiled_module": {
+    "size": 3954867,
+    "sha256": "6ad33b4571dbbd489c16fd969e965e8f6658225d69b22701a78d9066d8fd3d12"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/graph_2.idx": {
+    "size": 149,
+    "sha256": "ef7b1c9aab0ec3459be45a872f322be0d086aec6cbf20767d94376a89e5f5605"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/graph_2_20260806131918.om": {
+    "size": 7076460,
+    "sha256": "106de60b14cd476850fb10f803db0b19d1bfa123b9db4f997109644cf3186f93"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/compiled_module": {
+    "size": 3954867,
+    "sha256": "e5dd1a1ea505b7e363facb1bb6798c55e8069314a5eda1552ea1acb693da75d8"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/graph_4.idx": {
+    "size": 149,
+    "sha256": "863b569850304ba5fdfe4581e58f3f4df63df59c1307e40898187391947767d2"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_packed_nz_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src21e8adec626b/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/graph_4_20260806132039.om": {
+    "size": 7486193,
+    "sha256": "fd4c531365fe3bbc8db1a1ad33ae45af7a77de2193231bfbdf7cd5f6589a511b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_qkv_gateup_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src153f7fb6d842/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/compiled_module": {
+    "size": 3964316,
+    "sha256": "128e4033a5e675b8efc63f9152603535007c0595bd9191e12a952cf8619672be"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_qkv_gateup_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src153f7fb6d842/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/graph_2.idx": {
+    "size": 149,
+    "sha256": "37404424d8c5383742c5cb7299949f4ad0316182d0b154fa5ea7b5af99ab7ff5"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_qkv_gateup_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src153f7fb6d842/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/graph_2_20260805194318.om": {
+    "size": 9073210,
+    "sha256": "a65d8cd205918e7596d74481684d3197a779b3a09dd2657bdd1c20b263e26aa5"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_qkv_gateup_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src153f7fb6d842/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/compiled_module": {
+    "size": 3953992,
+    "sha256": "a1691faf973a0e10cc8c8f9d7fa404370aa13894796b2005ed500b0492e73799"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_qkv_gateup_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src153f7fb6d842/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/graph_3.idx": {
+    "size": 149,
+    "sha256": "183fde321db6984279d9111febfb01ee4a118782aefc0a4986db1ed0dd63fb00"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_qkv_gateup_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src153f7fb6d842/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/graph_3_20260805194421.om": {
+    "size": 7076500,
+    "sha256": "ecc042173e3f1c8932cd8533a08d5218b59d0836104c7488c98b66a990dee92e"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_qkv_gateup_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src153f7fb6d842/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/compiled_module": {
+    "size": 3953992,
+    "sha256": "1919b7cc033ec1f01ff0f25c8106e926576782a20ea650dec22aa9efdd0dfe2a"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_qkv_gateup_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src153f7fb6d842/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/graph_5.idx": {
+    "size": 149,
+    "sha256": "bf4af9d79379cbd1e6a70b89f93a2bcd131c18a41176d776dc867730bf58fd32"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_qkv_gateup_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src153f7fb6d842/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/graph_5_20260805194535.om": {
+    "size": 7481971,
+    "sha256": "44b9bc65d758e10f40cb738d90e25cf4bc8e3cf9e093bdfc5100ec6605fccc0c"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/compiled_module": {
+    "size": 4247750,
+    "sha256": "062ba0637732337d1ee0ca9debc8367aa15b75833959958510d133d4fa77af09"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/graph_1.idx": {
+    "size": 149,
+    "sha256": "7531c0b8a736a2138e5de85d1b44733f4d2300ced0fdc62e382bb544aca81247"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/graph_1_20260904110938.om": {
+    "size": 9341000,
+    "sha256": "e4b1adb44d8066881519dd6e1788aa70227c60bf5da145fb71045834224fd443"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/compiled_module": {
+    "size": 4271572,
+    "sha256": "9b04cb31e35954927dd22d0e306049de9c7fecd2569e002c2b93cb3a30b25db1"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/graph_1.idx": {
+    "size": 149,
+    "sha256": "ab1012225bca8787b22f9432a13fb9db1b0a461bb056999a7476cbfd8e4f5530"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/graph_1_20261010102433.om": {
+    "size": 9343826,
+    "sha256": "45d48929709c5e658f8e6a7dc279fc08ba28b1890481a05a0b59a2752f497e67"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/compiled_module": {
+    "size": 4242840,
+    "sha256": "a19282573cdc33a96244411d4016ca7d3b253ca093c42ab711937a13b7398e85"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/graph_1.idx": {
+    "size": 149,
+    "sha256": "af58c92ceaafd5b824aa85c71862c87a2d47f7dd869cc9eb1afdc53a3390e22f"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1024/graph_1_20260805195151.om": {
+    "size": 9336660,
+    "sha256": "91f23b9568c15ae5ee221cd599b02c16704f12c981fe0cc47968ff2de5a2797e"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/compiled_module": {
+    "size": 4237507,
+    "sha256": "eede2a1d96dbcf4c5db1ecc40a412ee4719e383c531dcbf139c3f2b7664eff07"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/graph_2.idx": {
+    "size": 149,
+    "sha256": "0c267c7b7bea2e46a02e790defd486cca4891a4026ffb83393a473bb6d0b5002"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/graph_2_20260904192134.om": {
+    "size": 7243781,
+    "sha256": "034064b30f91b4d412ed72236daac47bc48ee4b2d5e356affb79a2be843d22ba"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/compiled_module": {
+    "size": 4261041,
+    "sha256": "cb5c384916619383926e94abdbe5a76ce50cb262df5cc5546a060764f72b215e"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/graph_4.idx": {
+    "size": 149,
+    "sha256": "199de99e1d234cc724b24525ac621d864a576a410daf5b564e7942ac5cd911b5"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/graph_4_20261010102807.om": {
+    "size": 7245791,
+    "sha256": "432902c8b9de2491c92097190a2280e35958cd506e5a844e33ae77e4f92411fc"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/compiled_module": {
+    "size": 4232324,
+    "sha256": "089f8eef6695807ac5d6ab456b2e713b5bfad2a3b27dc7f47753898165eb0122"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/graph_2.idx": {
+    "size": 149,
+    "sha256": "2e0260fb818f720654eda64a6669d845250488cff9141adbbb8190d361490404"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_128/graph_2_20260805204609.om": {
+    "size": 7240777,
+    "sha256": "6d18507ceb576b5632ff4b32eca253f26b053192bfd86353efc6df6dd695c26b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1536_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1536/compiled_module": {
+    "size": 4279969,
+    "sha256": "e4a3d7183ba93be403427982c7d59dba4f5dd31a03d0079bc2d73f2dabbf06e6"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1536_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1536/graph_3.idx": {
+    "size": 149,
+    "sha256": "077e457acabebf10660df50e36ba865fa6f6898b3f258cb1270fc6c1e5cecddd"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1536_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_1536/graph_3_20261010145753.om": {
+    "size": 11954159,
+    "sha256": "08acbaf8a01158e9ff44ef77848455944c847dacd3c44f5aed5ecd1cfdca9c43"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq2048_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_2048/compiled_module": {
+    "size": 4280018,
+    "sha256": "bd490edc5cc6f3579b8caff15427256c4c8fea6f15cebbe14cd51852f9b0a224"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq2048_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_2048/graph_6.idx": {
+    "size": 149,
+    "sha256": "4aaae01336a77d250086aa6352d49c8875586981b157929195f98d9aea03217b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq2048_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_2048/graph_6_20261010150125.om": {
+    "size": 15642570,
+    "sha256": "11dc64fc9df6d1e5d5043842079d5b7bfe0ccfa2ffa80d320ea8ebea5801d866"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq2176_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_2176/compiled_module": {
+    "size": 4280018,
+    "sha256": "40622cd61f52a042345fff5b53de88d9dd5225519c9cd946852f3c4baad1c04e"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq2176_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_2176/graph_9.idx": {
+    "size": 149,
+    "sha256": "94d5bf8f02603475c63a8a9d43b36260e39537ae558ecb825ea9a058239c0305"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq2176_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_2176/graph_9_20261010150511.om": {
+    "size": 16738456,
+    "sha256": "360d8ef4da99932abcd06ff592dd85072980b0ef16f2f0c7b8be63bc80ad58cd"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/compiled_module": {
+    "size": 4237267,
+    "sha256": "0d3b64b9de63926b880d42b26dcd9663fe0345248d91180eb19de4f04c872f04"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/graph_2.idx": {
+    "size": 149,
+    "sha256": "5e67e865b04b3a54020c36e805d1a425015a3426be9a94e8a1a4cc8854dcfe96"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/graph_2_20260904111023.om": {
+    "size": 7343317,
+    "sha256": "ce79c4c385d0b11ca590659d462145c11357f2cd458158df10bedc374520bf12"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/compiled_module": {
+    "size": 4261089,
+    "sha256": "ebd0420e9c1e5577cb43a59e11ee8b508d6483ac6e2462803f1740e5406b7f2b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/graph_3.idx": {
+    "size": 149,
+    "sha256": "c63636210f2a468517d456aa4b9266571363bf58a37c0526cc44febfc9502c64"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/graph_3_20261010102700.om": {
+    "size": 7347613,
+    "sha256": "3996011b4d81fdab076dc8c233860b8721cc39db6d907e7ec881069f4f765952"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/compiled_module": {
+    "size": 4232372,
+    "sha256": "c2557ae24ea644d87edbe4587b2d1bbaa62f8fd2e582c9721be8aee9b62505b7"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/graph_2.idx": {
+    "size": 149,
+    "sha256": "77f9316da7230793dc4dc540ac5296256e7fb742471a1675449087d6a5189068"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_256/graph_2_20260805195237.om": {
+    "size": 7342692,
+    "sha256": "61907876d123db7ed511cca3835332a3acb2a373d9527c0cbd5a8554245e41c7"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq384_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_384/compiled_module": {
+    "size": 4261090,
+    "sha256": "0ecc55c09db7444f3dff8eaa3330995230ad7ec9863f9a745077c7d8912ffd52"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq384_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_384/graph_4.idx": {
+    "size": 149,
+    "sha256": "1aa25a0716f1198dd1e7542f6c853972362a82b4d4d9143620adda3ce03c9725"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq384_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_384/graph_4_20261010103442.om": {
+    "size": 7513946,
+    "sha256": "f8521d62f5495fa4a0120c0ab24af6aca94f9eb9d61febe9a92f06edbf6cb64b"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/compiled_module": {
+    "size": 4237555,
+    "sha256": "8358d6f436c316535d9e39a3b2ac2f87f6c6a786c54a2e38f6261926e422a05e"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/graph_3.idx": {
+    "size": 149,
+    "sha256": "462cd1d722b7aba66be2d9f7f17df467b39f00eba4a1c2cfbbbdf5dc8f526e6e"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src52e05ab5f7d5/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/graph_3_20260904192213.om": {
+    "size": 7751873,
+    "sha256": "f45004e812eedb6ec451511506e14591dbc153c3ca9b0527ce46f63b0de4f230"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/compiled_module": {
+    "size": 4261089,
+    "sha256": "b2e84ee716dc03e24909d47b609e0864aaa7d0e178b8179b0551378123560b69"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/graph_2.idx": {
+    "size": 149,
+    "sha256": "74f1a54fd49c60e6f98bb9ec18e37a6435142c1d9bcf4763f0fe0e0746662dce"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/graph_2_20261010102549.om": {
+    "size": 7751855,
+    "sha256": "6812faa5130a9b86d9c40fc4b532e54fab821e5cdd30e016bf14f9f2f69bad94"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/compiled_module": {
+    "size": 4232372,
+    "sha256": "f176dd01857ed23e82d5da8d221271ba0d2a0bbeb76cb6b0918cfb40bc242525"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/graph_3.idx": {
+    "size": 149,
+    "sha256": "ecbed0cb2acd8e75fe14fcc0e9bf4f684b9473792e63cd0fcdd31c3618c154b2"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_srccd1623e68379/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_512/graph_3_20260805195318.om": {
+    "size": 7744542,
+    "sha256": "d0fd0bde8fa6bb51982893707c6a8f8c06597cc48f4655ae52e02b673ba30087"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq576_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_576/compiled_module": {
+    "size": 4258996,
+    "sha256": "c477b1730c782fbea16a7c4dcf5f23fc75b9a69f830dd4c4afd0c3e51f10dff4"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq576_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_576/graph_5.idx": {
+    "size": 149,
+    "sha256": "2e31df721c556d253e9adf4051c61e170636bc3b8aa34110115e9d7d5e98e8e4"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq576_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_576/graph_5_20261010103604.om": {
+    "size": 7886319,
+    "sha256": "d11e07b77a2c664ee34edcce64dc676dc8cc71bbc0230e9eb590ddd787b69367"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq832_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_832/compiled_module": {
+    "size": 4259045,
+    "sha256": "78952aa2a5226778150af4088b7118c35ae9e119a29a8ba472e4043c299740ab"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq832_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_832/graph_7.idx": {
+    "size": 149,
+    "sha256": "ad9ef52fa4a3fe0358c3024d27c1f46463145ee4d8b365ad5681af83f10967c2"
+  },
+  "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262/cache/text/mineru_text_packed_block_causal_stock_projections_bs1_seq832_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6/PackedMinerUTextPrefillStage_static_gecache_fa817e91dbc7f1f2d5db294763f54a99/mineru_packed_text_prefill_bucket_832/graph_7_20261010103808.om": {
+    "size": 8629962,
+    "sha256": "098df761ab8ee46636587868f55af706cbf4a6e7b7215d4f359471a72a18c041"
+  }
+}

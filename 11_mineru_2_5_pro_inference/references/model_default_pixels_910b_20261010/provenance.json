@@ -1,0 +1,28 @@
+{
+  "inference_commit": "a5aec262ae9157eb5a94fff13b1a5818f5f7e9dd",
+  "base_commit": "fb0561d4",
+  "analysis_commit": "778522e5",
+  "branch": "codex/mineru-model-default-pixels",
+  "chip": "Ascend910B2",
+  "physical_device": "1",
+  "runs": [
+    "warmup64",
+    "full1651"
+  ],
+  "run_root": "/workspace/repos/mineru_model_default_pixels_20261010/tmp/11_mineru_2_5_pro_inference/model_default_pixels_910b_a5aec262",
+  "provenance": [
+    "All inference settings copied from saved production receipt except requested pixel limits, bucket lists and KV8192, plus isolated cache/output paths.",
+    "No text-only cap. Checkpoint min/max pixels verified as 50176/1605632.",
+    "Production receipt has prefill metrics enabled; retained unchanged despite the task shorthand C5. Precision and inference entry point unchanged.",
+    "No model, decode, layout or processing implementation changes from fb0561d4. Only orchestration, analysis and evidence added.",
+    "Layout identity excludes only layout_timing_s; every other saved field, including boxes, polygons and crop pixel hashes, is compared exactly.",
+    "Page score aggregation verified against evaluator macro scores. Changes use tolerance 1e-12.",
+    "CDM samples/s uses the final completed progress elapsed time, with one-second resolution.",
+    "Production trace has 25 length stops, not the 26 stated in the task document."
+  ],
+  "local_validation": [
+    "Parsed both commands with pipeline_args and verified only authorized configuration/output/cache changes.",
+    "Mocked complete coordinator: exactly 64 then 1651, warm-cache audit, and CDM_WORKERS=96 evaluation dispatch.",
+    "Verified per-page aggregation reproduces all production category scores exactly."
+  ]
+}
