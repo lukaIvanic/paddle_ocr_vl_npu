@@ -1,0 +1,248 @@
+{
+  "device": "Ascend910B2",
+  "physical_npu": "3",
+  "git_commit": "1835824d1c8b4f672fb2cac0f33585cfd79dce24",
+  "passed": true,
+  "cases": [
+    {
+      "name": "m256_n1024_bias0",
+      "graph_transpose": false,
+      "compiled_vs_eager": [
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999995827674866
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999998211860657
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999995231628418
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999995231628418
+        }
+      ],
+      "profiles": {
+        "compiled": {
+          "directory": "/workspace/results/bge_v2_handoff_probe_1835824d/profiles/m256_n1024_bias0",
+          "active_forwards": 10,
+          "kernel_rows": 50,
+          "kernel_duration_us_per_forward": 48.051,
+          "top_types": [
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 20.2305
+            },
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 2.0,
+              "us_per_forward": 13.6802
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 1.0,
+              "us_per_forward": 7.514099999999997
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 1.0,
+              "us_per_forward": 6.6262
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "m256_n1024_bias1",
+      "graph_transpose": false,
+      "compiled_vs_eager": [
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999996423721313
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999998807907104
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999996423721313
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999995827674866
+        }
+      ],
+      "profiles": {
+        "compiled": {
+          "directory": "/workspace/results/bge_v2_handoff_probe_1835824d/profiles/m256_n1024_bias1",
+          "active_forwards": 10,
+          "kernel_rows": 50,
+          "kernel_duration_us_per_forward": 45.428900000000006,
+          "top_types": [
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 17.500500000000002
+            },
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 2.0,
+              "us_per_forward": 13.7161
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 1.0,
+              "us_per_forward": 7.5901
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 1.0,
+              "us_per_forward": 6.622199999999999
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "m256_n4096_bias0",
+      "graph_transpose": false,
+      "compiled_vs_eager": [
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999995827674866
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999998211860657
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999985694885254
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999985694885254
+        }
+      ],
+      "profiles": {
+        "compiled": {
+          "directory": "/workspace/results/bge_v2_handoff_probe_1835824d/profiles/m256_n4096_bias0",
+          "active_forwards": 10,
+          "kernel_rows": 50,
+          "kernel_duration_us_per_forward": 51.2411,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 2.0,
+              "us_per_forward": 19.650299999999994
+            },
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 17.0844
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 1.0,
+              "us_per_forward": 7.536
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 1.0,
+              "us_per_forward": 6.9704
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "m256_n4096_bias1",
+      "graph_transpose": false,
+      "compiled_vs_eager": [
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999995231628418
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999998211860657
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999984502792358
+        },
+        {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "exact_fraction": 1.0,
+          "min_cosine": 0.9999985694885254
+        }
+      ],
+      "profiles": {
+        "compiled": {
+          "directory": "/workspace/results/bge_v2_handoff_probe_1835824d/profiles/m256_n4096_bias1",
+          "active_forwards": 10,
+          "kernel_rows": 50,
+          "kernel_duration_us_per_forward": 52.663,
+          "top_types": [
+            {
+              "name": "QuantBatchMatmulV3",
+              "count_per_forward": 2.0,
+              "us_per_forward": 19.498500000000003
+            },
+            {
+              "name": "AddLayerNormQuantV2",
+              "count_per_forward": 1.0,
+              "us_per_forward": 17.6862
+            },
+            {
+              "name": "Add",
+              "count_per_forward": 1.0,
+              "us_per_forward": 7.9181
+            },
+            {
+              "name": "Quantize",
+              "count_per_forward": 1.0,
+              "us_per_forward": 7.5602
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

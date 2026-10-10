@@ -503,3 +503,13 @@ Evidence: [comparison](../tmp/26_bge_m3_inference/v2_model_1031242c/comparison.j
 [full numerical results](../tmp/26_bge_m3_inference/v2_model_1031242c/result.json),
 [command](../tmp/26_bge_m3_inference/v2_model_1031242c/command.txt),
 [raw archive hash](../tmp/26_bge_m3_inference/v2_model_1031242c/artifacts.json).
+
+## Reproducing on the separate 310P work server
+
+Use [the self-contained 310P handoff](../WORK_SERVER_310P_BGE_M3_V2.md).
+It includes the pinned upstream source/build, local model provisioning, private
+package and graph metadata setup, standalone and composed-op gates, model
+comparison, and evidence requirements. No Blue Zone installation or graph cache
+is required. `--expected-chip 310P` enables target verification and the existing
+310P JIT setting; the fused projection honors the 310P graph-transpose layout.
+The 310P run remains unvalidated until its agent returns device evidence.

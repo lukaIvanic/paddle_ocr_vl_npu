@@ -1,0 +1,8 @@
+Source 1835824d, Ascend910B2 physical NPU 3, existing V2-only package.
+probe_norm_v2_graph.py --expected-chip 910B --rows 256 --op-api /workspace/operators/bge-v2-graph-fixed/vendors/bge_v2_nn/op_api/lib/libcust_opapi.so --output /workspace/results/bge_v2_handoff_probe_1835824d
+PASS: 4 cases (1024 and 4096 output features, bias absent/present).
+PASS: all four returned tensors match eager bit-for-bit in every case.
+PASS: each composed graph executes 1 V2 +2 QuantBatchMatmulV3 +1 Quantize +1 Add per call.
+PASS: portable summarizer preserves kernel/step/type/shape and existing AIV statistics on all 14 captures from v2_model_1031242c.
+PASS: syntax check for all handoff Bash blocks and py_compile for changed Python entry points.
+NOT TESTED: 310P branch, native 310P build or model execution.
