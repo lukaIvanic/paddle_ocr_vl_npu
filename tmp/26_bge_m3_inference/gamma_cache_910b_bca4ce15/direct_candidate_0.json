@@ -1,0 +1,417 @@
+{
+  "commit": "af6ba19685d9e911c79349febc6560a7f0a87c93",
+  "device": "Ascend910B2",
+  "physical_npu": "3",
+  "custom_opp": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn",
+  "library": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn/op_api/lib/libcust_opapi.so",
+  "library_sha256": "764cc54c0d2f93697403b17f2f0967628a4c823385953a4f1b0b40cf437dbe80",
+  "phase": "direct",
+  "cases": [
+    {
+      "label": "rows256_none",
+      "shape": [
+        256,
+        1024
+      ],
+      "bias": "none",
+      "baseline_parity": [
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "math_norm_max_abs": 0.0019183158874511719,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_candidate_0/profiles/rows256_none",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 12.392299999999999,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 12.392299999999999
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows256_broadcast",
+      "shape": [
+        256,
+        1024
+      ],
+      "bias": "broadcast",
+      "baseline_parity": [
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "math_norm_max_abs": 0.0019087791442871094,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_candidate_0/profiles/rows256_broadcast",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 12.4363,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 12.4363
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows256_elementwise",
+      "shape": [
+        256,
+        1024
+      ],
+      "bias": "elementwise",
+      "baseline_parity": [
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "math_norm_max_abs": 0.001888275146484375,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_candidate_0/profiles/rows256_elementwise",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 12.751999999999999,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 12.751999999999999
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows512_none",
+      "shape": [
+        512,
+        1024
+      ],
+      "bias": "none",
+      "baseline_parity": [
+        {
+          "shape": [
+            512,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            512,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "math_norm_max_abs": 0.0019001960754394531,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_candidate_0/profiles/rows512_none",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 15.7105,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 15.7105
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows512_broadcast",
+      "shape": [
+        512,
+        1024
+      ],
+      "bias": "broadcast",
+      "baseline_parity": [
+        {
+          "shape": [
+            512,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            512,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "math_norm_max_abs": 0.0019040107727050781,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_candidate_0/profiles/rows512_broadcast",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 16.4601,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 16.4601
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows512_elementwise",
+      "shape": [
+        512,
+        1024
+      ],
+      "bias": "elementwise",
+      "baseline_parity": [
+        {
+          "shape": [
+            512,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            512,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "math_norm_max_abs": 0.0019450187683105469,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_candidate_0/profiles/rows512_elementwise",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 16.8141,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 16.8141
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows2048_none",
+      "shape": [
+        2048,
+        1024
+      ],
+      "bias": "none",
+      "baseline_parity": [
+        {
+          "shape": [
+            2048,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            2048,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "math_norm_max_abs": 0.0019316673278808594,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_candidate_0/profiles/rows2048_none",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 30.3667,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 30.3667
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows2048_broadcast",
+      "shape": [
+        2048,
+        1024
+      ],
+      "bias": "broadcast",
+      "baseline_parity": [
+        {
+          "shape": [
+            2048,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            2048,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "math_norm_max_abs": 0.0019373893737792969,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_candidate_0/profiles/rows2048_broadcast",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 33.85850000000001,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 33.85850000000001
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows2048_elementwise",
+      "shape": [
+        2048,
+        1024
+      ],
+      "bias": "elementwise",
+      "baseline_parity": [
+        {
+          "shape": [
+            2048,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            2048,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "math_norm_max_abs": 0.0019392967224121094,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_candidate_0/profiles/rows2048_elementwise",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 31.916300000000007,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 31.916300000000007
+          }
+        ]
+      }
+    }
+  ],
+  "passed": true
+}

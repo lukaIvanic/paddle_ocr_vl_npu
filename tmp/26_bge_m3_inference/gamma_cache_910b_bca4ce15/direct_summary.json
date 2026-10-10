@@ -1,0 +1,4202 @@
+{
+  "coverage_audit": "passed",
+  "runs": [
+    {
+      "run": "direct_baseline_0",
+      "label": "rows2048_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 32.7648,
+        "median": 32.55,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 30.72,
+        "median": 30.4255,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 17.608,
+        "median": 17.608,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 11.0947,
+        "median": 10.843,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 4.5965,
+        "median": 4.478,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.7344,
+        "median": 1.742,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.5733,
+        "median": 0.5785,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.3611,
+        "median": 0.3575,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.1494,
+        "median": 0.1475,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0565,
+        "median": 0.0565,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_0",
+      "label": "rows2048_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;2048,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 32.7784,
+        "median": 33.180499999999995,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 30.7893,
+        "median": 31.264499999999998,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 17.6,
+        "median": 17.6,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 10.933300000000001,
+        "median": 11.136500000000002,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 5.1266,
+        "median": 5.3705,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.7522,
+        "median": 1.7530000000000001,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.5718,
+        "median": 0.563,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.355,
+        "median": 0.356,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.1664,
+        "median": 0.17149999999999999,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.057,
+        "median": 0.056,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_0",
+      "label": "rows2048_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 32.4767,
+        "median": 32.931,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 30.4579,
+        "median": 30.988,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 16.213,
+        "median": 16.213,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 11.2456,
+        "median": 11.381,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 5.351,
+        "median": 5.647,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.7316,
+        "median": 1.7205,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.5327000000000001,
+        "median": 0.523,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.3693,
+        "median": 0.368,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.1752,
+        "median": 0.181,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0569,
+        "median": 0.057,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_0",
+      "label": "rows256_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 13.340300000000001,
+        "median": 13.630500000000001,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 11.3463,
+        "median": 11.359,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.651,
+        "median": 2.651,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.5544,
+        "median": 5.673500000000001,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.3918999999999997,
+        "median": 3.3819999999999997,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.3129,
+        "median": 0.312,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2342,
+        "median": 0.23349999999999999,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4897,
+        "median": 0.483,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2982,
+        "median": 0.2985,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0277,
+        "median": 0.0275,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_0",
+      "label": "rows256_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;256,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 12.7204,
+        "median": 12.9605,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 10.7175,
+        "median": 10.93,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.614,
+        "median": 2.614,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.4174,
+        "median": 5.5355,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 2.8668,
+        "median": 2.901,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.3159,
+        "median": 0.316,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.24609999999999999,
+        "median": 0.239,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.5067,
+        "median": 0.5,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2641,
+        "median": 0.272,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0297,
+        "median": 0.029,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_0",
+      "label": "rows256_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 12.8085,
+        "median": 12.6105,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 10.5137,
+        "median": 10.523,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.404,
+        "median": 2.404,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.6834,
+        "median": 5.5135000000000005,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 2.8396,
+        "median": 2.9255,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.31980000000000003,
+        "median": 0.319,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2291,
+        "median": 0.2285,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.5405,
+        "median": 0.53,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2702,
+        "median": 0.279,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0303,
+        "median": 0.03,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_0",
+      "label": "rows512_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 16.9603,
+        "median": 16.91,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 14.8002,
+        "median": 14.565999999999999,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.629,
+        "median": 4.629,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 6.8926,
+        "median": 6.8645,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.847,
+        "median": 3.677,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.645,
+        "median": 0.652,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.3134,
+        "median": 0.318,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4656,
+        "median": 0.4655,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2596,
+        "median": 0.257,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0437,
+        "median": 0.043,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_0",
+      "label": "rows512_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;512,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 15.6724,
+        "median": 15.700500000000002,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 13.833,
+        "median": 13.8175,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.623,
+        "median": 4.623,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 6.3317,
+        "median": 6.3355,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.4271,
+        "median": 3.396,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.6278,
+        "median": 0.628,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.3349,
+        "median": 0.3355,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4576,
+        "median": 0.4575,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2472,
+        "median": 0.2455,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.045399999999999996,
+        "median": 0.0455,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_0",
+      "label": "rows512_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 15.7943,
+        "median": 16.0705,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 13.7248,
+        "median": 13.923,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.256,
+        "median": 4.256,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 6.487,
+        "median": 6.6215,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.5747,
+        "median": 3.6995,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.6297,
+        "median": 0.6335,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.3108,
+        "median": 0.3055,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.473,
+        "median": 0.4695,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2594,
+        "median": 0.266,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.046,
+        "median": 0.045,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_1",
+      "label": "rows2048_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 32.5827,
+        "median": 32.1005,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 30.4712,
+        "median": 30.066000000000003,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 17.608,
+        "median": 17.608,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 11.0708,
+        "median": 10.85,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 4.3735,
+        "median": 4.2335,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.7418,
+        "median": 1.7425000000000002,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.578,
+        "median": 0.5854999999999999,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.3633,
+        "median": 0.362,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.1436,
+        "median": 0.141,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0572,
+        "median": 0.058,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_1",
+      "label": "rows2048_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;2048,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 32.8147,
+        "median": 33.24,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 30.513199999999998,
+        "median": 30.677999999999997,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 17.6,
+        "median": 17.6,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 10.9403,
+        "median": 11.1555,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 4.8332,
+        "median": 4.817,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.7382,
+        "median": 1.7389999999999999,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.577,
+        "median": 0.5734999999999999,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.3584,
+        "median": 0.3575,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.15839999999999999,
+        "median": 0.1585,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0568,
+        "median": 0.0565,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_1",
+      "label": "rows2048_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 32.1547,
+        "median": 32.451,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 29.9726,
+        "median": 30.246000000000002,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 16.213,
+        "median": 16.213,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 11.3453,
+        "median": 11.411,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 4.8491,
+        "median": 4.9405,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.7428,
+        "median": 1.7445,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.5413,
+        "median": 0.536,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.3785,
+        "median": 0.3785,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.1616,
+        "median": 0.1635,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0582,
+        "median": 0.058,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_1",
+      "label": "rows256_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 13.222100000000001,
+        "median": 13.42,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 11.189,
+        "median": 11.250499999999999,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.651,
+        "median": 2.651,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.537,
+        "median": 5.6875,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.2432,
+        "median": 3.122,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.3219,
+        "median": 0.3205,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2384,
+        "median": 0.2355,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4958,
+        "median": 0.5,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2876,
+        "median": 0.28300000000000003,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0291,
+        "median": 0.028999999999999998,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_1",
+      "label": "rows256_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;256,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 12.7262,
+        "median": 12.970500000000001,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 10.7398,
+        "median": 10.872,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.614,
+        "median": 2.614,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.4311,
+        "median": 5.538,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 2.8675,
+        "median": 2.7265,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.321,
+        "median": 0.3185,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2444,
+        "median": 0.2405,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.5051,
+        "median": 0.498,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2666,
+        "median": 0.271,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.03,
+        "median": 0.031,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_1",
+      "label": "rows256_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 12.9663,
+        "median": 12.93,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 10.9308,
+        "median": 11.0295,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.404,
+        "median": 2.404,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.7634,
+        "median": 5.5575,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.1389,
+        "median": 3.1395,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.3303,
+        "median": 0.3195,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2222,
+        "median": 0.218,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.5266,
+        "median": 0.5145,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2859,
+        "median": 0.28400000000000003,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0305,
+        "median": 0.03,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_1",
+      "label": "rows512_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 17.0982,
+        "median": 16.98,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 15.1494,
+        "median": 15.018,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.629,
+        "median": 4.629,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 7.0459,
+        "median": 6.845,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 4.0487,
+        "median": 4.041,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.641,
+        "median": 0.643,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.3066,
+        "median": 0.308,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4642,
+        "median": 0.462,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2671,
+        "median": 0.263,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0424,
+        "median": 0.043,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_1",
+      "label": "rows512_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;512,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 15.6623,
+        "median": 15.670000000000002,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 13.7616,
+        "median": 13.754999999999999,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.623,
+        "median": 4.623,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 6.3551,
+        "median": 6.3545,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.3322,
+        "median": 3.3085,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.631,
+        "median": 0.631,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.3367,
+        "median": 0.3365,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4615,
+        "median": 0.4615,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2417,
+        "median": 0.2405,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.046,
+        "median": 0.046,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_baseline_1",
+      "label": "rows512_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 15.661999999999999,
+        "median": 15.82,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 13.8736,
+        "median": 13.9975,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.256,
+        "median": 4.256,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 6.5569,
+        "median": 6.567,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.7205,
+        "median": 3.7605,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.6369,
+        "median": 0.637,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.3075,
+        "median": 0.3045,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4726,
+        "median": 0.474,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2676,
+        "median": 0.2685,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0461,
+        "median": 0.046,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_0",
+      "label": "rows2048_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 33.8585,
+        "median": 33.081,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 30.5038,
+        "median": 29.6405,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 16.9042,
+        "median": 16.904,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 11.1428,
+        "median": 10.643,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 4.4133,
+        "median": 3.9974999999999996,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.9704,
+        "median": 1.9625,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.5561,
+        "median": 0.57,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.3645,
+        "median": 0.359,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.1438,
+        "median": 0.135,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0648,
+        "median": 0.065,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0068000000000000005,
+        "median": 0.007,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_0",
+      "label": "rows2048_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;2048,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 31.9163,
+        "median": 31.680500000000002,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 29.8416,
+        "median": 29.561,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 16.9,
+        "median": 16.9,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 11.5681,
+        "median": 11.463999999999999,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 5.0503,
+        "median": 4.884499999999999,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.7503,
+        "median": 1.745,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.5669,
+        "median": 0.572,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.3875,
+        "median": 0.388,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.1689,
+        "median": 0.165,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0587,
+        "median": 0.059,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_0",
+      "label": "rows2048_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 30.3667,
+        "median": 30.4005,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 28.206599999999998,
+        "median": 28.2025,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 15.52,
+        "median": 15.52,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 11.493,
+        "median": 11.659,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 4.5354,
+        "median": 4.423,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.7374,
+        "median": 1.7375,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.5506,
+        "median": 0.5505,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4075,
+        "median": 0.4075,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.1605,
+        "median": 0.159,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0617,
+        "median": 0.062,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_0",
+      "label": "rows256_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 12.4363,
+        "median": 12.651,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 10.473700000000001,
+        "median": 10.3065,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.485,
+        "median": 2.485,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.29,
+        "median": 5.476,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.027,
+        "median": 3.057,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.3138,
+        "median": 0.314,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2381,
+        "median": 0.241,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.5061,
+        "median": 0.4935,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2874,
+        "median": 0.3015,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0302,
+        "median": 0.031,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_0",
+      "label": "rows256_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;256,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 12.752,
+        "median": 12.54,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 10.8308,
+        "median": 10.6735,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.482,
+        "median": 2.482,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.615,
+        "median": 5.5295000000000005,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.0325,
+        "median": 2.966,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.3167,
+        "median": 0.3165,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2295,
+        "median": 0.2325,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.5186000000000001,
+        "median": 0.5175000000000001,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2796,
+        "median": 0.28049999999999997,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0293,
+        "median": 0.03,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_0",
+      "label": "rows256_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 12.3923,
+        "median": 12.310500000000001,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 10.1949,
+        "median": 10.151,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.279,
+        "median": 2.279,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.6461,
+        "median": 5.5835,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 2.5946000000000002,
+        "median": 2.5145,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.3316,
+        "median": 0.3255,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2255,
+        "median": 0.2245,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.5526,
+        "median": 0.541,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2536,
+        "median": 0.2535,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0328,
+        "median": 0.033,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_0",
+      "label": "rows512_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 16.4601,
+        "median": 16.58,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 13.2276,
+        "median": 13.27,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.4874,
+        "median": 4.487,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.244400000000001,
+        "median": 5.2585,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 2.7098,
+        "median": 2.6915,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.8406,
+        "median": 0.844,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.3402,
+        "median": 0.33899999999999997,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.3962,
+        "median": 0.396,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2042,
+        "median": 0.2025,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0634,
+        "median": 0.0625,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0191,
+        "median": 0.019,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_0",
+      "label": "rows512_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;512,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 16.8141,
+        "median": 16.82,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 14.8587,
+        "median": 14.8645,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.475,
+        "median": 4.475,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 7.2193,
+        "median": 7.2585,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.9714,
+        "median": 3.9665,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.6336,
+        "median": 0.6355,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.3018,
+        "median": 0.3015,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4859,
+        "median": 0.483,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2667,
+        "median": 0.2665,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.042499999999999996,
+        "median": 0.042499999999999996,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_0",
+      "label": "rows512_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 15.7105,
+        "median": 15.6305,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 13.6961,
+        "median": 13.7045,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.115,
+        "median": 4.115,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 6.8916,
+        "median": 6.855,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.5075,
+        "median": 3.5469999999999997,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.6213,
+        "median": 0.6214999999999999,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.301,
+        "median": 0.3005,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.503,
+        "median": 0.5085,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.256,
+        "median": 0.258,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0455,
+        "median": 0.0455,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_1",
+      "label": "rows2048_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 33.5185,
+        "median": 33.22,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 29.9676,
+        "median": 29.625999999999998,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 16.9037,
+        "median": 16.904,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 10.6721,
+        "median": 10.462,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 4.2082,
+        "median": 4.041,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.9964,
+        "median": 1.9675,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.5644,
+        "median": 0.571,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.35609999999999997,
+        "median": 0.3545,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.1401,
+        "median": 0.136,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.06670000000000001,
+        "median": 0.0665,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.007,
+        "median": 0.007,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_1",
+      "label": "rows2048_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;2048,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 32.3923,
+        "median": 32.14,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 30.2626,
+        "median": 29.996,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 16.9,
+        "median": 16.9,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 11.8535,
+        "median": 11.751000000000001,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 5.1982,
+        "median": 5.0885,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.7428,
+        "median": 1.741,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.5590999999999999,
+        "median": 0.5634999999999999,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.3916,
+        "median": 0.392,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.1717,
+        "median": 0.1695,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0577,
+        "median": 0.058,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_1",
+      "label": "rows2048_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        48
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"2048,1024;2048,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 30.0424,
+        "median": 30.4905,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 27.9795,
+        "median": 28.486,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 15.52,
+        "median": 15.52,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 11.4925,
+        "median": 11.7055,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 4.3184000000000005,
+        "median": 4.538,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 1.7266000000000001,
+        "median": 1.726,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.5551,
+        "median": 0.545,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4107,
+        "median": 0.4115,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.1542,
+        "median": 0.159,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0617,
+        "median": 0.061,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_1",
+      "label": "rows256_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 12.2623,
+        "median": 12.67,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 10.4212,
+        "median": 10.7125,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.485,
+        "median": 2.485,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.2063,
+        "median": 5.394,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.0572,
+        "median": 3.042,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.3153,
+        "median": 0.3115,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2397,
+        "median": 0.232,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.5003,
+        "median": 0.5045,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2919,
+        "median": 0.28400000000000003,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0303,
+        "median": 0.031,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_1",
+      "label": "rows256_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;256,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 13.1965,
+        "median": 12.8505,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 10.9947,
+        "median": 10.9195,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.482,
+        "median": 2.482,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.8328999999999995,
+        "median": 5.656499999999999,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 2.9808,
+        "median": 3.1265,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.3148,
+        "median": 0.314,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2273,
+        "median": 0.227,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.5331,
+        "median": 0.52,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2672,
+        "median": 0.286,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.028999999999999998,
+        "median": 0.029,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_1",
+      "label": "rows256_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        43
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"256,1024;256,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 12.274000000000001,
+        "median": 12.26,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 10.0172,
+        "median": 9.7155,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 2.279,
+        "median": 2.279,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.5639,
+        "median": 5.552,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 2.4998,
+        "median": 2.4595000000000002,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.3393,
+        "median": 0.3385,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2284,
+        "median": 0.2345,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.5551,
+        "median": 0.54,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2489,
+        "median": 0.255,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.034,
+        "median": 0.034,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_1",
+      "label": "rows512_broadcast",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 16.7443,
+        "median": 16.37,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 13.4709,
+        "median": 13.0595,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.487500000000001,
+        "median": 4.487500000000001,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 5.3364,
+        "median": 5.0954999999999995,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 2.8047999999999997,
+        "median": 2.6355,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.7517,
+        "median": 0.7344999999999999,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.3369,
+        "median": 0.344,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.39440000000000003,
+        "median": 0.392,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2057,
+        "median": 0.201,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0564,
+        "median": 0.058,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0196,
+        "median": 0.02,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_1",
+      "label": "rows512_elementwise",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;512,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 16.3364,
+        "median": 16.36,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 14.1544,
+        "median": 14.2965,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.475,
+        "median": 4.475,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 6.9856,
+        "median": 7.0165,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.5065,
+        "median": 3.6879999999999997,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.6292,
+        "median": 0.6295,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.317,
+        "median": 0.313,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4941,
+        "median": 0.4885,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2462,
+        "median": 0.258,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0446,
+        "median": 0.0445,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    },
+    {
+      "run": "direct_candidate_1",
+      "label": "rows512_none",
+      "group": "all_v2",
+      "steps": 10,
+      "all_kernel_rows": 10,
+      "samples": 10,
+      "blocks": [
+        47
+      ],
+      "cores": [
+        "AI_VECTOR_CORE"
+      ],
+      "shapes": [
+        "\"512,1024;512,1024;1,1024;1,1024;1\""
+      ],
+      "Duration(us)": {
+        "mean": 15.9422,
+        "median": 15.690999999999999,
+        "valid_samples": 10
+      },
+      "aiv_time(us)": {
+        "mean": 14.029399999999999,
+        "median": 13.795,
+        "valid_samples": 10
+      },
+      "aiv_vec_time(us)": {
+        "mean": 4.115,
+        "median": 4.115,
+        "valid_samples": 10
+      },
+      "aiv_scalar_time(us)": {
+        "mean": 7.0053,
+        "median": 6.8995,
+        "valid_samples": 10
+      },
+      "aiv_mte2_time(us)": {
+        "mean": 3.7249,
+        "median": 3.6025,
+        "valid_samples": 10
+      },
+      "aiv_mte3_time(us)": {
+        "mean": 0.6244,
+        "median": 0.6245,
+        "valid_samples": 10
+      },
+      "aiv_vec_ratio": {
+        "mean": 0.2948,
+        "median": 0.298,
+        "valid_samples": 10
+      },
+      "aiv_scalar_ratio": {
+        "mean": 0.4994,
+        "median": 0.4995,
+        "valid_samples": 10
+      },
+      "aiv_mte2_ratio": {
+        "mean": 0.2645,
+        "median": 0.2615,
+        "valid_samples": 10
+      },
+      "aiv_mte3_ratio": {
+        "mean": 0.0448,
+        "median": 0.045,
+        "valid_samples": 10
+      },
+      "aic_mac_time(us)": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      },
+      "aiv_icache_miss_rate": {
+        "mean": 0.0,
+        "median": 0.0,
+        "valid_samples": 10
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "phase": "direct",
+      "label": "rows2048_broadcast",
+      "group": "all_v2",
+      "duration_change_percent": 3.1057041202800395,
+      "baseline": {
+        "phase": "direct",
+        "lane": "baseline",
+        "label": "rows2048_broadcast",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          48
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"2048,1024;2048,1024;1,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 32.67375,
+          "median": 32.310500000000005,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 30.5956,
+          "median": 30.3215,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 17.608,
+          "median": 17.608,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 11.082749999999999,
+          "median": 10.847,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 4.485,
+          "median": 4.439500000000001,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 1.7381,
+          "median": 1.7425000000000002,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.57565,
+          "median": 0.5805,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.36219999999999997,
+          "median": 0.3605,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.1465,
+          "median": 0.1465,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.05685,
+          "median": 0.0575,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      },
+      "candidate": {
+        "phase": "direct",
+        "lane": "candidate",
+        "label": "rows2048_broadcast",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          48
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"2048,1024;2048,1024;1,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 33.6885,
+          "median": 33.081,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 30.2357,
+          "median": 29.6405,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 16.90395,
+          "median": 16.904,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 10.90745,
+          "median": 10.552,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 4.31075,
+          "median": 4.0225,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 1.9834,
+          "median": 1.9625,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.56025,
+          "median": 0.57,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.3603,
+          "median": 0.358,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.14195,
+          "median": 0.136,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.06575,
+          "median": 0.066,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0069,
+          "median": 0.007,
+          "valid_samples": 20
+        }
+      }
+    },
+    {
+      "phase": "direct",
+      "label": "rows2048_elementwise",
+      "group": "all_v2",
+      "duration_change_percent": -1.9582852464664846,
+      "baseline": {
+        "phase": "direct",
+        "lane": "baseline",
+        "label": "rows2048_elementwise",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          48
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"2048,1024;2048,1024;1,1024;1,1024;2048,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 32.79655,
+          "median": 33.210499999999996,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 30.65125,
+          "median": 30.988999999999997,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 17.6,
+          "median": 17.6,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 10.9368,
+          "median": 11.1375,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 4.9799,
+          "median": 5.0335,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 1.7452,
+          "median": 1.7465000000000002,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.5744,
+          "median": 0.568,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.35669999999999996,
+          "median": 0.356,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.1624,
+          "median": 0.1625,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.0569,
+          "median": 0.056,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      },
+      "candidate": {
+        "phase": "direct",
+        "lane": "candidate",
+        "label": "rows2048_elementwise",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          48
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"2048,1024;2048,1024;1,1024;1,1024;2048,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 32.1543,
+          "median": 32.12,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 30.0521,
+          "median": 29.9895,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 16.9,
+          "median": 16.9,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 11.7108,
+          "median": 11.724,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 5.12425,
+          "median": 5.0495,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 1.74655,
+          "median": 1.743,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.563,
+          "median": 0.564,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.38955,
+          "median": 0.39,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.1703,
+          "median": 0.1685,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.0582,
+          "median": 0.058,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      }
+    },
+    {
+      "phase": "direct",
+      "label": "rows2048_none",
+      "group": "all_v2",
+      "duration_change_percent": -6.532892680647484,
+      "baseline": {
+        "phase": "direct",
+        "lane": "baseline",
+        "label": "rows2048_none",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          48
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"2048,1024;2048,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 32.3157,
+          "median": 32.4805,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 30.21525,
+          "median": 30.262500000000003,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 16.213,
+          "median": 16.213,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 11.29545,
+          "median": 11.385,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 5.1000499999999995,
+          "median": 5.093,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 1.7372,
+          "median": 1.7375,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.537,
+          "median": 0.536,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.3739,
+          "median": 0.375,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.1684,
+          "median": 0.167,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.057550000000000004,
+          "median": 0.057,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      },
+      "candidate": {
+        "phase": "direct",
+        "lane": "candidate",
+        "label": "rows2048_none",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          48
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"2048,1024;2048,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 30.20455,
+          "median": 30.4405,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 28.093049999999998,
+          "median": 28.3585,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 15.52,
+          "median": 15.52,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 11.492750000000001,
+          "median": 11.6815,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 4.4269,
+          "median": 4.471,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 1.732,
+          "median": 1.729,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.5528500000000001,
+          "median": 0.5475000000000001,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.40909999999999996,
+          "median": 0.409,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.15735,
+          "median": 0.159,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.0617,
+          "median": 0.0615,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      }
+    },
+    {
+      "phase": "direct",
+      "label": "rows256_broadcast",
+      "group": "all_v2",
+      "duration_change_percent": -7.016685239285614,
+      "baseline": {
+        "phase": "direct",
+        "lane": "baseline",
+        "label": "rows256_broadcast",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          43
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"256,1024;256,1024;1,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 13.2812,
+          "median": 13.44,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 11.26765,
+          "median": 11.250499999999999,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 2.651,
+          "median": 2.651,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 5.5457,
+          "median": 5.68,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 3.3175499999999998,
+          "median": 3.25,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.3174,
+          "median": 0.316,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.2363,
+          "median": 0.2355,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.49275,
+          "median": 0.4895,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.2929,
+          "median": 0.289,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.0284,
+          "median": 0.028,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      },
+      "candidate": {
+        "phase": "direct",
+        "lane": "candidate",
+        "label": "rows256_broadcast",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          43
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"256,1024;256,1024;1,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 12.3493,
+          "median": 12.67,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 10.44745,
+          "median": 10.485,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 2.485,
+          "median": 2.485,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 5.24815,
+          "median": 5.404999999999999,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 3.0421,
+          "median": 3.057,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.31455,
+          "median": 0.3125,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.2389,
+          "median": 0.237,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.5032,
+          "median": 0.501,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.28965,
+          "median": 0.2945,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.03025,
+          "median": 0.031,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      }
+    },
+    {
+      "phase": "direct",
+      "label": "rows256_elementwise",
+      "group": "all_v2",
+      "duration_change_percent": 1.972365659852393,
+      "baseline": {
+        "phase": "direct",
+        "lane": "baseline",
+        "label": "rows256_elementwise",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          43
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"256,1024;256,1024;1,1024;1,1024;256,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 12.7233,
+          "median": 12.97,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 10.72865,
+          "median": 10.913,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 2.614,
+          "median": 2.614,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 5.42425,
+          "median": 5.5355,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 2.86715,
+          "median": 2.7765,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.31845,
+          "median": 0.317,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.24525,
+          "median": 0.2395,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.5059,
+          "median": 0.5,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.26535,
+          "median": 0.272,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.02985,
+          "median": 0.03,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      },
+      "candidate": {
+        "phase": "direct",
+        "lane": "candidate",
+        "label": "rows256_elementwise",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          43
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"256,1024;256,1024;1,1024;1,1024;256,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 12.97425,
+          "median": 12.7805,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 10.91275,
+          "median": 10.850000000000001,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 2.482,
+          "median": 2.482,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 5.72395,
+          "median": 5.6129999999999995,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 3.00665,
+          "median": 3.099,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.31575,
+          "median": 0.3155,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.2284,
+          "median": 0.2285,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.52585,
+          "median": 0.518,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.2734,
+          "median": 0.2845,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.02915,
+          "median": 0.029,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      }
+    },
+    {
+      "phase": "direct",
+      "label": "rows256_none",
+      "group": "all_v2",
+      "duration_change_percent": -4.300712323664968,
+      "baseline": {
+        "phase": "direct",
+        "lane": "baseline",
+        "label": "rows256_none",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          43
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"256,1024;256,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 12.8874,
+          "median": 12.6705,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 10.722249999999999,
+          "median": 10.561,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 2.404,
+          "median": 2.404,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 5.7234,
+          "median": 5.5575,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 2.98925,
+          "median": 3.0155000000000003,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.32505,
+          "median": 0.319,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.22565000000000002,
+          "median": 0.2275,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.53355,
+          "median": 0.525,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.27805,
+          "median": 0.281,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.0304,
+          "median": 0.03,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      },
+      "candidate": {
+        "phase": "direct",
+        "lane": "candidate",
+        "label": "rows256_none",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          43
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"256,1024;256,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 12.33315,
+          "median": 12.310500000000001,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 10.10605,
+          "median": 10.0555,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 2.279,
+          "median": 2.279,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 5.605,
+          "median": 5.5835,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 2.5472,
+          "median": 2.4815,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.33545,
+          "median": 0.3375,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.22694999999999999,
+          "median": 0.2265,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.5538500000000001,
+          "median": 0.5405,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.25125000000000003,
+          "median": 0.2535,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.0334,
+          "median": 0.0335,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      }
+    },
+    {
+      "phase": "direct",
+      "label": "rows512_broadcast",
+      "group": "all_v2",
+      "duration_change_percent": -2.507744028656589,
+      "baseline": {
+        "phase": "direct",
+        "lane": "baseline",
+        "label": "rows512_broadcast",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          47
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"512,1024;512,1024;1,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 17.02925,
+          "median": 16.98,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 14.9748,
+          "median": 14.9165,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 4.629,
+          "median": 4.629,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 6.96925,
+          "median": 6.8545,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 3.94785,
+          "median": 3.9675000000000002,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.643,
+          "median": 0.644,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.31,
+          "median": 0.3105,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.4649,
+          "median": 0.465,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.26335,
+          "median": 0.261,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.04305,
+          "median": 0.043,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      },
+      "candidate": {
+        "phase": "direct",
+        "lane": "candidate",
+        "label": "rows512_broadcast",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          47
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"512,1024;512,1024;1,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 16.6022,
+          "median": 16.57,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 13.34925,
+          "median": 13.1265,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 4.48745,
+          "median": 4.487,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 5.2904,
+          "median": 5.1465,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 2.7573,
+          "median": 2.672,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.79615,
+          "median": 0.768,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.33855,
+          "median": 0.3425,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.39530000000000004,
+          "median": 0.394,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.20495,
+          "median": 0.2025,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.0599,
+          "median": 0.06,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.01935,
+          "median": 0.019,
+          "valid_samples": 20
+        }
+      }
+    },
+    {
+      "phase": "direct",
+      "label": "rows512_elementwise",
+      "group": "all_v2",
+      "duration_change_percent": 5.794853628724694,
+      "baseline": {
+        "phase": "direct",
+        "lane": "baseline",
+        "label": "rows512_elementwise",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          47
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"512,1024;512,1024;1,1024;1,1024;512,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 15.66735,
+          "median": 15.6905,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 13.7973,
+          "median": 13.754999999999999,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 4.623,
+          "median": 4.623,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 6.3434,
+          "median": 6.3420000000000005,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 3.37965,
+          "median": 3.3085,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.6294,
+          "median": 0.628,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.3358,
+          "median": 0.3365,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.45955,
+          "median": 0.458,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.24445,
+          "median": 0.2405,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.0457,
+          "median": 0.0455,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      },
+      "candidate": {
+        "phase": "direct",
+        "lane": "candidate",
+        "label": "rows512_elementwise",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          47
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"512,1024;512,1024;1,1024;1,1024;512,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 16.57525,
+          "median": 16.54,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 14.50655,
+          "median": 14.5445,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 4.475,
+          "median": 4.475,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 7.10245,
+          "median": 7.138,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 3.73895,
+          "median": 3.8015,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.6314,
+          "median": 0.6305000000000001,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.3094,
+          "median": 0.3075,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.49,
+          "median": 0.4865,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.25645,
+          "median": 0.264,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.04355,
+          "median": 0.0435,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      }
+    },
+    {
+      "phase": "direct",
+      "label": "rows512_none",
+      "group": "all_v2",
+      "duration_change_percent": 0.6243582366648459,
+      "baseline": {
+        "phase": "direct",
+        "lane": "baseline",
+        "label": "rows512_none",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          47
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"512,1024;512,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 15.72815,
+          "median": 16.0505,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 13.7992,
+          "median": 13.923,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 4.256,
+          "median": 4.256,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 6.52195,
+          "median": 6.6215,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 3.6475999999999997,
+          "median": 3.6995,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.6333,
+          "median": 0.635,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.30915,
+          "median": 0.3055,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.4728,
+          "median": 0.4715,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.2635,
+          "median": 0.266,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.04605,
+          "median": 0.045,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      },
+      "candidate": {
+        "phase": "direct",
+        "lane": "candidate",
+        "label": "rows512_none",
+        "group": "all_v2",
+        "samples": 20,
+        "blocks": [
+          47
+        ],
+        "cores": [
+          "AI_VECTOR_CORE"
+        ],
+        "shapes": [
+          "\"512,1024;512,1024;1,1024;1,1024;1\""
+        ],
+        "Duration(us)": {
+          "mean": 15.82635,
+          "median": 15.690999999999999,
+          "valid_samples": 20
+        },
+        "aiv_time(us)": {
+          "mean": 13.86275,
+          "median": 13.795,
+          "valid_samples": 20
+        },
+        "aiv_vec_time(us)": {
+          "mean": 4.115,
+          "median": 4.115,
+          "valid_samples": 20
+        },
+        "aiv_scalar_time(us)": {
+          "mean": 6.94845,
+          "median": 6.8995,
+          "valid_samples": 20
+        },
+        "aiv_mte2_time(us)": {
+          "mean": 3.6162,
+          "median": 3.591,
+          "valid_samples": 20
+        },
+        "aiv_mte3_time(us)": {
+          "mean": 0.62285,
+          "median": 0.6234999999999999,
+          "valid_samples": 20
+        },
+        "aiv_vec_ratio": {
+          "mean": 0.2979,
+          "median": 0.298,
+          "valid_samples": 20
+        },
+        "aiv_scalar_ratio": {
+          "mean": 0.5012,
+          "median": 0.5015000000000001,
+          "valid_samples": 20
+        },
+        "aiv_mte2_ratio": {
+          "mean": 0.26025,
+          "median": 0.2605,
+          "valid_samples": 20
+        },
+        "aiv_mte3_ratio": {
+          "mean": 0.04515,
+          "median": 0.045,
+          "valid_samples": 20
+        },
+        "aic_mac_time(us)": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        },
+        "aiv_icache_miss_rate": {
+          "mean": 0.0,
+          "median": 0.0,
+          "valid_samples": 20
+        }
+      }
+    }
+  ],
+  "note": "ABBA fresh-process captures on one physical 910B2. Pipeline times overlap; ratios are busy-cycle fractions, not peak throughput or HBM bandwidth."
+}

@@ -1,0 +1,228 @@
+{
+  "commit": "af6ba19685d9e911c79349febc6560a7f0a87c93",
+  "device": "Ascend910B2",
+  "physical_npu": "3",
+  "custom_opp": "/workspace/operators/bge-v2-graph-fixed/vendors/bge_v2_nn",
+  "library": "/workspace/operators/bge-v2-graph-fixed/vendors/bge_v2_nn/op_api/lib/libcust_opapi.so",
+  "library_sha256": "14f43fb2a5add8fc30ad6e3ee92fa8192870a41e69f33edad69d8bcf0a59ba4a",
+  "phase": "direct",
+  "cases": [
+    {
+      "label": "rows256_none",
+      "shape": [
+        256,
+        1024
+      ],
+      "bias": "none",
+      "baseline_parity": null,
+      "math_norm_max_abs": 0.0019183158874511719,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_baseline_0/profiles/rows256_none",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 12.8085,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 12.8085
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows256_broadcast",
+      "shape": [
+        256,
+        1024
+      ],
+      "bias": "broadcast",
+      "baseline_parity": null,
+      "math_norm_max_abs": 0.0019087791442871094,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_baseline_0/profiles/rows256_broadcast",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 13.340300000000003,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 13.340300000000003
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows256_elementwise",
+      "shape": [
+        256,
+        1024
+      ],
+      "bias": "elementwise",
+      "baseline_parity": null,
+      "math_norm_max_abs": 0.001888275146484375,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_baseline_0/profiles/rows256_elementwise",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 12.7204,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 12.7204
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows512_none",
+      "shape": [
+        512,
+        1024
+      ],
+      "bias": "none",
+      "baseline_parity": null,
+      "math_norm_max_abs": 0.0019001960754394531,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_baseline_0/profiles/rows512_none",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 15.794299999999996,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 15.794299999999996
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows512_broadcast",
+      "shape": [
+        512,
+        1024
+      ],
+      "bias": "broadcast",
+      "baseline_parity": null,
+      "math_norm_max_abs": 0.0019040107727050781,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_baseline_0/profiles/rows512_broadcast",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 16.9603,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 16.9603
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows512_elementwise",
+      "shape": [
+        512,
+        1024
+      ],
+      "bias": "elementwise",
+      "baseline_parity": null,
+      "math_norm_max_abs": 0.0019450187683105469,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_baseline_0/profiles/rows512_elementwise",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 15.6724,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 15.6724
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows2048_none",
+      "shape": [
+        2048,
+        1024
+      ],
+      "bias": "none",
+      "baseline_parity": null,
+      "math_norm_max_abs": 0.0019316673278808594,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_baseline_0/profiles/rows2048_none",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 32.476699999999994,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 32.476699999999994
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows2048_broadcast",
+      "shape": [
+        2048,
+        1024
+      ],
+      "bias": "broadcast",
+      "baseline_parity": null,
+      "math_norm_max_abs": 0.0019373893737792969,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_baseline_0/profiles/rows2048_broadcast",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 32.7648,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 32.7648
+          }
+        ]
+      }
+    },
+    {
+      "label": "rows2048_elementwise",
+      "shape": [
+        2048,
+        1024
+      ],
+      "bias": "elementwise",
+      "baseline_parity": null,
+      "math_norm_max_abs": 0.0019392967224121094,
+      "math_int8_max_abs": 0,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/direct_baseline_0/profiles/rows2048_elementwise",
+        "active_forwards": 10,
+        "kernel_rows": 10,
+        "kernel_duration_us_per_forward": 32.7784,
+        "top_types": [
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 32.7784
+          }
+        ]
+      }
+    }
+  ],
+  "passed": true
+}

@@ -1,5 +1,8 @@
 # 910B gamma/beta FP32 cache control
 
+Completed: exact outputs and reduced vector work, without a consistent latency
+gain. See [measured 910B results](RESULTS_910B.md).
+
 Pinned ops-nn v9.1.0, `ceb4536a2bd6fc99b85aec9d0fdcc0f470376292`.
 Only normal FP16 V2 keys 1000/1001/1002 opt into the template's cache. Runtime
 allocation/use additionally requires architecture 2201, normalized width/stride
@@ -14,9 +17,11 @@ or bias arithmetic are changed. No 310P changes are included.
 
 For width 1024 the original tiler budgets `18440*r + 4608` bytes (no additional
 output). **The installed Ascend910B2.ini reports 196608 bytes (192 KiB), giving
-at most 10 rows**, not 13. Actual explicit kernel allocations with the cache are
+at most 10 rows**, not 13. Runtime logs report 196352 usable bytes (256 bytes
+less than the platform file). Actual explicit kernel allocations with the cache are
 `14336*r + 12320` bytes for no bias or elementwise bias; broadcast bias adds
-2048 bytes. At r=10, broadcast reaches **157728 bytes**, leaving 38880 bytes.
+2048 bytes. At r=10, broadcast reaches **157728 bytes**, leaving **38624 usable
+bytes** (38880 relative to the physical platform capacity).
 The cache never aliases row scratch or FP16 parameters. The conservative tiler
 stays unchanged. For 256/512/2048 rows, expected blocks are 43/47/48, regular
 rows/core 6/11/43, rowStep 6/10/10.

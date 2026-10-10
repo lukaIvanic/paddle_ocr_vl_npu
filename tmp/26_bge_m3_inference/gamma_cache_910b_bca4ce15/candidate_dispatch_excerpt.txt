@@ -1,0 +1,54 @@
+[INFO] OP(522703,python3):2026-10-10-20:59:08.432.002 [add_layer_norm_quant_tiling.cpp:370][OPS_NN][GetSocVersion][522703] OpName:[AddLayerNormQuantV2:AddLayerNormQuantV2] Get Platform Info: maxUbSize = 196352, maxCoreNum = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.432.007 [add_layer_norm_quant_tiling.cpp:452][OPS_NN][DoBlockTiling][522703] OpName:[AddLayerNormQuant] numCore = 43
+[INFO] OP(522703,python3):2026-10-10-20:59:08.432.021 [add_layer_norm_quant_tiling.cpp:495][OPS_NN][PostUbTiling][522703] OpName:[AddLayerNormQuant] rowPerTime = 6, colPerTime = 1024, colMoveCnt = 1, colTail = 1024
+[INFO] OP(522703,python3):2026-10-10-20:59:08.432.030 [add_layer_norm_quant_tiling.cpp:341][OPS_NN][ComputeTilingKey][522703] OpName:[AddLayerNormQuant] tilingKey = 1000
+[INFO] OP(522703,python3):2026-10-10-20:59:08.432.033 [add_layer_norm_quant_tiling.cpp:557][OPS_NN][Tiling4AddLayerNormQuantV2Membase][522703] OpName:[AddLayerNormQuantV2] tilingType = 0, SLICE_EXT will use split_d kernel
+{"pid": 522703, "rows": 256, "bias": "none", "op_api": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn/op_api/lib/libcust_opapi.so"}
+[INFO] OP(522703,python3):2026-10-10-20:59:08.515.106 [add_layer_norm_quant_tiling.cpp:370][OPS_NN][GetSocVersion][522703] OpName:[AddLayerNormQuantV2:AddLayerNormQuantV2] Get Platform Info: maxUbSize = 196352, maxCoreNum = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.515.110 [add_layer_norm_quant_tiling.cpp:452][OPS_NN][DoBlockTiling][522703] OpName:[AddLayerNormQuant] numCore = 43
+[INFO] OP(522703,python3):2026-10-10-20:59:08.515.121 [add_layer_norm_quant_tiling.cpp:495][OPS_NN][PostUbTiling][522703] OpName:[AddLayerNormQuant] rowPerTime = 6, colPerTime = 1024, colMoveCnt = 1, colTail = 1024
+[INFO] OP(522703,python3):2026-10-10-20:59:08.515.128 [add_layer_norm_quant_tiling.cpp:341][OPS_NN][ComputeTilingKey][522703] OpName:[AddLayerNormQuant] tilingKey = 1002
+[INFO] OP(522703,python3):2026-10-10-20:59:08.515.132 [add_layer_norm_quant_tiling.cpp:557][OPS_NN][Tiling4AddLayerNormQuantV2Membase][522703] OpName:[AddLayerNormQuantV2] tilingType = 0, SLICE_EXT will use split_d kernel
+{"pid": 522703, "rows": 256, "bias": "broadcast", "op_api": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn/op_api/lib/libcust_opapi.so"}
+[INFO] OP(522703,python3):2026-10-10-20:59:08.519.912 [add_layer_norm_quant_tiling.cpp:370][OPS_NN][GetSocVersion][522703] OpName:[AddLayerNormQuantV2:AddLayerNormQuantV2] Get Platform Info: maxUbSize = 196352, maxCoreNum = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.519.923 [add_layer_norm_quant_tiling.cpp:452][OPS_NN][DoBlockTiling][522703] OpName:[AddLayerNormQuant] numCore = 43
+[INFO] OP(522703,python3):2026-10-10-20:59:08.519.933 [add_layer_norm_quant_tiling.cpp:495][OPS_NN][PostUbTiling][522703] OpName:[AddLayerNormQuant] rowPerTime = 6, colPerTime = 1024, colMoveCnt = 1, colTail = 1024
+[INFO] OP(522703,python3):2026-10-10-20:59:08.519.940 [add_layer_norm_quant_tiling.cpp:341][OPS_NN][ComputeTilingKey][522703] OpName:[AddLayerNormQuant] tilingKey = 1001
+[INFO] OP(522703,python3):2026-10-10-20:59:08.519.944 [add_layer_norm_quant_tiling.cpp:557][OPS_NN][Tiling4AddLayerNormQuantV2Membase][522703] OpName:[AddLayerNormQuantV2] tilingType = 0, SLICE_EXT will use split_d kernel
+{"pid": 522703, "rows": 256, "bias": "elementwise", "op_api": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn/op_api/lib/libcust_opapi.so"}
+[INFO] OP(522703,python3):2026-10-10-20:59:08.525.497 [add_layer_norm_quant_tiling.cpp:370][OPS_NN][GetSocVersion][522703] OpName:[AddLayerNormQuantV2:AddLayerNormQuantV2] Get Platform Info: maxUbSize = 196352, maxCoreNum = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.525.501 [add_layer_norm_quant_tiling.cpp:452][OPS_NN][DoBlockTiling][522703] OpName:[AddLayerNormQuant] numCore = 47
+[INFO] OP(522703,python3):2026-10-10-20:59:08.525.511 [add_layer_norm_quant_tiling.cpp:495][OPS_NN][PostUbTiling][522703] OpName:[AddLayerNormQuant] rowPerTime = 10, colPerTime = 1024, colMoveCnt = 1, colTail = 1024
+[INFO] OP(522703,python3):2026-10-10-20:59:08.525.520 [add_layer_norm_quant_tiling.cpp:341][OPS_NN][ComputeTilingKey][522703] OpName:[AddLayerNormQuant] tilingKey = 1000
+[INFO] OP(522703,python3):2026-10-10-20:59:08.525.524 [add_layer_norm_quant_tiling.cpp:557][OPS_NN][Tiling4AddLayerNormQuantV2Membase][522703] OpName:[AddLayerNormQuantV2] tilingType = 0, SLICE_EXT will use split_d kernel
+{"pid": 522703, "rows": 512, "bias": "none", "op_api": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn/op_api/lib/libcust_opapi.so"}
+[INFO] OP(522703,python3):2026-10-10-20:59:08.533.603 [add_layer_norm_quant_tiling.cpp:370][OPS_NN][GetSocVersion][522703] OpName:[AddLayerNormQuantV2:AddLayerNormQuantV2] Get Platform Info: maxUbSize = 196352, maxCoreNum = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.533.607 [add_layer_norm_quant_tiling.cpp:452][OPS_NN][DoBlockTiling][522703] OpName:[AddLayerNormQuant] numCore = 47
+[INFO] OP(522703,python3):2026-10-10-20:59:08.533.617 [add_layer_norm_quant_tiling.cpp:495][OPS_NN][PostUbTiling][522703] OpName:[AddLayerNormQuant] rowPerTime = 10, colPerTime = 1024, colMoveCnt = 1, colTail = 1024
+[INFO] OP(522703,python3):2026-10-10-20:59:08.533.624 [add_layer_norm_quant_tiling.cpp:341][OPS_NN][ComputeTilingKey][522703] OpName:[AddLayerNormQuant] tilingKey = 1002
+[INFO] OP(522703,python3):2026-10-10-20:59:08.533.627 [add_layer_norm_quant_tiling.cpp:557][OPS_NN][Tiling4AddLayerNormQuantV2Membase][522703] OpName:[AddLayerNormQuantV2] tilingType = 0, SLICE_EXT will use split_d kernel
+{"pid": 522703, "rows": 512, "bias": "broadcast", "op_api": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn/op_api/lib/libcust_opapi.so"}
+[INFO] OP(522703,python3):2026-10-10-20:59:08.538.455 [add_layer_norm_quant_tiling.cpp:370][OPS_NN][GetSocVersion][522703] OpName:[AddLayerNormQuantV2:AddLayerNormQuantV2] Get Platform Info: maxUbSize = 196352, maxCoreNum = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.538.460 [add_layer_norm_quant_tiling.cpp:452][OPS_NN][DoBlockTiling][522703] OpName:[AddLayerNormQuant] numCore = 47
+[INFO] OP(522703,python3):2026-10-10-20:59:08.538.469 [add_layer_norm_quant_tiling.cpp:495][OPS_NN][PostUbTiling][522703] OpName:[AddLayerNormQuant] rowPerTime = 10, colPerTime = 1024, colMoveCnt = 1, colTail = 1024
+[INFO] OP(522703,python3):2026-10-10-20:59:08.538.476 [add_layer_norm_quant_tiling.cpp:341][OPS_NN][ComputeTilingKey][522703] OpName:[AddLayerNormQuant] tilingKey = 1001
+[INFO] OP(522703,python3):2026-10-10-20:59:08.538.480 [add_layer_norm_quant_tiling.cpp:557][OPS_NN][Tiling4AddLayerNormQuantV2Membase][522703] OpName:[AddLayerNormQuantV2] tilingType = 0, SLICE_EXT will use split_d kernel
+{"pid": 522703, "rows": 512, "bias": "elementwise", "op_api": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn/op_api/lib/libcust_opapi.so"}
+[INFO] OP(522703,python3):2026-10-10-20:59:08.543.950 [add_layer_norm_quant_tiling.cpp:370][OPS_NN][GetSocVersion][522703] OpName:[AddLayerNormQuantV2:AddLayerNormQuantV2] Get Platform Info: maxUbSize = 196352, maxCoreNum = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.543.954 [add_layer_norm_quant_tiling.cpp:452][OPS_NN][DoBlockTiling][522703] OpName:[AddLayerNormQuant] numCore = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.543.964 [add_layer_norm_quant_tiling.cpp:495][OPS_NN][PostUbTiling][522703] OpName:[AddLayerNormQuant] rowPerTime = 10, colPerTime = 1024, colMoveCnt = 1, colTail = 1024
+[INFO] OP(522703,python3):2026-10-10-20:59:08.543.971 [add_layer_norm_quant_tiling.cpp:341][OPS_NN][ComputeTilingKey][522703] OpName:[AddLayerNormQuant] tilingKey = 1000
+[INFO] OP(522703,python3):2026-10-10-20:59:08.543.976 [add_layer_norm_quant_tiling.cpp:557][OPS_NN][Tiling4AddLayerNormQuantV2Membase][522703] OpName:[AddLayerNormQuantV2] tilingType = 0, SLICE_EXT will use split_d kernel
+{"pid": 522703, "rows": 2048, "bias": "none", "op_api": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn/op_api/lib/libcust_opapi.so"}
+[INFO] OP(522703,python3):2026-10-10-20:59:08.551.976 [add_layer_norm_quant_tiling.cpp:370][OPS_NN][GetSocVersion][522703] OpName:[AddLayerNormQuantV2:AddLayerNormQuantV2] Get Platform Info: maxUbSize = 196352, maxCoreNum = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.551.981 [add_layer_norm_quant_tiling.cpp:452][OPS_NN][DoBlockTiling][522703] OpName:[AddLayerNormQuant] numCore = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.551.990 [add_layer_norm_quant_tiling.cpp:495][OPS_NN][PostUbTiling][522703] OpName:[AddLayerNormQuant] rowPerTime = 10, colPerTime = 1024, colMoveCnt = 1, colTail = 1024
+[INFO] OP(522703,python3):2026-10-10-20:59:08.552.000 [add_layer_norm_quant_tiling.cpp:341][OPS_NN][ComputeTilingKey][522703] OpName:[AddLayerNormQuant] tilingKey = 1002
+[INFO] OP(522703,python3):2026-10-10-20:59:08.552.003 [add_layer_norm_quant_tiling.cpp:557][OPS_NN][Tiling4AddLayerNormQuantV2Membase][522703] OpName:[AddLayerNormQuantV2] tilingType = 0, SLICE_EXT will use split_d kernel
+{"pid": 522703, "rows": 2048, "bias": "broadcast", "op_api": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn/op_api/lib/libcust_opapi.so"}
+[INFO] OP(522703,python3):2026-10-10-20:59:08.556.794 [add_layer_norm_quant_tiling.cpp:370][OPS_NN][GetSocVersion][522703] OpName:[AddLayerNormQuantV2:AddLayerNormQuantV2] Get Platform Info: maxUbSize = 196352, maxCoreNum = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.556.799 [add_layer_norm_quant_tiling.cpp:452][OPS_NN][DoBlockTiling][522703] OpName:[AddLayerNormQuant] numCore = 48
+[INFO] OP(522703,python3):2026-10-10-20:59:08.556.809 [add_layer_norm_quant_tiling.cpp:495][OPS_NN][PostUbTiling][522703] OpName:[AddLayerNormQuant] rowPerTime = 10, colPerTime = 1024, colMoveCnt = 1, colTail = 1024
+[INFO] OP(522703,python3):2026-10-10-20:59:08.556.816 [add_layer_norm_quant_tiling.cpp:341][OPS_NN][ComputeTilingKey][522703] OpName:[AddLayerNormQuant] tilingKey = 1001
+[INFO] OP(522703,python3):2026-10-10-20:59:08.556.822 [add_layer_norm_quant_tiling.cpp:557][OPS_NN][Tiling4AddLayerNormQuantV2Membase][522703] OpName:[AddLayerNormQuantV2] tilingType = 0, SLICE_EXT will use split_d kernel
+{"pid": 522703, "rows": 2048, "bias": "elementwise", "op_api": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn/op_api/lib/libcust_opapi.so"}

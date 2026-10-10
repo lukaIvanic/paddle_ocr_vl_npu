@@ -1,0 +1,559 @@
+{
+  "commit": "bca4ce15a7d8b7b1edcee2e1e41c1dc856ce706e",
+  "device": "Ascend910B2",
+  "physical_npu": "3",
+  "custom_opp": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn",
+  "library": "/workspace/operators/bge-gamma-cache-2a9c9702/graph/vendors/bge_v2_gc_nn/op_api/lib/libcust_opapi.so",
+  "library_sha256": "764cc54c0d2f93697403b17f2f0967628a4c823385953a4f1b0b40cf437dbe80",
+  "phase": "model",
+  "cases": [
+    {
+      "label": "mixed_multilingual",
+      "shape": [
+        2,
+        128
+      ],
+      "baseline_parity": [
+        {
+          "shape": [
+            2,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            2,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "compiled_eager_max_abs": 0.0001220703125,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/model_candidate_1/profiles/mixed_multilingual",
+        "active_forwards": 10,
+        "kernel_rows": 6700,
+        "kernel_duration_us_per_forward": 5110.754399999998,
+        "top_types": [
+          {
+            "name": "QuantBatchMatmulV3",
+            "count_per_forward": 144.0,
+            "us_per_forward": 1046.3942999999997
+          },
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 48.0,
+            "us_per_forward": 806.323799999999
+          },
+          {
+            "name": "Add",
+            "count_per_forward": 123.0,
+            "us_per_forward": 791.1448999999992
+          },
+          {
+            "name": "Transpose",
+            "count_per_forward": 96.0,
+            "us_per_forward": 654.2789000000004
+          },
+          {
+            "name": "Quantize",
+            "count_per_forward": 48.0,
+            "us_per_forward": 469.31539999999995
+          },
+          {
+            "name": "Gelu",
+            "count_per_forward": 24.0,
+            "us_per_forward": 312.64669999999995
+          },
+          {
+            "name": "TransData",
+            "count_per_forward": 72.0,
+            "us_per_forward": 301.4197999999998
+          },
+          {
+            "name": "SoftmaxV2",
+            "count_per_forward": 24.0,
+            "us_per_forward": 263.85509999999994
+          },
+          {
+            "name": "Muls",
+            "count_per_forward": 24.0,
+            "us_per_forward": 199.34619999999978
+          },
+          {
+            "name": "BatchMatMul",
+            "count_per_forward": 48.0,
+            "us_per_forward": 156.99499999999995
+          },
+          {
+            "name": "Cumsum",
+            "count_per_forward": 1.0,
+            "us_per_forward": 37.3407
+          },
+          {
+            "name": "GatherV2",
+            "count_per_forward": 4.0,
+            "us_per_forward": 31.552799999999998
+          },
+          {
+            "name": "AddLayerNorm",
+            "count_per_forward": 1.0,
+            "us_per_forward": 13.694300000000002
+          },
+          {
+            "name": "Cast",
+            "count_per_forward": 5.0,
+            "us_per_forward": 10.014199999999999
+          },
+          {
+            "name": "BroadcastTo",
+            "count_per_forward": 1.0,
+            "us_per_forward": 6.0861
+          },
+          {
+            "name": "NotEqual",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.8739999999999999
+          },
+          {
+            "name": "ClipByValueV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.5700999999999998
+          },
+          {
+            "name": "LpNormV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.5059999999999998
+          },
+          {
+            "name": "RealDiv",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.4599999999999997
+          },
+          {
+            "name": "AutomaticBufferFusionOp",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.3301
+          },
+          {
+            "name": "Mul",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.318
+          },
+          {
+            "name": "ZerosLike",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.288
+          }
+        ]
+      }
+    },
+    {
+      "label": "long_truncated",
+      "shape": [
+        1,
+        512
+      ],
+      "baseline_parity": [
+        {
+          "shape": [
+            1,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            1,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "compiled_eager_max_abs": 0.0001220703125,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/model_candidate_1/profiles/long_truncated",
+        "active_forwards": 10,
+        "kernel_rows": 6460,
+        "kernel_duration_us_per_forward": 6589.705699999999,
+        "top_types": [
+          {
+            "name": "QuantBatchMatmulV3",
+            "count_per_forward": 144.0,
+            "us_per_forward": 1366.214999999994
+          },
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 48.0,
+            "us_per_forward": 915.8620999999994
+          },
+          {
+            "name": "Add",
+            "count_per_forward": 123.0,
+            "us_per_forward": 911.6771000000005
+          },
+          {
+            "name": "Transpose",
+            "count_per_forward": 96.0,
+            "us_per_forward": 859.2360000000008
+          },
+          {
+            "name": "SoftmaxV2",
+            "count_per_forward": 24.0,
+            "us_per_forward": 690.0738999999998
+          },
+          {
+            "name": "Quantize",
+            "count_per_forward": 48.0,
+            "us_per_forward": 539.0640999999999
+          },
+          {
+            "name": "Gelu",
+            "count_per_forward": 24.0,
+            "us_per_forward": 370.10570000000035
+          },
+          {
+            "name": "BatchMatMul",
+            "count_per_forward": 48.0,
+            "us_per_forward": 285.30759999999987
+          },
+          {
+            "name": "TransData",
+            "count_per_forward": 48.0,
+            "us_per_forward": 273.92220000000026
+          },
+          {
+            "name": "Muls",
+            "count_per_forward": 24.0,
+            "us_per_forward": 260.9555000000002
+          },
+          {
+            "name": "GatherV2",
+            "count_per_forward": 4.0,
+            "us_per_forward": 39.7052
+          },
+          {
+            "name": "Cumsum",
+            "count_per_forward": 1.0,
+            "us_per_forward": 37.3605
+          },
+          {
+            "name": "AddLayerNorm",
+            "count_per_forward": 1.0,
+            "us_per_forward": 18.580299999999998
+          },
+          {
+            "name": "Cast",
+            "count_per_forward": 5.0,
+            "us_per_forward": 10.2623
+          },
+          {
+            "name": "NotEqual",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.8539999999999999
+          },
+          {
+            "name": "ZerosLike",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.642
+          },
+          {
+            "name": "Mul",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.4259999999999997
+          },
+          {
+            "name": "ClipByValueV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.3559999999999999
+          },
+          {
+            "name": "AutomaticBufferFusionOp",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.3460000000000003
+          },
+          {
+            "name": "LpNormV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.346
+          },
+          {
+            "name": "RealDiv",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.2501
+          },
+          {
+            "name": "BroadcastTo",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.1581
+          }
+        ]
+      }
+    },
+    {
+      "label": "batch4_full512",
+      "shape": [
+        4,
+        512
+      ],
+      "baseline_parity": [
+        {
+          "shape": [
+            4,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            4,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ],
+      "compiled_eager_max_abs": 0.000244140625,
+      "profile": {
+        "directory": "/workspace/results/bge_gamma_cache_af6ba196/model_candidate_1/profiles/batch4_full512",
+        "active_forwards": 10,
+        "kernel_rows": 6700,
+        "kernel_duration_us_per_forward": 12302.319900000019,
+        "top_types": [
+          {
+            "name": "QuantBatchMatmulV3",
+            "count_per_forward": 144.0,
+            "us_per_forward": 2623.170000000002
+          },
+          {
+            "name": "SoftmaxV2",
+            "count_per_forward": 24.0,
+            "us_per_forward": 2132.2364000000007
+          },
+          {
+            "name": "AddLayerNormQuantV2",
+            "count_per_forward": 48.0,
+            "us_per_forward": 1757.0645
+          },
+          {
+            "name": "Add",
+            "count_per_forward": 123.0,
+            "us_per_forward": 1298.3055999999997
+          },
+          {
+            "name": "Transpose",
+            "count_per_forward": 96.0,
+            "us_per_forward": 924.2246999999988
+          },
+          {
+            "name": "Gelu",
+            "count_per_forward": 24.0,
+            "us_per_forward": 893.8923000000002
+          },
+          {
+            "name": "Quantize",
+            "count_per_forward": 48.0,
+            "us_per_forward": 865.1257000000007
+          },
+          {
+            "name": "BatchMatMul",
+            "count_per_forward": 48.0,
+            "us_per_forward": 669.8420000000001
+          },
+          {
+            "name": "Muls",
+            "count_per_forward": 24.0,
+            "us_per_forward": 560.5097000000003
+          },
+          {
+            "name": "TransData",
+            "count_per_forward": 72.0,
+            "us_per_forward": 417.3215000000011
+          },
+          {
+            "name": "Cumsum",
+            "count_per_forward": 1.0,
+            "us_per_forward": 49.8788
+          },
+          {
+            "name": "GatherV2",
+            "count_per_forward": 4.0,
+            "us_per_forward": 44.46509999999999
+          },
+          {
+            "name": "AddLayerNorm",
+            "count_per_forward": 1.0,
+            "us_per_forward": 35.0987
+          },
+          {
+            "name": "Cast",
+            "count_per_forward": 5.0,
+            "us_per_forward": 12.790499999999998
+          },
+          {
+            "name": "BroadcastTo",
+            "count_per_forward": 1.0,
+            "us_per_forward": 5.9103
+          },
+          {
+            "name": "NotEqual",
+            "count_per_forward": 1.0,
+            "us_per_forward": 2.2199999999999998
+          },
+          {
+            "name": "ZerosLike",
+            "count_per_forward": 1.0,
+            "us_per_forward": 2.0679999999999996
+          },
+          {
+            "name": "LpNormV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.934
+          },
+          {
+            "name": "RealDiv",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.7879999999999998
+          },
+          {
+            "name": "Mul",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.6721
+          },
+          {
+            "name": "ClipByValueV2",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.4599999999999997
+          },
+          {
+            "name": "AutomaticBufferFusionOp",
+            "count_per_forward": 1.0,
+            "us_per_forward": 1.3419999999999999
+          }
+        ]
+      }
+    }
+  ],
+  "passed": true,
+  "checkpoint_revision": "5617a9f61b028005a4858fdac845db406aefb181",
+  "real_input_baseline_parity": [
+    {
+      "site": 0,
+      "parity": [
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ]
+    },
+    {
+      "site": 1,
+      "parity": [
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ]
+    },
+    {
+      "site": 23,
+      "parity": [
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ]
+    },
+    {
+      "site": 47,
+      "parity": [
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.float16",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        },
+        {
+          "shape": [
+            256,
+            1024
+          ],
+          "dtype": "torch.int8",
+          "exact": true,
+          "max_abs": 0.0,
+          "different_elements": 0
+        }
+      ]
+    }
+  ]
+}

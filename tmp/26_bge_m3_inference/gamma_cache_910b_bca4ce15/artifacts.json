@@ -1,0 +1,20 @@
+{
+  "status": "completed_no_consistent_speedup",
+  "chip": "Ascend910B2",
+  "physical_npu": "3",
+  "implementation_commit": "2a9c9702",
+  "direct_harness_commit": "af6ba196",
+  "model_harness_commit": "bca4ce15",
+  "collector_commit": "7ab9208b",
+  "upstream_commit": "ceb4536a2bd6fc99b85aec9d0fdcc0f470376292",
+  "raw_remote": "/workspace/results/bge_gamma_cache_af6ba196",
+  "candidate_build_remote": "/workspace/operators/bge-gamma-cache-2a9c9702",
+  "raw_archive_local": "/Users/lukaivanic/Documents/Codex/2026-10-10/https-www-hiascend-com-document-detail/work/910b-gamma-cache-agent/raw-evidence.tar.gz",
+  "raw_extracted_local": "/Users/lukaivanic/Documents/Codex/2026-10-10/https-www-hiascend-com-document-detail/work/910b-gamma-cache-agent/raw/bge_gamma_cache_af6ba196",
+  "raw_archive_sha256": "e964faa3c8f752cf0804f3ae30076d53e70afbbe70b202677f0f60004ceb7d81",
+  "raw_archive_bytes": 131997227,
+  "archive_excludes": [
+    "cache"
+  ],
+  "note": "run.log contains unchanged success/parity lines extracted from raw logs. All full logs, profiles and output tensors remain in the archive. Original graph command omitted a required chip argument and exited before compile; resumed command is retained."
+}
