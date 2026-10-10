@@ -1,7 +1,13 @@
 # Experiment 11: MinerU2.5-Pro Local Inference
 
-**Current execution task (2026-10-09): host overhead only.** The single active
-[310P full-page handoff](WORK_SERVER_310P_LIVE_PADDLE_CAP3072_FULL1651.md) compares
+**Current execution task (2026-10-10): per-route prefill timing.** The single active
+[310P handoff](WORK_SERVER_310P_LIVE_PADDLE_CAP3072_FIRST256_PREFILL_TIMING.md) runs
+the former baseline lane on the first 256 pages with per-call vision and packed
+text-prefill device timing (`text_prefill_timing_shard_XX.jsonl` and the run
+summary's `text_prefill_timing`). Production text buckets are unchanged.
+
+**Previous task (2026-10-09): host overhead only.** The retired
+[full-page pair handoff](WORK_SERVER_310P_LIVE_PADDLE_CAP3072_FULL1651.md) compared
 baseline with the best measured host configuration, both at approximate vision
 precision and the 602,112-pixel cap. Opt-in controls cover CPU vision grids,
 pinned transfers, a dedicated H2D thread, exact uint8 staging, prefill metrics,
