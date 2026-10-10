@@ -1,0 +1,34 @@
+{
+  "chip": "Ascend910B2",
+  "inference_commit": "0d6cef738f143c19e8ea457cafbb6519e0a18814",
+  "final_python_commit": "9da169cf",
+  "baseline_source": "User task document: supplied 602112-pixel-cap baseline, not rerun full in this task",
+  "accuracy_baseline": {
+    "overall": 95.603,
+    "text": 96.2346,
+    "table_TEDS": 93.5204,
+    "formula_CDM": 97.0541
+  },
+  "accuracy_candidate": {
+    "overall": 95.63425714513845,
+    "text": 96.3160217595815,
+    "table_TEDS": 93.54406641076004,
+    "formula_CDM": 97.0426832650738
+  },
+  "accuracy_delta_percentage_points": {
+    "overall": 0.031257145138454234,
+    "text": 0.08142175958150233,
+    "table_TEDS": 0.023666410760043277,
+    "formula_CDM": -0.011416734926200434
+  },
+  "remote_run_root": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73",
+  "choices": [
+    "Exact prompt-length window KV allocations and one batched first-token host read per window.",
+    "Warmup-only real-page capture/replay for every configured prefill bucket; full-run graph artifact hashes unchanged.",
+    "Four matching text graph artifacts reused from defaults lane in candidate warmup; see smoke_cache_reuse.json.",
+    "310P baseline warmup omits unreachable 4224/5632 vision buckets; measured baseline keeps original bucket list.",
+    "Later Python changes only strengthen tests and correct smoke difference reporting plus 310P warmup. Inference source is unchanged."
+  ],
+  "full_timing_archive": "full_timing_samples.tar.gz",
+  "evaluation_workers": 96
+}

@@ -1,7 +1,13 @@
 # Experiment 11: MinerU2.5-Pro Local Inference
 
 **Current execution task (2026-10-10): opt-in prefill buckets and window scheduling.**
-The implementation is based on `2ef68bdd`; accelerator validation is pending.
+The implementation is based on `2ef68bdd`. 910B validation completed at
+`0d6cef73`: the defaults match all 1,020 parent requests exactly; the production
+set completed all 1,651 pages and the 96-worker OmniDocBench evaluation.
+Machine-readable receipts, summaries, comparisons and timing samples are in
+[the validation evidence](references/prefill_buckets_910b_20261010/).
+Later Python changes affect tests and validation reporting/warmup only.
+310P performance remains unmeasured; run the handoff below for that result.
 The single active [310P handoff](WORK_SERVER_310P_PREFILL_BUCKETS_FULL1651.md)
 contains the full pair and all environment-discovery instructions.
 The first-256 timing task is superseded; its measurements motivated this work.
@@ -55,7 +61,7 @@ and preparation/frontend worker counts. Production defaults stay unchanged.
 No further profiling/GIL work is part of this task. Earlier vision/kernel
 handoffs below are background, not additional steps for this comparison.
 
-**Current 310P optimization target: vision encoding.** See
+**Earlier vision-encoding investigation (background).** See
 [VISION_310P_TARGET.md](VISION_310P_TARGET.md) and the self-contained
 [vision crop handoff](VISION_CROP_310P_HANDOFF.md). Decode KV-cache benchmarks below
 are separate work and do not explain the vision bottleneck.

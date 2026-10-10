@@ -1,0 +1,26 @@
+{
+  "scope": "CPU control/processor tests, not accelerator inference",
+  "python": "3.11.14 (main, Oct  9 2025, 16:16:55) [Clang 17.0.0 (clang-1700.6.3.2)]",
+  "torch": "2.10.0",
+  "transformers": "5.5.4",
+  "parent_commit": "2ef68bdd",
+  "candidate_code_commit": "0d6cef73",
+  "experiment11_parent": {
+    "tests": 103,
+    "passed": 101,
+    "failures": 2
+  },
+  "experiment11_candidate": {
+    "tests": 110,
+    "passed": 108,
+    "failures": 2
+  },
+  "experiment20_candidate": {
+    "tests": 9,
+    "passed": 9
+  },
+  "known_failures": [
+    "test_vision_length_recovery.Recovery.test_new_output_directory_can_share_graph_cache",
+    "test_vision_length_recovery.Recovery.test_resume_preserves_finished_pair_and_repeats_only_incomplete_pair"
+  ]
+}

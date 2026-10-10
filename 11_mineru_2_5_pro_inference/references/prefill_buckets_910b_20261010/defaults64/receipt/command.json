@@ -1,0 +1,55 @@
+{
+  "argv": [
+    "/workspace/venvs/mineru_pro_vllm_py312/bin/python",
+    "-u",
+    "/workspace/repos/mineru_prefill_buckets_20261010/11_mineru_2_5_pro_inference/run_page_pipeline.py",
+    "--model",
+    "/workspace/models/MinerU2.5-Pro-2605-1.2B",
+    "--layout-model",
+    "/workspace/models/PP-DocLayoutV3_safetensors",
+    "--dataset-json",
+    "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+    "--images-dir",
+    "/workspace/datasets/OmniDocBench/images",
+    "--local-torchair-cache-dir",
+    "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/defaults/decode",
+    "--local-vision-torchair-cache-dir",
+    "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/defaults/vision",
+    "--local-text-torchair-cache-dir",
+    "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/defaults/text",
+    "--processor-max-pixels",
+    "602112",
+    "--offset",
+    "0",
+    "--limit",
+    "64",
+    "--output-dir",
+    "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/defaults64/output",
+    "--local-vision-grid-device",
+    "cpu",
+    "--local-input-transfer",
+    "pinned-nonblocking",
+    "--no-local-prefill-metrics"
+  ],
+  "shell_display": "/workspace/venvs/mineru_pro_vllm_py312/bin/python -u /workspace/repos/mineru_prefill_buckets_20261010/11_mineru_2_5_pro_inference/run_page_pipeline.py --model /workspace/models/MinerU2.5-Pro-2605-1.2B --layout-model /workspace/models/PP-DocLayoutV3_safetensors --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json --images-dir /workspace/datasets/OmniDocBench/images --local-torchair-cache-dir /workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/defaults/decode --local-vision-torchair-cache-dir /workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/defaults/vision --local-text-torchair-cache-dir /workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/defaults/text --processor-max-pixels 602112 --offset 0 --limit 64 --output-dir /workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/defaults64/output --local-vision-grid-device cpu --local-input-transfer pinned-nonblocking --no-local-prefill-metrics",
+  "cwd": "/workspace/repos/mineru_prefill_buckets_20261010",
+  "source_commit": {
+    "argv": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "exit_code": 0,
+    "stdout": "0d6cef738f143c19e8ea457cafbb6519e0a18814\n",
+    "stderr": ""
+  },
+  "timeout_s": 14400,
+  "environment": {
+    "ASCEND_RT_VISIBLE_DEVICES": "3",
+    "TORCH_DEVICE_BACKEND_AUTOLOAD": "0",
+    "LD_LIBRARY_PATH": "/usr/local/Ascend/nnal/atb/9.0.0/atb/cxx_abi_1/lib:/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_1/lib:/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_1/examples:/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_1/tests/atbopstest:/usr/local/Ascend/cann-9.0.0/lib64:/usr/local/Ascend/cann-9.0.0/lib64/plugin/opskernel:/usr/local/Ascend/cann-9.0.0/lib64/plugin/nnengine:/usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/op_tiling/lib/linux/aarch64:/usr/local/Ascend/driver/lib64:/usr/local/Ascend/driver/lib64/common:/usr/local/Ascend/driver/lib64/driver:/usr/local/Ascend/driver/lib64:/usr/local/Ascend/driver/lib64/common:/usr/local/Ascend/driver/lib64/driver:/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_1/lib:/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_1/examples:/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_1/tests/atbopstest:/usr/local/Ascend/ascend-toolkit/latest/tools/aml/lib64:/usr/local/Ascend/ascend-toolkit/latest/tools/aml/lib64/plugin:/usr/local/Ascend/ascend-toolkit/latest/lib64:/usr/local/Ascend/ascend-toolkit/latest/lib64/plugin/opskernel:/usr/local/Ascend/ascend-toolkit/latest/lib64/plugin/nnengine:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling:/usr/local/python3.12.13/lib:",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": null,
+    "VLLM_WORKER_MULTIPROC_METHOD": "spawn"
+  }
+}

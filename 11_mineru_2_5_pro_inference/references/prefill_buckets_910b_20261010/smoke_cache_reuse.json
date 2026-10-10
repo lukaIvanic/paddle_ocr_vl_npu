@@ -1,0 +1,21 @@
+{
+  "reason": "Reuse matching graphs from the completed default regression; separate physical copies before smoke text prefill",
+  "copied": [
+    {
+      "source": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/defaults/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6",
+      "target": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/candidate/text/mineru_text_packed_block_causal_stock_projections_bs1_seq1024_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6"
+    },
+    {
+      "source": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/defaults/text/mineru_text_packed_block_causal_stock_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6",
+      "target": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/candidate/text/mineru_text_packed_block_causal_stock_projections_bs1_seq512_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6"
+    },
+    {
+      "source": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/defaults/text/mineru_text_packed_block_causal_stock_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6",
+      "target": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/candidate/text/mineru_text_packed_block_causal_stock_projections_bs1_seq256_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6"
+    },
+    {
+      "source": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/defaults/text/mineru_text_packed_block_causal_stock_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6",
+      "target": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/cache/candidate/text/mineru_text_packed_block_causal_stock_projections_bs1_seq128_members32_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src92ada22553a6"
+    }
+  ]
+}

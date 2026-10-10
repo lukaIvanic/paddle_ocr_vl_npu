@@ -1,0 +1,7 @@
+{
+  "status": "completed",
+  "exit_code": 0,
+  "child_wall_s": 453.87871941999765,
+  "log": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/defaults64/run.log",
+  "receipt_dir": "/workspace/repos/mineru_prefill_buckets_20261010/tmp/11_mineru_2_5_pro_inference/prefill_buckets_910b_0d6cef73/defaults64/receipt"
+}

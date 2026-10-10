@@ -1,0 +1,16 @@
+{
+  "bbox_count": 10,
+  "status": "pass",
+  "tex_runtime": {
+    "cjk_font": "gkai",
+    "cjk_font_fd": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/UTF8/c70gkai.fd",
+    "cjk_sty": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/CJK.sty",
+    "kpsewhich": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+    "kpsewhich_texmfroot": "/workspace/.tools/omnidocbench_eval/texlive/2025",
+    "pdflatex": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/pdflatex",
+    "pdflatex_version": "pdfTeX 3.141592653-2.6-1.40.28 (TeX Live 2025)",
+    "texlive_bin_dir": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux",
+    "texlive_root": "/workspace/.tools/omnidocbench_eval/texlive/2025",
+    "texmfcnf": "/workspace/.tools/omnidocbench_eval/texlive/2025:/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/web2c"
+  }
+}

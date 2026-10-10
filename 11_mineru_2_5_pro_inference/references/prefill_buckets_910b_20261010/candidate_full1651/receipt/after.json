@@ -1,0 +1,157 @@
+{
+  "utc": "2026-10-10T11:10:04.950972+00:00",
+  "hostname": "liteserver-c001-4",
+  "visible_devices": "3",
+  "load_average": [
+    22.0576171875,
+    22.27734375,
+    22.1259765625
+  ],
+  "cpu_count": 192,
+  "affinity_cpu_count": 192,
+  "commands": [
+    {
+      "argv": [
+        "uptime"
+      ],
+      "exit_code": 0,
+      "stdout": " 11:10:00 up 3 days, 22:31,  0 users,  load average: 22.06, 22.28, 22.13\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "nproc"
+      ],
+      "exit_code": 0,
+      "stdout": "1\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "npu-smi",
+        "info"
+      ],
+      "exit_code": 0,
+      "stdout": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 115.8       47                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          22514/ 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 110.9       47                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3414 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 112.0       48                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          57250/ 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 109.8       46                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          3420 / 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 123.6       49                0    / 0             |\n| 0                         | 0000:81:00.0  | 8           0    / 0          57092/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 126.4       47                0    / 0             |\n| 0                         | 0000:41:00.0  | 8           0    / 0          57080/ 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 126.5       49                0    / 0             |\n| 0                         | 0000:82:00.0  | 7           0    / 0          57082/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 118.0       48                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          57092/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| 0       0                 | 635074        |                          | 19005                   |\n+===========================+===============+====================================================+\n| No running processes found in NPU 1                                                            |\n+===========================+===============+====================================================+\n| 2       0                 | 1428833       |                          | 53881                   |\n+===========================+===============+====================================================+\n| No running processes found in NPU 3                                                            |\n+===========================+===============+====================================================+\n| 4       0                 | 2713642       |                          | 53731                   |\n+===========================+===============+====================================================+\n| 5       0                 | 2713997       |                          | 53731                   |\n+===========================+===============+====================================================+\n| 6       0                 | 2714351       |                          | 53731                   |\n+===========================+===============+====================================================+\n| 7       0                 | 2714554       |                          | 53731                   |\n+===========================+===============+====================================================+\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "ps",
+        "-eo",
+        "pid,ppid,comm,pcpu,pmem,etimes"
+      ],
+      "exit_code": 0,
+      "stdout": "    PID    PPID COMMAND         %CPU %MEM ELAPSED\n      1       0 bash             0.0  0.0  262076\n 216401       0 tail             0.0  0.0  246715\n 221892       0 tail             0.0  0.0  246148\n 227551       0 bash             0.0  0.0  245250\n 227717  227551 tail             0.0  0.0  245228\n 227718  227551 python3          0.0  0.0  245228\n 614857       1 bash             0.0  0.0    3016\n 637173  614857 python           0.0  0.0    1704\n 638886       0 python3          0.0  0.0    1522\n 638919  637173 ps               0.0  0.0       0\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "npu-smi",
+        "info",
+        "-t",
+        "health",
+        "-i",
+        "3",
+        "-c",
+        "0"
+      ],
+      "exit_code": 0,
+      "stdout": "\tHealth Status                  : OK\n\tError Code                     : NA\n\tError Information              : NA\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "npu-smi",
+        "info",
+        "-t",
+        "power",
+        "-i",
+        "3",
+        "-c",
+        "0"
+      ],
+      "exit_code": 0,
+      "stdout": "\tNPU Real-time Power(W)         : 110.1\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "npu-smi",
+        "info",
+        "-t",
+        "usages",
+        "-i",
+        "3",
+        "-c",
+        "0"
+      ],
+      "exit_code": 0,
+      "stdout": "\tDDR Capacity(MB)               : 0\n\tDDR Usage Rate(%)              : 0\n\tDDR Hugepages Total(page)      : 0\n\tDDR Hugepages Usage Rate(%)    : 0\n\tHBM Capacity(MB)               : 65536\n\tHBM Usage Rate(%)              : 5\n\tAicore Usage Rate(%)           : 0\n\tAivector Usage Rate(%)         : 0\n\tAicpu Usage Rate(%)            : 0\n\tCtrlcpu Usage Rate(%)          : 0\n\tDDR Bandwidth Usage Rate(%)    : 0\n\tHBM Bandwidth Usage Rate(%)    : 0\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "npu-smi",
+        "info",
+        "-t",
+        "sensors",
+        "-i",
+        "3",
+        "-c",
+        "0"
+      ],
+      "exit_code": 0,
+      "stdout": "\tSoc Max Temperature (C)        : 46\n\tNDIE Temperature (C)           : 46\n\tHBM Temperature (C)            : 46\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "npu-smi",
+        "info",
+        "-t",
+        "common",
+        "-i",
+        "3",
+        "-c",
+        "0"
+      ],
+      "exit_code": 215,
+      "stdout": "Error parameter in querying chip info, type: \"common\".\nUsage: npu-smi info <watch|proc|-h|-m|-l|-t type> [Options...]\n\nCommands:\n       watch          Show all device's status in scrolling format\n       proc           Show device's matrix process status in scrolling format\n       -h, --help     Show this help text and exit\n       -m             Show all device's mapping information\n       -l             Show all device's topology information\n       -t type        Show information for type\n                      type: board, flash, memory, usages, sensors, temp, power, volt, mac-addr,\n                            common, health, product, ecc, ip, sys-time, i2c_check, work-mode,\n                            ecc-enable, p2p-enable, ssh-enable, license, customized-info,\n                            device-share, nve-level, aicpu-config, pcie-err, mcu-monitor,\n                            err-count, boot-area, vnpu-mode, info-vnpu, vnpu-svm, cpu-num-cfg,\n                            first-power-on-date, proc-mem, phyid-remap, vnpu-cfg-recover, key-manage,\n                            template-info, pkcs-enable, p2p-mem-cfg, pwm-mode, pwm-duty-ratio,\n                            boot-select, topo, hccs, sio-info, spod-info, tls-csr-get, tls-cert,\n                            tls-cert-period, rootkey, hccs-bw, cpu-freq-up, hccs-credit.\n\nOptions:\n       -i %d          Card ID\n       -c %d          Chip ID\n       -p %d          Chip Physical ID\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "npu-smi",
+        "info",
+        "-t",
+        "work-mode",
+        "-i",
+        "3",
+        "-c",
+        "0"
+      ],
+      "exit_code": 0,
+      "stdout": "This device does not support querying work-mode.\n",
+      "stderr": ""
+    }
+  ],
+  "clock_data": "not exposed by successful queried interfaces",
+  "performance_mode_data": {
+    "argv": [
+      "npu-smi",
+      "info",
+      "-t",
+      "work-mode",
+      "-i",
+      "3",
+      "-c",
+      "0"
+    ],
+    "exit_code": 0,
+    "stdout": "This device does not support querying work-mode.\n",
+    "stderr": ""
+  },
+  "device_error": false,
+  "job_scope": "process names/PIDs visible in the launcher PID namespace, plus device-wide NPU process table; command arguments omitted to avoid credentials"
+}

@@ -32,7 +32,7 @@ overrides C5's normal metrics-off setting so the requested stage tables exist.
 
 ## Source
 
-Code commit: `0d6cef73`. Later documentation-only commits are allowed; the
+Code commit: `9da169cf`. Later documentation-only commits are allowed; the
 second check enforces that. Read `CLAUDE.md`, `AGENTS.md`, and experiment 11's
 README after pulling.
 
@@ -40,8 +40,8 @@ README after pulling.
 git status --short  # tracked source must be clean; never discard changes
 git fetch origin codex/mineru-prefill-buckets
 git checkout --detach FETCH_HEAD
-git merge-base --is-ancestor 0d6cef73 HEAD
-git diff --quiet 0d6cef73 HEAD -- '*.py'
+git merge-base --is-ancestor 9da169cf HEAD
+git diff --quiet 9da169cf HEAD -- '*.py'
 export WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
 cd "$WORK_SERVER_REPO"
 git rev-parse HEAD
@@ -81,7 +81,11 @@ mkdir -p "$RUN_ROOT"
 
 The committed coordinator copies caches, runs baseline warmup64 then baseline
 full1651, then candidate warmup64 and candidate full1651. Both warmups replay all
-configured prefill buckets after the real pages. Full runs omit the warmup flag.
+configured prefill buckets after the real pages. Baseline **warmup only** uses
+its existing vision buckets through 3072; 4224/5632 cannot occur under the
+602112-pixel cap, so this authoring choice avoids compiling unused graphs. The
+measured baseline retains its original full bucket list. Full runs omit the
+warmup flag.
 The coordinator checks complete page accounting, exact source commits, precision
 scope, warmup coverage, and unchanged graph artifacts during each measured run.
 No retries or alternate settings are automatic. Each child has a 14,400-second
