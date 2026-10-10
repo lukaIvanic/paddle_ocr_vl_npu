@@ -22,7 +22,7 @@ source = Path(__file__).with_name("v2_graph_infer.cpp")
 lib = a.output / "libbge_v2_graph_infer.so"
 subprocess.run(["g++", "-std=c++17", "-shared", "-fPIC", "-O2", str(source),
                 "-I" + str(a.cann / "include"), "-L" + str(a.cann / "lib64"),
-                "-lexe_graph", "-lregister", "-o", str(lib)], check=True)
+                "-lexe_graph", "-lregister", "-lopp_registry", "-Wl,--no-undefined", "-o", str(lib)], check=True)
 manifest = {"upstream_vendor": str(a.vendor), "original_dispatch_registrations": registrations,
             "enabled_dispatch": ["AddLayerNormQuantV2"],
             "metadata_source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
