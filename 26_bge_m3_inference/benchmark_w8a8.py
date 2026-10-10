@@ -64,6 +64,7 @@ def main():
     parser.add_argument("--model-dir", default="/workspace/model_downloads/bge-m3")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cache", type=Path, required=True)
+    parser.add_argument("--profile-dir", type=Path, help="Capture CPU/NPU kernels after each unprofiled timing case")
     args = parser.parse_args()
     torch.npu.set_device(0)
     torch.npu.config.allow_internal_format = True
@@ -172,6 +173,14 @@ def main():
         result["cases"].append(row)
         save()
         print("CASE " + json.dumps(row), flush=True)
+        if args.profile_dir:
+            from profile_w8a8 import capture
+            row["profiles"] = {}
+            for mode in MODES:
+                label = case["name"] + "_" + mode
+                row["profiles"][mode] = capture(lambda: compiled[mode](**tokens), args.profile_dir / label, label)
+                save()
+                print("PROFILE " + json.dumps(row["profiles"][mode]), flush=True)
     result["passed"] = True  # Finite normalized execution and dense parity, NOT retrieval quality.
     save()
     print("RESULT " + json.dumps({"passed": True, "output": str(args.output)}), flush=True)
