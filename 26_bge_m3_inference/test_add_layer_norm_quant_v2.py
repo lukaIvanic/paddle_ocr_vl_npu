@@ -13,7 +13,6 @@ import os
 from pathlib import Path
 
 import torch
-import torch_npu
 
 
 class V2:
@@ -48,8 +47,9 @@ class V2:
     def __call__(self, x1, x2, gamma, beta, scale, bias=None, eps=1e-5):
         # Static, one quantized output, no pre-normalization sum output.
         quant = torch.empty(x1.shape, device=x1.device, dtype=torch.int8)
-        norm = torch.empty_like(x1)
-        unused = [torch.empty(1, device=x1.device, dtype=torch.int8), torch.empty_like(x1),
+        norm = torch.empty(x1.shape, device=x1.device, dtype=x1.dtype)
+        unused = [torch.empty(1, device=x1.device, dtype=torch.int8),
+                  torch.empty(x1.shape, device=x1.device, dtype=x1.dtype),
                   torch.empty(1, device=x1.device), torch.empty(1, device=x1.device)]
         tensors = [x1, x2, gamma, beta, bias, scale, None, None, None,
                    quant, unused[0], unused[1], norm, unused[2], unused[3]]
@@ -82,6 +82,13 @@ def main():
     parser.add_argument("--width", type=int, default=1024)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
+    # The 9.1 custom package adds ES symbols missing from CANN 9.0.1.
+    # Load both libraries before NPU initialization; retain stock symbols too.
+    es_library = args.op_api.resolve().parents[2] / f"op_proto/es/lib/linux/{os.uname().machine}/libes_nn.so"
+    if es_library.exists():
+        C.CDLL("libes_nn.so", mode=C.RTLD_GLOBAL)
+        C.CDLL(str(es_library), mode=C.RTLD_GLOBAL)
+    import torch_npu  # Register the NPU backend after loading package dependencies.
     torch.npu.set_device(0)
     chip = torch.npu.get_device_name(0)
     if "910B" not in chip.upper():
