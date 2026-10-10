@@ -1,0 +1,93 @@
+--- a/norm/add_layer_norm_quant/op_kernel/add_layer_norm_static_quant_normal_kernel.h
++++ b/norm/add_layer_norm_quant/op_kernel/add_layer_norm_static_quant_normal_kernel.h
+@@ -18,7 +18,7 @@
+ 
+ #include "add_layer_norm_quant_base.h"
+ 
+-template <typename T, typename S, int TILING_KEY, int BUFFER_NUM = 1>
++template <typename T, typename S, int TILING_KEY, int BUFFER_NUM = 1, bool CACHE_GAMMA_BETA = false>
+ class KernelAddLayerNormStaticQuantNormal : public KernelAddLayerNormQuantBase<T, TILING_KEY, BUFFER_NUM> {
+ public:
+     __aicore__ inline KernelAddLayerNormStaticQuantNormal(TPipe* pipe)
+@@ -68,6 +68,21 @@
+         Ppipe->InitBuffer(yBufFp32, ROUND_UP32(this->rowStep * alignedStride * sizeof(float)));
+         Ppipe->InitBuffer(gammaBuf, ROUND_UP32(alignedStride * sizeof(T)));
+         Ppipe->InitBuffer(betaBuf, ROUND_UP32(alignedStride * sizeof(T)));
++        // Controlled 910B/BGE experiment. Keep the upstream tiler and all row
++        // buffers unchanged. At width 1024, rowStep <= 13, BUFFER_NUM=1:
++        // 14*1024*13 + 3*2048 + 32 + 2*4096 = 200736 bytes < 256 KiB UB.
++        // The last term is the two persistent FP32 caches. Unsupported
++        // contracts retain the original implementation without allocating them.
++#if __NPU_ARCH__ == 2201
++        if constexpr (CACHE_GAMMA_BETA && is_same<T, half>::value && BUFFER_NUM == 1) {
++            cacheGammaBeta = layernormResExist && this->numLastDim == 1024 &&
++                alignedStride == 1024 && this->rowStep > 0 && this->rowStep <= 13;
++            if (cacheGammaBeta) {
++                Ppipe->InitBuffer(gammaFp32Buf, 1024 * sizeof(float));
++                Ppipe->InitBuffer(betaFp32Buf, 1024 * sizeof(float));
++            }
++        }
++#endif
+         if constexpr (IS_BIAS_BROADCAST) {
+             Ppipe->InitBuffer(biasBuf, ROUND_UP32(alignedStride * sizeof(T)));
+         }
+@@ -84,6 +99,17 @@
+ 
+         LocalTensor<T> betaLocal = betaBuf.template Get<T>();
+         LocalTensor<T> gammaLocal = gammaBuf.template Get<T>();
++        if (cacheGammaBeta) {
++            // CopyInGammaBeta uses raw MTE2 copies, not an input queue.
++            // Its PIPE_V barriers alone cannot establish MTE2 -> V readiness.
++            event_t ready = static_cast<event_t>(Ppipe->FetchEventID(HardEvent::MTE2_V));
++            SetFlag<HardEvent::MTE2_V>(ready);
++            WaitFlag<HardEvent::MTE2_V>(ready);
++            Cast(gammaFp32Buf.Get<float>(), gammaLocal, RoundMode::CAST_NONE, this->numLastDim);
++            PipeBarrier<PIPE_V>();
++            Cast(betaFp32Buf.Get<float>(), betaLocal, RoundMode::CAST_NONE, this->numLastDim);
++            PipeBarrier<PIPE_V>();
++        }
+ 
+         DataCopyPadParams padParams;
+         if (this->lastDimPad) {
+@@ -295,7 +321,11 @@
+     __aicore__ inline void ApplyGammaBeta(int32_t roundOffset, int32_t elementCount, LocalTensor<float>& xLocalFp32,
+         LocalTensor<float>& yLocalFp32, LocalTensor<T>& gammaLocal, LocalTensor<T>& betaLocal)
+     {
+-        if constexpr (!is_same<T, float>::value) {
++        if (cacheGammaBeta) {
++            Mul(xLocalFp32[roundOffset], gammaFp32Buf.Get<float>(), xLocalFp32[roundOffset], this->numLastDim);
++            PipeBarrier<PIPE_V>();
++            Add(xLocalFp32[roundOffset], betaFp32Buf.Get<float>(), xLocalFp32[roundOffset], this->numLastDim);
++        } else if constexpr (!is_same<T, float>::value) {
+             Cast(yLocalFp32, gammaLocal, RoundMode::CAST_NONE, this->numLastDim);
+             PipeBarrier<PIPE_V>();
+             Mul(xLocalFp32[roundOffset], yLocalFp32, xLocalFp32[roundOffset], this->numLastDim);
+@@ -617,6 +647,9 @@
+ 
+     TBuf<TPosition::VECCALC> xBufFp32;
+     TBuf<TPosition::VECCALC> yBufFp32;
++    TBuf<TPosition::VECCALC> gammaFp32Buf;
++    TBuf<TPosition::VECCALC> betaFp32Buf;
++    bool cacheGammaBeta = false;
+     TBuf<TPosition::VECCALC> betaBuf;
+     TBuf<TPosition::VECCALC> gammaBuf;
+     TBuf<TPosition::VECCALC> biasBuf;
+--- a/norm/add_layer_norm_quant_v2/op_kernel/add_layer_norm_quant_v2.cpp
++++ b/norm/add_layer_norm_quant_v2/op_kernel/add_layer_norm_quant_v2.cpp
+@@ -35,13 +35,13 @@
+ 
+     // NormalStatic
+     if (TILING_KEY_IS(1000)) {
+-        KernelAddLayerNormStaticQuantNormal<half, half, 1000> op(&pipe);
++        KernelAddLayerNormStaticQuantNormal<half, half, 1000, 1, true> op(&pipe);
+         INIT_AND_PROCESS;
+     } else if (TILING_KEY_IS(1001)) {
+-        KernelAddLayerNormStaticQuantNormal<half, half, 1001> op(&pipe);
++        KernelAddLayerNormStaticQuantNormal<half, half, 1001, 1, true> op(&pipe);
+         INIT_AND_PROCESS;
+     } else if (TILING_KEY_IS(1002)) {
+-        KernelAddLayerNormStaticQuantNormal<half, half, 1002> op(&pipe);
++        KernelAddLayerNormStaticQuantNormal<half, half, 1002, 1, true> op(&pipe);
+         INIT_AND_PROCESS;
+     } else if (TILING_KEY_IS(2000)) {
+         KernelAddLayerNormStaticQuantNormal<float, float, 2000> op(&pipe);
